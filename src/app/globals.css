@@ -24,3 +24,30 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@layer utilities {
+  @keyframes flame-pulse-direct {
+    0%, 100% {
+      /* 初始和结束状态：微弱的光晕 */
+      /* 注意第四个参数是 0px，保证没有硬边 */
+      box-shadow: 0 0 10px 0px rgba(255, 255, 255, 0.15);
+      transform: scale(1);
+    }
+    50% {
+      /* 呼吸最顶点：光晕扩大，变亮 */
+      /* 模糊半径加大到 30px，依然保持扩展半径为 0px */
+      box-shadow: 0 0 30px 0px rgba(255, 255, 255, 0.5);
+      transform: scale(1.02); /* 微微放大一点点本体，增加呼吸感 */
+    }
+  }
+
+  .animate-flame-hover {
+    /* 添加平滑过渡，防止鼠标刚移上去时闪烁 */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.6, 1);
+  }
+
+  .animate-flame-hover:hover {
+    /* 直接在本体应用呼吸动画，非线性曲线保证丝滑 */
+    animation: flame-pulse-direct 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
