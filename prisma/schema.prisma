@@ -1,0 +1,18 @@
+// prisma/schema.prisma
+
+datasource db {
+  provider = "postgresql"
+  // 删掉了 url 和 directUrl，因为 Prisma 7 不让在这里写了
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Bookmark {
+  id          Int      @id @default(autoincrement())
+  name        String
+  url         String
+  description String
+  createdAt   DateTime @default(now())
+}
