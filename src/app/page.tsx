@@ -22,10 +22,10 @@ export default async function Home() {
     <main className="min-h-screen bg-black p-10 text-white text-center">
       <div className="max-w-5xl mx-auto">
         <h1 className="text-4xl font-bold mb-4 tracking-widest italic">
-          我的导航站
+          我的星际导航站
         </h1>
         <p className="text-zinc-500 mb-10">
-          云端数据库已连通，随时随地管理你的书签
+          星际数据库已连通，跨星际随时随地管理你的书签
         </p>
         
         {/* 新增表单 */}
