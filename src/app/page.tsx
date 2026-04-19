@@ -17,7 +17,7 @@ export default async function Home() {
       <AddCardForm />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-        {links.map((link) => (
+      {links.map((link: { id: number; name: string; url: string; description: string }) => (
           <NavigationCard 
             key={link.id}
             id={link.id}
