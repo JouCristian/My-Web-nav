@@ -142,7 +142,7 @@ export function ScrollBackground() {
       <div 
         className="absolute inset-0 z-10 pointer-events-none transition-all duration-150 ease-linear"
         style={{
-          backdropFilter: `blur(${Math.max(0, 20 * (1 - progress * 2))}px)`,
+          backdropFilter: `blur(${Math.max(0, 8 * (1 - progress * 4))}px)`,
           background: `radial-gradient(circle at center, 
             rgba(2, 2, 5, ${0.3 * (1 - progress)}) 0%, 
             rgba(2, 2, 5, ${0.7 + progress * 0.3}) 100%)`
