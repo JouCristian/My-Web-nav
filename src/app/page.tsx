@@ -22,21 +22,36 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-black p-10 text-white">
-      <div className="max-w-5xl mx-auto text-center">
-        {/* 登录/退出按钮 */}
-        <div className="flex justify-end mb-4">
-          {session ? (
-            <form action={async () => { "use server"; await signOut(); }}>
-              <button className="text-xs text-zinc-500 hover:text-white">退出舰长账号</button>
-            </form>
-          ) : (
-            <form action={async () => { "use server"; await signIn("github"); }}>
-              <button className="text-xs text-zinc-500 hover:text-white">舰长登录</button>
-            </form>
-          )}
-        </div>
+    <div className="max-w-5xl mx-auto text-center">
+      
+      {/* 🚀 升级后的舰长控制台按钮 */}
+      <div className="flex justify-end mb-8">
+        {session ? (
+          <form action={async () => { "use server"; await signOut(); }}>
+            <button className="group flex items-center gap-2 bg-white/5 px-6 py-2 rounded-2xl border border-white/10 transition-all duration-300 ease-in-out hover:scale-105 hover:border-white/20 animate-flame-hover">
+              <span className="text-zinc-400 group-hover:text-red-400 transition-colors">●</span>
+              <span className="text-sm font-medium text-zinc-300 group-hover:text-white">登出舰长账号</span>
+            </button>
+          </form>
+        ) : (
+          <form action={async () => { "use server"; await signIn("github"); }}>
+            <button className="group flex items-center gap-2 bg-white/5 px-6 py-2 rounded-2xl border border-white/10 transition-all duration-300 ease-in-out hover:scale-105 hover:border-white/20 animate-flame-hover">
+              <span className="text-blue-400 animate-pulse">●</span>
+              <span className="text-sm font-medium text-zinc-300 group-hover:text-white">舰长登录</span>
+            </button>
+          </form>
+        )}
+      </div>
 
-        <h1 className="text-4xl font-bold mb-4 italic">我的星际导航站</h1>
+      <h1 className="text-4xl font-bold mb-4 tracking-widest italic">我的星际导航站</h1>
+      {/* 🚀 修改这里的逻辑：根据 isCaptain 状态显示不同的文字 */}
+<p className="text-zinc-500 mb-10">
+  {isCaptain ? (
+    "星际数据库已连通，欢迎回来，舰长"
+  ) : (
+    "你的星际导航站！如需修改导航卡片，请让舰长JouCristian登录"
+  )}
+</p>
         
         {/* 🛡️ 只有舰长才能看到添加表单 */}
         {isCaptain && <AddCardForm />}
