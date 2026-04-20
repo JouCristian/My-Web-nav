@@ -51,6 +51,41 @@ export default async function Home() {
   ) : (
     "你的星际导航站！如需修改导航卡片，请让舰长JouCristian登录"
   )}
+
+{/* 🚀 新增：只有在非舰长模式下显示的“联络舰长”卡片 */}
+{!isCaptain && (
+  <div className="mb-12 max-w-md mx-auto">
+    <a 
+      href="/VX(1).jpg" 
+      target="_blank" 
+      rel="noopener noreferrer"
+      className="group block bg-white/5 p-4 rounded-2xl border border-dashed border-white/20 transition-all duration-300 ease-in-out hover:scale-105 hover:border-white/40 animate-flame-hover"
+    >
+      <div className="flex items-center justify-center gap-4">
+        
+        {/* 🎨 重绘的图标区域：极简线框二维码 + 悬停反色发光 */}
+        <div className="bg-white/5 p-3 rounded-xl border border-white/10 text-zinc-400 group-hover:bg-white group-hover:text-black group-hover:shadow-[0_0_15px_rgba(255,255,255,0.3)] transition-all duration-300">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1.5" />
+            <rect x="14" y="3" width="7" height="7" rx="1.5" />
+            <rect x="14" y="14" width="7" height="7" rx="1.5" />
+            <rect x="3" y="14" width="7" height="7" rx="1.5" />
+            <path d="M7 7h.01" />
+            <path d="M18 7h.01" />
+            <path d="M18 18h.01" />
+            <path d="M7 18h.01" />
+          </svg>
+        </div>
+        
+        <div className="text-left">
+          <h4 className="text-sm font-semibold text-white transition-colors group-hover:text-white">联系 JouCristian</h4>
+          <p className="text-xs text-zinc-500 transition-colors group-hover:text-zinc-300">点击获取舰长的星际通讯码 (WeChat)</p>
+        </div>
+      </div>
+    </a>
+  </div>
+)}
+
 </p>
         
         {/* 🛡️ 只有舰长才能看到添加表单 */}
