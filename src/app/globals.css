@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
-:root {
+/* :root {
   --background: #ffffff;
   --foreground: #171717;
-}
+} */
 
 @theme inline {
   --color-background: var(--background);
@@ -20,7 +20,8 @@
 }
 
 body {
-  background: var(--background);
+  /* background: var(--background); 删掉或注释掉这一行 */
+  background: transparent; /* 确保它绝对透明 */
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -48,6 +49,6 @@ body {
 
   .animate-flame-hover:hover {
     /* 直接在本体应用呼吸动画，非线性曲线保证丝滑 */
-    animation: flame-pulse-direct 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    animation: flame-pulse-direct 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 }
