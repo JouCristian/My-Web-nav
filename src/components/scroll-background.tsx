@@ -224,7 +224,7 @@ export function ScrollBackground() {
 
         {/* 🚀 救命神技 5：手机端星空数量降至 15000，配合小 size 打造“星沙”质感 */}
         <MilkyWay 
-          count={isMobile ? 15000 : 90000} 
+          count={isMobile ? 70000 : 90000} 
           scrollProgressRef={scrollProgressRef} 
           isMobile={isMobile} 
         />
