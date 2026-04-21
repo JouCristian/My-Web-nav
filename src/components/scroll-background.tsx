@@ -99,25 +99,34 @@ function CameraController({ setProgress }: { setProgress: (p: number) => void })
   const { camera } = useThree()
   
   useEffect(() => {
+    let requestRef: number;
+
     const handleScroll = () => {
       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
       const p = window.scrollY / (scrollHeight || 1)
       const progress = Math.max(0, Math.min(1, p))
-      setProgress(progress)
+      
+      // 使用 requestAnimationFrame 优化渲染性能
+      requestRef = requestAnimationFrame(() => {
+        setProgress(progress)
 
-      // 🚀 核心改进：初始位置 (0, 120, 200)，避开发光死角
-      const ease = 1 - Math.pow(1 - progress, 2.5) // 更加顺滑的平移曲线
-      
-      const currentY = 120 + ease * 2500
-      const currentZ = 200 + ease * 3500
-      
-      camera.position.set(0, currentY, currentZ)
-      camera.lookAt(0, 0, 0)
+        // 🚀 核心改进：初始位置 (0, 120, 200)，避开发光死角
+        const ease = 1 - Math.pow(1 - progress, 2.5) // 更加顺滑的平移曲线
+        
+        const currentY = 120 + ease * 2500
+        const currentZ = 200 + ease * 3500
+        
+        camera.position.set(0, currentY, currentZ)
+        camera.lookAt(0, 0, 0)
+      })
     }
     
     window.addEventListener("scroll", handleScroll, { passive: true })
     handleScroll()
-    return () => window.removeEventListener("scroll", handleScroll)
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+      cancelAnimationFrame(requestRef)
+    }
   }, [camera, setProgress])
 
   return null
@@ -129,26 +138,52 @@ function CameraController({ setProgress }: { setProgress: (p: number) => void })
 export function ScrollBackground() {
   const [progress, setProgress] = useState(0)
   const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  
+  // 🚀 新增：用来存固定像素高度的状态，默认 100vh 兜底
+  const [fixedHeight, setFixedHeight] = useState("100vh")
+
+  useEffect(() => {
+    setMounted(true)
+    
+    // 记录初始宽度
+    let lastWidth = window.innerWidth
+
+    // 🚀 核心逻辑：获取真实的像素高度并锁死
+    const lockHeight = () => {
+      setFixedHeight(`${window.innerHeight}px`)
+    }
+
+    // 初始化执行一次
+    lockHeight()
+
+    // 监听屏幕大小变化，但排除上下滑动导致的地址栏高度变化
+    const handleResize = () => {
+      // 只有在屏幕宽度改变时才重新计算高度（比如横竖屏切换，或者PC端拉伸窗口）
+      if (window.innerWidth !== lastWidth) {
+        lastWidth = window.innerWidth
+        setTimeout(lockHeight, 100)
+      }
+    }
+
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
 
   if (!mounted) return <div className="fixed inset-0 bg-[#020205] z-[-1]" />
 
   return (
-      // 🚀 关键修改：用 100vw 和 100dvh 钉死尺寸，脱离文档流的挤压
-      <div 
+    // 🚀 关键修改：把 height 绑定为算出来的固定像素高度 fixedHeight
+    <div 
       className="fixed z-[-1] overflow-hidden"
       style={{
         top: 0,
         left: 0,
         width: '100vw',
-        height: '100dvh', // 使用动态视口高度，防止地址栏伸缩引发重绘卡顿
+        height: fixedHeight, // 此时它是个绝对值，例如 "844px"
         backgroundColor: '#020205'
       }}
-      >
-      {/* 🧠 动态毛玻璃 UI 保护层 
-        - 初始状态：强模糊 + 深色遮罩，确保文字清晰
-        - 滚动过程：模糊度线性消失，遮罩变透明
-      */}
+    >
+      {/* 🧠 动态毛玻璃 UI 保护层 */}
       <div 
         className="absolute inset-0 z-10 pointer-events-none transition-all duration-150 ease-linear"
         style={{
