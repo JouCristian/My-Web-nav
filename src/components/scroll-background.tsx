@@ -299,12 +299,12 @@ export function ScrollBackground() {
         
         <ambientLight intensity={4.5} color="#ffffff" />
 
-            {/* ☀️ 新增：模拟太阳的平行光 */}
-      <directionalLight 
-        position={[50, 20, 30]} // 光源位置 (右上方)
-        intensity={2.0}         // 光源强度，调大就会更亮
-        color="#ffffff" 
-      />
+              {/* ☀️ 新增：模拟太阳的平行光 */}
+        <directionalLight 
+          position={[50, 20, 30]} // 光源位置 (右上方)
+          intensity={2.0}         // 光源强度，调大就会更亮
+          color="#ffffff" 
+        />
 
         <RealisticEarth scrollProgressRef={scrollProgressRef} />
 
