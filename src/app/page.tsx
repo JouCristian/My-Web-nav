@@ -99,17 +99,22 @@ export default async function Home() {
         {/* 🛡️ 舰长专属添加表单 */}
         {isCaptain && <AddCardForm />}
         
-        {/* 导航卡片网格 */}
+        {/* 导航卡片网格 - 带渐入动画 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left relative z-10">
-          {links.map((link) => (
-            <NavigationCard 
+          {links.map((link: Bookmark, index: number) => (
+            <div 
               key={link.id}
-              id={link.id}
-              title={link.name}
-              description={link.description}
-              url={link.url}
-              showDelete={isCaptain} 
-            />
+              className="animate-fade-in-up"
+              style={{ animationDelay: `${index * 80}ms` }}
+            >
+              <NavigationCard 
+                id={link.id}
+                title={link.name}
+                description={link.description}
+                url={link.url}
+                showDelete={isCaptain} 
+              />
+            </div>
           ))}
         </div>
 

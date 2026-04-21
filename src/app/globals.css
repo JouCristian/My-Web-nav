@@ -57,4 +57,21 @@ body {
     /* 完美还原你最初的 1.5 秒呼吸动画 */
     animation: flame-pulse-white 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
+
+  /* 卡片渐入动画 */
+  @keyframes fade-in-up {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.5s ease-out forwards;
+    opacity: 0;
+  }
 }

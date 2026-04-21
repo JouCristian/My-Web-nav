@@ -52,8 +52,7 @@ export function NavigationCard({ id, title, description, url, showDelete }: Navi
         href={url} 
         target="_blank" 
         rel="noopener noreferrer"
-        /* 🚀 核心修复 3：这里的 rounded-3xl 必须和外层容器完全一致 */
-        className="block h-full bg-white/5 p-5 rounded-3xl border border-white/10 transition-colors group-hover:border-white/20 overflow-hidden"
+        className="block h-full bg-white/5 p-5 rounded-3xl border border-white/10 transition-all duration-200 group-hover:border-white/20 active:scale-[0.98] overflow-hidden"
       >
         <div className="flex flex-col h-full">
           <div className="flex items-start justify-between mb-3 gap-3">
