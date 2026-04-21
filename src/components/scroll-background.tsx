@@ -290,13 +290,23 @@ export function ScrollBackground() {
         backgroundColor: '#020205'
       }}
     >
-      <div 
+        {/* 🧠 动态毛玻璃 UI 保护层 */}
+        <div 
         className="absolute inset-0 z-10 pointer-events-none transition-all duration-150 ease-linear"
         style={{
-          backdropFilter: `blur(${Math.max(0, 9 * (1 - uiProgress * 3))}px)`,
+          backdropFilter: `blur(${Math.max(0, 8 * (1 - uiProgress * 4))}px)`,
           background: `radial-gradient(circle at center, 
             rgba(2, 2, 5, ${0.3 * (1 - uiProgress)}) 0%, 
             rgba(2, 2, 5, ${0.7 + uiProgress * 0.3}) 100%)`
+        }}
+      />
+
+      {/* 🚀 新增：高级感噪点层 (Film Grain) */}
+      <div 
+        className="absolute inset-0 z-20 pointer-events-none opacity-[0.03] mix-blend-overlay"
+        style={{
+          backgroundImage: `url('https://grainy-gradients.vercel.app/noise.svg')`,
+          filter: 'contrast(150%) brightness(100%)'
         }}
       />
       
@@ -315,13 +325,104 @@ export function ScrollBackground() {
         {/* 🚀 传入滚动状态给地球组件 */}
         <RealisticEarth scrollProgressRef={scrollProgressRef} />
 
+        {/* 🚀 修复点：除了 count，还要把 isMobile 传进去 */}
+        <ShootingStars 
+          isMobile={isMobile} 
+          count={isMobile ? 2 : 6} 
+        />
+
         <MilkyWay 
-          count={isMobile ? 15000 : 90000} 
+          count={isMobile ? 70000 : 90000} 
           scrollProgressRef={scrollProgressRef} 
           isMobile={isMobile} 
         />
         <CameraController scrollProgressRef={scrollProgressRef} />
       </Canvas>
     </div>
+  )
+}
+
+// ==========================================
+// ☄️ 电影级流星系统 (着色器轨迹版 - 已修复 TS 报错)
+// ==========================================
+
+// 定义流星组件的参数类型
+interface ShootingStarProps {
+  isMobile: boolean;
+}
+
+function ShootingStar({ isMobile }: ShootingStarProps) {
+  const meshRef = useRef<THREE.Mesh>(null)
+  
+  // 🚀 高级渐变着色器：头部亮白，尾部天蓝并消失
+  const starMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        void main() {
+          // 头部(vUv.y=1)最亮，尾部(vUv.y=0)迅速变淡
+          float strength = pow(vUv.y, 3.0); 
+          vec3 color = mix(vec3(0.4, 0.8, 1.0), vec3(1.0, 1.0, 1.0), vUv.y);
+          gl_FragColor = vec4(color, strength * 0.8);
+        }
+      `
+    })
+  }, [])
+
+  const params = useMemo(() => ({
+    speed: isMobile ? 25 : 45, // 极速感
+    angle: -Math.PI / 4,
+  }), [isMobile])
+
+  const reset = (mesh: THREE.Mesh) => {
+    const x = (Math.random() - 0.5) * 3000
+    const y = 800 + Math.random() * 500
+    const z = -1000 - Math.random() * 2000
+    mesh.position.set(x, y, z)
+    mesh.userData.active = false
+    setTimeout(() => { if (mesh) mesh.userData.active = true }, Math.random() * 100)
+  }
+
+  useFrame((state, delta) => {
+    if (!meshRef.current || !meshRef.current.userData.active) return
+    const mesh = meshRef.current
+    mesh.position.x += params.speed
+    mesh.position.y -= params.speed
+    mesh.position.z += params.speed * 0.2
+    if (mesh.position.y < -1000 || mesh.position.x > 2000) reset(mesh)
+  })
+
+  return (
+    <mesh ref={meshRef} userData={{ active: true }} rotation={[0, 0, -Math.PI / 4]}>
+      {/* 🚀 这里的 120 是流星长度，0.8 是宽度 */}
+      <cylinderGeometry args={[0, 0.8, isMobile ? 80 : 120, 8]} />
+      <primitive object={starMaterial} attach="material" />
+    </mesh>
+  )
+}
+
+// 🚀 这里是关键：定义 ShootingStars 的参数类型，包含 count 和 isMobile
+interface ShootingStarsProps {
+  isMobile: boolean;
+  count: number;
+}
+
+function ShootingStars({ isMobile, count }: ShootingStarsProps) {
+  return (
+    <group>
+      {Array.from({ length: count }).map((_, i) => (
+        <ShootingStar key={i} isMobile={isMobile} />
+      ))}
+    </group>
   )
 }
