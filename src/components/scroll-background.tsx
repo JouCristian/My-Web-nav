@@ -34,8 +34,8 @@ function MilkyWay({ count = 80000, scrollProgressRef, isMobile = false }: MilkyW
   const [positions, colors] = useMemo(() => {
     const pos = new Float32Array(count * 3)
     const col = new Float32Array(count * 3)
-    const branches = 5 
-    const radius = 4000
+    const branches = 10 
+    const radius = 5000
 
     for (let i = 0; i < count; i++) {
       const r = (Math.pow(Math.random(), 1.3) * radius) + 120 
@@ -194,13 +194,13 @@ function CameraController({ scrollProgressRef }: { scrollProgressRef: React.Muta
   
   useFrame((state, delta) => {
     const progress = scrollProgressRef.current
-    const ease = 1 - Math.pow(1 - progress, 2.5) 
+    const ease = 1 - Math.pow(1 - progress, 3.0) 
     
     const targetY = 150 + ease * 1500
     const targetZ = 180 + ease * 2000 
 
-    currentY.current = THREE.MathUtils.lerp(currentY.current, targetY, 0.08)
-    currentZ.current = THREE.MathUtils.lerp(currentZ.current, targetZ, 0.08)
+    currentY.current = THREE.MathUtils.lerp(currentY.current, targetY, 0.09)
+    currentZ.current = THREE.MathUtils.lerp(currentZ.current, targetZ, 0.09)
 
     camera.position.set(0, currentY.current, currentZ.current)
     camera.lookAt(0, 0, 0)
