@@ -24,10 +24,15 @@ export function AddCardForm() {
   }
 
   return (
-    <form 
-      action={addBookmark} 
-      className="mb-12 bg-white/5 p-6 rounded-3xl border border-white/10 max-w-3xl mx-auto flex flex-col gap-4 transition-all duration-500 ease-in-out hover:scale-[1.02] hover:border-white/20 animate-flame-hover"
-    >
+      <form 
+          action={addBookmark} 
+          /* 核心修复：
+            1. 移除 transition-all, duration-500, ease-in-out
+            2. 移除 hover:scale-[1.02] 
+            3. 确保只有 animate-flame-hover 控制动态
+          */
+          className="mb-12 bg-white/5 p-6 rounded-3xl border border-white/10 max-w-3xl mx-auto flex flex-col gap-4 animate-flame-hover"
+        >
       <div className="flex flex-col sm:flex-row gap-2">
         <input 
           type="url" name="url" placeholder="https://..." required 

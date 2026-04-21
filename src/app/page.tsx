@@ -25,16 +25,19 @@ export default async function Home() {
       <div className="max-w-5xl mx-auto text-center">
         
         {/* 🚀 舰长控制台按钮 */}
+                //🚀 修复后的“舰长控制台按钮”部分
         <div className="flex justify-end mb-8">
           {session ? (
             <form action={async () => { "use server"; await signOut(); }}>
-              <button className="group flex items-center gap-2 bg-white/5 px-6 py-2 rounded-2xl border border-white/10 transition-all duration-300 ease-in-out hover:scale-105 hover:border-white/20 animate-flame-hover">
+              {/* 核心修复：移除了 hover:scale-105 和 transition-all，只保留 animate-flame-hover */}
+              <button className="group flex items-center gap-2 bg-white/5 px-6 py-2 rounded-2xl border border-white/10 animate-flame-hover">
                 <span className="text-zinc-400 group-hover:text-red-400 transition-colors">●</span>
                 <span className="text-sm font-medium text-zinc-300 group-hover:text-white">登出舰长账号</span>
               </button>
             </form>
           ) : (
             <form action={async () => { "use server"; await signIn("github"); }}>
+              {/* 核心修复：同样移除冲突类 */}
               <button className="group flex items-center gap-2 bg-white/5 px-6 py-2 rounded-2xl border border-white/10 animate-flame-hover">
                 <span className="text-blue-400 animate-pulse">●</span>
                 <span className="text-sm font-medium text-zinc-300 group-hover:text-white">舰长登录</span>
