@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { addBookmark, fetchMetadata } from "@/app/actions"
 
 export function AddCardForm() {
@@ -8,6 +8,8 @@ export function AddCardForm() {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [isFetching, setIsFetching] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
   const handleAutoFill = async () => {
     if (!url) return alert("请先输入网址！")
@@ -23,15 +25,30 @@ export function AddCardForm() {
     setIsFetching(false)
   }
 
+  const handleSubmit = async (formData: FormData) => {
+    startTransition(async () => {
+      await addBookmark(formData)
+      setUrl("")
+      setName("")
+      setDescription("")
+      setShowSuccess(true)
+      setTimeout(() => setShowSuccess(false), 2000)
+    })
+  }
+
   return (
+    <div className="relative mb-12 max-w-3xl mx-auto">
+      {/* 成功提示动画 */}
+      <div className={`absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-green-500/20 border border-green-500/30 text-green-400 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${showSuccess ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+        导航站点已添加
+      </div>
+      
       <form 
-          action={addBookmark} 
-          /* 核心修复：
-            1. 移除 transition-all, duration-500, ease-in-out
-            2. 移除 hover:scale-[1.02] 
-            3. 确保只有 animate-flame-hover 控制动态
-          */
-          className="mb-12 bg-white/5 p-6 rounded-3xl border border-white/10 max-w-3xl mx-auto flex flex-col gap-4 animate-flame-hover"
+          action={handleSubmit} 
+          className="bg-white/5 p-6 rounded-3xl border border-white/10 flex flex-col gap-4 animate-flame-hover"
         >
       <div className="flex flex-col sm:flex-row gap-2">
         <input 
@@ -58,10 +75,15 @@ export function AddCardForm() {
           value={description} onChange={(e) => setDescription(e.target.value)}
           className="flex-1 min-w-0 bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-white outline-none focus:border-white/30"
         />
-        <button type="submit" className="bg-white text-black font-bold px-8 py-2 rounded-xl transition-all hover:bg-zinc-200 active:scale-95">
-          添加
+        <button 
+          type="submit" 
+          disabled={isPending}
+          className="bg-white text-black font-bold px-8 py-2 rounded-xl transition-all hover:bg-zinc-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isPending ? "添加中..." : "添加"}
         </button>
       </div>
     </form>
+    </div>
   )
 }
