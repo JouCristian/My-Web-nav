@@ -69,8 +69,8 @@ function MilkyWay({ count = 80000, scrollProgressRef, isMobile = false }: MilkyW
 
   useFrame((state, delta) => {
     if (pointsRef.current) {
-      pointsRef.current.rotation.y -= delta * 0.03 
-      pointsRef.current.rotation.y -= delta * (scrollProgressRef.current * 0.04)
+      pointsRef.current.rotation.y -= delta * 0.1 
+      pointsRef.current.rotation.y -= delta * (scrollProgressRef.current * 0.13)
     }
   })
 
