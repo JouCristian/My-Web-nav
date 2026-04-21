@@ -50,11 +50,11 @@ body {
 
   .animate-flame-hover {
     /* 离开悬浮时，平滑回到原位 */
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.6, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.6, 1);
+    transition: transform 1.5s cubic-bezier(0.4, 0, 0.6, 1), box-shadow 1.5s cubic-bezier(0.4, 0, 0.6, 1);
   }
 
   .animate-flame-hover:hover {
     /* 完美还原你最初的 1.5 秒呼吸动画 */
-    animation: flame-pulse-white 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    animation: flame-pulse-white 2.0s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 }
