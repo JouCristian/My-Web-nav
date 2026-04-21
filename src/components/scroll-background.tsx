@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import * as THREE from "three"
 
@@ -25,7 +25,6 @@ function MilkyWay({ count = 80000, scrollProgressRef, isMobile = false }: MilkyW
       grad.addColorStop(0, 'rgba(255,255,255,1)')
       grad.addColorStop(0.2, 'rgba(255,240,200,0.8)') 
       grad.addColorStop(0.5, 'rgba(100,150,255,0.2)') 
-      grad.addColorStop(1, 'rgba(0,0,0,0)')
       grad.addColorStop(1, 'rgba(0,0,0,0)')
       ctx.fillStyle = grad; ctx.fillRect(0, 0, 64, 64)
     }
@@ -68,7 +67,6 @@ function MilkyWay({ count = 80000, scrollProgressRef, isMobile = false }: MilkyW
     return [pos, col]
   }, [count])
 
-  //改变旋转速率
   useFrame((state, delta) => {
     if (pointsRef.current) {
       pointsRef.current.rotation.y -= delta * 0.03 
@@ -99,7 +97,6 @@ function MilkyWay({ count = 80000, scrollProgressRef, isMobile = false }: MilkyW
 // ==========================================
 // 🌍 逼真地球 + 动态云层 + 阻尼消散大气层
 // ==========================================
-// 🚀 新增接口接收滚动进度
 interface RealisticEarthProps {
   scrollProgressRef: React.MutableRefObject<number>;
 }
@@ -108,8 +105,6 @@ function RealisticEarth({ scrollProgressRef }: RealisticEarthProps) {
   const earthRef = useRef<THREE.Mesh>(null)
   const cloudsRef = useRef<THREE.Mesh>(null)
   const atmosphereRef = useRef<THREE.Mesh>(null)
-  
-  // 🚀 记录当前的透明度，用于插值追赶
   const currentFade = useRef(1.0)
 
   const [colorMap, normalMap, specularMap, cloudsMap] = useMemo(() => {
@@ -123,13 +118,9 @@ function RealisticEarth({ scrollProgressRef }: RealisticEarthProps) {
     ]
   }, [])
 
-  // 🚀 大气层着色器配置 (带透明度控制)
   const atmosphereMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
-      // 🚀 声明统一变量 uFade
-      uniforms: {
-        uFade: { value: 1.0 }
-      },
+      uniforms: { uFade: { value: 1.0 } },
       vertexShader: `
         varying vec3 vNormal;
         void main() {
@@ -138,13 +129,11 @@ function RealisticEarth({ scrollProgressRef }: RealisticEarthProps) {
         }
       `,
       fragmentShader: `
-        // 🚀 接收从 JS 传来的褪色参数
         uniform float uFade;
         varying vec3 vNormal;
         void main() {
           float intensity = pow(max(0.0, 0.85 - dot(vNormal, vec3(0.0, 0.0, 1.0))), 2.0);
           vec3 glowColor = vec3(0.4, 0.8, 1.0); 
-          // 🚀 乘以 uFade，使其随滚动消散
           gl_FragColor = vec4(glowColor * intensity * 2.5 * uFade, 1.0);
         }
       `,
@@ -163,18 +152,11 @@ function RealisticEarth({ scrollProgressRef }: RealisticEarthProps) {
     }
     if (atmosphereRef.current) atmosphereRef.current.rotation.y += delta * 0.05
 
-    // 🚀 核心逻辑：同步阻尼褪色效果
     const progress = scrollProgressRef.current
-    // 使用和相机完全一样的非线性过渡曲线
     const ease = 1 - Math.pow(1 - progress, 2.5) 
-    
-    // 目标透明度：未滚动时为 1，拉到最远时为 0
     const targetFade = 1.0 - ease 
 
-    // 使用一模一样的 0.08 阻尼系数进行追赶
-    currentFade.current = THREE.MathUtils.lerp(currentFade.current, targetFade, 0.08)
-    
-    // 把插值后平滑的数据实时送到 Shader 里
+    currentFade.current = THREE.MathUtils.lerp(currentFade.current, targetFade, 0.02)
     atmosphereMaterial.uniforms.uFade.value = currentFade.current
   })
 
@@ -190,12 +172,10 @@ function RealisticEarth({ scrollProgressRef }: RealisticEarthProps) {
           shininess={15}
         />
       </mesh>
-
       <mesh ref={cloudsRef}>
         <sphereGeometry args={[25.3, 64, 64]} />
         <meshPhongMaterial map={cloudsMap} transparent opacity={0.8} blending={THREE.AdditiveBlending} depthWrite={false} />
       </mesh>
-
       <mesh ref={atmosphereRef}>
         <sphereGeometry args={[28.5, 64, 64]} />
         <primitive object={atmosphereMaterial} attach="material" />
@@ -225,7 +205,6 @@ function CameraController({ scrollProgressRef }: { scrollProgressRef: React.Muta
     camera.position.set(0, currentY.current, currentZ.current)
     camera.lookAt(0, 0, 0)
   })
-
   return null
 }
 
@@ -301,7 +280,7 @@ export function ScrollBackground() {
         }}
       />
 
-      {/* 🚀 新增：高级感噪点层 (Film Grain) */}
+      {/* 🚀 高级感噪点层 (Film Grain) */}
       <div 
         className="absolute inset-0 z-20 pointer-events-none opacity-[0.03] mix-blend-overlay"
         style={{
@@ -311,118 +290,32 @@ export function ScrollBackground() {
       />
       
       <Canvas
-        camera={{ position: [0, 150, 180], fov: 75, near: 1, far: 15000 }}
+        camera={{ position: [0, 150, 180], fov: 75, near: 1, far: 20000 }} 
         dpr={isMobile ? 1 : [1, 1.5]} 
         gl={{ antialias: false, alpha: false, powerPreference: "high-performance" }}
       >
         <color attach="background" args={["#010103"]} />
-        <fog attach="fog" args={["#010103", 3000, 12000]} />
+        <fog attach="fog" args={["#010103", 8000, 18000]} /> 
         
-        <ambientLight intensity={0.4} color="#ffffff" />
-        <directionalLight position={[100, 50, 50]} intensity={2.5} color="#fffcf2" />
-        <pointLight position={[-100, -50, -50]} intensity={1} color="#4b86ff" />
+        <ambientLight intensity={4.5} color="#ffffff" />
 
-        {/* 🚀 传入滚动状态给地球组件 */}
+            {/* ☀️ 新增：模拟太阳的平行光 */}
+      <directionalLight 
+        position={[50, 20, 30]} // 光源位置 (右上方)
+        intensity={2.0}         // 光源强度，调大就会更亮
+        color="#ffffff" 
+      />
+
         <RealisticEarth scrollProgressRef={scrollProgressRef} />
-
-        {/* 🚀 修复点：除了 count，还要把 isMobile 传进去 */}
-        <ShootingStars 
-          isMobile={isMobile} 
-          count={isMobile ? 2 : 6} 
-        />
 
         <MilkyWay 
           count={isMobile ? 90000 : 130000} 
           scrollProgressRef={scrollProgressRef} 
           isMobile={isMobile} 
         />
+        
         <CameraController scrollProgressRef={scrollProgressRef} />
       </Canvas>
     </div>
-  )
-}
-
-// ==========================================
-// ☄️ 电影级流星系统 (着色器轨迹版 - 已修复 TS 报错)
-// ==========================================
-
-// 定义流星组件的参数类型
-interface ShootingStarProps {
-  isMobile: boolean;
-}
-
-function ShootingStar({ isMobile }: ShootingStarProps) {
-  const meshRef = useRef<THREE.Mesh>(null)
-  
-  // 🚀 高级渐变着色器：头部亮白，尾部天蓝并消失
-  const starMaterial = useMemo(() => {
-    return new THREE.ShaderMaterial({
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        varying vec2 vUv;
-        void main() {
-          // 头部(vUv.y=1)最亮，尾部(vUv.y=0)迅速变淡
-          float strength = pow(vUv.y, 3.0); 
-          vec3 color = mix(vec3(0.4, 0.8, 1.0), vec3(1.0, 1.0, 1.0), vUv.y);
-          gl_FragColor = vec4(color, strength * 0.8);
-        }
-      `
-    })
-  }, [])
-
-  const params = useMemo(() => ({
-    speed: isMobile ? 25 : 45, // 极速感
-    angle: -Math.PI / 4,
-  }), [isMobile])
-
-  const reset = (mesh: THREE.Mesh) => {
-    const x = (Math.random() - 0.5) * 3000
-    const y = 800 + Math.random() * 500
-    const z = -1000 - Math.random() * 2000
-    mesh.position.set(x, y, z)
-    mesh.userData.active = false
-    setTimeout(() => { if (mesh) mesh.userData.active = true }, Math.random() * 100)
-  }
-
-  useFrame((state, delta) => {
-    if (!meshRef.current || !meshRef.current.userData.active) return
-    const mesh = meshRef.current
-    mesh.position.x += params.speed
-    mesh.position.y -= params.speed
-    mesh.position.z += params.speed * 0.2
-    if (mesh.position.y < -1000 || mesh.position.x > 2000) reset(mesh)
-  })
-
-  return (
-    <mesh ref={meshRef} userData={{ active: true }} rotation={[0, 0, -Math.PI / 4]}>
-      {/* 🚀 这里的 120 是流星长度，0.8 是宽度 */}
-      <cylinderGeometry args={[0, 0.8, isMobile ? 80 : 120, 8]} />
-      <primitive object={starMaterial} attach="material" />
-    </mesh>
-  )
-}
-
-// 🚀 这里是关键：定义 ShootingStars 的参数类型，包含 count 和 isMobile
-interface ShootingStarsProps {
-  isMobile: boolean;
-  count: number;
-}
-
-function ShootingStars({ isMobile, count }: ShootingStarsProps) {
-  return (
-    <group>
-      {Array.from({ length: count }).map((_, i) => (
-        <ShootingStar key={i} isMobile={isMobile} />
-      ))}
-    </group>
   )
 }
