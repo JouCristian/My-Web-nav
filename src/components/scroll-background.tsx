@@ -332,7 +332,7 @@ export function ScrollBackground() {
         />
 
         <MilkyWay 
-          count={isMobile ? 70000 : 90000} 
+          count={isMobile ? 90000 : 130000} 
           scrollProgressRef={scrollProgressRef} 
           isMobile={isMobile} 
         />
