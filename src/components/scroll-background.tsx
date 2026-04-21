@@ -23,9 +23,9 @@ function MilkyWay({ count = 80000, scrollProgressRef, isMobile = false }: MilkyW
     if (ctx) {
       const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32)
       grad.addColorStop(0, 'rgba(255,255,255,1)')
-      grad.addColorStop(0.2, 'rgba(255,230,180,0.9)') 
-      grad.addColorStop(0.4, 'rgba(130,170,255,0.4)') 
-      grad.addColorStop(0.7, 'rgba(180,100,255,0.1)') 
+      grad.addColorStop(0.2, 'rgba(255,240,200,0.8)') 
+      grad.addColorStop(0.5, 'rgba(100,150,255,0.2)') 
+      grad.addColorStop(1, 'rgba(0,0,0,0)')
       grad.addColorStop(1, 'rgba(0,0,0,0)')
       ctx.fillStyle = grad; ctx.fillRect(0, 0, 64, 64)
     }
@@ -68,9 +68,10 @@ function MilkyWay({ count = 80000, scrollProgressRef, isMobile = false }: MilkyW
     return [pos, col]
   }, [count])
 
+  //改变旋转速率
   useFrame((state, delta) => {
     if (pointsRef.current) {
-      pointsRef.current.rotation.y -= delta * 0.015 
+      pointsRef.current.rotation.y -= delta * 0.03 
       pointsRef.current.rotation.y -= delta * (scrollProgressRef.current * 0.04)
     }
   })
@@ -215,8 +216,8 @@ function CameraController({ scrollProgressRef }: { scrollProgressRef: React.Muta
     const progress = scrollProgressRef.current
     const ease = 1 - Math.pow(1 - progress, 2.5) 
     
-    const targetY = 150 + ease * 2500
-    const targetZ = 180 + ease * 3500 
+    const targetY = 150 + ease * 1500
+    const targetZ = 180 + ease * 2000 
 
     currentY.current = THREE.MathUtils.lerp(currentY.current, targetY, 0.08)
     currentZ.current = THREE.MathUtils.lerp(currentZ.current, targetZ, 0.08)
@@ -292,7 +293,7 @@ export function ScrollBackground() {
       <div 
         className="absolute inset-0 z-10 pointer-events-none transition-all duration-150 ease-linear"
         style={{
-          backdropFilter: `blur(${Math.max(0, 8 * (1 - uiProgress * 4))}px)`,
+          backdropFilter: `blur(${Math.max(0, 9 * (1 - uiProgress * 3))}px)`,
           background: `radial-gradient(circle at center, 
             rgba(2, 2, 5, ${0.3 * (1 - uiProgress)}) 0%, 
             rgba(2, 2, 5, ${0.7 + uiProgress * 0.3}) 100%)`
