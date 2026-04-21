@@ -7,7 +7,7 @@ import * as THREE from "three"
 // ==========================================
 // 🌌 真实感非对称银河系
 // ==========================================
-function MilkyWay({ count = 80000, scrollProgress = 0 }) {
+function MilkyWay({ count = 80000, scrollProgress = 0, isMobile = false }) {
   const pointsRef = useRef<THREE.Points>(null)
 
   // 生成星星的高清圆形贴图
@@ -31,14 +31,12 @@ function MilkyWay({ count = 80000, scrollProgress = 0 }) {
     const col = new Float32Array(count * 3)
     const branches = 5 
     const radius = 4000
-    const spin = 0.6 // 降低卷曲度使其更自然
 
     for (let i = 0; i < count; i++) {
-      // 🚀 核心改进：让最中心有 80 单位的空隙，防止初始视角过白
+      // 🚀 保持中心空隙
       const r = (Math.pow(Math.random(), 1.3) * radius) + 80 
       const branchAngle = ((i % branches) / branches) * Math.PI * 2
       
-      // 🚀 核心改进：非对称扰动。越往外星星越“乱跑”，打破几何对称感
       const randomnessPower = 3
       const randomX = Math.pow(Math.random(), randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * (r / 4)
       const randomY = Math.pow(Math.random(), randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * (r / 8)
@@ -48,15 +46,14 @@ function MilkyWay({ count = 80000, scrollProgress = 0 }) {
       pos[i * 3 + 1] = randomY
       pos[i * 3 + 2] = Math.sin(branchAngle + r * 0.0008) * r + randomZ
 
-      // 颜色过渡：深橙 -> 亮白 -> 幽蓝
       const color = new THREE.Color()
       const colorProgress = r / radius
       if (colorProgress < 0.15) {
-        color.setHSL(0.08, 0.7, 0.5) // 深暖色核心
+        color.setHSL(0.08, 0.7, 0.5)
       } else if (colorProgress < 0.5) {
-        color.setHSL(0.6, 0.3, 0.6)  // 蓝白中段
+        color.setHSL(0.6, 0.3, 0.6)
       } else {
-        color.setHSL(0.75, 0.4, 0.3) // 幽紫边缘
+        color.setHSL(0.75, 0.4, 0.3)
       }
       
       col[i * 3 + 0] = color.r
@@ -80,7 +77,8 @@ function MilkyWay({ count = 80000, scrollProgress = 0 }) {
         <bufferAttribute attach="attributes-color" args={[colors, 3]} />
       </bufferGeometry>
       <pointsMaterial
-        size={10}
+        // 🚀 性能优化：手机端粒子数量少了，稍微放大一点点体积填补空隙
+        size={isMobile ? 14 : 10} 
         map={starTexture}
         vertexColors
         transparent
@@ -106,15 +104,13 @@ function CameraController({ setProgress }: { setProgress: (p: number) => void })
       const p = window.scrollY / (scrollHeight || 1)
       const progress = Math.max(0, Math.min(1, p))
       
-      // 使用 requestAnimationFrame 优化渲染性能
       requestRef = requestAnimationFrame(() => {
         setProgress(progress)
-
-        // 🚀 核心改进：初始位置 (0, 120, 200)，避开发光死角
-        const ease = 1 - Math.pow(1 - progress, 2.5) // 更加顺滑的平移曲线
+        const ease = 1 - Math.pow(1 - progress, 2.5) 
         
+        // 🚀 配合 FOV 变大，稍微拉近一点初始物理距离（200 -> 180），让星系更有包裹感
         const currentY = 120 + ease * 2500
-        const currentZ = 200 + ease * 3500
+        const currentZ = 180 + ease * 3500 
         
         camera.position.set(0, currentY, currentZ)
         camera.lookAt(0, 0, 0)
@@ -138,27 +134,24 @@ function CameraController({ setProgress }: { setProgress: (p: number) => void })
 export function ScrollBackground() {
   const [progress, setProgress] = useState(0)
   const [mounted, setMounted] = useState(false)
-  
-  // 🚀 新增：用来存固定像素高度的状态，默认 100vh 兜底
   const [fixedHeight, setFixedHeight] = useState("100vh")
+  
+  // 🚀 新增：判断是否为移动端
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-    
-    // 记录初始宽度
     let lastWidth = window.innerWidth
 
-    // 🚀 核心逻辑：获取真实的像素高度并锁死
     const lockHeight = () => {
       setFixedHeight(`${window.innerHeight}px`)
+      // 🚀 初始化时判断是否为手机尺寸 (768px 以下算手机)
+      setIsMobile(window.innerWidth < 768)
     }
 
-    // 初始化执行一次
     lockHeight()
 
-    // 监听屏幕大小变化，但排除上下滑动导致的地址栏高度变化
     const handleResize = () => {
-      // 只有在屏幕宽度改变时才重新计算高度（比如横竖屏切换，或者PC端拉伸窗口）
       if (window.innerWidth !== lastWidth) {
         lastWidth = window.innerWidth
         setTimeout(lockHeight, 100)
@@ -172,18 +165,16 @@ export function ScrollBackground() {
   if (!mounted) return <div className="fixed inset-0 bg-[#020205] z-[-1]" />
 
   return (
-    // 🚀 关键修改：把 height 绑定为算出来的固定像素高度 fixedHeight
     <div 
       className="fixed z-[-1] overflow-hidden"
       style={{
         top: 0,
         left: 0,
         width: '100vw',
-        height: fixedHeight, // 此时它是个绝对值，例如 "844px"
+        height: fixedHeight, 
         backgroundColor: '#020205'
       }}
     >
-      {/* 🧠 动态毛玻璃 UI 保护层 */}
       <div 
         className="absolute inset-0 z-10 pointer-events-none transition-all duration-150 ease-linear"
         style={{
@@ -195,20 +186,23 @@ export function ScrollBackground() {
       />
       
       <Canvas
-        camera={{ position: [0, 120, 200], fov: 50, near: 1, far: 15000 }}
-        gl={{ antialias: true, alpha: false }}
+        // 🚀 性能优化与视角：FOV 加大到 75 度，更有深空广角感
+        camera={{ position: [0, 120, 180], fov: 75, near: 1, far: 15000 }}
+        // 🚀 性能大杀器：限制 DPR，关闭抗锯齿，开启高性能模式
+        dpr={[1, 1.5]} 
+        gl={{ antialias: false, alpha: false, powerPreference: "high-performance" }}
       >
         <color attach="background" args={["#010103"]} />
         <fog attach="fog" args={["#010103", 3000, 12000]} />
         
-        {/* 中心恒星：降低了光照强度，防止晃眼 */}
         <mesh position={[0, 0, 0]}>
           <sphereGeometry args={[1.2, 32, 32]} />
           <meshBasicMaterial color="#fff4e0" />
           <pointLight intensity={2.5} distance={800} decay={2} color="#ffccaa" />
         </mesh>
 
-        <MilkyWay count={90000} scrollProgress={progress} />
+        {/* 🚀 根据设备自适应星星数量：电脑 9万，手机 3.5万 */}
+        <MilkyWay count={isMobile ? 35000 : 90000} scrollProgress={progress} isMobile={isMobile} />
         <CameraController setProgress={setProgress} />
       </Canvas>
     </div>
