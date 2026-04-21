@@ -57,7 +57,7 @@ export default async function Home() {
         {!isCaptain && (
           <div className="mb-12 max-w-md mx-auto">
             <a 
-              href="/VX(1).jpg" 
+              href="/WeChat.png" 
               target="_blank" 
               rel="noopener noreferrer"
               className="group block bg-white/5 p-4 rounded-2xl border border-dashed border-white/20 transition-all duration-300 ease-in-out hover:scale-105 hover:border-white/40 animate-flame-hover"

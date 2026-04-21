@@ -134,7 +134,8 @@ export function ScrollBackground() {
   if (!mounted) return <div className="fixed inset-0 bg-[#020205] z-[-1]" />
 
   return (
-    <div className="fixed inset-0 z-[-1] bg-[#020205] overflow-hidden">
+    // 将 fixed inset-0 换成更稳固的写法
+<div className="fixed top-0 left-0 w-full h-[100dvh] z-[-1] bg-[#020205] overflow-hidden">
       {/* 🧠 动态毛玻璃 UI 保护层 
         - 初始状态：强模糊 + 深色遮罩，确保文字清晰
         - 滚动过程：模糊度线性消失，遮罩变透明
