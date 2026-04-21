@@ -134,8 +134,17 @@ export function ScrollBackground() {
   if (!mounted) return <div className="fixed inset-0 bg-[#020205] z-[-1]" />
 
   return (
-    // 将 fixed inset-0 换成更稳固的写法
-<div className="fixed top-0 left-0 w-full h-[100dvh] z-[-1] bg-[#020205] overflow-hidden">
+      // 🚀 关键修改：用 100vw 和 100dvh 钉死尺寸，脱离文档流的挤压
+      <div 
+      className="fixed z-[-1] overflow-hidden"
+      style={{
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100dvh', // 使用动态视口高度，防止地址栏伸缩引发重绘卡顿
+        backgroundColor: '#020205'
+      }}
+      >
       {/* 🧠 动态毛玻璃 UI 保护层 
         - 初始状态：强模糊 + 深色遮罩，确保文字清晰
         - 滚动过程：模糊度线性消失，遮罩变透明
