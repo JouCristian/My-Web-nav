@@ -5,20 +5,17 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import * as THREE from "three"
 
 // ==========================================
-// 🌌 真实感非对称银河系 (性能极致优化版)
+// 🌌 真实感非对称银河系 (极致优化版)
 // ==========================================
-// 🚀 1. 新增这个 Interface，告诉 TypeScript 这些参数都是什么类型
 interface MilkyWayProps {
   count?: number;
   scrollProgressRef: React.MutableRefObject<number>;
   isMobile?: boolean;
 }
 
-// 🚀 2. 在组件这里应用这个类型
 function MilkyWay({ count = 80000, scrollProgressRef, isMobile = false }: MilkyWayProps) {
   const pointsRef = useRef<THREE.Points>(null)
 
-  // 渲染星空贴图保持不变
   const starTexture = useMemo(() => {
     const canvas = document.createElement('canvas')
     canvas.width = 64; canvas.height = 64
@@ -26,8 +23,9 @@ function MilkyWay({ count = 80000, scrollProgressRef, isMobile = false }: MilkyW
     if (ctx) {
       const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32)
       grad.addColorStop(0, 'rgba(255,255,255,1)')
-      grad.addColorStop(0.2, 'rgba(255,240,200,0.8)')
-      grad.addColorStop(0.5, 'rgba(100,150,255,0.2)')
+      grad.addColorStop(0.2, 'rgba(255,230,180,0.9)') 
+      grad.addColorStop(0.4, 'rgba(130,170,255,0.4)') 
+      grad.addColorStop(0.7, 'rgba(180,100,255,0.1)') 
       grad.addColorStop(1, 'rgba(0,0,0,0)')
       ctx.fillStyle = grad; ctx.fillRect(0, 0, 64, 64)
     }
@@ -41,7 +39,7 @@ function MilkyWay({ count = 80000, scrollProgressRef, isMobile = false }: MilkyW
     const radius = 4000
 
     for (let i = 0; i < count; i++) {
-      const r = (Math.pow(Math.random(), 1.3) * radius) + 80 
+      const r = (Math.pow(Math.random(), 1.3) * radius) + 120 
       const branchAngle = ((i % branches) / branches) * Math.PI * 2
       
       const randomnessPower = 3
@@ -70,12 +68,9 @@ function MilkyWay({ count = 80000, scrollProgressRef, isMobile = false }: MilkyW
     return [pos, col]
   }, [count])
 
-  // 🚀 性能大杀器：使用 Lerp 阻尼缓冲，切断与原生滑动的硬绑定
   useFrame((state, delta) => {
     if (pointsRef.current) {
-      // 基础自转
       pointsRef.current.rotation.y -= delta * 0.015 
-      // 滚动带来的加速转动（加上平滑过渡）
       pointsRef.current.rotation.y -= delta * (scrollProgressRef.current * 0.04)
     }
   })
@@ -87,14 +82,12 @@ function MilkyWay({ count = 80000, scrollProgressRef, isMobile = false }: MilkyW
         <bufferAttribute attach="attributes-color" args={[colors, 3]} />
       </bufferGeometry>
       <pointsMaterial
-        // 🚀 救命神技 1：手机端疯狂缩小尺寸（5），电脑端保持 10。大幅削减 Overdraw 重绘率！
         size={isMobile ? 5 : 10} 
         map={starTexture}
         vertexColors
         transparent
-        // 🚀 救命神技 2：关闭深度测试，让 GPU 直接把图层糊上去，不测算前后遮挡关系
         depthWrite={false}
-        depthTest={false} 
+        depthTest={true} 
         blending={THREE.AdditiveBlending}
         sizeAttenuation
       />
@@ -103,24 +96,128 @@ function MilkyWay({ count = 80000, scrollProgressRef, isMobile = false }: MilkyW
 }
 
 // ==========================================
-// 🎥 镜头导演：丝滑阻尼版
+// 🌍 逼真地球 + 动态云层 + 阻尼消散大气层
+// ==========================================
+// 🚀 新增接口接收滚动进度
+interface RealisticEarthProps {
+  scrollProgressRef: React.MutableRefObject<number>;
+}
+
+function RealisticEarth({ scrollProgressRef }: RealisticEarthProps) {
+  const earthRef = useRef<THREE.Mesh>(null)
+  const cloudsRef = useRef<THREE.Mesh>(null)
+  const atmosphereRef = useRef<THREE.Mesh>(null)
+  
+  // 🚀 记录当前的透明度，用于插值追赶
+  const currentFade = useRef(1.0)
+
+  const [colorMap, normalMap, specularMap, cloudsMap] = useMemo(() => {
+    const loader = new THREE.TextureLoader()
+    loader.setCrossOrigin('anonymous')
+    return [
+      loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg'),
+      loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_normal_2048.jpg'),
+      loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg'),
+      loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png')
+    ]
+  }, [])
+
+  // 🚀 大气层着色器配置 (带透明度控制)
+  const atmosphereMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      // 🚀 声明统一变量 uFade
+      uniforms: {
+        uFade: { value: 1.0 }
+      },
+      vertexShader: `
+        varying vec3 vNormal;
+        void main() {
+          vNormal = normalize(normalMatrix * normal);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        // 🚀 接收从 JS 传来的褪色参数
+        uniform float uFade;
+        varying vec3 vNormal;
+        void main() {
+          float intensity = pow(max(0.0, 0.85 - dot(vNormal, vec3(0.0, 0.0, 1.0))), 2.0);
+          vec3 glowColor = vec3(0.4, 0.8, 1.0); 
+          // 🚀 乘以 uFade，使其随滚动消散
+          gl_FragColor = vec4(glowColor * intensity * 2.5 * uFade, 1.0);
+        }
+      `,
+      side: THREE.BackSide, 
+      blending: THREE.AdditiveBlending,
+      transparent: true,
+      depthWrite: false 
+    })
+  }, [])
+
+  useFrame((state, delta) => {
+    if (earthRef.current) earthRef.current.rotation.y += delta * 0.05
+    if (cloudsRef.current) {
+      cloudsRef.current.rotation.y += delta * 0.07
+      cloudsRef.current.rotation.z += delta * 0.01
+    }
+    if (atmosphereRef.current) atmosphereRef.current.rotation.y += delta * 0.05
+
+    // 🚀 核心逻辑：同步阻尼褪色效果
+    const progress = scrollProgressRef.current
+    // 使用和相机完全一样的非线性过渡曲线
+    const ease = 1 - Math.pow(1 - progress, 2.5) 
+    
+    // 目标透明度：未滚动时为 1，拉到最远时为 0
+    const targetFade = 1.0 - ease 
+
+    // 使用一模一样的 0.08 阻尼系数进行追赶
+    currentFade.current = THREE.MathUtils.lerp(currentFade.current, targetFade, 0.08)
+    
+    // 把插值后平滑的数据实时送到 Shader 里
+    atmosphereMaterial.uniforms.uFade.value = currentFade.current
+  })
+
+  return (
+    <group position={[0, 0, 0]}>
+      <mesh ref={earthRef}>
+        <sphereGeometry args={[25, 64, 64]} />
+        <meshPhongMaterial 
+          map={colorMap}
+          normalMap={normalMap}
+          specularMap={specularMap}
+          specular={new THREE.Color('grey')}
+          shininess={15}
+        />
+      </mesh>
+
+      <mesh ref={cloudsRef}>
+        <sphereGeometry args={[25.3, 64, 64]} />
+        <meshPhongMaterial map={cloudsMap} transparent opacity={0.8} blending={THREE.AdditiveBlending} depthWrite={false} />
+      </mesh>
+
+      <mesh ref={atmosphereRef}>
+        <sphereGeometry args={[28.5, 64, 64]} />
+        <primitive object={atmosphereMaterial} attach="material" />
+      </mesh>
+    </group>
+  )
+}
+
+// ==========================================
+// 🎥 镜头导演：阻尼滑动的相机控制
 // ==========================================
 function CameraController({ scrollProgressRef }: { scrollProgressRef: React.MutableRefObject<number> }) {
   const { camera } = useThree()
-  // 记录相机当前真实位置
   const currentZ = useRef(3500)
   const currentY = useRef(2620)
   
-  // 🚀 救命神技 3：将所有镜头运动放入 useFrame 内部，脱离 Scroll 事件的顿挫
   useFrame((state, delta) => {
     const progress = scrollProgressRef.current
     const ease = 1 - Math.pow(1 - progress, 2.5) 
     
-    // 计算目标位置
-    const targetY = 120 + ease * 2500
+    const targetY = 150 + ease * 2500
     const targetZ = 180 + ease * 3500 
 
-    // 使用 MathUtils.lerp 进行平滑阻尼插值 (0.05 是平滑度，数字越小越软)
     currentY.current = THREE.MathUtils.lerp(currentY.current, targetY, 0.08)
     currentZ.current = THREE.MathUtils.lerp(currentZ.current, targetZ, 0.08)
 
@@ -139,9 +236,7 @@ export function ScrollBackground() {
   const [fixedHeight, setFixedHeight] = useState("100vh")
   const [isMobile, setIsMobile] = useState(false)
   
-  // 🌟 使用 ref 存储滚动进度，因为 useState 会触发组件重新渲染，在滚动时极耗性能
   const scrollProgressRef = useRef(0)
-  // 用于更新 UI 毛玻璃的状态（只做轻量级更新）
   const [uiProgress, setUiProgress] = useState(0)
 
   useEffect(() => {
@@ -161,21 +256,18 @@ export function ScrollBackground() {
       }
     }
 
-    // 🌟 将滚动监听轻量化：只赋值 ref，不执行复杂的数学运算
     const handleScroll = () => {
       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
       const p = window.scrollY / (scrollHeight || 1)
       const progress = Math.max(0, Math.min(1, p))
       
       scrollProgressRef.current = progress
-      // 节流一下 UI 更新，防止毛玻璃重绘卡顿
       requestAnimationFrame(() => setUiProgress(progress))
     }
 
     window.addEventListener("resize", handleResize)
     window.addEventListener("scroll", handleScroll, { passive: true })
     
-    // 初始化执行一次
     handleScroll()
     
     return () => {
@@ -208,23 +300,22 @@ export function ScrollBackground() {
       />
       
       <Canvas
-        camera={{ position: [0, 120, 180], fov: 75, near: 1, far: 15000 }}
-        // 🚀 救命神技 4：手机端强制 DPR 为 1，电脑端最高 1.5。绝对禁止 3x 高分屏带来的负荷
+        camera={{ position: [0, 150, 180], fov: 75, near: 1, far: 15000 }}
         dpr={isMobile ? 1 : [1, 1.5]} 
         gl={{ antialias: false, alpha: false, powerPreference: "high-performance" }}
       >
         <color attach="background" args={["#010103"]} />
         <fog attach="fog" args={["#010103", 3000, 12000]} />
         
-        <mesh position={[0, 0, 0]}>
-          <sphereGeometry args={[1.2, 32, 32]} />
-          <meshBasicMaterial color="#fff4e0" />
-          <pointLight intensity={2.5} distance={800} decay={2} color="#ffccaa" />
-        </mesh>
+        <ambientLight intensity={0.4} color="#ffffff" />
+        <directionalLight position={[100, 50, 50]} intensity={2.5} color="#fffcf2" />
+        <pointLight position={[-100, -50, -50]} intensity={1} color="#4b86ff" />
 
-        {/* 🚀 救命神技 5：手机端星空数量降至 15000，配合小 size 打造“星沙”质感 */}
+        {/* 🚀 传入滚动状态给地球组件 */}
+        <RealisticEarth scrollProgressRef={scrollProgressRef} />
+
         <MilkyWay 
-          count={isMobile ? 70000 : 90000} 
+          count={isMobile ? 15000 : 90000} 
           scrollProgressRef={scrollProgressRef} 
           isMobile={isMobile} 
         />
