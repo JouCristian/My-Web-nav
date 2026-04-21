@@ -5,12 +5,20 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import * as THREE from "three"
 
 // ==========================================
-// 🌌 真实感非对称银河系
+// 🌌 真实感非对称银河系 (性能极致优化版)
 // ==========================================
-function MilkyWay({ count = 80000, scrollProgress = 0, isMobile = false }) {
+// 🚀 1. 新增这个 Interface，告诉 TypeScript 这些参数都是什么类型
+interface MilkyWayProps {
+  count?: number;
+  scrollProgressRef: React.MutableRefObject<number>;
+  isMobile?: boolean;
+}
+
+// 🚀 2. 在组件这里应用这个类型
+function MilkyWay({ count = 80000, scrollProgressRef, isMobile = false }: MilkyWayProps) {
   const pointsRef = useRef<THREE.Points>(null)
 
-  // 生成星星的高清圆形贴图
+  // 渲染星空贴图保持不变
   const starTexture = useMemo(() => {
     const canvas = document.createElement('canvas')
     canvas.width = 64; canvas.height = 64
@@ -33,7 +41,6 @@ function MilkyWay({ count = 80000, scrollProgress = 0, isMobile = false }) {
     const radius = 4000
 
     for (let i = 0; i < count; i++) {
-      // 🚀 保持中心空隙
       const r = (Math.pow(Math.random(), 1.3) * radius) + 80 
       const branchAngle = ((i % branches) / branches) * Math.PI * 2
       
@@ -63,10 +70,13 @@ function MilkyWay({ count = 80000, scrollProgress = 0, isMobile = false }) {
     return [pos, col]
   }, [count])
 
-  // 缓慢的基础旋转
+  // 🚀 性能大杀器：使用 Lerp 阻尼缓冲，切断与原生滑动的硬绑定
   useFrame((state, delta) => {
     if (pointsRef.current) {
-      pointsRef.current.rotation.y -= delta * (0.015 + scrollProgress * 0.04)
+      // 基础自转
+      pointsRef.current.rotation.y -= delta * 0.015 
+      // 滚动带来的加速转动（加上平滑过渡）
+      pointsRef.current.rotation.y -= delta * (scrollProgressRef.current * 0.04)
     }
   })
 
@@ -77,12 +87,14 @@ function MilkyWay({ count = 80000, scrollProgress = 0, isMobile = false }) {
         <bufferAttribute attach="attributes-color" args={[colors, 3]} />
       </bufferGeometry>
       <pointsMaterial
-        // 🚀 性能优化：手机端粒子数量少了，稍微放大一点点体积填补空隙
-        size={isMobile ? 14 : 10} 
+        // 🚀 救命神技 1：手机端疯狂缩小尺寸（5），电脑端保持 10。大幅削减 Overdraw 重绘率！
+        size={isMobile ? 5 : 10} 
         map={starTexture}
         vertexColors
         transparent
+        // 🚀 救命神技 2：关闭深度测试，让 GPU 直接把图层糊上去，不测算前后遮挡关系
         depthWrite={false}
+        depthTest={false} 
         blending={THREE.AdditiveBlending}
         sizeAttenuation
       />
@@ -91,39 +103,30 @@ function MilkyWay({ count = 80000, scrollProgress = 0, isMobile = false }) {
 }
 
 // ==========================================
-// 🎥 镜头导演：由近及远
+// 🎥 镜头导演：丝滑阻尼版
 // ==========================================
-function CameraController({ setProgress }: { setProgress: (p: number) => void }) {
+function CameraController({ scrollProgressRef }: { scrollProgressRef: React.MutableRefObject<number> }) {
   const { camera } = useThree()
+  // 记录相机当前真实位置
+  const currentZ = useRef(3500)
+  const currentY = useRef(2620)
   
-  useEffect(() => {
-    let requestRef: number;
-
-    const handleScroll = () => {
-      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
-      const p = window.scrollY / (scrollHeight || 1)
-      const progress = Math.max(0, Math.min(1, p))
-      
-      requestRef = requestAnimationFrame(() => {
-        setProgress(progress)
-        const ease = 1 - Math.pow(1 - progress, 2.5) 
-        
-        // 🚀 配合 FOV 变大，稍微拉近一点初始物理距离（200 -> 180），让星系更有包裹感
-        const currentY = 120 + ease * 2500
-        const currentZ = 180 + ease * 3500 
-        
-        camera.position.set(0, currentY, currentZ)
-        camera.lookAt(0, 0, 0)
-      })
-    }
+  // 🚀 救命神技 3：将所有镜头运动放入 useFrame 内部，脱离 Scroll 事件的顿挫
+  useFrame((state, delta) => {
+    const progress = scrollProgressRef.current
+    const ease = 1 - Math.pow(1 - progress, 2.5) 
     
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    handleScroll()
-    return () => {
-      window.removeEventListener("scroll", handleScroll)
-      cancelAnimationFrame(requestRef)
-    }
-  }, [camera, setProgress])
+    // 计算目标位置
+    const targetY = 120 + ease * 2500
+    const targetZ = 180 + ease * 3500 
+
+    // 使用 MathUtils.lerp 进行平滑阻尼插值 (0.05 是平滑度，数字越小越软)
+    currentY.current = THREE.MathUtils.lerp(currentY.current, targetY, 0.08)
+    currentZ.current = THREE.MathUtils.lerp(currentZ.current, targetZ, 0.08)
+
+    camera.position.set(0, currentY.current, currentZ.current)
+    camera.lookAt(0, 0, 0)
+  })
 
   return null
 }
@@ -132,12 +135,14 @@ function CameraController({ setProgress }: { setProgress: (p: number) => void })
 // 🚀 主画布组件
 // ==========================================
 export function ScrollBackground() {
-  const [progress, setProgress] = useState(0)
   const [mounted, setMounted] = useState(false)
   const [fixedHeight, setFixedHeight] = useState("100vh")
-  
-  // 🚀 新增：判断是否为移动端
   const [isMobile, setIsMobile] = useState(false)
+  
+  // 🌟 使用 ref 存储滚动进度，因为 useState 会触发组件重新渲染，在滚动时极耗性能
+  const scrollProgressRef = useRef(0)
+  // 用于更新 UI 毛玻璃的状态（只做轻量级更新）
+  const [uiProgress, setUiProgress] = useState(0)
 
   useEffect(() => {
     setMounted(true)
@@ -145,10 +150,8 @@ export function ScrollBackground() {
 
     const lockHeight = () => {
       setFixedHeight(`${window.innerHeight}px`)
-      // 🚀 初始化时判断是否为手机尺寸 (768px 以下算手机)
       setIsMobile(window.innerWidth < 768)
     }
-
     lockHeight()
 
     const handleResize = () => {
@@ -158,8 +161,27 @@ export function ScrollBackground() {
       }
     }
 
+    // 🌟 将滚动监听轻量化：只赋值 ref，不执行复杂的数学运算
+    const handleScroll = () => {
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
+      const p = window.scrollY / (scrollHeight || 1)
+      const progress = Math.max(0, Math.min(1, p))
+      
+      scrollProgressRef.current = progress
+      // 节流一下 UI 更新，防止毛玻璃重绘卡顿
+      requestAnimationFrame(() => setUiProgress(progress))
+    }
+
     window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    
+    // 初始化执行一次
+    handleScroll()
+    
+    return () => {
+      window.removeEventListener("resize", handleResize)
+      window.removeEventListener("scroll", handleScroll)
+    }
   }, [])
 
   if (!mounted) return <div className="fixed inset-0 bg-[#020205] z-[-1]" />
@@ -178,18 +200,17 @@ export function ScrollBackground() {
       <div 
         className="absolute inset-0 z-10 pointer-events-none transition-all duration-150 ease-linear"
         style={{
-          backdropFilter: `blur(${Math.max(0, 8 * (1 - progress * 4))}px)`,
+          backdropFilter: `blur(${Math.max(0, 8 * (1 - uiProgress * 4))}px)`,
           background: `radial-gradient(circle at center, 
-            rgba(2, 2, 5, ${0.3 * (1 - progress)}) 0%, 
-            rgba(2, 2, 5, ${0.7 + progress * 0.3}) 100%)`
+            rgba(2, 2, 5, ${0.3 * (1 - uiProgress)}) 0%, 
+            rgba(2, 2, 5, ${0.7 + uiProgress * 0.3}) 100%)`
         }}
       />
       
       <Canvas
-        // 🚀 性能优化与视角：FOV 加大到 75 度，更有深空广角感
         camera={{ position: [0, 120, 180], fov: 75, near: 1, far: 15000 }}
-        // 🚀 性能大杀器：限制 DPR，关闭抗锯齿，开启高性能模式
-        dpr={[1, 1.5]} 
+        // 🚀 救命神技 4：手机端强制 DPR 为 1，电脑端最高 1.5。绝对禁止 3x 高分屏带来的负荷
+        dpr={isMobile ? 1 : [1, 1.5]} 
         gl={{ antialias: false, alpha: false, powerPreference: "high-performance" }}
       >
         <color attach="background" args={["#010103"]} />
@@ -201,9 +222,13 @@ export function ScrollBackground() {
           <pointLight intensity={2.5} distance={800} decay={2} color="#ffccaa" />
         </mesh>
 
-        {/* 🚀 根据设备自适应星星数量：电脑 9万，手机 3.5万 */}
-        <MilkyWay count={isMobile ? 35000 : 90000} scrollProgress={progress} isMobile={isMobile} />
-        <CameraController setProgress={setProgress} />
+        {/* 🚀 救命神技 5：手机端星空数量降至 15000，配合小 size 打造“星沙”质感 */}
+        <MilkyWay 
+          count={isMobile ? 15000 : 90000} 
+          scrollProgressRef={scrollProgressRef} 
+          isMobile={isMobile} 
+        />
+        <CameraController scrollProgressRef={scrollProgressRef} />
       </Canvas>
     </div>
   )
