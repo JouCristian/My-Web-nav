@@ -35,7 +35,7 @@ export default async function Home() {
             </form>
           ) : (
             <form action={async () => { "use server"; await signIn("github"); }}>
-              <button className="group flex items-center gap-2 bg-white/5 px-6 py-2 rounded-2xl border border-white/10 transition-all duration-300 ease-in-out hover:scale-105 hover:border-white/20 animate-flame-hover">
+              <button className="group flex items-center gap-2 bg-white/5 px-6 py-2 rounded-2xl border border-white/10 animate-flame-hover">
                 <span className="text-blue-400 animate-pulse">●</span>
                 <span className="text-sm font-medium text-zinc-300 group-hover:text-white">舰长登录</span>
               </button>
@@ -43,7 +43,10 @@ export default async function Home() {
           )}
         </div>
 
-        <h1 className="text-4xl font-bold mb-4 tracking-widest italic">我的星际导航站</h1>
+                {/* 🚀 使用 font-[family-name:var(--font-space)] 调用新字体，去掉斜体，增加字间距和发光效果 */}
+        <h1 className="text-4xl font-bold mb-4 tracking-[0.2em] font-[family-name:var(--font-space)] text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-200 to-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+          我的星际导航站
+        </h1>
         
         <p className="text-zinc-500 mb-10">
           {isCaptain ? (
@@ -56,12 +59,12 @@ export default async function Home() {
         {/* 🚀 非舰长模式显示的“联络舰长”卡片 */}
         {!isCaptain && (
           <div className="mb-12 max-w-md mx-auto">
-            <a 
-              href="/WeChat.png" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="group block bg-white/5 p-4 rounded-2xl border border-dashed border-white/20 transition-all duration-300 ease-in-out hover:scale-105 hover:border-white/40 animate-flame-hover"
-            >
+              <a 
+                href="/WeChat.png" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group block bg-white/5 p-4 rounded-2xl border border-dashed border-white/20 animate-flame-hover"
+              >
               <div className="flex items-center justify-center gap-4">
                 
                 {/* 🎨 极简二维码图标 */}
