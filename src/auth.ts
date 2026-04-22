@@ -2,20 +2,26 @@
 import NextAuth from "next-auth"
 import GitHub from "next-auth/providers/github"
 import { PrismaAdapter } from "@auth/prisma-adapter"
-import { prisma } from "@/lib/db" //
+import { prisma } from "@/lib/db"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
-  providers: [GitHub],
+  providers: [
+    GitHub({
+      // 🚀 核心修改：强制每次都要求同意授权，打断 GitHub 的自动放行
+      authorization: {
+        params: { prompt: "consent" },
+      },
+    }),
+  ],
   pages: {
-    signIn: '/login', // 🚀 所有的登录请求都会被重定向到我们自定义的登录页
+    signIn: '/login', 
   },
   callbacks: {
     async session({ session, user }) {
       if (session.user) {
-        // @ts-ignore 将数据库中的 ID 存入 Session
+        // @ts-ignore
         session.user.id = user.id;
-        // 🔒 定义真正的“舰长”权限：只有该邮箱登录，isCaptain 才会为真
         // @ts-ignore
         session.user.isCaptain = user.email === "zoujunyi869@gmail.com";
       }
