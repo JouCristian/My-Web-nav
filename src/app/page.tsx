@@ -24,7 +24,8 @@ export default async function Home() {
     <main className="min-h-screen bg-transparent px-4 sm:px-6 lg:px-10 pt-28 sm:pt-32 pb-10 text-white">
       {/* 🚀 统一顶部 HUD：左侧时空切换（由 ScrollBackground 通过 portal 注入 #hud-left-slot），右侧舰长登录 */}
       <header
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-10 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4 pointer-events-none"
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-10 pb-4 pointer-events-none"
+        style={{ paddingTop: "max(1.25rem, env(safe-area-inset-top))" }}
       >
         {/* 左侧插槽：ScrollBackground 会把时空切换按钮 portal 到这里 */}
         <div id="hud-left-slot" className="flex-shrink-0 pointer-events-auto" />

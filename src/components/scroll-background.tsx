@@ -211,25 +211,9 @@ export function ScrollBackground() {
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
   const scrollProgressRef = useRef(0)
 
-  // 🚀 专门查找 #hud-left-slot 的 effect：用 rAF 轮询，确保 header DOM 挂载后能拿到容器
+  // 🚀 查找 #hud-left-slot：header 是 SSR 输出的静态 HTML，首次 effect 即可稳定拿到
   useEffect(() => {
-    let rafId = 0
-    let attempts = 0
-    const findSlot = () => {
-      const el = document.getElementById("hud-left-slot")
-      if (el) {
-        setPortalContainer(el)
-        return
-      }
-      // 最多等 60 帧（约 1 秒），足以覆盖任何 hydration 时序
-      if (attempts++ < 60) {
-        rafId = requestAnimationFrame(findSlot)
-      }
-    }
-    findSlot()
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId)
-    }
+    setPortalContainer(document.getElementById("hud-left-slot"))
   }, [])
 
   useEffect(() => {
