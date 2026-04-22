@@ -2,6 +2,7 @@ import { NavigationCard } from "@/components/navigation-card"
 import { AddCardForm } from "@/components/add-card-form"
 import { prisma } from "@/lib/db"
 import { auth, signIn, signOut } from "@/auth" // 🚀 引入安检函数
+import Link from "next/link"
 
 // 1. 定义书签的“结构体” (Interface)
 interface Bookmark {
@@ -83,17 +84,13 @@ export default async function Home() {
         {/* 🚀 非舰长模式显示的“联络舰长”卡片 */}
         {!isCaptain && (
           <div className="mb-12 max-w-md mx-auto">
-              <a 
-                href="/WeChat.png" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="group block bg-black/25 p-4 rounded-2xl border border-dashed border-white/20 animate-flame-hover"
-              >
+            {/* 把 <a> 换成了 <Link>，并指向 /contact 路由 */}
+            <Link 
+              href="/contact" 
+              className="group block bg-black/25 p-4 rounded-2xl border border-dashed border-white/20 animate-flame-hover hover:border-white/40 transition-all"
+            >
               <div className="flex items-center justify-center gap-4">
-                
-                {/* 极简二维码图标 - 添加旋转和脉冲效果 */}
                 <div className="relative">
-                  {/* 脉冲光圈效果 */}
                   <div className="absolute inset-0 rounded-xl bg-white/10 animate-ping opacity-30" />
                   <div className="relative bg-white/5 p-3 rounded-xl border border-white/10 text-zinc-400 group-hover:bg-white group-hover:text-black group-hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] group-hover:rotate-3 transition-all duration-300">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -101,20 +98,16 @@ export default async function Home() {
                       <rect x="14" y="3" width="7" height="7" rx="1.5" />
                       <rect x="14" y="14" width="7" height="7" rx="1.5" />
                       <rect x="3" y="14" width="7" height="7" rx="1.5" />
-                      <path d="M7 7h.01" />
-                      <path d="M18 7h.01" />
-                      <path d="M18 18h.01" />
-                      <path d="M7 18h.01" />
+                      <path d="M7 7h.01" /><path d="M18 7h.01" /><path d="M18 18h.01" /><path d="M7 18h.01" />
                     </svg>
                   </div>
                 </div>
-                
                 <div className="text-left">
                   <h4 className="text-sm font-semibold text-white transition-colors group-hover:text-white">联系 JouCristian</h4>
                   <p className="text-xs text-zinc-500 transition-colors group-hover:text-zinc-300">点击获取舰长的星际通讯码 (WeChat)</p>
                 </div>
               </div>
-            </a>
+            </Link>
           </div>
         )}
         

@@ -58,6 +58,12 @@ body {
     animation: flame-pulse-white 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
+    /* 新增：常亮呼吸灯类名 */
+  .animate-flame-active {
+    /* 2秒一个循环，无限重复 */
+    animation: flame-pulse-white 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
   /* 卡片渐入动画 */
   @keyframes fade-in-up {
     0% {
@@ -73,5 +79,13 @@ body {
   .animate-fade-in-up {
     animation: fade-in-up 0.5s ease-out forwards;
     opacity: 0;
+  }
+
+  /* 二维码扫描线动画 */
+  @keyframes scan {
+    0% { top: 0%; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
   }
 }
