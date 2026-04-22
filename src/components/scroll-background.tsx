@@ -287,7 +287,18 @@ export function ScrollBackground() {
 
     const lockHeight = () => {
       setFixedHeight(`${window.innerHeight}px`)
-      setIsMobile(window.innerWidth < 1024)
+      
+      // 1. 判断屏幕是否小于等于 1366px (包含所有手机、平板以及 12.9寸 iPad Pro 横屏)
+      const isSmallScreen = window.innerWidth <= 1366;
+      
+      // 2. 判断设备是否有触摸屏 (笔记本电脑通常没有，以此来区分大屏平板和小屏电脑)
+      const isTouchDevice = (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || 'ontouchstart' in window;
+      
+      // 3. 苹果专属补丁：现在的 iPad 会把自己伪装成 Mac，但 Mac 没有触摸屏，如果有触摸屏的 Mac，那就是 iPad！
+      const isMacPad = /Macintosh/i.test(navigator.userAgent) && isTouchDevice;
+
+      // 最终判定：如果是小屏设备且是触摸屏，或者强行抓到了 iPad，就进入手机端降级模式
+      setIsMobile((isSmallScreen && isTouchDevice) || isMacPad);
     }
     lockHeight()
 
