@@ -48,7 +48,7 @@ export function AddCardForm() {
       
       <form 
           action={handleSubmit} 
-          className="bg-white/5 p-6 rounded-3xl border border-white/10 flex flex-col gap-4 animate-flame-hover"
+          className="bg-black/25 p-6 rounded-3xl border border-white/10 flex flex-col gap-4 animate-flame-hover"
         >
       <div className="flex flex-col sm:flex-row gap-2">
         <input 

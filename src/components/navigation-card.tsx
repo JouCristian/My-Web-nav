@@ -52,7 +52,7 @@ export function NavigationCard({ id, title, description, url, showDelete }: Navi
         href={url} 
         target="_blank" 
         rel="noopener noreferrer"
-        className="block h-full bg-white/5 p-5 rounded-3xl border border-white/10 transition-all duration-200 group-hover:border-white/20 active:scale-[0.98] overflow-hidden"
+        className="block h-full bg-black/25 p-5 rounded-3xl border border-white/10 transition-all duration-200 group-hover:border-white/20 active:scale-[0.98] overflow-hidden"
       >
         <div className="flex flex-col h-full">
           <div className="flex items-start justify-between mb-3 gap-3">
@@ -72,11 +72,11 @@ export function NavigationCard({ id, title, description, url, showDelete }: Navi
             </span>
           </div>
 
-          <p className="text-zinc-400 text-sm line-clamp-2 leading-relaxed flex-1">
+          <p className="text-zinc-300 text-sm line-clamp-2 leading-relaxed flex-1">
             {description}
           </p>
           
-          <div className="mt-4 text-[10px] text-zinc-600 font-mono tracking-wider uppercase group-hover:text-zinc-400 transition-colors">
+          <div className="mt-4 text-[10px] text-zinc-650 font-mono tracking-wider uppercase group-hover:text-zinc-50 transition-colors">
             {getDomain(url)}
           </div>
         </div>

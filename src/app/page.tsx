@@ -65,7 +65,7 @@ export default async function Home() {
                 href="/WeChat.png" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="group block bg-white/5 p-4 rounded-2xl border border-dashed border-white/20 animate-flame-hover"
+                className="group block bg-black/25 p-4 rounded-2xl border border-dashed border-white/20 animate-flame-hover"
               >
               <div className="flex items-center justify-center gap-4">
                 

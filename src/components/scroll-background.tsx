@@ -4,6 +4,15 @@ import React, { useEffect, useMemo, useRef, useState } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import * as THREE from "three"
 
+// 1. 将噪点样式提取到组件外部，避免 React 每次滚动重新渲染时创建新对象
+const NOISE_STYLE: React.CSSProperties = {
+  // 使用 Base64 内联 SVG：彻底干掉网络请求，做到随页面瞬间加载
+  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+  filter: 'contrast(150%) brightness(100%)',
+  // 开启 GPU 硬件加速，防止滚动时引发整个页面的重绘 (Repaint)
+  transform: 'translateZ(0)',
+};
+
 // ==========================================
 // 🌌 真实感非对称银河系 (极致优化版)
 // ==========================================
@@ -133,8 +142,8 @@ function RealisticEarth({ scrollProgressRef }: RealisticEarthProps) {
         varying vec3 vNormal;
         void main() {
           float intensity = pow(max(0.0, 0.85 - dot(vNormal, vec3(0.0, 0.0, 1.0))), 2.0);
-          vec3 glowColor = vec3(0.4, 0.8, 1.0); 
-          gl_FragColor = vec4(glowColor * intensity * 2.5 * uFade, 1.0);
+          vec3 glowColor = vec3(1.0, 1.0, 1.0); 
+          gl_FragColor = vec4(glowColor * intensity * 1.5 * uFade, 1.0);
         }
       `,
       side: THREE.BackSide, 
@@ -185,26 +194,79 @@ function RealisticEarth({ scrollProgressRef }: RealisticEarthProps) {
 }
 
 // ==========================================
-// 🎥 镜头导演：阻尼滑动的相机控制
+// 🎥 镜头导演：多重关键帧 + 阻尼滑动的相机控制
 // ==========================================
 function CameraController({ scrollProgressRef }: { scrollProgressRef: React.MutableRefObject<number> }) {
   const { camera } = useThree()
-  const currentZ = useRef(3500)
-  const currentY = useRef(2620)
   
+  // 使用 useRef 存储当前的相机位置和观测点，用于计算阻尼缓冲
+  const currentPos = useRef(new THREE.Vector3(0, 150, 3500))
+  const currentLookAt = useRef(new THREE.Vector3(0, 0, 0))
+
+  // 🎬 定义镜头关键帧剧本 (可自由增删修改)
+  const keyframes = useMemo(() => [
+    { 
+      progress: 0.0, // 滚动 0%
+      pos: new THREE.Vector3(0, 150, 3500),   // 远景平视，看全貌
+      lookAt: new THREE.Vector3(0, 0, 0) 
+    },
+    { 
+      progress: 0.35, // 滚动 35%
+      pos: new THREE.Vector3(1200, 300, 1800), // 侧推：向右侧拉近，带一点点高度
+      lookAt: new THREE.Vector3(0, 0, 0)       // 依然死死盯住地球
+    },
+    { 
+      progress: 0.65, // 滚动 65%
+      pos: new THREE.Vector3(-600, 1200, 800), // 越过头顶：向左上方拉起
+      lookAt: new THREE.Vector3(0, 50, -200)   // 视线稍微往地球后方（银河深处）看
+    },
+    { 
+      progress: 1.0, // 滚动 100%
+      pos: new THREE.Vector3(0, 2000, 1700),    // 上帝视角：正上方俯视
+      lookAt: new THREE.Vector3(0, 0, 0) 
+    }
+  ], [])
+
   useFrame((state, delta) => {
     const progress = scrollProgressRef.current
-    const ease = 1 - Math.pow(1 - progress, 3.0) 
+
+    // 1. 🔍 寻找当前滚动进度所处的“关键帧区间”
+    let startIndex = 0
+    for (let i = 0; i < keyframes.length - 1; i++) {
+      if (progress >= keyframes[i].progress) {
+        startIndex = i
+      }
+    }
+    const endIndex = Math.min(startIndex + 1, keyframes.length - 1)
     
-    const targetY = 150 + ease * 1500
-    const targetZ = 180 + ease * 2000 
+    const startFrame = keyframes[startIndex]
+    const endFrame = keyframes[endIndex]
 
-    currentY.current = THREE.MathUtils.lerp(currentY.current, targetY, 0.09)
-    currentZ.current = THREE.MathUtils.lerp(currentZ.current, targetZ, 0.09)
+    // 2. 🧮 计算在这个局部区间内的进度百分比 (0 ~ 1)
+    let localProgress = 0
+    if (endFrame.progress > startFrame.progress) {
+      localProgress = (progress - startFrame.progress) / (endFrame.progress - startFrame.progress)
+    }
 
-    camera.position.set(0, currentY.current, currentZ.current)
-    camera.lookAt(0, 0, 0)
+    // （可选）给局部进度加一个缓动曲线，让分段的衔接更自然
+    const easeProgress = localProgress < 0.5 
+      ? 2 * localProgress * localProgress 
+      : 1 - Math.pow(-2 * localProgress + 2, 2) / 2
+
+    // 3. 🎯 计算当前这一帧“应该到达”的目标位置和目标观测点
+    const targetPos = new THREE.Vector3().lerpVectors(startFrame.pos, endFrame.pos, Math.max(0, Math.min(1, easeProgress)))
+    const targetLookAt = new THREE.Vector3().lerpVectors(startFrame.lookAt, endFrame.lookAt, Math.max(0, Math.min(1, easeProgress)))
+
+    // 4. 🪶 应用阻尼 (Damping)，让相机像有惯性一样平滑跟随目标
+    // 0.05 是阻尼系数，值越小相机感觉越重、越平滑；值越大跟随越紧密
+    currentPos.current.lerp(targetPos, 0.05)
+    currentLookAt.current.lerp(targetLookAt, 0.05)
+
+    // 5. 📷 赋予相机最终状态
+    camera.position.copy(currentPos.current)
+    camera.lookAt(currentLookAt.current)
   })
+
   return null
 }
 
@@ -273,20 +335,17 @@ export function ScrollBackground() {
         <div 
         className="absolute inset-0 z-10 pointer-events-none transition-all duration-150 ease-linear"
         style={{
-          backdropFilter: `blur(${Math.max(0, 8 * (1 - uiProgress * 4))}px)`,
+          backdropFilter: `blur(${Math.max(0, 7 * (1 - uiProgress * 4))}px)`,
           background: `radial-gradient(circle at center, 
             rgba(2, 2, 5, ${0.3 * (1 - uiProgress)}) 0%, 
             rgba(2, 2, 5, ${0.7 + uiProgress * 0.3}) 100%)`
         }}
       />
 
-      {/* 🚀 高级感噪点层 (Film Grain) */}
+      {/* 🚀 高级感噪点层 (性能优化版) */}
       <div 
-        className="absolute inset-0 z-20 pointer-events-none opacity-[0.03] mix-blend-overlay"
-        style={{
-          backgroundImage: `url('https://grainy-gradients.vercel.app/noise.svg')`,
-          filter: 'contrast(150%) brightness(100%)'
-        }}
+          className="absolute inset-0 z-20 pointer-events-none opacity-[0.03] mix-blend-overlay"
+          style={NOISE_STYLE}
       />
       
       <Canvas
