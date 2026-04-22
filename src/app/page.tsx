@@ -120,7 +120,7 @@ export default async function Home() {
 
         {/* 🚀 修改点：超级底部空间 (Deep Space) */}
         {/* h-[100vh] 代表整整一屏的高度，让页面极具延伸感 */}
-        <div className="mt-32 h-[100vh] flex flex-col items-center justify-end pb-20 opacity-20 pointer-events-none">
+        <div className="mt-32 h-[200vh] flex flex-col items-center justify-end pb-20 opacity-20 pointer-events-none">
           <div className="flex flex-col items-center gap-6">
             <p className="text-[10px] tracking-[0.8em] uppercase text-zinc-400">Deep Space Exploration</p>
             {/* 增长的引力线 */}
