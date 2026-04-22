@@ -204,10 +204,33 @@ export function ScrollBackground() {
   const [fixedHeight, setFixedHeight] = useState("100vh")
   const [isMobile, setIsMobile] = useState(false)
   const [uiProgress, setUiProgress] = useState(0)
-  
+
   // 🚀 新增：控制当前剧本状态
   const [scriptIndex, setScriptIndex] = useState(0)
+  // 🚀 portal 容器引用（用 state 保存，避免 render 阶段读 DOM 的竞态问题）
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
   const scrollProgressRef = useRef(0)
+
+  // 🚀 专门查找 #hud-left-slot 的 effect：用 rAF 轮询，确保 header DOM 挂载后能拿到容器
+  useEffect(() => {
+    let rafId = 0
+    let attempts = 0
+    const findSlot = () => {
+      const el = document.getElementById("hud-left-slot")
+      if (el) {
+        setPortalContainer(el)
+        return
+      }
+      // 最多等 60 帧（约 1 秒），足以覆盖任何 hydration 时序
+      if (attempts++ < 60) {
+        rafId = requestAnimationFrame(findSlot)
+      }
+    }
+    findSlot()
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId)
+    }
+  }, [])
 
   useEffect(() => {
     setMounted(true)
@@ -250,7 +273,7 @@ export function ScrollBackground() {
   return (
     <>
       {/* 🚀 时空切换按钮 portal 到 page.tsx 的顶部 HUD 左插槽 (#hud-left-slot)，由 header 统一负责定位 */}
-      {typeof document !== "undefined" && document.getElementById("hud-left-slot") &&
+      {portalContainer &&
         createPortal(
           <button
             onClick={() => setScriptIndex((prev) => (prev + 1) % SCRIPTS.length)}
@@ -275,7 +298,7 @@ export function ScrollBackground() {
               {SCRIPT_NAMES[scriptIndex]}
             </span>
           </button>,
-          document.getElementById("hud-left-slot")!
+          portalContainer
         )}
 
       {/* 3D 背景层 */}
