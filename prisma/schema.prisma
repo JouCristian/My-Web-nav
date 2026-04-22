@@ -2,17 +2,79 @@
 
 datasource db {
   provider = "postgresql"
-  // 删掉了 url 和 directUrl，因为 Prisma 7 不让在这里写了
+  // 🚀 这里现在必须是空的，不能有 url 和 directUrl
 }
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
+
+// ==========================================
+// 🛡️ 核心：Auth.js (NextAuth) 标准用户模型
+// ==========================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  
+  // 🚀 自定义扩展字段
+  nickname      String?   // 自定义昵称
+  customAvatar  String?   // 自定义头像 URL
+  role          String    @default("USER") // 预留角色字段
+
+  accounts      Account[]
+  sessions      Session[]
+  // 关联书签（如果后续想让不同用户拥有不同书签，可以开启此关联）
+  // bookmarks     Bookmark[] 
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ==========================================
+// 🔖 导航卡片模型 (保留并优化)
+// ==========================================
 
 model Bookmark {
   id          Int      @id @default(autoincrement())
   name        String
   url         String
-  description String
+  description String?  // 修改为可选，因为 actions.ts 中有清洗逻辑
   createdAt   DateTime @default(now())
 }

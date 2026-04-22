@@ -1,14 +1,10 @@
 @import "tailwindcss";
 
-/* :root {
-  --background: #ffffff;
-  --foreground: #171717;
-} */
-
+/* 🚀 这里的变量保持您的原始配置 */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-space), var(--font-geist-sans); /* 🚀 优先使用 Space Grotesk */
+  --font-sans: var(--font-space), var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -19,7 +15,7 @@
   }
 }
 
-/* 1. 把最底层的画板涂黑，这样即使手机上下回弹，露出的也是黑底而不是白条 */
+/* 1. 核心底层背景，确保极致深邃 */
 html {
   background-color: #020205 !important; 
 }
@@ -27,55 +23,77 @@ html {
 body {
   margin: 0;
   padding: 0;
-  /* 2. body 必须透明，否则它有可能会遮挡 fixed 在底部的星空 */
   background-color: transparent !important; 
-  /* 3. 尝试禁用部分浏览器的下拉刷新回弹（不影响正常滚动） */
   overscroll-behavior-y: none; 
   font-family: var(--font-space), sans-serif;
+  color: white;
 }
 
 @layer utilities {
-  @keyframes flame-pulse-white {
-    0%, 100% {
-      /* 初始和结束状态：微弱的白光晕 */
-      box-shadow: 0 0 10px 0px rgba(255, 255, 255, 0.15);
-      transform: scale(1);
-    }
-    50% {
-      /* 呼吸最顶点：白光晕扩大、变亮，卡片微缩放 */
-      box-shadow: 0 0 45px 0px rgba(255, 255, 255, 0.5);
-      transform: scale(1.05);
-    }
+  /* ==========================================
+     🚀 终极防断层：动效分离技术
+     ========================================== */
+     
+  /* 1. 替身专属光晕：只发光，不缩放 */
+  @keyframes breathe-glow {
+    0%, 100% { box-shadow: 0 0 10px 0px rgba(255, 255, 255, 0.1); }
+    50%      { box-shadow: 0 0 45px 5px rgba(255, 255, 255, 0.45); }
   }
 
+  /* 2. 卡片本体：掌控一切平滑过渡 */
   .animate-flame-hover {
-    /* 离开悬浮时，平滑回到原位 */
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.6, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.6, 1);
+    position: relative; /* 必须加：为了锁住替身 */
+    /* 我们接管了你删掉的 transition-all，并赋予了高级物理回弹曲线 */
+    transition: 
+      transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), 
+      border-color 0.4s ease, 
+      box-shadow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform: scale(1);
+    box-shadow: 0 0 10px 0px rgba(255, 255, 255, 0.1);
+    will-change: transform;
   }
 
+  /* 3. 卡片的“光晕替身”：永远躲在后面 */
+  .animate-flame-hover::before {
+    content: "";
+    position: absolute;
+    inset: 0; /* 铺满父元素 */
+    border-radius: inherit; /* 完美贴合父元素的圆角 */
+    opacity: 0; /* 平时处于隐身状态 */
+    transition: opacity 0.6s ease; /* 离开时平滑淡出，彻底消灭断层 */
+    pointer-events: none; /* 防止挡住你的点击操作 */
+    z-index: -1;
+  }
+
+  /* 4. 鼠标悬浮：本体放大，替身显露真身 */
   .animate-flame-hover:hover {
-    /* 完美还原你最初的 1.5 秒呼吸动画 */
-    animation: flame-pulse-white 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    transform: scale(1.05);
+    border-color: rgba(255, 255, 255, 0.3); /* 这个代替了 hover:border-white/30 的过渡 */
   }
 
-    /* 新增：常亮呼吸灯类名 */
+  .animate-flame-hover:hover::before {
+    opacity: 1; /* 替身淡入显影 */
+    animation: breathe-glow 1.5s ease-in-out infinite; /* 开始无限呼吸 */
+  }
+
+  /* ==========================================
+     其他动画保持不变
+     ========================================== */
+     
+  /* 常亮类名：给确认弹窗和 Profile 大卡片用的 */
+  @keyframes flame-pulse-white {
+    0%, 100% { box-shadow: 0 0 10px 0px rgba(255, 255, 255, 0.15); transform: scale(1); }
+    50%      { box-shadow: 0 0 45px 0px rgba(255, 255, 255, 0.5); transform: scale(1.05); }
+  }
   .animate-flame-active {
-    /* 2秒一个循环，无限重复 */
     animation: flame-pulse-white 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  /* 卡片渐入动画 */
+  /* 渐入动效 */
   @keyframes fade-in-up {
-    0% {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
   }
-
   .animate-fade-in-up {
     animation: fade-in-up 0.5s ease-out forwards;
     opacity: 0;
@@ -88,6 +106,4 @@ body {
     90% { opacity: 1; }
     100% { top: 100%; opacity: 0; }
   }
-
-  
 }

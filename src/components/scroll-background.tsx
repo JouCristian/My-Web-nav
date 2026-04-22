@@ -280,13 +280,7 @@ export function ScrollBackground() {
         className="fixed z-[-1] overflow-hidden"
         style={{ top: 0, left: 0, width: '100vw', height: fixedHeight, backgroundColor: '#020205' }}
       >
-        <div 
-          className="absolute inset-0 z-10 pointer-events-none transition-all duration-150 ease-linear"
-          style={{
-            backdropFilter: `blur(${Math.max(0, 7 * (1 - uiProgress * 4))}px)`,
-            background: `radial-gradient(circle at center, rgba(2, 2, 5, ${0.3 * (1 - uiProgress)}) 0%, rgba(2, 2, 5, ${0.7 + uiProgress * 0.3}) 100%)`
-          }}
-        />
+
 
         <div className="absolute inset-0 z-20 pointer-events-none opacity-[0.03] mix-blend-overlay" style={NOISE_STYLE} />
         
