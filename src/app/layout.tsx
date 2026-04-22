@@ -22,7 +22,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "星际导航站",
+  title: "西科星际导航站",
   description: "跨星际管理你的书签",
 };
 
