@@ -287,7 +287,7 @@ export function ScrollBackground() {
 
     const lockHeight = () => {
       setFixedHeight(`${window.innerHeight}px`)
-      setIsMobile(window.innerWidth < 768)
+      setIsMobile(window.innerWidth < 1024)
     }
     lockHeight()
 
