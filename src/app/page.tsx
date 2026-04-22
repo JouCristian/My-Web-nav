@@ -87,7 +87,7 @@ export default async function Home() {
             {/* 把 <a> 换成了 <Link>，并指向 /contact 路由 */}
             <Link 
               href="/contact" 
-              className="group block bg-black/25 p-4 rounded-2xl border border-dashed border-white/20 animate-flame-hover hover:border-white/40 transition-all"
+              className="group block bg-black/75 p-4 rounded-2xl border border-dashed border-white/20 animate-flame-hover hover:border-white/40 transition-all"
             >
               <div className="flex items-center justify-center gap-4">
                 <div className="relative">
