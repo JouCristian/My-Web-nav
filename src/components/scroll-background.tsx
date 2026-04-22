@@ -249,9 +249,9 @@ export function ScrollBackground() {
 
   return (
     <>
-      {/* 🚀 新增：传送到最上层 (z-[100]) 的时空切换按钮 */}
+      {/* 🚀 新增：传送到最上层 (z-[100]) 的时空切换按钮（已移至右下角） */}
       {createPortal(
-        <div className="fixed top-8 left-8 z-[100]">
+        <div className="fixed bottom-8 right-8 z-[100]">
           <button
             onClick={() => setScriptIndex((prev) => (prev + 1) % SCRIPTS.length)}
             className="group flex items-center gap-4 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all duration-300 active:scale-[0.97]"

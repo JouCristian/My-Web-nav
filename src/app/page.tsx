@@ -24,26 +24,48 @@ export default async function Home() {
     <main className="min-h-screen bg-transparent p-10 text-white">
       <div className="max-w-5xl mx-auto text-center">
         
-        {/* 🚀 舰长控制台按钮 */}
-        <div className="flex justify-end mb-8">
-          {session ? (
-            <form action={async () => { "use server"; await signOut(); }}>
-              {/* 核心修复：移除了 hover:scale-105 和 transition-all，只保留 animate-flame-hover */}
-              <button className="group flex items-center gap-2 bg-white/5 px-6 py-2 rounded-2xl border border-white/10 animate-flame-hover">
-                <span className="text-zinc-400 group-hover:text-red-400 transition-colors">●</span>
-                <span className="text-sm font-medium text-zinc-300 group-hover:text-white">退出舰长账号</span>
-              </button>
-            </form>
-          ) : (
-            <form action={async () => { "use server"; await signIn("github"); }}>
-              {/* 核心修复：同样移除冲突类 */}
-              <button className="group flex items-center gap-2 bg-white/5 px-6 py-2 rounded-2xl border border-white/10 animate-flame-hover">
-                <span className="text-blue-400 animate-pulse">●</span>
-                <span className="text-sm font-medium text-zinc-300 group-hover:text-white">舰长登录</span>
-              </button>
-            </form>
-          )}
+{/* 🚀 舰长控制台按钮 - 顶部右侧 UI 同步 */}
+<div className="flex justify-end mb-8">
+  {session ? (
+    <form action={async () => { "use server"; await signOut(); }}>
+      <button className="group flex items-center gap-4 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all duration-300 active:scale-[0.97]">
+        {/* 动态红色指示灯：表示已登录/在线 */}
+        <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-red-500/10 transition-colors">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.9)]" />
+          <div className="absolute inset-0 rounded-full border border-red-500/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
         </div>
+        
+        <div className="flex flex-col items-start">
+          <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono group-hover:text-red-400 transition-colors">
+            Captain Online
+          </span>
+          <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">
+            退出舰长账号
+          </span>
+        </div>
+      </button>
+    </form>
+  ) : (
+    <form action={async () => { "use server"; await signIn("github"); }}>
+      <button className="group flex items-center gap-4 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all duration-300 active:scale-[0.97]">
+        {/* 动态蓝色指示灯：表示待命/未登录 */}
+        <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/10 transition-colors">
+          <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_12px_rgba(96,165,250,0.9)]" />
+          <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
+        </div>
+        
+        <div className="flex flex-col items-start">
+          <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono group-hover:text-blue-400 transition-colors">
+            Authorization
+          </span>
+          <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">
+            舰长登录
+          </span>
+        </div>
+      </button>
+    </form>
+  )}
+</div>
 
                 {/* 🚀 使用 font-[family-name:var(--font-space)] 调用新字体，去掉斜体，增加字间距和发光效果 */}
         <h1 className="text-4xl font-bold mb-4 tracking-[0.2em] font-[family-name:var(--font-space)] text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-200 to-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
