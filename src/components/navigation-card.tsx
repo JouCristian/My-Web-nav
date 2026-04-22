@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect} from "react"
 import { createPortal } from "react-dom"
 import { deleteBookmark } from "@/app/actions"
 
@@ -19,8 +19,10 @@ export function NavigationCard({ id, title, description, url, showDelete }: Navi
   // 确保在客户端渲染时才能使用 document.body 挂载 Portal
   const [mounted, setMounted] = useState(false);
 
-  // 在组件挂载后标记 mounted，防止 SSR 阶段报错
-  import("react").then(() => setMounted(true));
+    // 🚀 修复：必须放在 useEffect 里，确保组件真正挂载后才执行
+    useEffect(() => {
+      setMounted(true);
+    }, []);
 
   const getDomain = (url: string) => {
     try {
