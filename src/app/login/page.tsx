@@ -1,11 +1,37 @@
 // src/app/login/page.tsx
 import { signIn } from "@/auth"
+import Link from "next/link"
 
 export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-transparent p-6">
-      {/* 这里的 animate-flame-active 使用了你 globals.css 里的动效 */}
+      
+      {/* 🚀 核心改进：窗口左上角固定悬浮按钮 */}
+      <div className="fixed top-10 left-10 z-[100]">
+        <Link 
+          href="/" 
+          className="group flex items-center gap-4 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all duration-300 active:scale-[0.97]"
+        >
+          {/* 动态蓝色指示灯：与首页按钮风格完全对齐 */}
+          <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/10 transition-colors">
+            <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_12px_rgba(96,165,250,0.9)]" />
+            <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
+          </div>
+          
+          <div className="flex flex-col items-start">
+            <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono group-hover:text-blue-400 transition-colors">
+              Mission Control
+            </span>
+            <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">
+              返回主站
+            </span>
+          </div>
+        </Link>
+      </div>
+
+      {/* 居中的登录卡片 */}
       <div className="relative p-10 bg-black/40 backdrop-blur-xl border border-white/10 rounded-[3rem] max-w-md w-full text-center animate-flame-active">
+        
         <div className="mb-8">
           <div className="inline-block p-4 rounded-full bg-white/5 border border-white/10 mb-4">
              <span className="text-3xl">🛡️</span>
