@@ -249,20 +249,21 @@ export function ScrollBackground() {
 
   return (
     <>
-      {/* 🚀 新增：传送到最上层 (z-[100]) 的时空切换按钮 */}
-      {createPortal(
-        <div className="fixed top-8 left-8 z-[100]">
+      {/* 🚀 时空切换按钮 portal 到 page.tsx 的顶部 HUD 左插槽 (#hud-left-slot)，由 header 统一负责定位 */}
+      {typeof document !== "undefined" && document.getElementById("hud-left-slot") &&
+        createPortal(
           <button
             onClick={() => setScriptIndex((prev) => (prev + 1) % SCRIPTS.length)}
             className="group flex items-center gap-4 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all duration-300 active:scale-[0.97]"
+            aria-label={`切换相机剧本，当前：${SCRIPT_NAMES[scriptIndex]}`}
           >
             {/* 炫酷的动态指示灯 */}
             <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-white/10 transition-colors">
               <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_12px_rgba(96,165,250,0.9)]" />
               <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
             </div>
-            
-            <div className="flex flex-col items-start">
+
+            <div className="hidden sm:flex flex-col items-start">
               <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono group-hover:text-zinc-400 transition-colors">
                 Spacetime Shift
               </span>
@@ -270,10 +271,12 @@ export function ScrollBackground() {
                 {SCRIPT_NAMES[scriptIndex]}
               </span>
             </div>
-          </button>
-        </div>,
-        document.body
-      )}
+            <span className="sm:hidden text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">
+              {SCRIPT_NAMES[scriptIndex]}
+            </span>
+          </button>,
+          document.getElementById("hud-left-slot")!
+        )}
 
       {/* 3D 背景层 */}
       <div 
