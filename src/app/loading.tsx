@@ -1,34 +1,48 @@
 // src/app/loading.tsx
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 
 export default function Loading() {
-  
-  // 🚀 核心动效注入：无侵入式触发“时空切换”
+  // 🚀 使用 Ref 记录：这次 Loading 是否执行了“下沉”动作
+  const didShiftDown = useRef(false);
+
   useEffect(() => {
-    const triggerSpacetimeShift = () => {
-      // 自动在全局寻找那个带有“航线”或“时空”字样的切换按钮并点击它
+    // 1. 查找右下角的“时空切换”控制按钮
+    const findShiftButton = () => {
       const buttons = Array.from(document.querySelectorAll('button'));
-      const shiftBtn = buttons.find(btn => 
-        btn.textContent?.includes('时空') || btn.textContent?.includes('航线')
+      return buttons.find(btn => 
+        btn.textContent?.includes('SPACETIME SHIFT') || 
+        btn.textContent?.includes('时空') || 
+        btn.textContent?.includes('航线')
       );
-      if (shiftBtn) {
-        shiftBtn.click();
-      }
     };
 
-    // 1. 挂载时（开始 Loading）：触发镜头下沉，进入跃迁状态
-    triggerSpacetimeShift();
+    const shiftBtn = findShiftButton();
 
-    // 2. 卸载时（Loading 结束）：再次触发，镜头平滑拉回正常视角
+    if (shiftBtn) {
+      // 🚀 核心逻辑升级：状态感知切换
+      // 只有当检测到当前是“默认”状态（Normal）时，才触发点击进入“跃迁”
+      const isNormalState = shiftBtn.textContent?.includes('默认');
+      
+      if (isNormalState) {
+        shiftBtn.click();
+        didShiftDown.current = true; // 标记：我们让镜头下沉了
+      }
+      // 如果已经是变轨状态，则保持不动，因为用户已经处于“跃迁视角”了
+    }
+
     return () => {
-      triggerSpacetimeShift();
+      // 2. 卸载时：如果我们加载开始时让镜头下沉了，现在把它拉回来
+      const endBtn = findShiftButton();
+      if (didShiftDown.current && endBtn) {
+        endBtn.click();
+      }
     };
   }, []);
 
   return (
-    // 🚀 背景已彻底改为透明 bg-transparent
+    // 保持背景透明，让底层的动态星空完全显现 
     <main className="min-h-screen bg-transparent p-10 text-white font-[family-name:var(--font-space)]">
       
       {/* 🚀 1. 模拟页眉 Skeleton */}
@@ -61,7 +75,6 @@ export default function Loading() {
         {[...Array(6)].map((_, i) => (
           <div
             key={i}
-            // 🚀 这里把死黑(bg-black)改为了半透(bg-black/40)，确保背景动画能透过来
             className="relative h-44 rounded-3xl bg-black/40 border border-white/10 p-6 flex flex-col justify-between overflow-hidden group shadow-[0_0_20px_rgba(255,255,255,0.02)]"
           >
             <div className="space-y-4">
