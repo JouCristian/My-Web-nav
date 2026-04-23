@@ -4,81 +4,34 @@ import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import Link from "next/link"
+import Image from "next/image"
 import { ProfileForm } from "@/components/profile-form"
 
-// 🚀 核心组件：手绘铅笔风格星际背景 (已修复滤镜渲染 Bug)
-function SketchyBackground({ color }: { color: string }) {
-  // 为了防止水合(Hydration)时随机数报错，这里简单固定一下坐标，或者你可以保留原样
-  // 为了演示，我直接在 SVG 中写入更明显的元素
-  
+// 🚀 核心组件：真·手绘原画背景 (支持军衔主题色融合)
+function ImageBackground({ color }: { color: string }) {
   return (
     <div className="fixed inset-0 z-[-1] bg-[#020205] overflow-hidden">
-      {/* 将 filter 放入标准 <defs> 中，绝不能加 hidden */}
-      <svg 
-        viewBox="0 0 1000 1000" 
-        preserveAspectRatio="xMidYMid slice" 
-        className="absolute inset-0 w-full h-full opacity-60 transition-colors duration-1000"
-      >
-        <defs>
-          {/* 扩大滤镜作用域，防止边缘被裁切 */}
-          <filter id="pencil-texture" x="-20%" y="-20%" width="140%" height="140%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-        </defs>
+      
+      {/* Next.js 高性能图片加载 */}
+      <Image
+        src="/back.png" // ⚠️ 请确保 public 目录下有这张图片
+        alt="Interstellar Hand-drawn Background"
+        fill
+        priority
+        quality={90}
+        className="object-cover opacity-50 transition-opacity duration-1000 grayscale" 
+        // grayscale 让图片去色，方便下面染上军衔的颜色
+      />
 
-        {/* 统一应用滤镜 */}
-        <g style={{ filter: "url(#pencil-texture)" }}>
-          
-          {/* 1. 散落的手绘星群 */}
-          <g fill={color}>
-            <circle cx="150" cy="200" r="3" className="animate-pulse" />
-            <circle cx="850" cy="300" r="2" className="animate-pulse" style={{ animationDelay: '1s' }} />
-            <circle cx="250" cy="800" r="2.5" className="animate-pulse" style={{ animationDelay: '2s' }} />
-            <circle cx="750" cy="700" r="1.5" className="animate-pulse" style={{ animationDelay: '0.5s' }} />
-            <circle cx="500" cy="100" r="3" className="animate-pulse" style={{ animationDelay: '1.5s' }} />
-            <circle cx="900" cy="800" r="2" className="animate-pulse" style={{ animationDelay: '2.5s' }} />
-            <circle cx="100" cy="600" r="2.5" className="animate-pulse" style={{ animationDelay: '0.8s' }} />
-            <circle cx="400" cy="900" r="3" className="animate-pulse" style={{ animationDelay: '1.2s' }} />
-            <circle cx="600" cy="400" r="1" className="animate-pulse" style={{ animationDelay: '0.3s' }} />
-          </g>
+      {/* 🚀 军衔专属氛围染色层 */}
+      <div 
+        className="absolute inset-0 mix-blend-color opacity-40 transition-colors duration-1000"
+        style={{ backgroundColor: color }}
+      ></div>
 
-          {/* 2. 手绘轨道线：加粗线条并调整虚线间距 */}
-          <g stroke={color} fill="none" strokeWidth="1.5" strokeDasharray="15,20">
-            <circle cx="500" cy="500" r="350" className="opacity-40" />
-            <circle cx="200" cy="850" r="250" className="opacity-30" />
-            <ellipse cx="850" cy="150" rx="400" ry="200" transform="rotate(35, 850, 150)" className="opacity-40" />
-            <ellipse cx="100" cy="100" rx="300" ry="150" transform="rotate(-20, 100, 100)" className="opacity-20" />
-          </g>
-
-          {/* 3. 几何航线与星体草图 */}
-          <path 
-            d="M800 200 L840 240 L820 260 L780 220 Z M820 230 L860 230" 
-            stroke={color} 
-            strokeWidth="2" 
-            fill="none" 
-            className="opacity-70"
-          />
-          <path 
-            d="M50 300 Q 250 100, 450 300 T 850 300" 
-            stroke={color} 
-            strokeWidth="2" 
-            strokeDasharray="5,10"
-            fill="none" 
-            className="opacity-40"
-          />
-          <path 
-            d="M450 500 L550 500 M500 450 L500 550" 
-            stroke={color} 
-            strokeWidth="1" 
-            fill="none" 
-            className="opacity-50"
-          />
-        </g>
-      </svg>
-
-      {/* 调整遮罩层：去掉顶部和中部的黑色遮挡，只在最底部留一点渐变 */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#020205] pointer-events-none"></div>
+      {/* 边缘与底部暗化遮罩，确保表单和文字绝对清晰 */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,#020205_100%)] opacity-80 pointer-events-none"></div>
+      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#020205] to-transparent pointer-events-none"></div>
     </div>
   )
 }
@@ -112,7 +65,7 @@ export default async function ProfilePage() {
     revalidatePath("/")
   }
 
-  // 🚀 UI 风格配置
+  // UI 风格配置
   const getRoleUI = (currentRole: string) => {
     switch (currentRole) {
       case "OWNER":
@@ -144,8 +97,8 @@ export default async function ProfilePage() {
         };
       default:
         return {
-          color: "#ffffff", // 白色/灰色
-          wrapper: "border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]",
+          color: "#71717a", // 灰色
+          wrapper: "border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.05)]",
           icon: "👤",
           title: "临时访客舱",
           subtitle: "Awaiting Clearance / 未核准人员",
@@ -159,14 +112,14 @@ export default async function ProfilePage() {
   return (
     <main className="min-h-screen p-10 flex flex-col items-center relative">
       
-      {/* 🚀 方案二：手绘风格全覆盖背景 */}
-      <SketchyBackground color={ui.color} />
+      {/* 调用全新的图片背景组件 */}
+      <ImageBackground color={ui.color} />
 
       <div className="max-w-xl w-full relative z-10">
         
         {/* 返回按钮 */}
         <div className="flex justify-end mb-8">
-          <Link href="/" className="group flex items-center gap-4 bg-black/60 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all active:scale-95">
+          <Link href="/" className="group flex items-center gap-4 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all active:scale-95">
             <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/10 transition-colors">
               <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_12px_rgba(96,165,250,0.9)]" />
             </div>
@@ -178,7 +131,7 @@ export default async function ProfilePage() {
         </div>
 
         {/* 核心卡片 */}
-        <div className={`relative bg-black/60 p-8 rounded-[2.5rem] backdrop-blur-2xl animate-flame-active transition-all duration-700 ${ui.wrapper}`}>
+        <div className={`relative bg-[#0a0a0c]/70 p-8 rounded-[2.5rem] backdrop-blur-xl animate-flame-active transition-all duration-700 ${ui.wrapper}`}>
           
           <div className="flex flex-col items-center mb-8 border-b border-white/5 pb-8">
              <div className="text-4xl mb-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">{ui.icon}</div>
