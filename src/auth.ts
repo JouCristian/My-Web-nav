@@ -8,7 +8,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
     GitHub({
-      // 🚀 核心修改：强制每次都要求同意授权，打断 GitHub 的自动放行
+      // 强制每次要求授权，确保账号切换灵活性
       authorization: {
         params: { prompt: "consent" },
       },
@@ -18,14 +18,41 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: '/login', 
   },
   callbacks: {
+    // 1. 准入拦截逻辑 [cite: 14]
+    async signIn({ user }) {
+      if (!user.email) return false;
+
+      // 舰长绝对直通车：识别硬编码邮箱，无视任何拦截 [cite: 17, 18]
+      if (user.email === "zoujunyi869@gmail.com") {
+        return true;
+      }
+
+      // 普通船员目前允许登录，后续可以在此处增加黑名单或邀请制校验
+      return true;
+    },
+
+    // 2. 身份与军衔注入 [cite: 26, 62]
     async session({ session, user }) {
       if (session.user) {
-        // @ts-ignore
+        // 注入基础 ID
         session.user.id = user.id;
+
+        // 识别是否为舰长 (Lv3 OWNER) [cite: 17, 26]
+        const isCaptain = user.email === "zoujunyi869@gmail.com";
+        
+        // 注入白皮书要求的核心档案字段 
         // @ts-ignore
-        session.user.isCaptain = user.email === "zoujunyi869@gmail.com";
+        session.user.role = isCaptain ? "OWNER" : (user.role || "PENDING");
+        // @ts-ignore
+        session.user.isCaptain = isCaptain;
+        // @ts-ignore
+        session.user.realName = user.realName;
+        // @ts-ignore
+        session.user.studentId = user.studentId;
+        // @ts-ignore
+        session.user.feishuLink = user.feishuLink;
       }
-      return session
+      return session;
     },
   },
 })

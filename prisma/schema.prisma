@@ -1,80 +1,108 @@
-// prisma/schema.prisma
-
-datasource db {
-  provider = "postgresql"
-  // 🚀 这里现在必须是空的，不能有 url 和 directUrl
-}
-
+// 数据源与生成器配置
 generator client {
   provider = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ==========================================
-// 🛡️ 核心：Auth.js (NextAuth) 标准用户模型
+// 🛡️ 枚举定义：系统军衔与状态
+// ==========================================
+
+// 军衔级别 [cite: 26, 85-87]
+enum Role {
+  PENDING  // Lv0 新兵：仅能提交档案 [cite: 26, 90]
+  MEMBER   // Lv1 船员：严格考勤主体 
+  ADMIN    // Lv2 领航员：管理权限 
+  OWNER    // Lv3 舰长：最高权限 
+}
+
+// 请假审批状态 [cite: 143-145]
+enum LeaveStatus {
+  PENDING   // 等待核准
+  APPROVED  // 已准许
+  REJECTED  // 已驳回
+}
+
+// ==========================================
+// 👤 核心用户模型：船员档案室 [cite: 31, 62]
 // ==========================================
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
+  id            String    @id @default(cuid()) [cite: 63-65]
+  email         String?   @unique [cite: 66-70]
+  githubId      String?   @unique // 唯一绑定凭证 [cite: 68-71]
+  githubName    String?   [cite: 72-73]
+  avatarUrl     String?   [cite: 74-75]
   
-  // 🚀 自定义扩展字段
-  nickname      String?   // 自定义昵称
-  customAvatar  String?   // 自定义头像 URL
-  role          String    @default("USER") // 预留角色字段
+  // 船员实名信息
+  realName      String?   // 真实姓名 [cite: 76-77]
+  studentId     String?   // 学号 [cite: 79-80]
+  feishuLink    String?   // 飞书个人链接，缺失时 UI 报警 [cite: 82-84]
+  
+  role          Role      @default(PENDING) // 初始状态为新兵 [cite: 85, 90]
+  createdAt     DateTime  @default(now()) // 用于资历排序 [cite: 88-91]
 
-  accounts      Account[]
-  sessions      Session[]
-  // 关联书签（如果后续想让不同用户拥有不同书签，可以开启此关联）
-  // bookmarks     Bookmark[] 
-}
-
-model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
+  // 关系映射
+  attendances   Attendance[]   [cite: 92-94]
+  leaveRequests LeaveRequest[] [cite: 93]
 }
 
 // ==========================================
-// 🔖 导航卡片模型 (保留并优化)
+// 📅 会议与签到：跃迁集结系统 [cite: 38, 96-97]
+// ==========================================
+
+model Meeting {
+  id              String       @id @default(cuid()) [cite: 98, 102]
+  title           String?      [cite: 100, 103]
+  date            DateTime     // 北京时间 [cite: 104, 106]
+  signInDeadline  DateTime?    // 限时倒计时截止时间 [cite: 107, 111]
+  content         String?      @db.Text // Markdown 纪要 [cite: 108, 112]
+  createdBy       String       // 记录创建者 ID [cite: 109, 113]
+
+  attendances     Attendance[] [cite: 110, 114]
+}
+
+model Attendance {
+  id        String   @id @default(cuid()) [cite: 116, 118]
+  meetingId String   [cite: 119-120]
+  userId    String   [cite: 121-122]
+  signedAt  DateTime @default(now()) [cite: 123-124]
+
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade) [cite: 125-127]
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade) [cite: 128-131]
+
+  @@unique([meetingId, userId]) // 确保单次会议只能签到一次
+}
+
+// ==========================================
+// 📝 请假申请：双端审批子系统 [cite: 40, 133-134]
+// ==========================================
+
+model LeaveRequest {
+  id        String      @id @default(cuid()) [cite: 135, 140]
+  userId    String      [cite: 136, 138]
+  date      DateTime    // 请假日期 [cite: 137, 141]
+  reason    String      @db.Text // 请假理由 [cite: 142, 150]
+  status    LeaveStatus @default(PENDING) [cite: 143, 150]
+  
+  handledBy String?     // 记录是哪位管理员/舰长批的假 [cite: 146, 151]
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade) [cite: 147-152]
+}
+
+// ==========================================
+// 🔖 原有书签功能（保留）
 // ==========================================
 
 model Bookmark {
   id          Int      @id @default(autoincrement())
   name        String
   url         String
-  description String?  // 修改为可选，因为 actions.ts 中有清洗逻辑
+  description String?
   createdAt   DateTime @default(now())
 }
