@@ -10,14 +10,13 @@ datasource db {
 }
 
 // ==========================================
-// 🛡️ 枚举定义：系统军衔与状态 [cite: 85-87, 143-145]
+// 🛡️ 枚举定义
 // ==========================================
-
 enum Role {
-  PENDING  // Lv0 新兵
-  MEMBER   // Lv1 船员
-  ADMIN    // Lv2 领航员
-  OWNER    // Lv3 舰长
+  PENDING
+  MEMBER
+  ADMIN
+  OWNER
 }
 
 enum LeaveStatus {
@@ -27,17 +26,60 @@ enum LeaveStatus {
 }
 
 // ==========================================
-// 👤 核心用户模型：船员档案室 [cite: 62-91]
+// 🔑 NextAuth 核心验证表 (绝不能删)
 // ==========================================
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+}
+
+// ==========================================
+// 👤 核心用户模型：融合原有档案与新兵架构
+// ==========================================
 model User {
   id            String    @id @default(cuid())
+  
+  // NextAuth 默认字段
+  name          String?
   email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  // 你原有的自定义字段 (保留！)
+  nickname      String?
+  customAvatar  String?
+  
+  // 《白皮书》新增的船员档案信息
   githubId      String?   @unique
   githubName    String?
-  avatarUrl     String?
-  
-  // 船员实名信息 [cite: 76-84]
   realName      String?   
   studentId     String?   
   feishuLink    String?   
@@ -45,15 +87,16 @@ model User {
   role          Role      @default(PENDING)
   createdAt     DateTime  @default(now())
 
-  // 关系映射 [cite: 92-94]
+  // 关系映射
+  accounts      Account[]
+  sessions      Session[]
   attendances   Attendance[]
   leaveRequests LeaveRequest[]
 }
 
 // ==========================================
-// 📅 会议与签到：跃迁集结系统 [cite: 97-131]
+// 📅 会议、签到与请假 (白皮书架构)
 // ==========================================
-
 model Meeting {
   id              String       @id @default(cuid())
   title           String?     
@@ -61,7 +104,6 @@ model Meeting {
   signInDeadline  DateTime?    
   content         String?      @db.Text
   createdBy       String       
-
   attendances     Attendance[]
 }
 
@@ -70,16 +112,11 @@ model Attendance {
   meetingId String   
   userId    String   
   signedAt  DateTime @default(now())
-
   meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([meetingId, userId])
 }
-
-// ==========================================
-// 📝 请假申请：双端审批子系统 [cite: 134-152]
-// ==========================================
 
 model LeaveRequest {
   id        String      @id @default(cuid())
@@ -87,16 +124,13 @@ model LeaveRequest {
   date      DateTime    
   reason    String      @db.Text
   status    LeaveStatus @default(PENDING)
-  
   handledBy String?     
-
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ==========================================
-// 🔖 原有书签功能（保留）
+// 🔖 导航书签 (保留)
 // ==========================================
-
 model Bookmark {
   id          Int      @id @default(autoincrement())
   name        String
