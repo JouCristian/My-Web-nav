@@ -5,39 +5,77 @@ import { redirect } from "next/navigation"
 import { updateRecruitProfile } from "@/app/actions"
 import Link from "next/link"
 
+// 🚀 核心组件：封装带有呼吸跳动+紫色流动效果的模块卡片
+const ModuleCard = ({
+  moduleId,
+  title,
+  subtitle,
+  icon,
+  link,
+  isActive
+}: {
+  moduleId: string;
+  title: string;
+  subtitle: string;
+  icon: string;
+  link: string;
+  isActive: boolean;
+}) => {
+  return (
+    <Link 
+      href={isActive ? link : "#"} 
+      // 背景降低透明度(95%不透明)，极大提高可读性；引入 animate-module-card 实现跳动呼吸
+      className={`group relative h-64 rounded-[2rem] border border-purple-500/20 bg-[#06060a]/95 p-6 flex flex-col justify-between overflow-hidden transition-all duration-300 hover:border-purple-500/50 active:scale-95 ${isActive ? 'animate-module-card' : 'opacity-70 grayscale-[30%]'}`}
+    >
+      {/* 🚀 动态紫色流动层：加载我们刚刚在 css 写的 animate-purple-flow */}
+      <div className="absolute inset-0 animate-purple-flow opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
+      
+      {/* 固定的角落背景光晕，增加层次感 */}
+      <div className="absolute -top-12 -right-12 w-32 h-32 bg-purple-500/10 blur-[40px] rounded-full group-hover:bg-purple-500/20 transition-colors"></div>
+
+      <div className="relative z-10">
+        <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-4 text-xl shadow-[0_0_15px_rgba(168,85,247,0.15)] group-hover:shadow-[0_0_25px_rgba(168,85,247,0.3)] transition-all">
+          {icon}
+        </div>
+        <h3 className="text-xl font-bold text-white tracking-widest font-[family-name:var(--font-space)]">{title}</h3>
+        <p className="text-xs text-purple-200/50 font-mono mt-2 tracking-wider">{subtitle}</p>
+      </div>
+      
+      <div className="relative z-10 flex items-center justify-between text-[10px] font-mono text-purple-400/60 uppercase tracking-widest">
+        <span>{moduleId}</span>
+        <span className={`transition-transform duration-300 ${isActive ? 'text-purple-400 group-hover:translate-x-1' : 'text-zinc-600'}`}>
+          {isActive ? 'Enter ➔' : 'Standby...'}
+        </span>
+      </div>
+    </Link>
+  )
+}
+
 export default async function DashboardPage() {
   const session = await auth()
   
-  // 如果连基础登录都没有，直接踢回首页
   if (!session?.user?.email) {
     redirect("/")
   }
 
-  // 获取该用户的最新数据库完整状态
   const dbUser = await prisma.user.findUnique({
     where: { email: session.user.email }
   })
 
   if (!dbUser) redirect("/")
 
-  // 🎯 拦截器核心判断逻辑
-  // 1. 判断是否缺失必填档案 
   const isProfileIncomplete = !dbUser.realName || !dbUser.studentId;
-  // 2. 舰长特权直通车：无视一切拦截 [cite: 17, 18]
   // @ts-ignore
   const isCaptain = session.user.isCaptain;
 
   // ==========================================
-  // 🚨 状态 1：新兵无档案，触发强制录入防爆门 
+  // 🚨 状态 1：新兵无档案，触发强制录入防爆门
   // ==========================================
   if (!isCaptain && isProfileIncomplete) {
     return (
       <main className="min-h-screen bg-[#020205] flex items-center justify-center p-6 relative overflow-hidden">
-        {/* 红色警报背景光晕 */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-red-500/5 rounded-full blur-[100px] pointer-events-none animate-pulse"></div>
-        
-        <div className="relative z-10 w-full max-w-lg bg-black/60 border border-red-500/30 p-8 md:p-10 rounded-[2.5rem] backdrop-blur-xl shadow-[0_0_50px_rgba(239,68,68,0.1)]">
-          
+        <div className="relative z-10 w-full max-w-lg bg-[#06060a]/95 border border-red-500/30 p-8 md:p-10 rounded-[2.5rem] backdrop-blur-xl shadow-[0_0_50px_rgba(239,68,68,0.1)]">
           <div className="flex items-center gap-4 mb-8 border-b border-red-500/20 pb-6">
             <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
@@ -50,32 +88,26 @@ export default async function DashboardPage() {
               <p className="text-red-400/80 text-sm font-mono mt-1 uppercase tracking-widest">Access Restricted / 准入受限</p>
             </div>
           </div>
-
           <p className="text-zinc-400 text-sm leading-relaxed mb-8">
             检测到您的星际档案缺失核心信息。在进入「一生一芯」指挥中枢前，必须录入您的真实身份标识。
           </p>
-
           <form action={updateRecruitProfile} className="space-y-5">
             <div className="space-y-2">
               <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">真实姓名 / Real Name <span className="text-red-500">*</span></label>
               <input type="text" name="realName" required placeholder="请输入您的真实姓名" className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-red-500/50 transition-all text-white placeholder:text-zinc-700" />
             </div>
-            
             <div className="space-y-2">
               <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">学号 / Student ID <span className="text-red-500">*</span></label>
               <input type="text" name="studentId" required placeholder="请输入您的学号" className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-red-500/50 transition-all text-white placeholder:text-zinc-700" />
             </div>
-
             <div className="space-y-2">
               <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">飞书链接 / Feishu Link (可选)</label>
               <input type="url" name="feishuLink" placeholder="https://..." className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-blue-500/50 transition-all text-white placeholder:text-zinc-700" />
             </div>
-
             <button type="submit" className="w-full mt-6 bg-red-500/20 border border-red-500/50 text-red-400 font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-white transition-all active:scale-[0.98] tracking-widest">
               提交建档申请
             </button>
           </form>
-          
           <div className="mt-6 text-center">
             <Link href="/" className="text-zinc-600 text-xs hover:text-zinc-400 transition-colors font-mono uppercase tracking-widest">
               ← 返回安全区 (Home)
@@ -87,7 +119,7 @@ export default async function DashboardPage() {
   }
 
   // ==========================================
-  // ⏳ 状态 2：档案已提交，等待领航员核准 
+  // ⏳ 状态 2：档案已提交，等待领航员核准
   // ==========================================
   if (!isCaptain && dbUser.role === "PENDING") {
     return (
@@ -105,7 +137,7 @@ export default async function DashboardPage() {
   }
 
   // ==========================================
-  // ✅ 状态 3：已核准放行 / 舰长直通车 [cite: 21, 22]
+  // ✅ 状态 3：已核准放行 / 舰长直通车
   // ==========================================
   return (
     <main className="min-h-screen p-10 text-white max-w-6xl mx-auto">
@@ -119,38 +151,36 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         
-        {/* Module A 占位 */}
-        <div className="h-64 rounded-3xl border border-white/5 bg-black/20 p-6 flex items-center justify-center text-zinc-700 font-mono border-dashed">
-          Module A: 公告大屏 (待装载)
-        </div>
-
-        {/* 🚀 激活的 Module B: 船员档案室 */}
-        <Link 
-          href="/dashboard/crew" 
-          className="group relative h-64 rounded-3xl border border-white/10 bg-black/40 p-6 flex flex-col justify-between overflow-hidden transition-all hover:border-blue-500/30 hover:bg-blue-500/5 active:scale-95"
-        >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-[50px] rounded-full group-hover:bg-blue-500/20 transition-colors"></div>
-          
-          <div>
-            <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4 text-xl">
-              👥
-            </div>
-            <h3 className="text-xl font-bold text-white tracking-widest font-[family-name:var(--font-space)]">船员档案室</h3>
-            <p className="text-xs text-zinc-500 font-mono mt-2 tracking-wider">Crew Archives</p>
-          </div>
-          
-          <div className="flex items-center justify-between text-[10px] font-mono text-zinc-600 uppercase tracking-widest">
-            <span>Module B</span>
-            <span className="text-blue-400 group-hover:translate-x-1 transition-transform">Enter ➔</span>
-          </div>
-        </Link>
-
-        {/* Module C 占位 */}
-        <div className="h-64 rounded-3xl border border-white/5 bg-black/20 p-6 flex items-center justify-center text-zinc-700 font-mono border-dashed">
-          Module C: 跃迁集结 (待装载)
-        </div>
+        {/* 🚀 调用全新构建的高级模块卡片 */}
+        <ModuleCard 
+          moduleId="Module A" 
+          title="公告大屏" 
+          subtitle="System Broadcasting" 
+          icon="📢" 
+          link="/dashboard/board" 
+          isActive={false} 
+        />
+        
+        <ModuleCard 
+          moduleId="Module B" 
+          title="船员档案室" 
+          subtitle="Crew Archives" 
+          icon="👥" 
+          link="/dashboard/crew" 
+          isActive={true} 
+        />
+        
+        <ModuleCard 
+          moduleId="Module C" 
+          title="跃迁集结" 
+          subtitle="Attendance & Leave" 
+          icon="⏳" 
+          link="/dashboard/attendance" 
+          isActive={false} 
+        />
+        
       </div>
     </main>
   )
