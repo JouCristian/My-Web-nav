@@ -124,7 +124,7 @@ body {
     }
   }
   .animate-module-card {
-    animation: module-bounce-glow 4s ease-in-out infinite;
+    animation: module-bounce-glow 2s ease-in-out infinite;
   }
 
   /* 2. 动态紫色流动效果 (Subtle Purple Flow) */
@@ -137,6 +137,6 @@ body {
     background-size: 200% 200%;
     /* 极度克制的透明紫色渐变，绝不抢占视觉中心 */
     background-image: linear-gradient(120deg, transparent 0%, rgba(168, 85, 247, 0.08) 50%, transparent 100%);
-    animation: purple-flow 6s ease-in-out infinite;
+    animation: purple-flow 2s ease-in-out infinite;
   }
 }
