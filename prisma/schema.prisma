@@ -10,89 +10,87 @@ datasource db {
 }
 
 // ==========================================
-// 🛡️ 枚举定义：系统军衔与状态
+// 🛡️ 枚举定义：系统军衔与状态 [cite: 85-87, 143-145]
 // ==========================================
 
-// 军衔级别 [cite: 26, 85-87]
 enum Role {
-  PENDING  // Lv0 新兵：仅能提交档案 [cite: 26, 90]
-  MEMBER   // Lv1 船员：严格考勤主体 
-  ADMIN    // Lv2 领航员：管理权限 
-  OWNER    // Lv3 舰长：最高权限 
+  PENDING  // Lv0 新兵
+  MEMBER   // Lv1 船员
+  ADMIN    // Lv2 领航员
+  OWNER    // Lv3 舰长
 }
 
-// 请假审批状态 [cite: 143-145]
 enum LeaveStatus {
-  PENDING   // 等待核准
-  APPROVED  // 已准许
-  REJECTED  // 已驳回
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 // ==========================================
-// 👤 核心用户模型：船员档案室 [cite: 31, 62]
+// 👤 核心用户模型：船员档案室 [cite: 62-91]
 // ==========================================
 
 model User {
-  id            String    @id @default(cuid()) [cite: 63-65]
-  email         String?   @unique [cite: 66-70]
-  githubId      String?   @unique // 唯一绑定凭证 [cite: 68-71]
-  githubName    String?   [cite: 72-73]
-  avatarUrl     String?   [cite: 74-75]
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  githubId      String?   @unique
+  githubName    String?
+  avatarUrl     String?
   
-  // 船员实名信息
-  realName      String?   // 真实姓名 [cite: 76-77]
-  studentId     String?   // 学号 [cite: 79-80]
-  feishuLink    String?   // 飞书个人链接，缺失时 UI 报警 [cite: 82-84]
+  // 船员实名信息 [cite: 76-84]
+  realName      String?   
+  studentId     String?   
+  feishuLink    String?   
   
-  role          Role      @default(PENDING) // 初始状态为新兵 [cite: 85, 90]
-  createdAt     DateTime  @default(now()) // 用于资历排序 [cite: 88-91]
+  role          Role      @default(PENDING)
+  createdAt     DateTime  @default(now())
 
-  // 关系映射
-  attendances   Attendance[]   [cite: 92-94]
-  leaveRequests LeaveRequest[] [cite: 93]
+  // 关系映射 [cite: 92-94]
+  attendances   Attendance[]
+  leaveRequests LeaveRequest[]
 }
 
 // ==========================================
-// 📅 会议与签到：跃迁集结系统 [cite: 38, 96-97]
+// 📅 会议与签到：跃迁集结系统 [cite: 97-131]
 // ==========================================
 
 model Meeting {
-  id              String       @id @default(cuid()) [cite: 98, 102]
-  title           String?      [cite: 100, 103]
-  date            DateTime     // 北京时间 [cite: 104, 106]
-  signInDeadline  DateTime?    // 限时倒计时截止时间 [cite: 107, 111]
-  content         String?      @db.Text // Markdown 纪要 [cite: 108, 112]
-  createdBy       String       // 记录创建者 ID [cite: 109, 113]
+  id              String       @id @default(cuid())
+  title           String?     
+  date            DateTime     
+  signInDeadline  DateTime?    
+  content         String?      @db.Text
+  createdBy       String       
 
-  attendances     Attendance[] [cite: 110, 114]
+  attendances     Attendance[]
 }
 
 model Attendance {
-  id        String   @id @default(cuid()) [cite: 116, 118]
-  meetingId String   [cite: 119-120]
-  userId    String   [cite: 121-122]
-  signedAt  DateTime @default(now()) [cite: 123-124]
+  id        String   @id @default(cuid())
+  meetingId String   
+  userId    String   
+  signedAt  DateTime @default(now())
 
-  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade) [cite: 125-127]
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade) [cite: 128-131]
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([meetingId, userId]) // 确保单次会议只能签到一次
+  @@unique([meetingId, userId])
 }
 
 // ==========================================
-// 📝 请假申请：双端审批子系统 [cite: 40, 133-134]
+// 📝 请假申请：双端审批子系统 [cite: 134-152]
 // ==========================================
 
 model LeaveRequest {
-  id        String      @id @default(cuid()) [cite: 135, 140]
-  userId    String      [cite: 136, 138]
-  date      DateTime    // 请假日期 [cite: 137, 141]
-  reason    String      @db.Text // 请假理由 [cite: 142, 150]
-  status    LeaveStatus @default(PENDING) [cite: 143, 150]
+  id        String      @id @default(cuid())
+  userId    String     
+  date      DateTime    
+  reason    String      @db.Text
+  status    LeaveStatus @default(PENDING)
   
-  handledBy String?     // 记录是哪位管理员/舰长批的假 [cite: 146, 151]
+  handledBy String?     
 
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade) [cite: 147-152]
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ==========================================
