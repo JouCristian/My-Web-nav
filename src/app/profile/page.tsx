@@ -7,29 +7,22 @@ import Link from "next/link"
 import Image from "next/image"
 import { ProfileForm } from "@/components/profile-form"
 
-// 🚀 核心组件：真·手绘原画背景 (支持军衔主题色融合)
+// 🚀 核心组件：手绘原画背景 (支持军衔主题色融合)
 function ImageBackground({ color }: { color: string }) {
   return (
     <div className="fixed inset-0 z-[-1] bg-[#020205] overflow-hidden">
-      
-      {/* Next.js 高性能图片加载 */}
       <Image
-        src="/back.png" // ⚠️ 请确保 public 目录下有这张图片
+        src="/star-bg.jpg" 
         alt="Interstellar Hand-drawn Background"
         fill
         priority
         quality={90}
         className="object-cover opacity-50 transition-opacity duration-1000 grayscale" 
-        // grayscale 让图片去色，方便下面染上军衔的颜色
       />
-
-      {/* 🚀 军衔专属氛围染色层 */}
       <div 
         className="absolute inset-0 mix-blend-color opacity-40 transition-colors duration-1000"
         style={{ backgroundColor: color }}
       ></div>
-
-      {/* 边缘与底部暗化遮罩，确保表单和文字绝对清晰 */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,#020205_100%)] opacity-80 pointer-events-none"></div>
       <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#020205] to-transparent pointer-events-none"></div>
     </div>
@@ -65,44 +58,67 @@ export default async function ProfilePage() {
     revalidatePath("/")
   }
 
-  // UI 风格配置
+  // 🚀 核心：根据军衔动态生成的 UI 样式与“共鸣圆环”配置
   const getRoleUI = (currentRole: string) => {
     switch (currentRole) {
       case "OWNER":
         return {
-          color: "#eab308", // 金黄色
+          color: "#eab308", 
           wrapper: "border-2 border-yellow-500/30 shadow-[0_0_60px_rgba(234,179,8,0.2)]",
-          icon: "👑",
+          icon: (
+            <div className="w-16 h-16 rounded-full bg-yellow-500/10 border-2 border-yellow-500/40 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(234,179,8,0.4)] relative">
+              <div className="absolute inset-0 rounded-full border border-yellow-500/50 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+              <span className="text-2xl relative z-10">👑</span>
+            </div>
+          ),
           title: "舰长专属舱室",
           subtitle: "Supreme Commander / 最高裁决者",
           titleStyle: "text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-500 to-yellow-200",
+          subtitleStyle: "text-yellow-500/90",
         };
       case "ADMIN":
         return {
-          color: "#a855f7", // 紫色
+          color: "#a855f7", 
           wrapper: "border border-purple-500/40 shadow-[0_0_50px_rgba(168,85,247,0.2)]",
-          icon: "🔮",
+          icon: (
+            <div className="w-16 h-16 rounded-full bg-purple-500/10 border border-purple-500/40 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(168,85,247,0.3)] relative">
+              <div className="absolute inset-0 rounded-full border border-purple-500/50 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+              <span className="text-2xl relative z-10">🔮</span>
+            </div>
+          ),
           title: "领航员指挥台",
           subtitle: "Navigation Control / 舰队管理组",
           titleStyle: "text-purple-300",
+          subtitleStyle: "text-purple-400/80",
         };
       case "MEMBER":
         return {
-          color: "#3b82f6", // 蓝色
+          color: "#3b82f6", 
           wrapper: "border border-blue-500/30 shadow-[0_0_40px_rgba(59,130,246,0.15)]",
-          icon: "🛡️",
+          icon: (
+            <div className="w-14 h-14 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center mb-4 relative">
+              <div className="absolute inset-0 rounded-full border border-blue-500/50 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+              <span className="text-xl relative z-10">🛡️</span>
+            </div>
+          ),
           title: "标准船员舱",
           subtitle: "Verified Crew Member / 注册船员",
           titleStyle: "text-blue-100",
+          subtitleStyle: "text-blue-400/60",
         };
       default:
         return {
-          color: "#71717a", // 灰色
+          color: "#ffffff", 
           wrapper: "border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.05)]",
-          icon: "👤",
+          icon: (
+            <div className="w-12 h-12 rounded-full bg-zinc-800/50 border border-zinc-600 flex items-center justify-center mb-4 opacity-50 relative">
+              <span className="text-lg">👤</span>
+            </div>
+          ),
           title: "临时访客舱",
           subtitle: "Awaiting Clearance / 未核准人员",
           titleStyle: "text-zinc-300",
+          subtitleStyle: "text-zinc-500",
         };
     }
   };
@@ -112,7 +128,6 @@ export default async function ProfilePage() {
   return (
     <main className="min-h-screen p-10 flex flex-col items-center relative">
       
-      {/* 调用全新的图片背景组件 */}
       <ImageBackground color={ui.color} />
 
       <div className="max-w-xl w-full relative z-10">
@@ -131,23 +146,29 @@ export default async function ProfilePage() {
         </div>
 
         {/* 核心卡片 */}
-        <div className={`relative bg-[#0a0a0c]/70 p-8 rounded-[2.5rem] backdrop-blur-xl animate-flame-active transition-all duration-700 ${ui.wrapper}`}>
+        <div className={`relative bg-[#0a0a0c]/75 p-8 rounded-[2.5rem] backdrop-blur-xl animate-flame-active transition-all duration-700 ${ui.wrapper}`}>
           
           <div className="flex flex-col items-center mb-8 border-b border-white/5 pb-8">
-             <div className="text-4xl mb-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">{ui.icon}</div>
-             <h2 className={`text-3xl font-bold font-[family-name:var(--font-space)] tracking-widest text-center ${ui.titleStyle}`}>
+             {/* 🚀 闪烁的共鸣圆环重新上线 */}
+             {ui.icon}
+             
+             <h2 className={`text-3xl font-bold font-[family-name:var(--font-space)] tracking-widest text-center mt-2 ${ui.titleStyle}`}>
                {ui.title}
              </h2>
-             <p className="text-[10px] uppercase tracking-[0.3em] mt-3 font-mono text-zinc-500 text-center">
+             
+             {/* 🚀 修正：这行小字现在会正确跟随军衔颜色 */}
+             <p className={`text-[10px] uppercase tracking-[0.3em] mt-3 font-mono text-center font-bold ${ui.subtitleStyle}`}>
                {ui.subtitle}
              </p>
           </div>
           
-          <ProfileForm user={dbUser} onUpdate={updateProfile} />
+          <div className="relative z-10">
+            <ProfileForm user={dbUser} onUpdate={updateProfile} />
+          </div>
 
           <div className="mt-8 pt-6 border-t border-white/5">
             <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest font-mono">
-              Starbase Profile System v2.0 • Role: {role}
+              Starbase Profile System v2.0 • Security Level: {role}
             </p>
           </div>
         </div>
