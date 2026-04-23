@@ -120,10 +120,37 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* 这里先放占位符，后续我们逐一开发 Module A 到 E */}
-        <div className="h-64 rounded-3xl border border-white/10 bg-black/40 p-6 flex items-center justify-center text-zinc-600 font-mono">Module A: 公告大屏 (待装载)</div>
-        <div className="h-64 rounded-3xl border border-white/10 bg-black/40 p-6 flex items-center justify-center text-zinc-600 font-mono">Module B: 船员档案 (待装载)</div>
-        <div className="h-64 rounded-3xl border border-white/10 bg-black/40 p-6 flex items-center justify-center text-zinc-600 font-mono">Module C: 跃迁集结 (待装载)</div>
+        
+        {/* Module A 占位 */}
+        <div className="h-64 rounded-3xl border border-white/5 bg-black/20 p-6 flex items-center justify-center text-zinc-700 font-mono border-dashed">
+          Module A: 公告大屏 (待装载)
+        </div>
+
+        {/* 🚀 激活的 Module B: 船员档案室 */}
+        <Link 
+          href="/dashboard/crew" 
+          className="group relative h-64 rounded-3xl border border-white/10 bg-black/40 p-6 flex flex-col justify-between overflow-hidden transition-all hover:border-blue-500/30 hover:bg-blue-500/5 active:scale-95"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-[50px] rounded-full group-hover:bg-blue-500/20 transition-colors"></div>
+          
+          <div>
+            <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4 text-xl">
+              👥
+            </div>
+            <h3 className="text-xl font-bold text-white tracking-widest font-[family-name:var(--font-space)]">船员档案室</h3>
+            <p className="text-xs text-zinc-500 font-mono mt-2 tracking-wider">Crew Archives</p>
+          </div>
+          
+          <div className="flex items-center justify-between text-[10px] font-mono text-zinc-600 uppercase tracking-widest">
+            <span>Module B</span>
+            <span className="text-blue-400 group-hover:translate-x-1 transition-transform">Enter ➔</span>
+          </div>
+        </Link>
+
+        {/* Module C 占位 */}
+        <div className="h-64 rounded-3xl border border-white/5 bg-black/20 p-6 flex items-center justify-center text-zinc-700 font-mono border-dashed">
+          Module C: 跃迁集结 (待装载)
+        </div>
       </div>
     </main>
   )
