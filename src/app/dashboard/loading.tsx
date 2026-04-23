@@ -1,5 +1,32 @@
 // src/app/dashboard/loading.tsx
+
+"use client"
+import { useEffect } from "react"
+
 export default function DashboardLoading() {
+
+// 🚀 核心动效注入：无侵入式触发“时空切换”
+useEffect(() => {
+    const triggerSpacetimeShift = () => {
+      // 自动在全局寻找那个带有“航线”或“时空”字样的切换按钮并点击它
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const shiftBtn = buttons.find(btn => 
+        btn.textContent?.includes('时空') || btn.textContent?.includes('航线')
+      );
+      if (shiftBtn) {
+        shiftBtn.click();
+      }
+    };
+
+    // 1. 挂载时（开始 Loading）：触发镜头下沉，进入跃迁状态
+    triggerSpacetimeShift();
+
+    // 2. 卸载时（Loading 结束）：再次触发，镜头平滑拉回正常视角
+    return () => {
+      triggerSpacetimeShift();
+    };
+  }, []);
+
     return (
       <main className="min-h-screen p-12 md:p-20 text-white max-w-7xl mx-auto flex flex-col gap-16 relative bg-transparent">
         
