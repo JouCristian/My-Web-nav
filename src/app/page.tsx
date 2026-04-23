@@ -160,6 +160,57 @@ export default async function Home() {
             </Link>
           </div>
         )}
+
+        {/* ========================================== */}
+        {/* 🚀 新增：「一生一芯·指挥中枢」大型科幻面板 */}
+        {/* ========================================== */}
+        <div className="relative w-full rounded-[2.5rem] bg-black/40 border border-white/10 p-8 md:p-12 overflow-hidden group animate-flame-hover mb-12 text-left">
+          {/* 背景微光与网格修饰 */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none group-hover:bg-blue-500/20 transition-all duration-700"></div>
+
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            
+            {/* 左侧文字区 */}
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                </span>
+                <h2 className="text-sm font-bold tracking-[0.3em] font-mono text-blue-400 uppercase">
+                  Yishengyixin Command Center
+                </h2>
+              </div>
+              <h3 className="text-3xl md:text-4xl font-bold text-white tracking-wide font-[family-name:var(--font-space)] mt-2">
+                「一生一芯」星际舰队指挥中枢
+              </h3>
+              <p className="mt-4 text-zinc-400 text-sm max-w-xl leading-relaxed">
+                全星系广播、船员档案管理、跃迁集结签到与考勤大盘。仅限授权船员与管理组访问。
+              </p>
+            </div>
+
+            {/* 右侧交互区 (根据登录状态分流) */}
+            <div className="shrink-0 w-full md:w-auto mt-4 md:mt-0">
+              {!session ? (
+                // 状态0：未登录，引导去 /login
+                <Link href="/login" className="block w-full text-center px-8 py-4 rounded-2xl bg-white text-black font-bold transition-all hover:bg-blue-400 hover:text-white active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                  进行身份校验接入
+                </Link>
+              ) : (
+                // 状态1/2/3：已登录，直接进入指挥舱大屏 (前往 /dashboard)
+                <Link href="/dashboard" className="group/btn flex items-center justify-center gap-3 w-full px-8 py-4 rounded-2xl bg-blue-500/20 border border-blue-500/30 text-blue-400 font-bold transition-all hover:bg-blue-500 hover:text-white active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.15)]">
+                  <span>进入指挥大屏</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover/btn:translate-x-1">
+                    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                  </svg>
+                </Link>
+              )}
+            </div>
+            
+          </div>
+        </div>
+        {/* ========================================== */}
         
         {/* 🛡️ 只有真正的舰长才能看到添加表单 */}
         {isCaptain && <AddCardForm />}
