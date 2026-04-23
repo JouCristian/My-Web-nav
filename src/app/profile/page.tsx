@@ -6,63 +6,79 @@ import { revalidatePath } from "next/cache"
 import Link from "next/link"
 import { ProfileForm } from "@/components/profile-form"
 
-// 🚀 核心组件：手绘铅笔风格星际背景
+// 🚀 核心组件：手绘铅笔风格星际背景 (已修复滤镜渲染 Bug)
 function SketchyBackground({ color }: { color: string }) {
+  // 为了防止水合(Hydration)时随机数报错，这里简单固定一下坐标，或者你可以保留原样
+  // 为了演示，我直接在 SVG 中写入更明显的元素
+  
   return (
-    <div className="fixed inset-0 z-[-1] overflow-hidden bg-[#020205]">
-      {/* SVG 噪声滤镜：定义手绘线条的“震颤”感 */}
-      <svg className="hidden">
-        <filter id="pencil-texture">
-          <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" result="noise" />
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" />
-        </filter>
-      </svg>
-
+    <div className="fixed inset-0 z-[-1] bg-[#020205] overflow-hidden">
+      {/* 将 filter 放入标准 <defs> 中，绝不能加 hidden */}
       <svg 
         viewBox="0 0 1000 1000" 
         preserveAspectRatio="xMidYMid slice" 
-        className="w-full h-full opacity-30 transition-colors duration-1000"
-        style={{ filter: "url(#pencil-texture)" }}
+        className="absolute inset-0 w-full h-full opacity-60 transition-colors duration-1000"
       >
-        {/* 背景星群：手绘点状 */}
-        <g fill={color}>
-          {[...Array(100)].map((_, i) => (
-            <circle 
-              key={i} 
-              cx={Math.random() * 1000} 
-              cy={Math.random() * 1000} 
-              r={Math.random() * 1.5} 
-              className="animate-pulse"
-              style={{ animationDelay: `${Math.random() * 3}s` }}
-            />
-          ))}
-        </g>
+        <defs>
+          {/* 扩大滤镜作用域，防止边缘被裁切 */}
+          <filter id="pencil-texture" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
 
-        {/* 轨道线条：不规则圆弧 */}
-        <g stroke={color} fill="none" strokeWidth="0.5" strokeDasharray="5,5">
-          <circle cx="500" cy="500" r="300" className="opacity-20" />
-          <circle cx="200" cy="800" r="150" className="opacity-10" />
-          <ellipse cx="800" cy="200" rx="400" ry="200" transform="rotate(30, 800, 200)" className="opacity-20" />
-        </g>
+        {/* 统一应用滤镜 */}
+        <g style={{ filter: "url(#pencil-texture)" }}>
+          
+          {/* 1. 散落的手绘星群 */}
+          <g fill={color}>
+            <circle cx="150" cy="200" r="3" className="animate-pulse" />
+            <circle cx="850" cy="300" r="2" className="animate-pulse" style={{ animationDelay: '1s' }} />
+            <circle cx="250" cy="800" r="2.5" className="animate-pulse" style={{ animationDelay: '2s' }} />
+            <circle cx="750" cy="700" r="1.5" className="animate-pulse" style={{ animationDelay: '0.5s' }} />
+            <circle cx="500" cy="100" r="3" className="animate-pulse" style={{ animationDelay: '1.5s' }} />
+            <circle cx="900" cy="800" r="2" className="animate-pulse" style={{ animationDelay: '2.5s' }} />
+            <circle cx="100" cy="600" r="2.5" className="animate-pulse" style={{ animationDelay: '0.8s' }} />
+            <circle cx="400" cy="900" r="3" className="animate-pulse" style={{ animationDelay: '1.2s' }} />
+            <circle cx="600" cy="400" r="1" className="animate-pulse" style={{ animationDelay: '0.3s' }} />
+          </g>
 
-        {/* 手绘飞船/星球草图：使用简单的 Path 模拟 */}
-        <path 
-          d="M850 150 L870 170 L860 180 L840 160 Z M860 165 L880 165" 
-          stroke={color} 
-          strokeWidth="1" 
-          fill="none" 
-        />
-        <path 
-          d="M150 150 Q 200 100, 250 150 T 350 150" 
-          stroke={color} 
-          strokeWidth="0.8" 
-          fill="none" 
-          className="opacity-40"
-        />
+          {/* 2. 手绘轨道线：加粗线条并调整虚线间距 */}
+          <g stroke={color} fill="none" strokeWidth="1.5" strokeDasharray="15,20">
+            <circle cx="500" cy="500" r="350" className="opacity-40" />
+            <circle cx="200" cy="850" r="250" className="opacity-30" />
+            <ellipse cx="850" cy="150" rx="400" ry="200" transform="rotate(35, 850, 150)" className="opacity-40" />
+            <ellipse cx="100" cy="100" rx="300" ry="150" transform="rotate(-20, 100, 100)" className="opacity-20" />
+          </g>
+
+          {/* 3. 几何航线与星体草图 */}
+          <path 
+            d="M800 200 L840 240 L820 260 L780 220 Z M820 230 L860 230" 
+            stroke={color} 
+            strokeWidth="2" 
+            fill="none" 
+            className="opacity-70"
+          />
+          <path 
+            d="M50 300 Q 250 100, 450 300 T 850 300" 
+            stroke={color} 
+            strokeWidth="2" 
+            strokeDasharray="5,10"
+            fill="none" 
+            className="opacity-40"
+          />
+          <path 
+            d="M450 500 L550 500 M500 450 L500 550" 
+            stroke={color} 
+            strokeWidth="1" 
+            fill="none" 
+            className="opacity-50"
+          />
+        </g>
       </svg>
 
-      {/* 渐变遮罩：确保内容区域清晰 */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#020205]/60 to-[#020205]"></div>
+      {/* 调整遮罩层：去掉顶部和中部的黑色遮挡，只在最底部留一点渐变 */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#020205] pointer-events-none"></div>
     </div>
   )
 }
