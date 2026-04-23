@@ -23,7 +23,6 @@ export default async function CrewArchivesPage() {
   const isManager = dbUser?.role === "OWNER" || dbUser?.role === "ADMIN"
 
   return (
-    {/* 🚀 修复背景：将 bg-[#020205] 改为 bg-transparent，让底层 ScrollBackground 透出来 */}
     <main className="min-h-screen bg-transparent p-6 md:p-10 text-white relative overflow-hidden">
       
       {/* 顶部氛围微光 */}
@@ -48,7 +47,7 @@ export default async function CrewArchivesPage() {
             </h1>
           </div>
           
-          {/* 🚀 修复 UI：采用一致的脉冲灯卡片，但使用 翠绿 和 紫色 区分 */}
+          {/* 🚀 右上角操作区：翠绿与紫色脉冲卡片 */}
           <div className="flex flex-wrap gap-4">
             {isManager && (
               <button className="group flex items-center gap-3 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-emerald-500/30 transition-all active:scale-95 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
@@ -76,9 +75,6 @@ export default async function CrewArchivesPage() {
           </div>
         </div>
 
-        {/* ===================================== */}
-        {/* 以下列表与卡片逻辑完全未动，保留您的代码 */}
-        {/* ===================================== */}
         <div className="space-y-4">
           {sortedUsers.map((user) => {
             const isOwner = user.role === "OWNER";
