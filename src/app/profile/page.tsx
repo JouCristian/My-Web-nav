@@ -4,9 +4,8 @@ import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import Link from "next/link"
-// 🚀 重新引入最初的动态星空背景
-import { ScrollBackground } from "@/components/scroll-background"
 import { ProfileForm } from "@/components/profile-form"
+// 🚀 注意：这里已经删除了 import { ScrollBackground }
 
 export default async function ProfilePage() {
   const session = await auth()
@@ -37,9 +36,7 @@ export default async function ProfilePage() {
     revalidatePath("/")
   }
 
-  /**
-   * 🛡️ 军衔 UI 配置：完全保留上一版深受好评的共鸣圆环与色彩体系
-   */
+  // 🛡️ 军衔 UI 配置
   const getRoleUI = (currentRole: string) => {
     switch (currentRole) {
       case "OWNER":
@@ -103,38 +100,32 @@ export default async function ProfilePage() {
   const ui = getRoleUI(role);
 
   return (
-    <main className="min-h-screen p-10 flex flex-col items-center relative">
+    // 🚀 背景设为透明 bg-transparent，让底层的全局星空透上来
+    <main className="min-h-screen bg-transparent p-10 flex flex-col items-center relative overflow-hidden">
       
-      {/* 🚀 背景切换回 ScrollBackground */}
-      <ScrollBackground />
-
       <div className="max-w-xl w-full relative z-10">
         
-        {/* 返回按钮 */}
+        {/* 🚀 升级版同步返回按钮：蓝色脉冲 + 呼吸环 */}
         <div className="flex justify-end mb-8">
-          <Link href="/" className="group flex items-center gap-4 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all active:scale-95">
-            <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/10 transition-colors">
-              <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_12px_rgba(96,165,250,0.9)]" />
+          <Link href="/" className="group flex items-center gap-4 bg-black/40 px-6 py-4 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+            <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/20 transition-colors">
+              <div className="w-3 h-3 rounded-full bg-blue-400 animate-pulse shadow-[0_0_15px_rgba(96,165,250,0.8)]" />
+              <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
             </div>
             <div className="flex flex-col items-start">
-              <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono">Return Path</span>
-              <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">返回导航站</span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-mono group-hover:text-blue-400 transition-colors">Return Path</span>
+              <span className="text-base font-bold text-white tracking-widest font-[family-name:var(--font-space)]">返回导航站</span>
             </div>
           </Link>
         </div>
 
-        {/* 核心卡片 UI (保持上一版所有细节不变) */}
+        {/* 核心卡片 UI */}
         <div className={`relative bg-[#0a0a0c]/80 p-8 rounded-[2.5rem] backdrop-blur-xl animate-flame-active transition-all duration-700 ${ui.wrapper}`}>
-          
           <div className="flex flex-col items-center mb-8 border-b border-white/5 pb-8">
-             {/* 闪烁的共鸣圆环 */}
              {ui.icon}
-             
              <h2 className={`text-3xl font-bold font-[family-name:var(--font-space)] tracking-widest text-center mt-2 ${ui.titleStyle}`}>
                {ui.title}
              </h2>
-             
-             {/* 保持军衔色的 Subtitle */}
              <p className={`text-[10px] uppercase tracking-[0.3em] mt-3 font-mono text-center font-bold ${ui.subtitleStyle}`}>
                {ui.subtitle}
              </p>
