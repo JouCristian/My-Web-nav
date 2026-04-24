@@ -32,6 +32,29 @@ export default async function Home() {
     })
   }
 
+  // 🚀 4. 核心：三级身份识别逻辑定义
+  // 指挥官：舰长本人，或者角色为 ADMIN/OWNER 的用户
+  const isCommander = isCaptain || (dbUser && (dbUser.role === "ADMIN" || dbUser.role === "OWNER"));
+  // 正式船员：已经通过审核，角色为 MEMBER 的用户
+  const isAuthorizedCrew = dbUser && dbUser.role === "MEMBER";
+  // 普通游客：未登录，或者角色仍为 PENDING 的用户
+  const isGuest = !session || (dbUser && dbUser.role === "PENDING");
+
+  // 根据身份动态计算文案
+  let cardTitle = "「一生一芯」·西科星际舰队";
+  let cardSubtitle = "加入我们，在星海中探索CPU的精妙设计！仅限授权船员和管理组访问。💕";
+  let btnText = "点击提交档案 加入舰队🚀";
+
+  if (isAuthorizedCrew) {
+    cardTitle = "「一生一芯」·西科星际舰队";
+    cardSubtitle = "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。嘿伙计！今天干的怎么样？😎";
+    btnText = "进入舰队🚀";
+  } else if (isCommander) {
+    cardTitle = "「一生一芯」·星际舰队指挥中枢";
+    cardSubtitle = "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。好好干，伙计们！🤞";
+    btnText = "进入舰队指挥所🚀";
+  }
+
   return (
     <main className="min-h-screen bg-transparent p-10 text-white">
       <div className="max-w-5xl mx-auto text-center">
@@ -153,7 +176,7 @@ export default async function Home() {
         )}
 
         {/* ========================================== */}
-        {/* 🚀 修改：一生一芯大型面板 (支持未登录文案切换) */}
+        {/* 🚀 终极版：三层逻辑「一生一芯」大卡片面板 */}
         {/* ========================================== */}
         <div className="relative w-full rounded-[2.5rem] bg-black/40 border border-white/10 p-8 md:p-12 overflow-hidden group animate-flame-hover mb-12 text-left">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
@@ -167,39 +190,40 @@ export default async function Home() {
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
                 </span>
                 <h2 className="text-sm font-bold tracking-[0.3em] font-mono text-blue-400 uppercase">
-                  Yishengyixin Command Center
+                  {isCommander ? "Yishengyixin Command Center" : "Fleet Mission Status"}
                 </h2>
               </div>
               
-              {/* 🚀 动态名字切换 */}
+              {/* 🚀 动态大字标题切换 */}
               <h3 className="text-3xl md:text-4xl font-bold text-white tracking-wide font-[family-name:var(--font-space)] mt-2">
-                {!session ? "「一生一芯」·西科星际舰队" : "「一生一芯」星际舰队指挥中枢"}
+                {cardTitle}
               </h3>
               
-              {/* 🚀 动态小字切换 */}
-              <p className="mt-4 text-zinc-400 text-sm max-w-xl leading-relaxed">
-                {!session 
-                  ? "加入我们，在星海中探索CPU的精妙设计！仅限授权船员和管理组访问。💕" 
-                  : "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。好好干，伙计们！🤞"}
+              {/* 🚀 动态描述小字切换 */}
+              <p className="mt-4 text-zinc-400 text-sm max-w-xl leading-relaxed whitespace-pre-line">
+                {cardSubtitle}
               </p>
             </div>
 
             <div className="shrink-0 w-full md:w-auto mt-4 md:mt-0">
-              {!session ? (
-                <Link href="/login" className="block w-full text-center px-8 py-4 rounded-2xl bg-white text-black font-bold transition-all hover:bg-blue-400 hover:text-white active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-                  进行身份校验接入
-                </Link>
-              ) : (
-                <Link href="/dashboard" className="group/btn flex items-center justify-center gap-3 w-full px-8 py-4 rounded-2xl bg-blue-500/20 border border-blue-500/30 text-blue-400 font-bold transition-all hover:bg-blue-500 hover:text-white active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.15)]">
-                  <span>进入指挥大屏</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover/btn:translate-x-1">
-                    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-                  </svg>
-                </Link>
-              )}
+              {/* 根据登录状态决定点击去向：未登录去 login，已登录去 dashboard */}
+              <Link 
+                href={!session ? "/login" : "/dashboard"} 
+                className={`group/btn flex items-center justify-center gap-3 w-full px-8 py-4 rounded-2xl font-bold transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.05)] ${
+                  isGuest 
+                  ? "bg-white text-black hover:bg-blue-400 hover:text-white" 
+                  : "bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:bg-blue-500 hover:text-white shadow-[0_0_20px_rgba(59,130,246,0.15)]"
+                }`}
+              >
+                <span>{btnText}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover/btn:translate-x-1">
+                  <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                </svg>
+              </Link>
             </div>
           </div>
         </div>
+        {/* ========================================== */}
         
         {isCaptain && <AddCardForm />}
         
