@@ -8,18 +8,32 @@ export default async function CrewArchivesPage() {
   const session = await auth()
   if (!session?.user) redirect("/login")
 
-  const users = await prisma.user.findMany()
+  // 获取数据库里所有的账号
+  const allUsers = await prisma.user.findMany()
 
+  // 🚀 核心修复：建立花名册准入防线
+  // 规则：如果是 PENDING（待审核）状态，必须要有 realName 和 studentId 才能上榜。
+  // 刚注册未填写的游客，或点击【撤销】清空了档案的船员，将直接从列表隐形！
+  const validUsers = allUsers.filter(user => {
+    if (user.role === "PENDING") {
+      // 只有真名和学号都不为空，才算真正提交了档案
+      return user.realName !== null && user.studentId !== null;
+    }
+    // 正式军衔（OWNER, ADMIN, MEMBER）始终显示
+    return true; 
+  })
+
+  // 按权重排序
   const roleWeight: Record<string, number> = { OWNER: 4, ADMIN: 3, MEMBER: 2, PENDING: 1 }
   
-  const sortedUsers = users.sort((a, b) => {
+  const sortedUsers = validUsers.sort((a, b) => {
     if (roleWeight[a.role] !== roleWeight[b.role]) {
       return roleWeight[b.role] - roleWeight[a.role]
     }
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   })
 
-  const dbUser = users.find(u => u.email === session.user?.email)
+  const dbUser = allUsers.find(u => u.email === session.user?.email)
   const isManager = dbUser?.role === "OWNER" || dbUser?.role === "ADMIN"
 
   return (
@@ -47,7 +61,7 @@ export default async function CrewArchivesPage() {
             </h1>
           </div>
           
-          {/* 🚀 右上角操作区：翠绿与紫色脉冲卡片 */}
+          {/* 右上角操作区：翠绿与紫色脉冲卡片 */}
           <div className="flex flex-wrap gap-4">
             {isManager && (
               <button className="group flex items-center gap-3 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-emerald-500/30 transition-all active:scale-95 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
@@ -75,6 +89,7 @@ export default async function CrewArchivesPage() {
           </div>
         </div>
 
+        {/* 花名册渲染区域 */}
         <div className="space-y-4">
           {sortedUsers.map((user) => {
             const isOwner = user.role === "OWNER";
