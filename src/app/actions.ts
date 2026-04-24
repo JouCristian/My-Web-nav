@@ -116,3 +116,24 @@ export async function updateRecruitProfile(formData: FormData) {
   // 提交后，拦截器会检测到 realName 已存在，从而进入“待核准”或“放行”状态
   revalidatePath("/dashboard")
 }
+
+/**
+ * 🚀 新增：撤销已提交的新兵档案
+ * 允许船员清空已提交的信息，重新进入录入状态
+ */
+export async function revokeRecruitProfile() {
+  const session = await auth()
+  if (!session?.user?.email) throw new Error("未授权的操作")
+
+  // 将档案字段重置为 null，触发拦截器回到 Status 1
+  await prisma.user.update({
+    where: { email: session.user.email },
+    data: { 
+      realName: null, 
+      studentId: null, 
+      feishuLink: null 
+    }
+  })
+
+  revalidatePath("/dashboard")
+}
