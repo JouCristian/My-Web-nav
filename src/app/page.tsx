@@ -1,11 +1,12 @@
 // src/app/page.tsx
 import { NavigationCard } from "@/components/navigation-card"
 import { AddCardForm } from "@/components/add-card-form"
+// 🚀 引入我们刚刚打造的全息拦截按钮
+import { GuestActionButton } from "@/components/guest-action-button"
 import { prisma } from "@/lib/db"
 import { auth, signOut } from "@/auth" 
 import Link from "next/link"
 
-// 定义书签的结构
 interface Bookmark {
   id: number;
   name: string;
@@ -16,15 +17,11 @@ interface Bookmark {
 
 export default async function Home() {
   const session = await auth()
-  
-  // 1. 获取所有导航书签
   const links = await prisma.bookmark.findMany({ orderBy: { createdAt: 'desc' } })
 
-  // 2. 权限校验
   // @ts-ignore
   const isCaptain = session?.user?.isCaptain
 
-  // 3. 获取当前登录用户的最新数据库信息
   let dbUser = null
   if (session?.user?.email) {
     dbUser = await prisma.user.findUnique({
@@ -32,49 +29,38 @@ export default async function Home() {
     })
   }
 
-  // 🚀 4. 核心：三级身份识别逻辑定义
-  // 指挥官：舰长本人，或者角色为 ADMIN/OWNER 的用户
+  // 三级身份识别逻辑定义
   const isCommander = isCaptain || (dbUser && (dbUser.role === "ADMIN" || dbUser.role === "OWNER"));
-  // 正式船员：已经通过审核，角色为 MEMBER 的用户
   const isAuthorizedCrew = dbUser && dbUser.role === "MEMBER";
-  // 普通游客：未登录，或者角色仍为 PENDING 的用户
   const isGuest = !session || (dbUser && dbUser.role === "PENDING");
 
-  // 根据身份动态计算文案
   let cardTitle = "「一生一芯」·西科星际舰队";
   let cardSubtitle = "加入我们，在星海中探索CPU的精妙设计！仅限授权船员和管理组访问。💕";
-  let btnText = "点击提交档案 加入舰队🚀";
+  let btnText = "点击加入舰队";
 
   if (isAuthorizedCrew) {
     cardTitle = "「一生一芯」·西科星际舰队";
-    cardSubtitle = "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。嘿伙计！今天干的怎么样？😎";
-    btnText = "进入舰队🚀";
+    cardSubtitle = "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。嘿伙计！今天干的怎么样？";
+    btnText = "进入舰队";
   } else if (isCommander) {
     cardTitle = "「一生一芯」·星际舰队指挥中枢";
     cardSubtitle = "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。好好干，伙计们！🤞";
-    btnText = "进入舰队指挥所🚀";
+    btnText = "进入舰队指挥大屏";
   }
 
   return (
     <main className="min-h-screen bg-transparent p-10 text-white">
       <div className="max-w-5xl mx-auto text-center">
         
-        {/* 🚀 顶部控制台按钮区 */}
+        {/* 顶部控制台按钮区 */}
         <div className="flex justify-end mb-8 gap-4">
           {session ? (
             <div className="flex items-center gap-4">
-              <Link 
-                href="/profile" 
-                className="group flex items-center gap-3 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all active:scale-[0.97]"
-              >
+              <Link href="/profile" className="group flex items-center gap-3 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all active:scale-[0.97]">
                 <div className="relative">
                   <div className="w-9 h-9 rounded-full overflow-hidden border border-white/20 group-hover:border-white/40 transition-colors">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src={dbUser?.customAvatar || session.user?.image || ""} 
-                      alt="avatar" 
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={dbUser?.customAvatar || session.user?.image || ""} alt="avatar" className="w-full h-full object-cover" />
                   </div>
                   {isCaptain && (
                     <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-yellow-500 rounded-full border-2 border-black flex items-center justify-center shadow-[0_0_8px_rgba(234,179,8,0.6)]">
@@ -82,16 +68,11 @@ export default async function Home() {
                     </div>
                   )}
                 </div>
-
                 <div className="flex flex-col items-start">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono group-hover:text-zinc-300">
-                      Profile
-                    </span>
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono group-hover:text-zinc-300">Profile</span>
                     {isCaptain && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-yellow-500/10 border border-yellow-500/50 text-yellow-500 font-bold tracking-tighter uppercase leading-none shadow-[0_0_10px_rgba(234,179,8,0.2)] group-hover:bg-yellow-500 group-hover:text-black transition-all">
-                        Captain
-                      </span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-yellow-500/10 border border-yellow-500/50 text-yellow-500 font-bold tracking-tighter uppercase leading-none shadow-[0_0_10px_rgba(234,179,8,0.2)] group-hover:bg-yellow-500 group-hover:text-black transition-all">Captain</span>
                     )}
                   </div>
                   <span className="text-sm font-bold text-white tracking-tight font-[family-name:var(--font-space)] flex items-center gap-1">
@@ -100,7 +81,6 @@ export default async function Home() {
                   </span>
                 </div>
               </Link>
-
               <form action={async () => { "use server"; await signOut(); }}>
                 <button className="group flex items-center gap-4 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all duration-300 active:scale-[0.97]">
                   <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-red-500/10 transition-colors">
@@ -108,12 +88,8 @@ export default async function Home() {
                     <div className="absolute inset-0 rounded-full border border-red-500/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
                   </div>
                   <div className="flex flex-col items-start">
-                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono group-hover:text-red-400 transition-colors">
-                      Status: Online
-                    </span>
-                    <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">
-                      退出登录
-                    </span>
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono group-hover:text-red-400 transition-colors">Status: Online</span>
+                    <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">退出登录</span>
                   </div>
                 </button>
               </form>
@@ -125,12 +101,8 @@ export default async function Home() {
                 <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
               </div>
               <div className="flex flex-col items-start">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono group-hover:text-blue-400 transition-colors">
-                  Authorization
-                </span>
-                <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">
-                  开启星际之旅
-                </span>
+                <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono group-hover:text-blue-400 transition-colors">Authorization</span>
+                <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">开启星际之旅</span>
               </div>
             </Link>
           )}
@@ -141,29 +113,17 @@ export default async function Home() {
         </h1>
         
         <p className="text-zinc-500 mb-10">
-          {isCaptain ? (
-            `星际数据库已连通，欢迎回来，${dbUser?.nickname || "舰长"}`
-          ) : (
-            "你的星际导航站！如需修改导航卡片，请联系舰长 JouCristian"
-          )}
+          {isCaptain ? `星际数据库已连通，欢迎回来，${dbUser?.nickname || "舰长"}` : "你的星际导航站！如需修改导航卡片，请联系舰长 JouCristian"}
         </p>
 
         {!isCaptain && (
           <div className="mb-12 max-w-md mx-auto">
-            <Link 
-              href="/contact" 
-              className="group block bg-black/75 p-4 rounded-2xl border border-dashed border-white/20 animate-flame-hover hover:border-white/40 transition-all"
-            >
+            <Link href="/contact" className="group block bg-black/75 p-4 rounded-2xl border border-dashed border-white/20 animate-flame-hover hover:border-white/40 transition-all">
               <div className="flex items-center justify-center gap-4">
                 <div className="relative">
                   <div className="absolute inset-0 rounded-xl bg-white/10 animate-ping opacity-30" />
                   <div className="relative bg-white/5 p-3 rounded-xl border border-white/10 text-zinc-400 group-hover:bg-white group-hover:text-black group-hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] group-hover:rotate-3 transition-all duration-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="7" height="7" rx="1.5" />
-                      <rect x="14" y="3" width="7" height="7" rx="1.5" />
-                      <rect x="14" y="14" width="7" height="7" rx="1.5" />
-                      <rect x="3" y="14" width="7" height="7" rx="1.5" />
-                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /></svg>
                   </div>
                 </div>
                 <div className="text-left">
@@ -175,9 +135,7 @@ export default async function Home() {
           </div>
         )}
 
-        {/* ========================================== */}
-        {/* 🚀 终极版：三层逻辑「一生一芯」大卡片面板 */}
-        {/* ========================================== */}
+        {/* 三层逻辑「一生一芯」大卡片面板 */}
         <div className="relative w-full rounded-[2.5rem] bg-black/40 border border-white/10 p-8 md:p-12 overflow-hidden group animate-flame-hover mb-12 text-left">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
           <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none group-hover:bg-blue-500/20 transition-all duration-700"></div>
@@ -194,53 +152,44 @@ export default async function Home() {
                 </h2>
               </div>
               
-              {/* 🚀 动态大字标题切换 */}
               <h3 className="text-3xl md:text-4xl font-bold text-white tracking-wide font-[family-name:var(--font-space)] mt-2">
                 {cardTitle}
               </h3>
               
-              {/* 🚀 动态描述小字切换 */}
               <p className="mt-4 text-zinc-400 text-sm max-w-xl leading-relaxed whitespace-pre-line">
                 {cardSubtitle}
               </p>
             </div>
 
             <div className="shrink-0 w-full md:w-auto mt-4 md:mt-0">
-              {/* 根据登录状态决定点击去向：未登录去 login，已登录去 dashboard */}
-              <Link 
-                href={!session ? "/login" : "/dashboard"} 
-                className={`group/btn flex items-center justify-center gap-3 w-full px-8 py-4 rounded-2xl font-bold transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.05)] ${
-                  isGuest 
-                  ? "bg-white text-black hover:bg-blue-400 hover:text-white" 
-                  : "bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:bg-blue-500 hover:text-white shadow-[0_0_20px_rgba(59,130,246,0.15)]"
-                }`}
-              >
-                <span>{btnText}</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover/btn:translate-x-1">
-                  <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-                </svg>
-              </Link>
+              {/* 🚀 核心替换：未登录时启用弹窗，登录后直接 Link 跳转 */}
+              {!session ? (
+                <GuestActionButton btnText={btnText} targetHref="/login" />
+              ) : (
+                <Link 
+                  href="/dashboard" 
+                  className={`group/btn flex items-center justify-center gap-3 w-full px-8 py-4 rounded-2xl font-bold transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.05)] ${
+                    isGuest 
+                    ? "bg-white text-black hover:bg-blue-400 hover:text-white" 
+                    : "bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:bg-blue-500 hover:text-white shadow-[0_0_20px_rgba(59,130,246,0.15)]"
+                  }`}
+                >
+                  <span>{btnText}</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover/btn:translate-x-1">
+                    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                  </svg>
+                </Link>
+              )}
             </div>
           </div>
         </div>
-        {/* ========================================== */}
         
         {isCaptain && <AddCardForm />}
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left relative z-10">
           {links.map((link: Bookmark, index: number) => (
-            <div 
-              key={link.id}
-              className="animate-fade-in-up"
-              style={{ animationDelay: `${index * 80}ms` }}
-            >
-            <NavigationCard 
-              id={link.id}
-              title={link.name}
-              description={link.description || ""}
-              url={link.url}
-              showDelete={isCaptain} 
-            />
+            <div key={link.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 80}ms` }}>
+              <NavigationCard id={link.id} title={link.name} description={link.description || ""} url={link.url} showDelete={isCaptain} />
             </div>
           ))}
         </div>
