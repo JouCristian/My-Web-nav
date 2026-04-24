@@ -2,23 +2,22 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { signOut } from "next-auth/react" // 🚀 使用客户端 signOut 方便控制时机
 
-export function SignOutButton() {
+// 🚀 核心修改：不再从 next-auth/react 引入 signOut，而是接收父组件传来的 Server Action
+export function SignOutButton({ onSignOut }: { onSignOut: () => Promise<void> }) {
   const [isExiting, setIsExiting] = useState(false)
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     setIsExiting(true)
     
-    // 🚀 给予 1.5 秒的“离线序列”动画时间
+    // 🚀 给予 1.5 秒的“全息离线序列”动画时间，随后执行服务端的真实退出逻辑
     setTimeout(() => {
-      signOut({ callbackUrl: "/" })
+      onSignOut()
     }, 1500)
   }
 
   return (
     <>
-      {/* 🚀 1. 退出按钮本体 */}
       <button 
         onClick={handleSignOut}
         disabled={isExiting}
@@ -40,7 +39,7 @@ export function SignOutButton() {
         </div>
       </button>
 
-      {/* 🚀 2. 全息离线遮罩 (System Shutdown Overlay) */}
+      {/* 全息离线遮罩 (System Shutdown Overlay) */}
       <AnimatePresence>
         {isExiting && (
           <motion.div 
@@ -68,10 +67,9 @@ export function SignOutButton() {
                 CRITICAL: TERMINATING SESSION
               </div>
               <div className="text-white font-bold text-2xl tracking-[0.2em] font-[family-name:var(--font-space)]">
-                > CONNECTION CLOSED
+                &gt; CONNECTION CLOSED
               </div>
               
-              {/* 装饰条 */}
               <div className="mt-8 flex gap-2 justify-center">
                 {[...Array(3)].map((_, i) => (
                   <motion.div

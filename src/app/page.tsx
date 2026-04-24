@@ -2,7 +2,6 @@
 import { NavigationCard } from "@/components/navigation-card"
 import { AddCardForm } from "@/components/add-card-form"
 import { GuestActionButton } from "@/components/guest-action-button"
-// 🚀 引入我们刚刚打造的跃迁连接器
 import { TransitionLink } from "@/components/transition-link"
 import { prisma } from "@/lib/db"
 import { auth, signOut } from "@/auth" 
@@ -31,7 +30,6 @@ export default async function Home() {
     })
   }
 
-  // 三级身份识别逻辑定义
   const isCommander = isCaptain || (dbUser && (dbUser.role === "ADMIN" || dbUser.role === "OWNER"));
   const isAuthorizedCrew = dbUser && dbUser.role === "MEMBER";
   const isGuest = !session || (dbUser && dbUser.role === "PENDING");
@@ -50,11 +48,16 @@ export default async function Home() {
     btnText = "进入舰队指挥大屏";
   }
 
+  // 🚀 核心修复：在这里定义 Server Action，真正消费掉顶部 import 的 signOut，消除构建错误
+  const handleSignOutAction = async () => {
+    "use server"
+    await signOut()
+  }
+
   return (
     <main className="min-h-screen bg-transparent p-10 text-white">
       <div className="max-w-5xl mx-auto text-center">
         
-        {/* 🚀 顶部控制台按钮区 */}
         <div className="flex justify-end mb-8 gap-4">
           {session ? (
             <div className="flex items-center gap-4">
@@ -83,10 +86,12 @@ export default async function Home() {
                   </span>
                 </div>
               </Link>
-              <SignOutButton />
+              
+              {/* 🚀 核心修复：将 Server Action 作为 prop 传入客户端组件 */}
+              <SignOutButton onSignOut={handleSignOutAction} />
+              
             </div>
           ) : (
-            /* 🚀 升级1：未登录状态下的“开启星际之旅” */
             <TransitionLink 
               href="/login" 
               className="group flex items-center gap-4 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all duration-300 active:scale-[0.97]"
@@ -113,7 +118,6 @@ export default async function Home() {
 
         {!isCaptain && (
           <div className="mb-12 max-w-md mx-auto">
-            {/* 🚀 升级2：联系舰长卡片 */}
             <TransitionLink 
               href="/contact" 
               className="group block bg-black/75 p-4 rounded-2xl border border-dashed border-white/20 animate-flame-hover hover:border-white/40 transition-all"
