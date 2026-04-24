@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
+import { motion, AnimatePresence } from "framer-motion" // 🚀 引入顶级动效引擎
 
 export function GuestActionButton({ btnText, targetHref }: { btnText: string, targetHref: string }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -14,37 +15,71 @@ export function GuestActionButton({ btnText, targetHref }: { btnText: string, ta
     setMounted(true)
   }, [])
 
-  // 🚀 核心：手动触发时空切换的指令函数
   const triggerSpacetimeShift = () => {
     const buttons = Array.from(document.querySelectorAll('button'));
     const shiftBtn = buttons.find(btn => {
       const text = btn.textContent || "";
-      return text.includes('SPACETIME') || 
-             text.includes('时空') || 
-             text.includes('航线') || 
-             text.includes('星际') || 
-             text.includes('轨道') || 
-             text.includes('深空') || 
-             text.includes('默认');
+      return text.includes('SPACETIME') || text.includes('时空') || text.includes('航线') || 
+             text.includes('星际') || text.includes('轨道') || text.includes('深空') || text.includes('默认');
     });
-    
-    if (shiftBtn) {
-      shiftBtn.click();
-    }
+    if (shiftBtn) shiftBtn.click();
   };
 
-  const modalContent = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
-      
-      {/* 核心容器：承载呼吸灯特效与卡片主体 */}
-      <div className="relative w-[90%] max-w-md group">
+  // 🚀 弹窗内容组件化，方便 AnimatePresence 管理出场动画
+  const Modal = () => (
+    <motion.div 
+      // 遮罩层动画
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, transition: { duration: 0.8, ease: "easeInOut" } }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-md"
+    >
+      {/* 🚀 核心容器：承载呼吸灯与粒子消散逻辑 */}
+      <motion.div 
+        className="relative w-[90%] max-w-md"
+        // 1. 入场动画：从下方滑入并弹跳
+        initial={{ y: 50, opacity: 0, scale: 0.9 }}
+        animate={{ 
+          y: 0, 
+          opacity: 1, 
+          scale: 1,
+          // 🚀 2. 本体呼吸放大效果：物理形体随节奏轻微缩放
+          transition: {
+            y: { type: "spring", stiffness: 300, damping: 25 },
+            scale: {
+              repeat: Infinity,
+              repeatType: "mirror",
+              duration: 2.5,
+              ease: "easeInOut"
+            }
+          }
+        }}
+        // 🚀 3. 粒子消散动画：点击取消后的视觉瓦解过程
+        exit={{ 
+          opacity: 0,
+          scale: 1.2,          // 瞬间膨胀
+          filter: "blur(20px)", // 剧烈模糊
+          transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
+        }}
+        // 持续呼吸状态
+        animate={{
+            scale: [1, 1.02, 1],
+            transition: {
+                scale: {
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                }
+            }
+        }}
+      >
         
-        {/* 🌌 蓝色呼吸灯发光层 */}
+        {/* 🌌 蓝色呼吸灯发光层 (保持之前的设计) */}
         <div className="absolute -inset-2 rounded-[3rem] bg-blue-500/20 blur-2xl animate-pulse pointer-events-none"></div>
         <div className="absolute inset-0 rounded-[2.5rem] border-2 border-blue-400/50 shadow-[0_0_80px_rgba(59,130,246,0.6)] animate-pulse pointer-events-none"></div>
 
         {/* 卡片主体 */}
-        <div className="relative bg-[#06060a]/95 border border-blue-500/30 p-8 md:p-10 rounded-[2.5rem] text-center overflow-hidden transition-transform duration-500 hover:scale-[1.02]">
+        <div className="relative bg-[#06060a]/95 border border-blue-500/30 p-8 md:p-10 rounded-[2.5rem] text-center overflow-hidden transition-transform duration-500">
           
           {/* 背景动态光晕 */}
           <div className="absolute -top-20 -right-20 w-48 h-48 bg-blue-500/10 blur-[60px] rounded-full pointer-events-none animate-pulse"></div>
@@ -66,21 +101,17 @@ export function GuestActionButton({ btnText, targetHref }: { btnText: string, ta
             加入星际舰队前，必须先前往安全协议区进行<span className="text-blue-400 font-bold drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]">身份校验</span>。
           </p>
 
-          {/* 双通道操作按钮 */}
           <div className="flex gap-4 w-full">
             <button 
-              onClick={() => setIsOpen(false)}
+              onClick={() => setIsOpen(false)} // 触发 exit 粒子消散动画
               className="flex-1 py-4 rounded-xl border border-white/10 text-zinc-400 font-bold tracking-widest hover:bg-white/5 hover:text-white transition-all active:scale-95"
             >
               取 消
             </button>
             <button 
               onClick={() => {
-                // 🚀 1. 先触发时空切换，让背景动起来
                 triggerSpacetimeShift();
-                // 🚀 2. 关闭弹窗
                 setIsOpen(false);
-                // 🚀 3. 执行页面跳转
                 router.push(targetHref);
               }}
               className="flex-1 py-4 rounded-xl bg-blue-500/20 border border-blue-500/40 text-blue-400 font-bold tracking-widest hover:bg-blue-500 hover:text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.2)]"
@@ -88,11 +119,10 @@ export function GuestActionButton({ btnText, targetHref }: { btnText: string, ta
               进行身份校验
             </button>
           </div>
-
         </div>
-      </div>
-    </div>
-  )
+      </motion.div>
+    </motion.div>
+  );
 
   return (
     <>
@@ -106,7 +136,12 @@ export function GuestActionButton({ btnText, targetHref }: { btnText: string, ta
         </svg>
       </button>
 
-      {mounted && isOpen && createPortal(modalContent, document.body)}
+      {/* 🚀 AnimatePresence 是实现“消失动画”的关键容器 */}
+      {mounted && (
+        <AnimatePresence>
+          {isOpen && createPortal(<Modal />, document.body)}
+        </AnimatePresence>
+      )}
     </>
   )
 }
