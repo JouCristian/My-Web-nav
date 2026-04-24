@@ -4,22 +4,12 @@ import { useEffect } from "react"
 
 export default function CrewLoading() {
   useEffect(() => {
-    const getShiftBtn = () => Array.from(document.querySelectorAll('button')).find(btn => 
+    // 🚀 最极简逻辑
+    const buttons = Array.from(document.querySelectorAll('button'));
+    const shiftBtn = buttons.find(btn => 
       btn.textContent?.includes('时空') || btn.textContent?.includes('航线')
     );
-
-    const btn = getShiftBtn();
-    if (btn) {
-      if (btn.textContent?.includes('默认')) {
-        btn.click();
-      } else {
-        btn.click(); 
-        setTimeout(() => {
-          const freshBtn = getShiftBtn();
-          if (freshBtn) freshBtn.click();
-        }, 150);
-      }
-    }
+    if (shiftBtn) shiftBtn.click();
   }, []);
 
   return (

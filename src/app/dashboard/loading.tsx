@@ -4,27 +4,16 @@ import { useEffect } from "react"
 
 export default function DashboardLoading() {
   useEffect(() => {
-    const getShiftBtn = () => Array.from(document.querySelectorAll('button')).find(btn => 
+    // 🚀 最极简逻辑
+    const buttons = Array.from(document.querySelectorAll('button'));
+    const shiftBtn = buttons.find(btn => 
       btn.textContent?.includes('时空') || btn.textContent?.includes('航线')
     );
-
-    const btn = getShiftBtn();
-    if (btn) {
-      if (btn.textContent?.includes('默认')) {
-        btn.click();
-      } else {
-        btn.click(); 
-        setTimeout(() => {
-          const freshBtn = getShiftBtn();
-          if (freshBtn) freshBtn.click();
-        }, 150);
-      }
-    }
+    if (shiftBtn) shiftBtn.click();
   }, []);
 
   return (
     <main className="min-h-screen p-12 md:p-20 text-white max-w-7xl mx-auto flex flex-col gap-16 relative bg-transparent">
-      
       {/* 顶部导航骨架 */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 border-b border-white/10 pb-12">
         <div className="space-y-4">
