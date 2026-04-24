@@ -46,31 +46,55 @@ export default async function DashboardPage() {
   const isCaptain = session.user.isCaptain;
   const isProfileIncomplete = !dbUser.realName || !dbUser.studentId;
 
-  // ==========================================
+// ==========================================
   // 🚨 拦截器：状态 1 (新兵无档案，防爆门拦截)
   // ==========================================
   if (!isCaptain && isProfileIncomplete) {
     return (
-      <main className="min-h-screen bg-[#020205] flex items-center justify-center p-6">
-        <div className="relative z-10 w-full max-w-lg bg-[#06060a]/95 border border-red-500/30 p-10 rounded-[2.5rem] backdrop-blur-xl animate-flame-active">
-          <div className="flex items-center gap-4 mb-8 border-b border-red-500/20 pb-6">
-            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">🛡️</div>
-            <div>
-              <h1 className="text-2xl font-bold text-white tracking-widest font-[family-name:var(--font-space)]">身份权限识别</h1>
-              <p className="text-red-400/80 text-xs font-mono mt-1 uppercase tracking-widest">Entry Protocol Required</p>
-            </div>
+      // 🚀 1. 背景设为 transparent，让底层的 ScrollBackground 完美透出
+      <main className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        
+        {/* 🚀 2. 增加红色警报环境光晕，营造禁区压迫感 */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-red-500/5 -rotate-12 blur-[100px] pointer-events-none animate-pulse"></div>
+
+        <div className="relative z-10 w-full max-w-lg">
+          
+          {/* 🚀 3. 红色主题的撤离卡片 (UI 严格对齐 Profile 和 Dashboard) */}
+          <div className="flex justify-end mb-6">
+            <Link href="/" className="group flex items-center gap-4 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-red-500/30 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+              <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-red-500/20 transition-colors">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.8)]" />
+                <div className="absolute inset-0 rounded-full border border-red-500/30 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
+              </div>
+              <div className="flex flex-col items-start">
+                <span className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-mono group-hover:text-red-400 transition-colors">Abort Sequence</span>
+                <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">撤离拦截区</span>
+              </div>
+            </Link>
           </div>
-          <form action={updateRecruitProfile} className="space-y-6">
-             <div className="space-y-2">
-              <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">真实姓名 / Real Name</label>
-              <input type="text" name="realName" required className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-red-500/50 text-white" />
+
+          {/* 表单主卡片：调整透明度和模糊度，与星空背景融合 */}
+          <div className="bg-[#06060a]/90 border border-red-500/30 p-10 rounded-[2.5rem] backdrop-blur-2xl shadow-[0_0_80px_rgba(239,68,68,0.1)] animate-module-card">
+            <div className="flex items-center gap-4 mb-8 border-b border-red-500/20 pb-6">
+              <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">🛡️</div>
+              <div>
+                <h1 className="text-2xl font-bold text-white tracking-widest font-[family-name:var(--font-space)]">身份权限识别</h1>
+                <p className="text-red-400/80 text-xs font-mono mt-1 uppercase tracking-widest">Entry Protocol Required</p>
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">学号 / Student ID</label>
-              <input type="text" name="studentId" required className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-red-500/50 text-white" />
-            </div>
-            <button type="submit" className="w-full bg-red-500/20 border border-red-500/50 text-red-400 font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-white transition-all tracking-[0.3em]">提交建档</button>
-          </form>
+            <form action={updateRecruitProfile} className="space-y-6">
+               <div className="space-y-2">
+                <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">真实姓名 / Real Name</label>
+                <input type="text" name="realName" required className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-red-500/50 text-white" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">学号 / Student ID</label>
+                <input type="text" name="studentId" required className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-red-500/50 text-white" />
+              </div>
+              <button type="submit" className="w-full bg-red-500/20 border border-red-500/50 text-red-400 font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-white transition-all tracking-[0.3em]">提交建档</button>
+            </form>
+          </div>
+
         </div>
       </main>
     )
