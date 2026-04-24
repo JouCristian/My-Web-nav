@@ -1,28 +1,22 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect } from "react"
 
 export default function DashboardLoading() {
-  const didShiftDown = useRef(false);
-
   useEffect(() => {
-    const findShiftButton = () => {
+    const forceShift = () => {
       const buttons = Array.from(document.querySelectorAll('button'));
-      return buttons.find(btn => btn.textContent?.includes('时空') || btn.textContent?.includes('航线'));
+      const shiftBtn = buttons.find(btn => btn.textContent?.includes('时空') || btn.textContent?.includes('航线'));
+      if (shiftBtn) shiftBtn.click();
     };
-    const shiftBtn = findShiftButton();
-    if (shiftBtn && shiftBtn.textContent?.includes('默认')) {
-      shiftBtn.click();
-      didShiftDown.current = true;
-    }
-    return () => {
-      const endBtn = findShiftButton();
-      if (didShiftDown.current && endBtn) endBtn.click();
-    };
+    
+    // 🚀 仅触发一次
+    forceShift();
   }, []);
 
   return (
     <main className="min-h-screen p-12 md:p-20 text-white max-w-7xl mx-auto flex flex-col gap-16 relative bg-transparent">
+      {/* 顶部导航骨架 */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 border-b border-white/10 pb-12">
         <div className="space-y-4">
           <div className="w-48 h-4 bg-white/10 rounded-full animate-pulse"></div>
@@ -30,6 +24,8 @@ export default function DashboardLoading() {
         </div>
         <div className="w-40 h-16 bg-white/5 rounded-2xl animate-pulse"></div>
       </div>
+
+      {/* 模块大卡片骨架 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
         {[1, 2, 3].map(i => (
           <div key={i} className="h-80 rounded-[3rem] border border-white/5 bg-black/40 p-10 animate-pulse shadow-[0_0_30px_rgba(255,255,255,0.03)]"></div>

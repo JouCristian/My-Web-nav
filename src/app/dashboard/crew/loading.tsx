@@ -1,24 +1,17 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect } from "react"
 
 export default function CrewLoading() {
-  const didShiftDown = useRef(false);
-
   useEffect(() => {
-    const findShiftButton = () => {
+    const forceShift = () => {
       const buttons = Array.from(document.querySelectorAll('button'));
-      return buttons.find(btn => btn.textContent?.includes('时空') || btn.textContent?.includes('航线'));
+      const shiftBtn = buttons.find(btn => btn.textContent?.includes('时空') || btn.textContent?.includes('航线'));
+      if (shiftBtn) shiftBtn.click();
     };
-    const shiftBtn = findShiftButton();
-    if (shiftBtn && shiftBtn.textContent?.includes('默认')) {
-      shiftBtn.click();
-      didShiftDown.current = true;
-    }
-    return () => {
-      const endBtn = findShiftButton();
-      if (didShiftDown.current && endBtn) endBtn.click();
-    };
+    
+    // 🚀 仅触发一次
+    forceShift();
   }, []);
 
   return (
@@ -34,6 +27,8 @@ export default function CrewLoading() {
             <div className="w-36 h-14 bg-white/5 rounded-2xl animate-pulse"></div>
           </div>
         </div>
+        
+        {/* 档案列表骨架 */}
         <div className="space-y-4">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="h-24 rounded-2xl border border-white/5 bg-black/40 animate-pulse"></div>
