@@ -3,14 +3,25 @@
 import { useEffect } from "react"
 
 export default function CrewLoading() {
-  useEffect(() => {
-    // 🚀 最极简逻辑
-    const buttons = Array.from(document.querySelectorAll('button'));
-    const shiftBtn = buttons.find(btn => 
-      btn.textContent?.includes('时空') || btn.textContent?.includes('航线')
-    );
-    if (shiftBtn) shiftBtn.click();
-  }, []);
+    useEffect(() => {
+        // 🚀 扩大雷达扫描范围：无论按钮当前变身成了什么状态，全给它逮住！
+        const buttons = Array.from(document.querySelectorAll('button'));
+        const shiftBtn = buttons.find(btn => {
+          const text = btn.textContent || "";
+          return text.includes('SPACETIME') || 
+                 text.includes('时空') || 
+                 text.includes('航线') || 
+                 text.includes('星际') || 
+                 text.includes('轨道') || 
+                 text.includes('深空') || 
+                 text.includes('默认');
+        });
+        
+        // 只要找到了，不管三七二十一，直接按下去！
+        if (shiftBtn) {
+          shiftBtn.click();
+        }
+      }, []);
 
   return (
     <main className="min-h-screen bg-transparent p-6 md:p-10 text-white relative overflow-hidden">
