@@ -1,8 +1,9 @@
 // src/app/page.tsx
 import { NavigationCard } from "@/components/navigation-card"
 import { AddCardForm } from "@/components/add-card-form"
-// 🚀 引入我们刚刚打造的全息拦截按钮
 import { GuestActionButton } from "@/components/guest-action-button"
+// 🚀 引入我们刚刚打造的跃迁连接器
+import { TransitionLink } from "@/components/transition-link"
 import { prisma } from "@/lib/db"
 import { auth, signOut } from "@/auth" 
 import Link from "next/link"
@@ -40,11 +41,11 @@ export default async function Home() {
 
   if (isAuthorizedCrew) {
     cardTitle = "「一生一芯」·西科星际舰队";
-    cardSubtitle = "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。嘿伙计！今天干的怎么样？";
+    cardSubtitle = "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。\n嘿伙计！今天干的怎么样？";
     btnText = "进入舰队";
   } else if (isCommander) {
     cardTitle = "「一生一芯」·星际舰队指挥中枢";
-    cardSubtitle = "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。好好干，伙计们！🤞";
+    cardSubtitle = "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。\n好好干，伙计们！🤞";
     btnText = "进入舰队指挥大屏";
   }
 
@@ -52,7 +53,7 @@ export default async function Home() {
     <main className="min-h-screen bg-transparent p-10 text-white">
       <div className="max-w-5xl mx-auto text-center">
         
-        {/* 顶部控制台按钮区 */}
+        {/* 🚀 顶部控制台按钮区 */}
         <div className="flex justify-end mb-8 gap-4">
           {session ? (
             <div className="flex items-center gap-4">
@@ -95,7 +96,11 @@ export default async function Home() {
               </form>
             </div>
           ) : (
-            <Link href="/login" className="group flex items-center gap-4 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all duration-300 active:scale-[0.97]">
+            /* 🚀 升级1：未登录状态下的“开启星际之旅” */
+            <TransitionLink 
+              href="/login" 
+              className="group flex items-center gap-4 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all duration-300 active:scale-[0.97]"
+            >
               <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/10 transition-colors">
                 <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_12px_rgba(96,165,250,0.9)]" />
                 <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
@@ -104,7 +109,7 @@ export default async function Home() {
                 <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono group-hover:text-blue-400 transition-colors">Authorization</span>
                 <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">开启星际之旅</span>
               </div>
-            </Link>
+            </TransitionLink>
           )}
         </div>
 
@@ -118,7 +123,11 @@ export default async function Home() {
 
         {!isCaptain && (
           <div className="mb-12 max-w-md mx-auto">
-            <Link href="/contact" className="group block bg-black/75 p-4 rounded-2xl border border-dashed border-white/20 animate-flame-hover hover:border-white/40 transition-all">
+            {/* 🚀 升级2：联系舰长卡片 */}
+            <TransitionLink 
+              href="/contact" 
+              className="group block bg-black/75 p-4 rounded-2xl border border-dashed border-white/20 animate-flame-hover hover:border-white/40 transition-all"
+            >
               <div className="flex items-center justify-center gap-4">
                 <div className="relative">
                   <div className="absolute inset-0 rounded-xl bg-white/10 animate-ping opacity-30" />
@@ -131,11 +140,11 @@ export default async function Home() {
                   <p className="text-xs text-zinc-500 group-hover:text-zinc-300">获取舰长的星际通讯码 (WeChat)</p>
                 </div>
               </div>
-            </Link>
+            </TransitionLink>
           </div>
         )}
 
-        {/* 三层逻辑「一生一芯」大卡片面板 */}
+        {/* 三层逻辑大卡片面板 */}
         <div className="relative w-full rounded-[2.5rem] bg-black/40 border border-white/10 p-8 md:p-12 overflow-hidden group animate-flame-hover mb-12 text-left">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
           <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none group-hover:bg-blue-500/20 transition-all duration-700"></div>
@@ -151,34 +160,23 @@ export default async function Home() {
                   {isCommander ? "Yishengyixin Command Center" : "Fleet Mission Status"}
                 </h2>
               </div>
-              
-              <h3 className="text-3xl md:text-4xl font-bold text-white tracking-wide font-[family-name:var(--font-space)] mt-2">
-                {cardTitle}
-              </h3>
-              
-              <p className="mt-4 text-zinc-400 text-sm max-w-xl leading-relaxed whitespace-pre-line">
-                {cardSubtitle}
-              </p>
+              <h3 className="text-3xl md:text-4xl font-bold text-white tracking-wide font-[family-name:var(--font-space)] mt-2">{cardTitle}</h3>
+              <p className="mt-4 text-zinc-400 text-sm max-w-xl leading-relaxed whitespace-pre-line">{cardSubtitle}</p>
             </div>
 
             <div className="shrink-0 w-full md:w-auto mt-4 md:mt-0">
-              {/* 🚀 核心替换：未登录时启用弹窗，登录后直接 Link 跳转 */}
               {!session ? (
                 <GuestActionButton btnText={btnText} targetHref="/login" />
               ) : (
-                <Link 
+                <TransitionLink 
                   href="/dashboard" 
                   className={`group/btn flex items-center justify-center gap-3 w-full px-8 py-4 rounded-2xl font-bold transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.05)] ${
-                    isGuest 
-                    ? "bg-white text-black hover:bg-blue-400 hover:text-white" 
-                    : "bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:bg-blue-500 hover:text-white shadow-[0_0_20px_rgba(59,130,246,0.15)]"
+                    isGuest ? "bg-white text-black hover:bg-blue-400 hover:text-white" : "bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:bg-blue-500 hover:text-white shadow-[0_0_20px_rgba(59,130,246,0.15)]"
                   }`}
                 >
                   <span>{btnText}</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover/btn:translate-x-1">
-                    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-                  </svg>
-                </Link>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover/btn:translate-x-1"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </TransitionLink>
               )}
             </div>
           </div>
