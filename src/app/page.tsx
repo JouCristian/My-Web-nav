@@ -7,6 +7,7 @@ import { TransitionLink } from "@/components/transition-link"
 import { prisma } from "@/lib/db"
 import { auth, signOut } from "@/auth" 
 import Link from "next/link"
+import { SignOutButton } from "@/components/sign-out-button"
 
 interface Bookmark {
   id: number;
@@ -82,18 +83,7 @@ export default async function Home() {
                   </span>
                 </div>
               </Link>
-              <form action={async () => { "use server"; await signOut(); }}>
-                <button className="group flex items-center gap-4 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all duration-300 active:scale-[0.97]">
-                  <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-red-500/10 transition-colors">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.9)]" />
-                    <div className="absolute inset-0 rounded-full border border-red-500/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
-                  </div>
-                  <div className="flex flex-col items-start">
-                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono group-hover:text-red-400 transition-colors">Status: Online</span>
-                    <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">退出登录</span>
-                  </div>
-                </button>
-              </form>
+              <SignOutButton />
             </div>
           ) : (
             /* 🚀 升级1：未登录状态下的“开启星际之旅” */
