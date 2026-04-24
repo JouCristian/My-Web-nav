@@ -1,3 +1,4 @@
+// src/app/page.tsx
 import { NavigationCard } from "@/components/navigation-card"
 import { AddCardForm } from "@/components/add-card-form"
 import { prisma } from "@/lib/db"
@@ -19,11 +20,11 @@ export default async function Home() {
   // 1. 获取所有导航书签
   const links = await prisma.bookmark.findMany({ orderBy: { createdAt: 'desc' } })
 
-  // 2. 权限校验：从 session 中获取我们在 auth.ts callbacks 中注入的 isCaptain 标识
+  // 2. 权限校验
   // @ts-ignore
   const isCaptain = session?.user?.isCaptain
 
-  // 3. 获取当前登录用户的最新数据库信息（用于显示自定义昵称和头像）
+  // 3. 获取当前登录用户的最新数据库信息
   let dbUser = null
   if (session?.user?.email) {
     dbUser = await prisma.user.findUnique({
@@ -39,7 +40,6 @@ export default async function Home() {
         <div className="flex justify-end mb-8 gap-4">
           {session ? (
             <div className="flex items-center gap-4">
-              {/* 个人资料入口：显示自定义昵称和头像 */}
               <Link 
                 href="/profile" 
                 className="group flex items-center gap-3 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all active:scale-[0.97]"
@@ -53,8 +53,6 @@ export default async function Home() {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  
-                  {/* 🚀 专属舰长标识：如果是舰长，在头像右下角加一个金色闪烁的小圆点或图标 */}
                   {isCaptain && (
                     <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-yellow-500 rounded-full border-2 border-black flex items-center justify-center shadow-[0_0_8px_rgba(234,179,8,0.6)]">
                       <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
@@ -67,24 +65,19 @@ export default async function Home() {
                     <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono group-hover:text-zinc-300">
                       Profile
                     </span>
-                    
-                    {/* 🚀 专属舰长文字勋章：带有科幻边框和金色发光效果 */}
                     {isCaptain && (
                       <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-yellow-500/10 border border-yellow-500/50 text-yellow-500 font-bold tracking-tighter uppercase leading-none shadow-[0_0_10px_rgba(234,179,8,0.2)] group-hover:bg-yellow-500 group-hover:text-black transition-all">
                         Captain
                       </span>
                     )}
                   </div>
-                  
                   <span className="text-sm font-bold text-white tracking-tight font-[family-name:var(--font-space)] flex items-center gap-1">
                     {dbUser?.nickname || session.user?.name || "未知宇航员"}
-                    {/* 如果是舰长，名字后面加一颗闪亮的星星 */}
                     {isCaptain && <span className="text-yellow-500 text-xs">✦🔱✦</span>}
                   </span>
                 </div>
               </Link>
 
-              {/* 退出按钮 */}
               <form action={async () => { "use server"; await signOut(); }}>
                 <button className="group flex items-center gap-4 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all duration-300 active:scale-[0.97]">
                   <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-red-500/10 transition-colors">
@@ -103,7 +96,6 @@ export default async function Home() {
               </form>
             </div>
           ) : (
-            /* 未登录状态：引导至自定义登录页 */
             <Link href="/login" className="group flex items-center gap-4 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all duration-300 active:scale-[0.97]">
               <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/10 transition-colors">
                 <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_12px_rgba(96,165,250,0.9)]" />
@@ -133,7 +125,6 @@ export default async function Home() {
           )}
         </p>
 
-        {/* 🚀 非舰长模式显示的“联络舰长”卡片 */}
         {!isCaptain && (
           <div className="mb-12 max-w-md mx-auto">
             <Link 
@@ -162,16 +153,13 @@ export default async function Home() {
         )}
 
         {/* ========================================== */}
-        {/* 🚀 新增：「一生一芯·指挥中枢」大型科幻面板 */}
+        {/* 🚀 修改：一生一芯大型面板 (支持未登录文案切换) */}
         {/* ========================================== */}
         <div className="relative w-full rounded-[2.5rem] bg-black/40 border border-white/10 p-8 md:p-12 overflow-hidden group animate-flame-hover mb-12 text-left">
-          {/* 背景微光与网格修饰 */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
           <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none group-hover:bg-blue-500/20 transition-all duration-700"></div>
 
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            
-            {/* 左侧文字区 */}
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <span className="relative flex h-3 w-3">
@@ -182,23 +170,26 @@ export default async function Home() {
                   Yishengyixin Command Center
                 </h2>
               </div>
+              
+              {/* 🚀 动态名字切换 */}
               <h3 className="text-3xl md:text-4xl font-bold text-white tracking-wide font-[family-name:var(--font-space)] mt-2">
-                「一生一芯」星际舰队指挥中枢
+                {!session ? "「一生一芯」·西科星际舰队" : "「一生一芯」星际舰队指挥中枢"}
               </h3>
+              
+              {/* 🚀 动态小字切换 */}
               <p className="mt-4 text-zinc-400 text-sm max-w-xl leading-relaxed">
-                全星系广播、船员档案管理、跃迁集结签到与考勤大盘。仅限授权船员与管理组访问。
+                {!session 
+                  ? "加入我们，在星海中探索CPU的精妙设计！仅限授权船员和管理组访问。💕" 
+                  : "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。好好干，伙计们！🤞"}
               </p>
             </div>
 
-            {/* 右侧交互区 (根据登录状态分流) */}
             <div className="shrink-0 w-full md:w-auto mt-4 md:mt-0">
               {!session ? (
-                // 状态0：未登录，引导去 /login
                 <Link href="/login" className="block w-full text-center px-8 py-4 rounded-2xl bg-white text-black font-bold transition-all hover:bg-blue-400 hover:text-white active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
                   进行身份校验接入
                 </Link>
               ) : (
-                // 状态1/2/3：已登录，直接进入指挥舱大屏 (前往 /dashboard)
                 <Link href="/dashboard" className="group/btn flex items-center justify-center gap-3 w-full px-8 py-4 rounded-2xl bg-blue-500/20 border border-blue-500/30 text-blue-400 font-bold transition-all hover:bg-blue-500 hover:text-white active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.15)]">
                   <span>进入指挥大屏</span>
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover/btn:translate-x-1">
@@ -207,15 +198,11 @@ export default async function Home() {
                 </Link>
               )}
             </div>
-            
           </div>
         </div>
-        {/* ========================================== */}
         
-        {/* 🛡️ 只有真正的舰长才能看到添加表单 */}
         {isCaptain && <AddCardForm />}
         
-        {/* 导航卡片网格 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left relative z-10">
           {links.map((link: Bookmark, index: number) => (
             <div 
@@ -228,14 +215,12 @@ export default async function Home() {
               title={link.name}
               description={link.description || ""}
               url={link.url}
-              // 只有舰长才能看到删除按钮
               showDelete={isCaptain} 
             />
             </div>
           ))}
         </div>
 
-        {/* 深空延伸感 */}
         <div className="mt-32 h-[150vh] flex flex-col items-center justify-end pb-20 opacity-20 pointer-events-none">
           <div className="flex flex-col items-center gap-6">
             <p className="text-[10px] tracking-[0.8em] uppercase text-zinc-400">Deep Space Exploration</p>
