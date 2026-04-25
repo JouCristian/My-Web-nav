@@ -11,15 +11,11 @@ export default async function CrewArchivesPage() {
   // 获取数据库里所有的账号
   const allUsers = await prisma.user.findMany()
 
-  // 🚀 核心修复：建立花名册准入防线
-  // 规则：如果是 PENDING（待审核）状态，必须要有 realName 和 studentId 才能上榜。
-  // 刚注册未填写的游客，或点击【撤销】清空了档案的船员，将直接从列表隐形！
+  // 建立花名册准入防线
   const validUsers = allUsers.filter(user => {
     if (user.role === "PENDING") {
-      // 只有真名和学号都不为空，才算真正提交了档案
       return user.realName !== null && user.studentId !== null;
     }
-    // 正式军衔（OWNER, ADMIN, MEMBER）始终显示
     return true; 
   })
 
@@ -61,7 +57,6 @@ export default async function CrewArchivesPage() {
             </h1>
           </div>
           
-          {/* 右上角操作区：翠绿与紫色脉冲卡片 */}
           <div className="flex flex-wrap gap-4">
             {isManager && (
               <button className="group flex items-center gap-3 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-emerald-500/30 transition-all active:scale-95 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
@@ -136,13 +131,23 @@ export default async function CrewArchivesPage() {
                     </div>
                   </div>
                 </div>
+                
                 <div className="mt-4 md:mt-0 flex items-center gap-6 self-end md:self-auto w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
-                  {!user.feishuLink && !isPending && !isOwner && (
+                  
+                  {/* 🚀 飞书通讯链动态指示器 */}
+                  {user.feishuLink ? (
+                    <a href={user.feishuLink} target="_blank" rel="noopener noreferrer" className="group/fs flex items-center gap-2 bg-teal-500/10 border border-teal-500/30 px-3 py-1.5 rounded-lg shrink-0 hover:bg-teal-500/20 transition-all cursor-pointer shadow-[0_0_15px_rgba(20,184,166,0.1)] hover:shadow-[0_0_20px_rgba(20,184,166,0.3)]">
+                      <div className="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)]"></div>
+                      <span className="text-[10px] text-teal-300 font-mono uppercase tracking-wider group-hover/fs:text-teal-200">飞书频道就绪</span>
+                    </a>
+                  ) : (
                     <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-lg shrink-0">
                       <div className="w-2 h-2 rounded-full bg-red-500 animate-ping"></div>
                       <span className="text-[10px] text-red-400 font-mono uppercase tracking-wider">缺失通讯链</span>
                     </div>
                   )}
+
+                  {/* 状态徽章 */}
                   <div className="flex flex-col items-end">
                     <span className="text-[10px] uppercase font-mono tracking-widest text-zinc-500 mb-1">Status</span>
                     {isPending ? (
@@ -156,6 +161,7 @@ export default async function CrewArchivesPage() {
                       </span>
                     )}
                   </div>
+                  
                 </div>
               </div>
             );
