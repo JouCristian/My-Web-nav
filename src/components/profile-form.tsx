@@ -12,6 +12,7 @@ interface ProfileFormProps {
     customAvatar: string | null;
     image: string | null;
     email: string | null;
+    feishuLink?: string | null; // 🚀 新增：飞书链接字段
   }
   onUpdate: (formData: FormData) => Promise<void>;
 }
@@ -20,13 +21,15 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
   // 1. 记录初始基准状态
   const [initialNickname, setInitialNickname] = useState(user.nickname || "")
   const [initialAvatar, setInitialAvatar] = useState(user.customAvatar || user.image || "")
+  const [initialFeishu, setInitialFeishu] = useState(user.feishuLink || "") // 🚀 新增：记录初始飞书链接
 
   // 2. 绑定当前状态
   const [nickname, setNickname] = useState(initialNickname)
   const [preview, setPreview] = useState(initialAvatar)
+  const [feishu, setFeishu] = useState(initialFeishu) // 🚀 新增：绑定当前飞书链接
   const [isUploading, setIsUploading] = useState(false)
   
-  // 🚀 核心：全息弹窗状态，成功色调已改为顶级翡翠绿
+  // 全息弹窗状态
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: "success" | "error" | "warning" }>({
     visible: false,
     message: "",
@@ -36,7 +39,8 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
-  const hasChanged = nickname !== initialNickname || preview !== initialAvatar
+  // 🚀 核心状态机：只要昵称、头像或飞书链接有一个发生改变，就激活保存按钮
+  const hasChanged = nickname !== initialNickname || preview !== initialAvatar || feishu !== initialFeishu
 
   const showToast = (message: string, type: "success" | "error" | "warning") => {
     setToast({ visible: true, message, type })
@@ -89,20 +93,20 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
     
     await onUpdate(formData)
     
-    // 🚀 成功弹窗：现在是具有顶级质感的翡翠绿主题
     showToast("档案已完美同步至星际数据库", "success")
     
+    // 🚀 更新基准状态，让按钮重新进入休眠
     setInitialNickname(nickname)
     setInitialAvatar(preview)
+    setInitialFeishu(feishu)
+    
     setIsUploading(false)
     router.refresh()
   }
 
   return (
     <>
-      {/* ========================================== */}
       {/* 🚀 升级版全息弹窗 (Emerald Success Theme) */}
-      {/* ========================================== */}
       <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${toast.visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-10 scale-95 pointer-events-none'}`}>
         <div className={`flex items-center gap-4 px-6 py-4 rounded-2xl backdrop-blur-xl border ${
           toast.type === 'success' 
@@ -175,6 +179,19 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
             required
             className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-white/30 transition-all text-white font-[family-name:var(--font-space)]"
           />
+        </div>
+
+        {/* 🚀 新增：飞书链接输入区 */}
+        <div className="space-y-2">
+          <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">飞书个人链接 / Feishu Link</label>
+          <input 
+            name="feishuLink" 
+            value={feishu}
+            onChange={(e) => setFeishu(e.target.value)}
+            placeholder="https://www.feishu.cn/invitation/..."
+            className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-white/30 transition-all text-white font-mono text-sm"
+          />
+          <p className="text-[9px] text-zinc-500 ml-2 italic opacity-80">* 缺失此通讯链接将无法接收舰队跃迁集结通知</p>
         </div>
 
         <button 

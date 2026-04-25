@@ -3,9 +3,9 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
-import Link from "next/link"
+// 🚀 将普通的 Link 升级为跃迁连接器，保持全舰交互体验一致
+import { TransitionLink } from "@/components/transition-link"
 import { ProfileForm } from "@/components/profile-form"
-// 🚀 注意：这里已经删除了 import { ScrollBackground }
 
 export default async function ProfilePage() {
   const session = await auth()
@@ -26,10 +26,13 @@ export default async function ProfilePage() {
 
     const nickname = formData.get("nickname") as string
     const avatar = formData.get("avatar") as string 
+    // 🚀 1. 抓取表单中的飞书链接数据
+    const feishuLink = formData.get("feishuLink") as string
     
     await prisma.user.update({
       where: { email: session.user.email },
-      data: { nickname, customAvatar: avatar }
+      // 🚀 2. 同步写入数据库
+      data: { nickname, customAvatar: avatar, feishuLink }
     })
 
     revalidatePath("/profile")
@@ -100,14 +103,13 @@ export default async function ProfilePage() {
   const ui = getRoleUI(role);
 
   return (
-    // 🚀 背景设为透明 bg-transparent，让底层的全局星空透上来
     <main className="min-h-screen bg-transparent p-10 flex flex-col items-center relative overflow-hidden">
       
       <div className="max-w-xl w-full relative z-10">
         
-        {/* 🚀 升级版同步返回按钮：蓝色脉冲 + 呼吸环 */}
+        {/* 🚀 升级为 TransitionLink，退出个人舱室时也触发背景星空跃迁 */}
         <div className="flex justify-end mb-8">
-          <Link href="/" className="group flex items-center gap-4 bg-black/40 px-6 py-4 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+          <TransitionLink href="/" className="group flex items-center gap-4 bg-black/40 px-6 py-4 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
             <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/20 transition-colors">
               <div className="w-3 h-3 rounded-full bg-blue-400 animate-pulse shadow-[0_0_15px_rgba(96,165,250,0.8)]" />
               <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
@@ -116,7 +118,7 @@ export default async function ProfilePage() {
               <span className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-mono group-hover:text-blue-400 transition-colors">Return Path</span>
               <span className="text-base font-bold text-white tracking-widest font-[family-name:var(--font-space)]">返回导航站</span>
             </div>
-          </Link>
+          </TransitionLink>
         </div>
 
         {/* 核心卡片 UI */}
