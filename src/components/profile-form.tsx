@@ -13,7 +13,8 @@ interface ProfileFormProps {
     image: string | null;
     email: string | null;
     feishuLink?: string | null;
-    role?: string; // 🚀 新增：接收用户的军衔角色
+    studentId?: string | null; // 🚀 新增：学号字段
+    role?: string;
   }
   onUpdate: (formData: FormData) => Promise<void>;
 }
@@ -22,10 +23,12 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
   const [initialNickname, setInitialNickname] = useState(user.nickname || "")
   const [initialAvatar, setInitialAvatar] = useState(user.customAvatar || user.image || "")
   const [initialFeishu, setInitialFeishu] = useState(user.feishuLink || "")
+  const [initialStudentId, setInitialStudentId] = useState(user.studentId || "") // 🚀 新增：记录初始学号
 
   const [nickname, setNickname] = useState(initialNickname)
   const [preview, setPreview] = useState(initialAvatar)
   const [feishu, setFeishu] = useState(initialFeishu)
+  const [studentId, setStudentId] = useState(initialStudentId) // 🚀 新增：绑定当前学号
   const [isUploading, setIsUploading] = useState(false)
   
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: "success" | "error" | "warning" }>({
@@ -35,7 +38,8 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
-  const hasChanged = nickname !== initialNickname || preview !== initialAvatar || feishu !== initialFeishu
+  // 🚀 核心判定：昵称、头像、飞书或学号任一发生改变即激活保存
+  const hasChanged = nickname !== initialNickname || preview !== initialAvatar || feishu !== initialFeishu || studentId !== initialStudentId
 
   const showToast = (message: string, type: "success" | "error" | "warning") => {
     setToast({ visible: true, message, type })
@@ -87,13 +91,13 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
     setInitialNickname(nickname)
     setInitialAvatar(preview)
     setInitialFeishu(feishu)
+    setInitialStudentId(studentId) // 🚀 同步更新基准学号
     setIsUploading(false)
     router.refresh()
   }
 
   return (
     <>
-      {/* 升级版全息弹窗 */}
       <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${toast.visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-10 scale-95 pointer-events-none'}`}>
         <div className={`flex items-center gap-4 px-6 py-4 rounded-2xl backdrop-blur-xl border ${toast.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_40px_rgba(16,185,129,0.25)]' : toast.type === 'error' ? 'bg-red-500/10 border-red-500/40 shadow-[0_0_40px_rgba(239,68,68,0.25)]' : 'bg-blue-500/10 border-blue-500/40 shadow-[0_0_40px_rgba(59,130,246,0.25)]'}`}>
           <div className={`relative flex items-center justify-center w-10 h-10 rounded-full border ${toast.type === 'success' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : toast.type === 'error' ? 'bg-red-500/20 border-red-500/50 text-red-500' : 'bg-blue-500/20 border-blue-500/50 text-blue-500'}`}>
@@ -134,7 +138,7 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
           />
         </div>
 
-        {/* 🚀 核心逻辑拦截：只有非待审核状态，才会显示飞书通讯链路输入框 */}
+        {/* 🚀 飞书链接：正式船员以上军衔可见 */}
         {user.role !== "PENDING" && (
           <div className="space-y-2">
             <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">飞书个人链接 / Feishu Link</label>
@@ -144,6 +148,18 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
               className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-white/30 transition-all text-white font-mono text-sm"
             />
             <p className="text-[9px] text-zinc-500 ml-2 italic opacity-80">* 缺失此通讯链接将无法接收舰队跃迁集结通知</p>
+          </div>
+        )}
+
+        {/* 🚀 核心身份锁：只有 "MEMBER" (船员) 才能看到并修改学号 */}
+        {user.role === "MEMBER" && (
+          <div className="space-y-2">
+            <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">学号 / Student ID</label>
+            <input 
+              name="studentId" value={studentId} onChange={(e) => setStudentId(e.target.value)} required
+              placeholder="请输入您的学号"
+              className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-blue-500/30 transition-all text-white font-mono text-sm"
+            />
           </div>
         )}
 

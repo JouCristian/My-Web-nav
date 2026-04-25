@@ -3,7 +3,6 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
-// 🚀 将普通的 Link 升级为跃迁连接器，保持全舰交互体验一致
 import { TransitionLink } from "@/components/transition-link"
 import { ProfileForm } from "@/components/profile-form"
 
@@ -26,13 +25,21 @@ export default async function ProfilePage() {
 
     const nickname = formData.get("nickname") as string
     const avatar = formData.get("avatar") as string 
-    // 🚀 1. 抓取表单中的飞书链接数据
     const feishuLink = formData.get("feishuLink") as string
+    // 🚀 新增：抓取表单中提交的学号
+    const studentId = formData.get("studentId") as string
     
+    // 构建更新数据载荷
+    const updateData: any = { nickname, customAvatar: avatar, feishuLink }
+    
+    // 只有非空的时候才更新学号 (防止非船员角色意外覆盖数据)
+    if (studentId !== null && studentId !== undefined) {
+      updateData.studentId = studentId
+    }
+
     await prisma.user.update({
       where: { email: session.user.email },
-      // 🚀 2. 同步写入数据库
-      data: { nickname, customAvatar: avatar, feishuLink }
+      data: updateData
     })
 
     revalidatePath("/profile")
@@ -107,7 +114,6 @@ export default async function ProfilePage() {
       
       <div className="max-w-xl w-full relative z-10">
         
-        {/* 🚀 升级为 TransitionLink，退出个人舱室时也触发背景星空跃迁 */}
         <div className="flex justify-end mb-8">
           <TransitionLink href="/" className="group flex items-center gap-4 bg-black/40 px-6 py-4 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
             <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/20 transition-colors">
@@ -121,7 +127,6 @@ export default async function ProfilePage() {
           </TransitionLink>
         </div>
 
-        {/* 核心卡片 UI */}
         <div className={`relative bg-[#0a0a0c]/80 p-8 rounded-[2.5rem] backdrop-blur-xl animate-flame-active transition-all duration-700 ${ui.wrapper}`}>
           <div className="flex flex-col items-center mb-8 border-b border-white/5 pb-8">
              {ui.icon}
