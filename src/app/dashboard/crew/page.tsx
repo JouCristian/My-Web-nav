@@ -11,7 +11,7 @@ export default async function CrewArchivesPage() {
 
   const allUsers = await prisma.user.findMany()
 
-  // 只有填了姓名学号的人才会出现在档案室 [cite: 17]
+  // 1. 档案准入过滤：只有填了姓名学号的才显示 
   const validUsers = allUsers.filter((user: any) => {
     if (user.role === "PENDING") {
       return user.realName !== null && user.studentId !== null;
@@ -19,7 +19,7 @@ export default async function CrewArchivesPage() {
     return true; 
   })
 
-  // 排序权重：OWNER(4) > ADMIN(3) > MEMBER(2) > PENDING(1) [cite: 24, 30]
+  // 2. 严格排版序位：舰长 > 领航员 > 船员 [cite: 30, 31, 34]
   const roleWeight: Record<string, number> = { OWNER: 4, ADMIN: 3, MEMBER: 2, PENDING: 1 }
   const sortedUsers = validUsers.sort((a: any, b: any) => {
     const weightA = roleWeight[a.role as string] || 0
@@ -33,12 +33,12 @@ export default async function CrewArchivesPage() {
 
   return (
     <main className="min-h-screen bg-transparent p-6 md:p-10 text-white relative overflow-hidden">
-      {/* 注入全局能量流光动画 */}
+      {/* 🔮 注入全局战术动效引擎 */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        .hover-glow:hover { box-shadow: 0 0 40px -10px rgba(59, 130, 246, 0.2); }
       `}} />
 
-      {/* 顶部环境光 */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[400px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none"></div>
 
       <div className="max-w-5xl mx-auto relative z-10">
@@ -54,17 +54,15 @@ export default async function CrewArchivesPage() {
             <h1 className="text-3xl md:text-4xl font-bold tracking-[0.2em] font-[family-name:var(--font-space)] text-white">船员档案室</h1>
           </div>
           
-          <div className="flex flex-wrap gap-4">
-            <Link href="/dashboard" className="group flex items-center gap-3 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md hover:border-purple-500/30 transition-all active:scale-95">
-              <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-purple-500/20 transition-colors">
-                <div className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse shadow-[0_0_12px_rgba(192,132,252,0.8)]" />
-              </div>
-              <div className="flex flex-col items-start text-left">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-mono group-hover:text-purple-400 transition-colors">Return</span>
-                <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">返回中枢</span>
-              </div>
-            </Link>
-          </div>
+          <Link href="/dashboard" className="group flex items-center gap-3 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md hover:border-purple-500/30 transition-all active:scale-95">
+            <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-purple-500/20 transition-colors">
+              <div className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse shadow-[0_0_12px_rgba(192,132,252,0.8)]" />
+            </div>
+            <div className="flex flex-col items-start text-left">
+              <span className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-mono group-hover:text-purple-400 transition-colors">Return</span>
+              <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">返回中枢</span>
+            </div>
+          </Link>
         </div>
 
         <div className="space-y-6">
@@ -72,6 +70,8 @@ export default async function CrewArchivesPage() {
             const isOwner = user.role === "OWNER";
             const isAdmin = user.role === "ADMIN";
             const isPending = user.role === "PENDING";
+            // 🚀 核心逻辑：感应当前登录者是否为号主本人
+            const isSelf = session.user?.email === user.email;
             
             const roleStyles = isOwner 
               ? "border-yellow-500/30 bg-yellow-500/5 hover:border-yellow-500/60 hover:shadow-[0_0_50px_-10px_rgba(234,179,8,0.2)]" 
@@ -84,7 +84,7 @@ export default async function CrewArchivesPage() {
             return (
               <div 
                 key={user.id} 
-                className={`group relative flex flex-col md:flex-row items-start md:items-center justify-between p-6 rounded-[2rem] border backdrop-blur-md transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-[1.015] active:scale-[0.995] ${roleStyles}`}
+                className={`group relative flex flex-col md:flex-row items-start md:items-center justify-between p-6 rounded-[2rem] border backdrop-blur-md transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-[1.015] ${roleStyles}`}
               >
                 <div className="flex items-center gap-6 w-full md:w-auto">
                   <div className="relative shrink-0">
@@ -106,7 +106,7 @@ export default async function CrewArchivesPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-2 mt-2 opacity-50">
                       <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2.5" fill="none" className="text-zinc-500"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
                       <span className="text-[11px] text-zinc-500 font-mono tracking-tighter">{user.githubName || user.email?.split('@')[0] || "Unknown"}</span>
                     </div>
@@ -120,6 +120,7 @@ export default async function CrewArchivesPage() {
                     <div className="flex items-center gap-8">
                       {!isPending && (
                         user.feishuLink ? (
+                          /* ✅ 通讯就绪：全员开放点击 */
                           <a 
                             href={user.feishuLink} 
                             target="_blank" 
@@ -129,25 +130,30 @@ export default async function CrewArchivesPage() {
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-teal-400/10 to-transparent -translate-x-full group-hover/fs:animate-[shimmer_2s_infinite]"></div>
                             <div className="relative flex items-center gap-3">
                               <div className="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)] animate-pulse"></div>
-                              <span className="text-[10px] text-teal-300 font-mono uppercase tracking-[0.2em] font-bold">飞书学习链接就绪 点击查看</span>
+                              <span className="text-[10px] text-teal-300 font-mono uppercase tracking-[0.2em] font-bold">通讯就绪</span>
                             </div>
                           </a>
                         ) : (
-                          /* 🚀 升级版：缺失通讯链按钮 - 接入能量流光并支持点击跳转 */
-                          <Link 
-                            href="/profile" 
-                            className="group/fs relative flex items-center gap-3 bg-[#060813]/60 border border-red-500/30 px-5 py-2.5 rounded-xl shrink-0 overflow-hidden transition-all duration-500 hover:border-red-500 hover:shadow-[0_0_20px_rgba(239,68,68,0.2)]"
-                          >
-                            {/* 红色能量流光 */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/10 to-transparent -translate-x-full group-hover/fs:animate-[shimmer_2s_infinite]"></div>
-                            
-                            <div className="relative flex items-center gap-3">
-                              <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-ping"></div>
-                              <span className="text-[10px] text-red-400 font-mono uppercase tracking-[0.2em] font-bold text-center">
-                                飞书学习链接缺失 前往添加
-                              </span>
+                          /* 🚨 缺失通讯链：差异化交互逻辑 */
+                          isSelf ? (
+                            /* 号主本人：显示可点击的跳转按钮 */
+                            <Link 
+                              href="/profile" 
+                              className="group/fs relative flex items-center gap-3 bg-[#060813]/60 border border-red-500/30 px-5 py-2.5 rounded-xl shrink-0 overflow-hidden transition-all duration-500 hover:border-red-500 hover:shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/10 to-transparent -translate-x-full group-hover/fs:animate-[shimmer_2s_infinite]"></div>
+                              <div className="relative flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-ping"></div>
+                                <span className="text-[10px] text-red-400 font-mono uppercase tracking-[0.2em] font-bold">缺失通讯链 前往补全</span>
+                              </div>
+                            </Link>
+                          ) : (
+                            /* 其他船员：仅显示不可点击的警告标签 */
+                            <div className="relative flex items-center gap-3 bg-[#060813]/40 border border-red-500/10 px-5 py-2.5 rounded-xl shrink-0 opacity-40">
+                              <div className="w-2 h-2 rounded-full bg-red-500/50 shadow-[0_0_5px_rgba(239,68,68,0.3)]"></div>
+                              <span className="text-[10px] text-red-400/60 font-mono uppercase tracking-[0.2em] font-bold">通讯失联</span>
                             </div>
-                          </Link>
+                          )
                         )
                       )}
                       <div className="flex flex-col items-end border-l border-white/10 pl-6">
