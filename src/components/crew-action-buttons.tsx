@@ -95,7 +95,7 @@ export function CrewActionButtons({ userId, realName }: { userId: string, realNa
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-400/10 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
           <div className="relative flex items-center gap-3">
             <span className="text-sm">✔</span>
-            <span className="border-l border-emerald-500/20 pl-3">Approve</span>
+            <span className="border-l border-emerald-500/20 pl-3">允许加入</span>
           </div>
         </button>
 
@@ -107,7 +107,7 @@ export function CrewActionButtons({ userId, realName }: { userId: string, realNa
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/10 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
           <div className="relative flex items-center gap-3">
             <span className="text-sm">✖</span>
-            <span className="border-l border-red-500/20 pl-3">Purge</span>
+            <span className="border-l border-red-500/20 pl-3">驳回申请</span>
           </div>
         </button>
       </div>

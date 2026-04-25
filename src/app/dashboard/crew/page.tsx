@@ -11,6 +11,7 @@ export default async function CrewArchivesPage() {
 
   const allUsers = await prisma.user.findMany()
 
+  // 只有填了姓名学号的人才会出现在档案室 [cite: 17]
   const validUsers = allUsers.filter((user: any) => {
     if (user.role === "PENDING") {
       return user.realName !== null && user.studentId !== null;
@@ -18,6 +19,7 @@ export default async function CrewArchivesPage() {
     return true; 
   })
 
+  // 排序权重：OWNER(4) > ADMIN(3) > MEMBER(2) > PENDING(1) [cite: 24, 30]
   const roleWeight: Record<string, number> = { OWNER: 4, ADMIN: 3, MEMBER: 2, PENDING: 1 }
   const sortedUsers = validUsers.sort((a: any, b: any) => {
     const weightA = roleWeight[a.role as string] || 0
@@ -31,6 +33,11 @@ export default async function CrewArchivesPage() {
 
   return (
     <main className="min-h-screen bg-transparent p-6 md:p-10 text-white relative overflow-hidden">
+      {/* 注入全局能量流光动画 */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+      `}} />
+
       {/* 顶部环境光 */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[400px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none"></div>
 
@@ -66,7 +73,6 @@ export default async function CrewArchivesPage() {
             const isAdmin = user.role === "ADMIN";
             const isPending = user.role === "PENDING";
             
-            // 🚀 核心逻辑：为卡片定义非线性的缩放与阴影
             const roleStyles = isOwner 
               ? "border-yellow-500/30 bg-yellow-500/5 hover:border-yellow-500/60 hover:shadow-[0_0_50px_-10px_rgba(234,179,8,0.2)]" 
               : isAdmin 
@@ -82,7 +88,7 @@ export default async function CrewArchivesPage() {
               >
                 <div className="flex items-center gap-6 w-full md:w-auto">
                   <div className="relative shrink-0">
-                    <div className={`w-16 h-16 rounded-full border-2 overflow-hidden transition-transform duration-700 group-hover:rotate-[360deg] ${isOwner ? 'border-yellow-500' : isAdmin ? 'border-purple-500' : 'border-zinc-700'}`}>
+                    <div className={`w-16 h-16 rounded-full border-2 overflow-hidden transition-transform duration-700 group-hover:rotate-[360deg] ${isOwner ? 'border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.4)]' : isAdmin ? 'border-purple-500' : 'border-zinc-700'}`}>
                       <img src={avatarFallback} alt="avatar" className="w-full h-full object-cover" />
                     </div>
                     {isOwner && <div className="absolute -top-3 -right-3 text-2xl drop-shadow-[0_0_10px_rgba(234,179,8,1)] animate-bounce">👑</div>}
@@ -114,15 +120,34 @@ export default async function CrewArchivesPage() {
                     <div className="flex items-center gap-8">
                       {!isPending && (
                         user.feishuLink ? (
-                          <a href={user.feishuLink} target="_blank" rel="noopener noreferrer" className="group/fs flex items-center gap-3 bg-teal-500/5 border border-teal-500/20 px-4 py-2 rounded-xl hover:bg-teal-500/10 hover:border-teal-400/40 transition-all">
-                            <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></div>
-                            <span className="text-[10px] text-teal-300 font-mono uppercase tracking-[0.2em] font-bold">通讯就绪</span>
+                          <a 
+                            href={user.feishuLink} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="group/fs relative flex items-center gap-3 bg-[#060813]/60 border border-teal-500/30 px-5 py-2.5 rounded-xl shrink-0 overflow-hidden transition-all duration-500 hover:border-teal-500 hover:shadow-[0_0_20px_rgba(20,184,166,0.2)]"
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-teal-400/10 to-transparent -translate-x-full group-hover/fs:animate-[shimmer_2s_infinite]"></div>
+                            <div className="relative flex items-center gap-3">
+                              <div className="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)] animate-pulse"></div>
+                              <span className="text-[10px] text-teal-300 font-mono uppercase tracking-[0.2em] font-bold">飞书学习链接就绪 点击查看</span>
+                            </div>
                           </a>
                         ) : (
-                          <div className="flex items-center gap-3 bg-red-500/5 border border-red-500/20 px-4 py-2 rounded-xl">
-                            <div className="w-2 h-2 rounded-full bg-red-500 animate-ping"></div>
-                            <span className="text-[10px] text-red-400 font-mono uppercase tracking-[0.2em]">缺失通讯链</span>
-                          </div>
+                          /* 🚀 升级版：缺失通讯链按钮 - 接入能量流光并支持点击跳转 */
+                          <Link 
+                            href="/profile" 
+                            className="group/fs relative flex items-center gap-3 bg-[#060813]/60 border border-red-500/30 px-5 py-2.5 rounded-xl shrink-0 overflow-hidden transition-all duration-500 hover:border-red-500 hover:shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                          >
+                            {/* 红色能量流光 */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/10 to-transparent -translate-x-full group-hover/fs:animate-[shimmer_2s_infinite]"></div>
+                            
+                            <div className="relative flex items-center gap-3">
+                              <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-ping"></div>
+                              <span className="text-[10px] text-red-400 font-mono uppercase tracking-[0.2em] font-bold text-center">
+                                飞书学习链接缺失 前往添加
+                              </span>
+                            </div>
+                          </Link>
                         )
                       )}
                       <div className="flex flex-col items-end border-l border-white/10 pl-6">
