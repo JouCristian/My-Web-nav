@@ -1,163 +1,197 @@
-// src/app/dashboard/crew/page.tsx
+// src/app/dashboard/page.tsx
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
+import { updateRecruitProfile, revokeRecruitProfile } from "@/app/actions"
 import Link from "next/link"
-import { CrewActionButtons } from "@/components/crew-action-buttons"
+// 🚀 引入跃迁连接器
+import { TransitionLink } from "@/components/transition-link"
 
-export default async function CrewArchivesPage() {
-  const session = await auth()
-  if (!session?.user) redirect("/login")
-
-  const allUsers = await prisma.user.findMany()
-
-  // 🚀 修复1：注入 any，免疫严格模式下的对象类型检测
-  const validUsers = allUsers.filter((user: any) => {
-    if (user.role === "PENDING") {
-      return user.realName !== null && user.studentId !== null;
-    }
-    return true; 
-  })
-
-  const roleWeight: Record<string, number> = { OWNER: 4, ADMIN: 3, MEMBER: 2, PENDING: 1 }
-  
-  // 🚀 修复2：强制转化为 string 键值，防止 Enum 索引报错
-  const sortedUsers = validUsers.sort((a: any, b: any) => {
-    const weightA = roleWeight[a.role as string] || 0
-    const weightB = roleWeight[b.role as string] || 0
-    if (weightA !== weightB) {
-      return weightB - weightA
-    }
-    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-  })
-
-  // 🚀 修复3：同样注入 any 免疫检查
-  const dbUser: any = allUsers.find(u => u.email === session.user?.email)
-  const isManager = dbUser?.role === "OWNER" || dbUser?.role === "ADMIN"
-
+const ModuleCard = ({ moduleId, title, subtitle, icon, link, isActive }: {
+  moduleId: string; title: string; subtitle: string; icon: string; link: string; isActive: boolean;
+}) => {
   return (
-    <main className="min-h-screen bg-transparent p-6 md:p-10 text-white relative overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[400px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none"></div>
+    <Link 
+      href={isActive ? link : "#"} 
+      className={`group relative h-80 rounded-[3rem] border border-purple-500/20 bg-[#06060a]/95 p-10 flex flex-col justify-between overflow-hidden transition-all duration-500 hover:border-purple-500/60 active:scale-[0.97] ${isActive ? 'animate-module-card shadow-[0_0_40px_rgba(168,85,247,0.05)]' : 'opacity-60 grayscale'}`}
+    >
+      <div className="absolute inset-0 animate-purple-flow opacity-40 group-hover:opacity-100 transition-opacity duration-700"></div>
+      <div className="absolute -top-20 -right-20 w-48 h-48 bg-purple-500/10 blur-[60px] rounded-full group-hover:bg-purple-500/25 transition-all duration-700"></div>
+      <div className="relative z-10">
+        <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-8 text-3xl shadow-[0_0_20px_rgba(168,85,247,0.1)] group-hover:scale-110 group-hover:bg-purple-500/20 transition-all duration-500">
+          {icon}
+        </div>
+        <h3 className="text-2xl font-bold text-white tracking-[0.15em] font-[family-name:var(--font-space)] mb-3">{title}</h3>
+        <p className="text-sm text-purple-200/40 font-mono tracking-widest leading-relaxed">{subtitle}</p>
+      </div>
+      <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-purple-400/40 uppercase tracking-[0.3em] border-t border-white/5 pt-6">
+        <span>{moduleId}</span>
+        <span className={`flex items-center gap-2 transition-all duration-500 ${isActive ? 'text-purple-400 group-hover:gap-4' : 'text-zinc-700'}`}>
+          {isActive ? 'Authorize Access' : 'System Locked'}
+          <span className="text-lg">➔</span>
+        </span>
+      </div>
+    </Link>
+  )
+}
 
-      <div className="max-w-5xl mx-auto relative z-10">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 border-b border-white/10 pb-6 gap-6">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-              </span>
-              <h2 className="text-sm font-bold tracking-[0.3em] font-mono text-blue-400 uppercase">Module B</h2>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-[0.2em] font-[family-name:var(--font-space)] text-white">船员档案室</h1>
-          </div>
+export default async function DashboardPage() {
+  const session = await auth()
+  if (!session?.user?.email) redirect("/")
+
+  const dbUser = await prisma.user.findUnique({
+    where: { email: session.user.email }
+  })
+  if (!dbUser) redirect("/")
+
+  // @ts-ignore
+  const isCaptain = session.user.isCaptain;
+  const isProfileIncomplete = !dbUser.realName || !dbUser.studentId;
+
+  // ==========================================
+  // 🚨 拦截器：状态 1 (新兵无档案，防爆门拦截)
+  // ==========================================
+  if (!isCaptain && isProfileIncomplete) {
+    return (
+      <main className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-red-500/5 -rotate-12 blur-[100px] pointer-events-none animate-pulse"></div>
+
+        <div className="relative z-10 w-full max-w-lg">
           
-          <div className="flex flex-wrap gap-4">
-            {isManager && (
-              <button className="group flex items-center gap-3 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-emerald-500/30 transition-all active:scale-95 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-                <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-emerald-500/20 transition-colors">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
-                  <div className="absolute inset-0 rounded-full border border-emerald-500/30 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
-                </div>
-                <div className="flex flex-col items-start text-left">
-                  <span className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-mono group-hover:text-emerald-400 transition-colors">Override</span>
-                  <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">强行建档</span>
-                </div>
-              </button>
-            )}
-            
-            <Link href="/dashboard" className="group flex items-center gap-3 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-purple-500/30 transition-all active:scale-95 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-              <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-purple-500/20 transition-colors">
-                <div className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse shadow-[0_0_12px_rgba(192,132,252,0.8)]" />
-                <div className="absolute inset-0 rounded-full border border-purple-500/30 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
+          <div className="flex justify-end mb-6">
+            {/* 🚀 升级为 TransitionLink */}
+            <TransitionLink href="/" className="group flex items-center gap-4 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-red-500/30 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+              <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-red-500/20 transition-colors">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.8)]" />
+                <div className="absolute inset-0 rounded-full border border-red-500/30 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
+              </div>
+              <div className="flex flex-col items-start">
+                <span className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-mono group-hover:text-red-400 transition-colors">Abort Sequence</span>
+                <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">撤离拦截区</span>
+              </div>
+            </TransitionLink>
+          </div>
+
+          <div className="bg-[#06060a]/90 border border-red-500/30 p-10 rounded-[2.5rem] backdrop-blur-2xl shadow-[0_0_80px_rgba(239,68,68,0.1)] animate-module-card">
+            <div className="flex items-center gap-4 mb-8 border-b border-red-500/20 pb-6">
+              <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">🛡️</div>
+              <div>
+                <h1 className="text-2xl font-bold text-white tracking-widest font-[family-name:var(--font-space)]">身份权限识别</h1>
+                <p className="text-red-400/80 text-xs font-mono mt-1 uppercase tracking-widest">Entry Protocol Required</p>
+              </div>
+            </div>
+            <form action={updateRecruitProfile} className="space-y-6">
+               <div className="space-y-2">
+                <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">真实姓名 / Real Name</label>
+                <input type="text" name="realName" required className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-red-500/50 text-white" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">学号 / Student ID</label>
+                <input type="text" name="studentId" required className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-red-500/50 text-white" />
+              </div>
+              <button type="submit" className="w-full bg-red-500/20 border border-red-500/50 text-red-400 font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-white transition-all tracking-[0.3em]">提交建档</button>
+            </form>
+          </div>
+
+        </div>
+      </main>
+    )
+  }
+
+  // ==========================================
+  // ⏳ 拦截器：状态 2 (档案审核中：量子审核舱 UI)
+  // ==========================================
+  if (!isCaptain && dbUser.role === "PENDING") {
+    return (
+      <main className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[400px] bg-blue-500/5 -rotate-12 blur-[120px] pointer-events-none"></div>
+
+        <div className="relative z-10 w-full max-w-2xl bg-[#06060a]/90 border border-blue-500/20 p-10 md:p-16 rounded-[3.5rem] backdrop-blur-2xl shadow-[0_0_80px_rgba(59,130,246,0.1)] text-center animate-module-card">
+          <div className="relative w-24 h-24 mx-auto mb-10">
+            <div className="absolute inset-0 rounded-full border-2 border-blue-500/20"></div>
+            <div className="absolute inset-0 rounded-full border-t-2 border-blue-400 animate-spin"></div>
+            <div className="absolute inset-4 rounded-full bg-blue-500/10 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400 animate-pulse">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              </svg>
+            </div>
+          </div>
+
+          <h2 className="text-3xl font-bold text-white tracking-[0.2em] font-[family-name:var(--font-space)] mb-4">档案同步审核中</h2>
+          <p className="text-zinc-500 font-mono text-sm tracking-widest uppercase mb-12">Awaiting Command Clearance...</p>
+
+          <div className="flex justify-center mb-16">
+            {/* 🚀 升级为 TransitionLink */}
+            <TransitionLink href="/" className="group flex items-center gap-4 bg-black/40 px-8 py-4 rounded-2xl border border-white/10 hover:border-blue-500/30 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+              <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/20 transition-colors">
+                <div className="w-3 h-3 rounded-full bg-blue-400 animate-pulse shadow-[0_0_15px_rgba(96,165,250,0.8)]" />
+                <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
               </div>
               <div className="flex flex-col items-start text-left">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-mono group-hover:text-purple-400 transition-colors">Return</span>
-                <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">返回中枢</span>
+                <span className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-mono group-hover:text-blue-400 transition-colors">Safety Exit</span>
+                <span className="text-base font-bold text-white tracking-widest font-[family-name:var(--font-space)]">返回安全区</span>
               </div>
+            </TransitionLink>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-white/5 pt-10">
+            <Link href="/contact" className="flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold hover:bg-emerald-500 hover:text-white transition-all text-sm tracking-widest">
+              <span>联系舰长加速审核 ✅</span>
             </Link>
+            <form action={revokeRecruitProfile}>
+              <button type="submit" className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 font-bold hover:bg-red-500 hover:text-white transition-all text-sm tracking-widest">
+                <span>撤销并重新填写档案 ↩</span>
+              </button>
+            </form>
           </div>
         </div>
+      </main>
+    )
+  }
 
-        <div className="space-y-4">
-          {sortedUsers.map((user: any) => {
-            const isOwner = user.role === "OWNER";
-            const isAdmin = user.role === "ADMIN";
-            const isPending = user.role === "PENDING";
-            
-            const roleBorder = isOwner ? "border-yellow-500/40 bg-yellow-500/5" : 
-                               isAdmin ? "border-purple-500/40 bg-purple-500/5" : 
-                               "border-white/5 bg-black/40";
-            
-            const avatarFallback = user.customAvatar || user.image || user.avatarUrl || "https://github.com/ghost.png";
-
-            return (
-              <div key={user.id} className={`group relative flex flex-col md:flex-row items-start md:items-center justify-between p-5 rounded-2xl border backdrop-blur-md transition-all hover:border-white/20 ${roleBorder}`}>
-                <div className="flex items-center gap-5 w-full md:w-auto">
-                  <div className="relative shrink-0">
-                    <div className={`w-14 h-14 rounded-full border-2 overflow-hidden ${isOwner ? 'border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.4)]' : isAdmin ? 'border-purple-500' : 'border-zinc-700'}`}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={avatarFallback} alt="avatar" className="w-full h-full object-cover" />
-                    </div>
-                    {isOwner && <div className="absolute -top-3 -right-3 text-2xl drop-shadow-[0_0_10px_rgba(234,179,8,1)] animate-bounce">👑</div>}
-                    {isAdmin && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-purple-600 rounded-full border border-black flex items-center justify-center text-[10px]">⭐</div>}
-                  </div>
-                  <div className="flex flex-col">
-                    <div className="flex items-baseline gap-3">
-                      <span className={`text-lg font-bold tracking-wider font-[family-name:var(--font-space)] ${isOwner ? 'text-yellow-400' : isAdmin ? 'text-purple-300' : 'text-zinc-200'}`}>
-                        {user.realName || user.nickname || "未知宇航员"}
-                      </span>
-                      {user.studentId && <span className="text-xs font-mono text-zinc-500 tracking-widest border border-zinc-700 px-2 py-0.5 rounded-md">ID: {user.studentId}</span>}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2" fill="none" className="text-zinc-500">
-                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-                      </svg>
-                      <span className="text-[11px] text-zinc-500 font-mono">
-                        {user.githubName || user.email?.split('@')[0] || "Unknown"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="mt-4 md:mt-0 flex items-center gap-6 self-end md:self-auto w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
-                  {isManager && isPending ? (
-                    <CrewActionButtons userId={user.id} realName={user.realName || "未知新兵"} />
-                  ) : (
-                    <>
-                      {!isPending && (
-                        user.feishuLink ? (
-                          <a href={user.feishuLink} target="_blank" rel="noopener noreferrer" className="group/fs flex items-center gap-2 bg-teal-500/10 border border-teal-500/30 px-3 py-1.5 rounded-lg shrink-0 hover:bg-teal-500/20 transition-all cursor-pointer shadow-[0_0_15px_rgba(20,184,166,0.1)] hover:shadow-[0_0_20px_rgba(20,184,166,0.3)]">
-                            <div className="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)]"></div>
-                            <span className="text-[10px] text-teal-300 font-mono uppercase tracking-wider group-hover/fs:text-teal-200">飞书频道就绪</span>
-                          </a>
-                        ) : (
-                          <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-lg shrink-0">
-                            <div className="w-2 h-2 rounded-full bg-red-500 animate-ping"></div>
-                            <span className="text-[10px] text-red-400 font-mono uppercase tracking-wider">缺失通讯链</span>
-                          </div>
-                        )
-                      )}
-                      <div className="flex flex-col items-end">
-                        <span className="text-[10px] uppercase font-mono tracking-widest text-zinc-500 mb-1">Status</span>
-                        {isPending ? (
-                          <span className="text-xs text-blue-400 font-bold tracking-widest flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></span>
-                            待核准
-                          </span>
-                        ) : (
-                          <span className={`text-xs font-bold tracking-widest uppercase ${isOwner ? 'text-yellow-500' : isAdmin ? 'text-purple-400' : 'text-emerald-400'}`}>
-                            {user.role}
-                          </span>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+  // ==========================================
+  // ✅ 状态 3：大气场指挥中枢大屏
+  // ==========================================
+  return (
+    <main className="min-h-screen p-12 md:p-20 text-white max-w-7xl mx-auto flex flex-col gap-16 relative">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 border-b border-white/10 pb-12">
+        <div>
+          <div className="flex items-center gap-3 mb-3">
+            <span className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></span>
+            <span className="text-xs font-mono text-blue-400 uppercase tracking-[0.5em]">Sector: Command Center</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold tracking-[0.1em] font-[family-name:var(--font-space)] bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-zinc-500">
+            星际舰队指挥大屏
+          </h1>
         </div>
+
+        {/* 🚀 升级为 TransitionLink */}
+        <TransitionLink href="/" className="group flex items-center gap-4 bg-black/40 px-6 py-4 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+          <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/20 transition-colors">
+            <div className="w-3 h-3 rounded-full bg-blue-400 animate-pulse shadow-[0_0_15px_rgba(96,165,250,0.8)]" />
+            <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
+          </div>
+          <div className="flex flex-col items-start">
+            <span className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-mono group-hover:text-blue-400 transition-colors">Return Path</span>
+            <span className="text-base font-bold text-white tracking-widest font-[family-name:var(--font-space)]">返回导航站</span>
+          </div>
+        </TransitionLink>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+        <ModuleCard moduleId="Module A" title="公告大屏" subtitle="Fleet-wide Broadcast System" icon="📢" link="/dashboard/board" isActive={false} />
+        <ModuleCard moduleId="Module B" title="船员档案室" subtitle="Starship Crew Database" icon="👥" link="/dashboard/crew" isActive={true} />
+        <ModuleCard moduleId="Module C" title="跃迁集结" subtitle="Attendance & Leave Requests" icon="⏳" link="/dashboard/attendance" isActive={false} />
+      </div>
+
+      <div className="mt-auto flex justify-between items-center opacity-20 pointer-events-none border-t border-white/5 pt-8">
+        <span className="text-[10px] font-mono tracking-[1em] uppercase">Tactical Overlay Active</span>
+        <div className="flex gap-4">
+          <div className="w-8 h-1 bg-white/40 rounded-full"></div>
+          <div className="w-24 h-1 bg-blue-500/40 rounded-full"></div>
+        </div>
+        <span className="text-[10px] font-mono tracking-[1em] uppercase">Auth Level: {dbUser.role}</span>
       </div>
     </main>
   )
