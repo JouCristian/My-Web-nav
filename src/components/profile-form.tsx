@@ -13,7 +13,7 @@ interface ProfileFormProps {
     image: string | null;
     email: string | null;
     feishuLink?: string | null;
-    studentId?: string | null; // 🚀 新增：学号字段
+    studentId?: string | null;
     role?: string;
   }
   onUpdate: (formData: FormData) => Promise<void>;
@@ -23,12 +23,12 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
   const [initialNickname, setInitialNickname] = useState(user.nickname || "")
   const [initialAvatar, setInitialAvatar] = useState(user.customAvatar || user.image || "")
   const [initialFeishu, setInitialFeishu] = useState(user.feishuLink || "")
-  const [initialStudentId, setInitialStudentId] = useState(user.studentId || "") // 🚀 新增：记录初始学号
+  const [initialStudentId, setInitialStudentId] = useState(user.studentId || "")
 
   const [nickname, setNickname] = useState(initialNickname)
   const [preview, setPreview] = useState(initialAvatar)
   const [feishu, setFeishu] = useState(initialFeishu)
-  const [studentId, setStudentId] = useState(initialStudentId) // 🚀 新增：绑定当前学号
+  const [studentId, setStudentId] = useState(initialStudentId)
   const [isUploading, setIsUploading] = useState(false)
   
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: "success" | "error" | "warning" }>({
@@ -38,7 +38,6 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
-  // 🚀 核心判定：昵称、头像、飞书或学号任一发生改变即激活保存
   const hasChanged = nickname !== initialNickname || preview !== initialAvatar || feishu !== initialFeishu || studentId !== initialStudentId
 
   const showToast = (message: string, type: "success" | "error" | "warning") => {
@@ -91,7 +90,7 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
     setInitialNickname(nickname)
     setInitialAvatar(preview)
     setInitialFeishu(feishu)
-    setInitialStudentId(studentId) // 🚀 同步更新基准学号
+    setInitialStudentId(studentId)
     setIsUploading(false)
     router.refresh()
   }
@@ -138,7 +137,7 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
           />
         </div>
 
-        {/* 🚀 飞书链接：正式船员以上军衔可见 */}
+        {/* 🚀 飞书链接：正式船员及管理层（包含式权限）均可见 */}
         {user.role !== "PENDING" && (
           <div className="space-y-2">
             <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">飞书个人链接 / Feishu Link</label>
@@ -151,13 +150,15 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
           </div>
         )}
 
-        {/* 🚀 核心身份锁：只有 "MEMBER" (船员) 才能看到并修改学号 */}
-        {user.role === "MEMBER" && (
+        {/* 🚀 核心修复：基于包含式权限，只要不是新兵，都可以拥有学号 */}
+        {user.role !== "PENDING" && (
           <div className="space-y-2">
             <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">学号 / Student ID</label>
             <input 
-              name="studentId" value={studentId} onChange={(e) => setStudentId(e.target.value)} required
-              placeholder="请输入您的学号"
+              name="studentId" value={studentId} onChange={(e) => setStudentId(e.target.value)} 
+              // 🚀 细节：普通人员必填，管理层可选填（无视 required 拦截）
+              required={user.role === "MEMBER"} 
+              placeholder={user.role === "MEMBER" ? "请输入您的学号" : "指挥组可选填"}
               className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-blue-500/30 transition-all text-white font-mono text-sm"
             />
           </div>
