@@ -137,13 +137,13 @@ export default async function CrewArchivesPage() {
                   {/* 🚀 飞书通讯链动态指示器 */}
                   {user.feishuLink ? (
                     <a href={user.feishuLink} target="_blank" rel="noopener noreferrer" className="group/fs flex items-center gap-2 bg-teal-500/10 border border-teal-500/30 px-3 py-1.5 rounded-lg shrink-0 hover:bg-teal-500/20 transition-all cursor-pointer shadow-[0_0_15px_rgba(20,184,166,0.1)] hover:shadow-[0_0_20px_rgba(20,184,166,0.3)]">
-                      <div className="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)]"></div>
-                      <span className="text-[10px] text-teal-300 font-mono uppercase tracking-wider group-hover/fs:text-teal-200">飞书频道就绪</span>
+                      <div className="w-3 h-3 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)]"></div>
+                      <span className="text-[10px] text-teal-300 font-mono uppercase tracking-wider group-hover/fs:text-teal-200">飞书学习链接已就绪 点击查看✅</span>
                     </a>
                   ) : (
                     <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-lg shrink-0">
-                      <div className="w-2 h-2 rounded-full bg-red-500 animate-ping"></div>
-                      <span className="text-[10px] text-red-400 font-mono uppercase tracking-wider">缺失通讯链</span>
+                      <div className="w-3 h-3 rounded-full bg-red-500 animate-ping"></div>
+                      <span className="text-[10px] text-red-400 font-mono uppercase tracking-wider">缺失飞书链⚠️请尽快回个人主页填写飞书学习链接</span>
                     </div>
                   )}
 
