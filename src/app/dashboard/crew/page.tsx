@@ -130,7 +130,7 @@ export default async function CrewArchivesPage() {
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-teal-400/10 to-transparent -translate-x-full group-hover/fs:animate-[shimmer_2s_infinite]"></div>
                             <div className="relative flex items-center gap-3">
                               <div className="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)] animate-pulse"></div>
-                              <span className="text-[10px] text-teal-300 font-mono uppercase tracking-[0.2em] font-bold">通讯就绪</span>
+                              <span className="text-[10px] text-teal-300 font-mono uppercase tracking-[0.2em] font-bold">飞书链接已就绪</span>
                             </div>
                           </a>
                         ) : (
@@ -144,14 +144,14 @@ export default async function CrewArchivesPage() {
                               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/10 to-transparent -translate-x-full group-hover/fs:animate-[shimmer_2s_infinite]"></div>
                               <div className="relative flex items-center gap-3">
                                 <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-ping"></div>
-                                <span className="text-[10px] text-red-400 font-mono uppercase tracking-[0.2em] font-bold">缺失通讯链 前往补全</span>
+                                <span className="text-[10px] text-red-400 font-mono uppercase tracking-[0.2em] font-bold">缺失飞书链接 前往补全</span>
                               </div>
                             </Link>
                           ) : (
                             /* 其他船员：仅显示不可点击的警告标签 */
                             <div className="relative flex items-center gap-3 bg-[#060813]/40 border border-red-500/10 px-5 py-2.5 rounded-xl shrink-0 opacity-40">
                               <div className="w-2 h-2 rounded-full bg-red-500/50 shadow-[0_0_5px_rgba(239,68,68,0.3)]"></div>
-                              <span className="text-[10px] text-red-400/60 font-mono uppercase tracking-[0.2em] font-bold">通讯失联</span>
+                              <span className="text-[10px] text-red-400/60 font-mono uppercase tracking-[0.2em] font-bold">飞书链接缺失</span>
                             </div>
                           )
                         )
