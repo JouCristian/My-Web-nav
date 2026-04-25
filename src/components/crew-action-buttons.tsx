@@ -150,7 +150,7 @@ export function CrewActionButtons({ userId, realName }: { userId: string, realNa
           will-change: transform, filter, opacity;
         }
         .quantum-breathe {
-          animation: core-breathe 4s ease-in-out infinite;
+          animation: core-breathe 2s ease-in-out infinite;
         }
         @keyframes aggregate {
           0% { opacity: 0; filter: blur(40px) brightness(2); transform: scale(1.15) translateZ(0); }
@@ -162,7 +162,7 @@ export function CrewActionButtons({ userId, realName }: { userId: string, realNa
         }
         @keyframes core-breathe {
           0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.02); }
+          50% { transform: scale(1.04); }
         }
       `}} />
 
