@@ -24,7 +24,6 @@ export function CrewActionButtons({ userId, realName }: { userId: string, realNa
 
   return (
     <div className="flex items-center gap-3">
-      {/* 核准按钮 */}
       <button 
         onClick={handleApprove}
         disabled={isPending}
@@ -33,7 +32,6 @@ export function CrewActionButtons({ userId, realName }: { userId: string, realNa
         {isPending ? "..." : "核准入舰"}
       </button>
 
-      {/* 驳回按钮 */}
       <button 
         onClick={handleReject}
         disabled={isPending}
