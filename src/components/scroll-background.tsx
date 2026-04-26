@@ -123,7 +123,7 @@ function RealisticEarth({ scrollProgressRef }: { scrollProgressRef: React.Mutabl
 // ==========================================
 // 🚀 核心更新：引入四大剧本数组
 // ==========================================
-const SCRIPT_NAMES = ["默认航线", "边缘掠阵", "高轨侦察", "深空环绕"];
+const SCRIPT_NAMES = ["默认航线", "星际穿越", "轨道空降", "深空苏醒"];
 const SCRIPTS = [
   // 剧本 0: 默认航线
   [
