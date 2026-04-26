@@ -7,7 +7,6 @@ import Link from "next/link"
 import { TransitionLink } from "@/components/transition-link"
 import { BroadcastCard } from "@/components/broadcast-card"
 import { CreateBroadcastModal } from "@/components/create-broadcast-modal"
-// 🚀 引入全新的星历组件
 import { DashboardClock } from "@/components/dashboard-clock"
 
 const THEME_MAP = {
@@ -178,7 +177,6 @@ export default async function DashboardPage() {
   return (
     <main className="min-h-screen py-16 px-8 xl:px-24 text-white relative flex flex-col gap-12">
       
-      {/* 🚀 注入全局连贯动画与苹果级滚动条 */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes shimmer-seamless { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
         @keyframes pulse-slow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
@@ -202,7 +200,6 @@ export default async function DashboardPage() {
 
       <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-blue-500/5 blur-[150px] rounded-full pointer-events-none"></div>
 
-      {/* ================= 头部导视 (专属抬头 & 星历组件) ================= */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 relative z-10 w-full">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-3">
@@ -230,10 +227,8 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ================= 核心：置顶巨型公告卡片 ================= */}
       <div className="relative z-10 w-full rounded-[3.5rem] border border-blue-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-[0_0_100px_rgba(59,130,246,0.1)] flex flex-col">
         
-        {/* 💫 全息横条 */}
         <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[#0a0d1a]/80 border border-blue-500/30 rounded-3xl p-6 lg:px-10 lg:py-6 mb-8 overflow-hidden shadow-[inset_0_0_30px_rgba(59,130,246,0.1)]">
           <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(59,130,246,0.15),transparent)] bg-[length:200%_100%] animate-[shimmer-seamless_4s_linear_infinite] pointer-events-none"></div>
           
@@ -252,13 +247,8 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* 🚀 修正：稳定版滚动公告舱 */}
+        {/* 🚀 滚动公告舱修复版（gap-4 间距 + pb-24 底部防遮挡留白） */}
         <div className="relative bg-[#02040a]/40 border border-white/5 rounded-[2rem] p-4 lg:p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] overflow-hidden">
-          
-          {/* 🚀 修正：
-              1. 使用 gap-4 替代卡片自带的 margin
-              2. 增加 pb-24 (底部内边距)，这是核心！它能让最后一条公告彻底滚出底部的渐变遮挡区 
-          */}
           <div className="flex flex-col gap-4 h-[340px] overflow-y-auto ios-scrollbar pr-2 md:pr-4 pb-24 relative z-10">
             {broadcasts.length > 0 ? (
               broadcasts.map(item => <BroadcastCard key={item.id} announcement={item} isManager={isManager} />)
@@ -270,13 +260,12 @@ export default async function DashboardPage() {
             )}
           </div>
           
-          {/* 底部渐变遮罩：增加高度让渐变更柔和 */}
           {broadcasts.length > 3 && (
             <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-[#060813] via-[#060813]/80 to-transparent pointer-events-none rounded-b-[2rem] z-20"></div>
           )}
         </div>
+      </div>
 
-      {/* ================= 垂直阵列：放大居中模块 ================= */}
       <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col gap-12 mt-6">
         <div className="flex items-center gap-4 opacity-40 mb-2">
           <div className="h-px bg-white/20 flex-1"></div>

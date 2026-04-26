@@ -6,7 +6,6 @@ import { createPortal } from "react-dom"
 import { deleteBroadcast } from "@/app/actions" 
 
 export function BroadcastCard({ announcement, isManager }: { announcement: any, isManager: boolean }) {
-  // 🚀 核心动效状态机
   const [isVanishing, setIsVanishing] = useState(false) 
   
   const [isReadOpen, setIsReadOpen] = useState(false)
@@ -33,30 +32,23 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
     setIsDelOpen(false);
   }
 
-  // 🚀 执行销毁：粒子消散 -> 等待动画 -> 正式物理移除
   const executeDelete = async () => {
     if (isPending) return
     setIsPending(true)
     
-    // 1. 先关闭确认弹窗
     await closeDelModalWithAnimation()
-    
-    // 2. 触发卡片本体消散
     setIsVanishing(true)
-    
-    // 3. 强制等待 600ms 消散动画执行完毕
     await new Promise(resolve => setTimeout(resolve, 600))
     
     try { 
       await deleteBroadcast(announcement.id) 
     } catch (error) { 
       console.error(error)
-      setIsVanishing(false) // 失败回滚
+      setIsVanishing(false) 
       setIsPending(false) 
     } 
   }
 
-  // 阵营色彩渲染
   const typeStyles: Record<string, any> = {
     INFO: { shadow: "rgba(59, 130, 246, 0.6)", glow: "rgba(59, 130, 246, 0.2)", border: "rgba(59, 130, 246, 0.5)", text: "text-blue-400", bg: "bg-blue-500/[0.05]", borderHover: "group-hover:border-blue-500/30", label: "INFO" },
     UPDATE: { shadow: "rgba(16, 185, 129, 0.6)", glow: "rgba(16, 185, 129, 0.2)", border: "rgba(16, 185, 129, 0.5)", text: "text-emerald-400", bg: "bg-emerald-500/[0.05]", borderHover: "group-hover:border-emerald-500/30", label: "UPDATE" },
@@ -64,7 +56,6 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
   }
   const style = typeStyles[announcement.type] || typeStyles.INFO
 
-  // 阅读弹窗 (保持原有高级UI)
   const readModalContent = isReadOpen ? (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className={`absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px] transition-all duration-500 ${isReadAnimating ? "opacity-100" : "opacity-0"}`} onClick={closeReadModal}></div>
@@ -81,7 +72,6 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
     </div>
   ) : null;
 
-  // 删除确认弹窗 (保持原有高级UI)
   const delModalContent = isDelOpen ? (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className={`absolute inset-0 bg-[#02040a]/60 backdrop-blur-[10px] transition-all duration-500 ${isDelAnimating ? "opacity-100" : "opacity-0"}`} onClick={() => !isPending && closeDelModalWithAnimation()}></div>
@@ -104,14 +94,14 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
   ) : null;
 
   return (
-        /* 🚀 修正：添加 shrink-0 强制卡片保持原始高度不被挤压，移除 mb-4 交给父容器统一控制间距 */
-        <div 
-        className={`relative overflow-hidden shrink-0 transition-all duration-500 ease-in-out ${
+    /* 🚀 防挤压修复版（加入了 shrink-0 防止超出时被强制压扁） */
+    <div 
+      className={`relative overflow-hidden shrink-0 transition-all duration-500 ease-in-out ${
         isVanishing 
-            ? 'max-h-0 opacity-0 scale-95 pointer-events-none !mt-0' 
-            : 'max-h-[500px] opacity-100'
-        }`}
-        >
+          ? 'max-h-0 opacity-0 scale-95 pointer-events-none !mt-0' 
+          : 'max-h-[500px] opacity-100'
+      }`}
+    >
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes vanish-dissipate { 0% { opacity: 1; filter: blur(0px); } 100% { opacity: 0; filter: blur(20px); transform: scale(1.1); } }
         .animate-vanish-dissipate { animation: vanish-dissipate 0.6s forwards; }
@@ -132,7 +122,6 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
             : `border-white/10 ${style.bg} hover:bg-white/[0.05] ${style.borderHover}`
         }`}
       >
-        {/* 🚀 修正：添加基础暗色垫底，防止在透明模糊背景下消失 */}
         <div className="absolute inset-0 bg-black/20 rounded-2xl pointer-events-none"></div>
 
         <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"></div>
