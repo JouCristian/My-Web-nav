@@ -94,12 +94,12 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
   ) : null;
 
   return (
-    /* 🚀 防挤压修复版（加入了 shrink-0 防止超出时被强制压扁） */
+    /* 🚀 核心修复 1：仅在卡片彻底销毁时才开启 overflow-hidden，平时允许子元素放大溢出 */
     <div 
-      className={`relative overflow-hidden shrink-0 transition-all duration-500 ease-in-out ${
+      className={`relative shrink-0 transition-all duration-500 ease-in-out ${
         isVanishing 
-          ? 'max-h-0 opacity-0 scale-95 pointer-events-none !mt-0' 
-          : 'max-h-[500px] opacity-100'
+          ? 'max-h-0 opacity-0 scale-95 pointer-events-none !mt-0 overflow-hidden' 
+          : 'max-h-[500px] opacity-100 overflow-visible'
       }`}
     >
       <style dangerouslySetInnerHTML={{ __html: `
@@ -113,16 +113,17 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
         .quantum-breathe-dynamic { animation: dynamic-breathe 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
       `}} />
 
+      {/* 🚀 核心修复 2：增加 hover:z-20 确保放大时处于顶层，添加 hover:shadow-2xl 增强悬浮立体感 */}
       <div 
         onClick={openReadModal}
-        className={`cursor-pointer group relative w-full flex items-center gap-8 p-6 rounded-2xl border transition-all duration-500 hover:scale-[1.01] ${
+        className={`cursor-pointer group relative w-full flex items-center gap-8 p-6 rounded-2xl border transition-all duration-500 hover:scale-[1.015] hover:z-20 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${
           isVanishing ? 'animate-vanish-dissipate' : 
           announcement.isPinned 
             ? "border-purple-500/40 bg-purple-500/10 shadow-[0_0_30px_rgba(168,85,247,0.15)]" 
             : `border-white/10 ${style.bg} hover:bg-white/[0.05] ${style.borderHover}`
         }`}
       >
-        <div className="absolute inset-0 bg-black/20 rounded-2xl pointer-events-none"></div>
+        <div className="absolute inset-0 bg-black/40 rounded-2xl pointer-events-none"></div>
 
         <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"></div>
         {announcement.isPinned && <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1.5 h-10 bg-purple-500 rounded-full shadow-[0_0_20px_rgba(168,85,247,1)] animate-pulse z-20"></div>}

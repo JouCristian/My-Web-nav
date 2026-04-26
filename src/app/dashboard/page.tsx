@@ -247,9 +247,9 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* 🚀 滚动公告舱修复版（gap-4 间距 + pb-24 底部防遮挡留白） */}
-        <div className="relative bg-[#02040a]/40 border border-white/5 rounded-[2rem] p-4 lg:p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] overflow-hidden">
-          <div className="flex flex-col gap-4 h-[340px] overflow-y-auto ios-scrollbar pr-2 md:pr-4 pb-24 relative z-10">
+        {/* 🚀 核心修复 3：移除容器的 p-4，并在内部滚动区使用 px-4，为卡片放大留出左右的安全呼吸边界，避免被父级切掉 */}
+        <div className="relative bg-[#02040a]/40 border border-white/5 rounded-[2rem] shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] overflow-hidden">
+          <div className="flex flex-col gap-4 h-[380px] overflow-y-auto ios-scrollbar px-4 lg:px-8 pt-6 pb-24 relative z-10">
             {broadcasts.length > 0 ? (
               broadcasts.map(item => <BroadcastCard key={item.id} announcement={item} isManager={isManager} />)
             ) : (
