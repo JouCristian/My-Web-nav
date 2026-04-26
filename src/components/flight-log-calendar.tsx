@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
+import ReactMarkdown from "react-markdown" // 🚀 引入 Markdown 渲染引擎
 
 export function FlightLogCalendar({ userRole }: { userRole: string }) {
   const [viewDate, setViewDate] = useState(new Date())
@@ -43,7 +44,7 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
   const blanks = Array.from({ length: firstDay }, (_, i) => i)
 
-  // 🖱️ 焦点动画核心逻辑：递归定位偏移量，免疫变形缩放带来的失真
+  // 🖱️ 焦点动画核心逻辑
   const handleFocus = (e: any) => {
     if (!formRef.current || !e.target) return;
     let top = 0, left = 0, el = e.target;
@@ -83,7 +84,7 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
     handleBlur()
   }
 
-  // 🗑️ 清除日志 (防止点错日期)
+  // 🗑️ 清除日志
   const handleClearLog = () => {
     if (!selectedDay) return
     setLogs(prev => {
@@ -127,8 +128,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
               50% { transform: scale(1.02); box-shadow: 0 0 100px rgba(16, 185, 129, 0.35); border-color: rgba(16, 185, 129, 0.4); }
             }
             .animate-modal-breathe { animation: modal-breathe 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
-            
-            /* 🚀 为自定义时间选择器设计的专属翡翠滚动条 */
             .emerald-scrollbar::-webkit-scrollbar { width: 4px; }
             .emerald-scrollbar::-webkit-scrollbar-track { background: transparent; }
             .emerald-scrollbar::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 10px; }
@@ -169,7 +168,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
               {modalMode === "EDIT" && (
                 <form ref={formRef} className="space-y-6 relative z-10" onSubmit={(e) => { e.preventDefault(); handleSaveLog(); }}>
                   
-                  {/* 🚀 核心动画：悬浮追踪焦点框 */}
                   <motion.div 
                     initial={false}
                     animate={focusStyle}
@@ -188,12 +186,10 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                       />
                     </div>
                     
-                    {/* 自定义时间选择器 */}
                     <div className="w-1/3 space-y-2 relative z-30">
                       <label className="text-[10px] text-emerald-500/60 uppercase tracking-[0.2em] ml-2">精确时间 / Time</label>
                       
                       <div className="relative w-full">
-                        {/* 伪装的 Input 框 */}
                         <div 
                           ref={timeInputRef}
                           onClick={(e) => {
@@ -206,12 +202,9 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-emerald-500/60"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         </div>
 
-                        {/* 弹出的苹果级丝滑非线性菜单 */}
                         <AnimatePresence>
                           {isTimePickerOpen && (
                             <>
-                              {/* 🚀 核心修复：抛弃 Portal，使用基于当前弹窗相对定位的 z-40 遮罩 
-                                  这样遮罩层不再覆盖整个屏幕导致滚轮被拦截，同时又能完美点击外部关闭！ */}
                               <div 
                                 className="fixed inset-0 z-[40] cursor-default" 
                                 onClick={(e) => { 
@@ -226,7 +219,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.9, y: -10 }}
                                 transition={springConfig}
-                                // 🚀 z-50 保证在 z-40 遮罩之上，完美接收滚轮事件
                                 className="absolute top-[110%] right-0 mt-2 z-[50] w-56"
                               >
                                 <div className="animate-modal-breathe w-full h-48 bg-[#060813]/95 border border-emerald-500/30 rounded-[2rem] shadow-[0_0_50px_rgba(16,185,129,0.3)] p-3 flex gap-2 overflow-hidden backdrop-blur-xl">
@@ -245,7 +237,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                                     ))}
                                   </div>
                                   
-                                  {/* 分隔线 */}
                                   <div className="w-px bg-emerald-500/20 my-2 relative z-10"></div>
                                   
                                   {/* 分钟列 */}
@@ -300,7 +291,7 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                 </form>
               )}
 
-              {/* 🛡️ 模态 2：详情只读模式 */}
+              {/* 🛡️ 模态 2：详情只读模式 (Markdown 渲染) */}
               {modalMode === "VIEW" && (
                 <div className="relative z-10 flex flex-col">
                   {activeLog ? (
@@ -313,10 +304,27 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                         </div>
                       </div>
                       
-                      <div className="bg-black/40 border border-emerald-500/20 rounded-[2rem] p-6 md:p-8 shadow-[inset_0_0_40px_rgba(0,0,0,0.5)] max-h-[40vh] overflow-y-auto ios-scrollbar">
-                        <div className="text-zinc-300 text-sm md:text-base leading-relaxed whitespace-pre-wrap font-mono">
+                      {/* 🚀 引入 ReactMarkdown 并配置顶级排版样式 */}
+                      <div className="bg-black/40 border border-emerald-500/20 rounded-[2rem] p-6 md:p-8 shadow-[inset_0_0_40px_rgba(0,0,0,0.5)] max-h-[40vh] overflow-y-auto emerald-scrollbar">
+                        <ReactMarkdown 
+                          className="text-zinc-300 text-sm md:text-base leading-relaxed break-words"
+                          components={{
+                            h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-emerald-400 mb-4 pb-2 border-b border-emerald-500/20" {...props} />,
+                            h2: ({node, ...props}) => <h2 className="text-xl font-bold text-emerald-400/90 mt-6 mb-3" {...props} />,
+                            h3: ({node, ...props}) => <h3 className="text-lg font-bold text-emerald-400/80 mt-4 mb-2" {...props} />,
+                            p: ({node, ...props}) => <p className="mb-4 last:mb-0 leading-relaxed" {...props} />,
+                            strong: ({node, ...props}) => <strong className="text-emerald-300 font-bold" {...props} />,
+                            ul: ({node, ...props}) => <ul className="list-disc list-inside mb-4 text-zinc-300" {...props} />,
+                            ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-4 text-zinc-300" {...props} />,
+                            li: ({node, ...props}) => <li className="mb-1" {...props} />,
+                            blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-emerald-500/50 pl-4 py-2 mb-4 bg-emerald-500/5 rounded-r-lg text-emerald-200/80 italic" {...props} />,
+                            code: ({node, ...props}) => <code className="bg-emerald-500/10 text-emerald-300 px-1.5 py-0.5 rounded font-mono text-sm" {...props} />,
+                            pre: ({node, ...props}) => <pre className="bg-[#02040a]/80 p-4 rounded-xl border border-emerald-500/20 mb-4 overflow-x-auto emerald-scrollbar text-sm" {...props} />,
+                            a: ({node, ...props}) => <a className="text-emerald-400 hover:text-emerald-300 underline underline-offset-4 decoration-emerald-500/30 transition-colors" target="_blank" rel="noopener noreferrer" {...props} />
+                          }}
+                        >
                           {activeLog.content}
-                        </div>
+                        </ReactMarkdown>
                       </div>
                     </>
                   ) : (
