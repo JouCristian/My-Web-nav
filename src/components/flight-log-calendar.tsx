@@ -43,19 +43,26 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
   const blanks = Array.from({ length: firstDay }, (_, i) => i)
 
-  // 🖱️ 焦点动画核心逻辑：计算目标输入框的位置，让发光框飞过去
+  // 🚀 核心修复 1：使用递归 offsetTop 算法。
+  // 彻底免疫 CSS Scale 缩放带来的 getBoundingClientRect 坐标失真问题！
   const handleFocus = (e: any) => {
-    if (!formRef.current || !e.target) return
-    const formRect = formRef.current.getBoundingClientRect()
-    const targetRect = e.target.getBoundingClientRect()
-
-    setFocusStyle({
-      top: targetRect.top - formRect.top,
-      left: targetRect.left - formRect.left,
-      width: targetRect.width,
-      height: targetRect.height,
-      opacity: 1
-    })
+    if (!formRef.current || !e.target) return;
+    let top = 0, left = 0, el = e.target;
+    
+    // 不断向上寻址，直到追溯到 form 表单的边界，从而算出绝对精准的局部坐标
+    while (el && el !== formRef.current) {
+      top += el.offsetTop; 
+      left += el.offsetLeft; 
+      el = el.offsetParent;
+    }
+    
+    setFocusStyle({ 
+      top, 
+      left, 
+      width: e.target.offsetWidth, 
+      height: e.target.offsetHeight, 
+      opacity: 1 
+    });
   }
   const handleBlur = () => { setFocusStyle(prev => ({ ...prev, opacity: 0 })) }
 
@@ -73,7 +80,8 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
       setModalMode("VIEW")
     }
     setIsModalOpen(true)
-    setIsTimePickerOpen(false) // 确保时间选择器初始关闭
+    setIsTimePickerOpen(false) 
+    handleBlur() // 确保每次打开都是无焦点的纯净状态
   }
 
   // 💾 保存日志
@@ -84,6 +92,7 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
       [selectedDay]: { title: editTitle, time: editTime, content: editContent }
     }))
     setIsModalOpen(false) 
+    handleBlur()
   }
 
   // 🗑️ 清除日志 (防止点错日期)
@@ -95,6 +104,7 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
       return newLogs
     })
     setIsModalOpen(false) 
+    handleBlur()
   }
 
   const handleEditExistingLog = () => {
@@ -171,7 +181,7 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
               {modalMode === "EDIT" && (
                 <form ref={formRef} className="space-y-6 relative z-10" onSubmit={(e) => { e.preventDefault(); handleSaveLog(); }}>
                   
-                  {/* 🚀 核心动画：悬浮追踪焦点框 */}
+                  {/* 🚀 核心动画：悬浮追踪焦点框，精准贴合 */}
                   <motion.div 
                     initial={false}
                     animate={focusStyle}
@@ -190,72 +200,81 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                       />
                     </div>
                     
-                    {/* 🚀 核心重构：顶级审美的自定义时间选择器 */}
+                    {/* 🚀 核心重构 2：隔离层，解决跳跃 BUG */}
                     <div className="w-1/3 space-y-2 relative z-30">
                       <label className="text-[10px] text-emerald-500/60 uppercase tracking-[0.2em] ml-2">精确时间 / Time</label>
                       
-                      {/* 伪装的 Input 框 */}
-                      <div 
-                        ref={timeInputRef}
-                        onClick={(e) => {
-                          setIsTimePickerOpen(true);
-                          if (timeInputRef.current) handleFocus({ target: timeInputRef.current });
-                        }}
-                        className="w-full bg-black/40 border border-emerald-500/20 rounded-2xl px-5 py-4 text-emerald-400 font-mono shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] transition-colors cursor-pointer flex justify-between items-center"
-                      >
-                        <span className="font-bold tracking-widest">{editTime}</span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-emerald-500/60"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      </div>
+                      {/* 将时间伪输入框和下拉框彻底隔离开，避免下拉框的 DOM 被注入 margins */}
+                      <div className="relative w-full">
+                        {/* 伪装的 Input 框 */}
+                        <div 
+                          ref={timeInputRef}
+                          onClick={(e) => {
+                            setIsTimePickerOpen(true);
+                            if (timeInputRef.current) handleFocus({ target: timeInputRef.current });
+                          }}
+                          className="w-full bg-black/40 border border-emerald-500/20 rounded-2xl px-5 py-4 text-emerald-400 font-mono shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] transition-colors cursor-pointer flex justify-between items-center relative z-10"
+                        >
+                          <span className="font-bold tracking-widest">{editTime}</span>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-emerald-500/60"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        </div>
 
-                      {/* 弹出的苹果级丝滑非线性菜单 */}
-                      <AnimatePresence>
-                        {isTimePickerOpen && (
-                          <>
-                            {/* 点击外部关闭 */}
-                            <div className="fixed inset-0 z-40" onClick={() => { setIsTimePickerOpen(false); handleBlur(); }}></div>
-                            
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.9, y: -10 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.9, y: -10 }}
-                              transition={springConfig}
-                              className="absolute top-[110%] right-0 mt-2 p-3 w-56 bg-[#060813]/95 border border-emerald-500/30 rounded-[2rem] shadow-[0_0_50px_rgba(16,185,129,0.3)] z-50 flex gap-2 animate-modal-breathe overflow-hidden backdrop-blur-xl"
-                            >
-                              {/* 辉光背景 */}
-                              <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent pointer-events-none"></div>
+                        {/* 弹出的苹果级丝滑非线性菜单 */}
+                        <AnimatePresence>
+                          {isTimePickerOpen && (
+                            <>
+                              {/* 遮罩移入 Portal，点击外部即刻安全关闭 */}
+                              {mounted && createPortal(
+                                <div className="fixed inset-0 z-[10000]" onClick={(e) => { e.stopPropagation(); setIsTimePickerOpen(false); handleBlur(); }}></div>,
+                                document.body
+                              )}
                               
-                              {/* 小时列 */}
-                              <div className="flex-1 h-48 overflow-y-auto emerald-scrollbar pr-1 space-y-1 relative z-10">
-                                {Array.from({length: 24}, (_, i) => String(i).padStart(2, '0')).map(h => (
-                                  <div
-                                    key={`h-${h}`}
-                                    onClick={() => setEditTime(`${h}:${editTime.split(':')[1]}`)}
-                                    className={`cursor-pointer py-2 text-center rounded-xl font-mono text-sm transition-all duration-300 ${editTime.split(':')[0] === h ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)] font-bold scale-105' : 'text-zinc-400 hover:bg-emerald-500/20 hover:text-emerald-300'}`}
-                                  >
-                                    {h}
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: -10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                                transition={springConfig}
+                                // 彻底漂浮，保证没有任何 layout 挤压
+                                className="absolute top-[110%] right-0 mt-2 z-[10001] w-56"
+                              >
+                                {/* 内部继续享有 CSS 的呼吸动效，而不与 Framer Motion 的 scale 冲突 */}
+                                <div className="animate-modal-breathe w-full h-48 bg-[#060813]/95 border border-emerald-500/30 rounded-[2rem] shadow-[0_0_50px_rgba(16,185,129,0.3)] p-3 flex gap-2 overflow-hidden backdrop-blur-xl">
+                                  <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent pointer-events-none"></div>
+                                  
+                                  {/* 小时列 */}
+                                  <div className="flex-1 h-full overflow-y-auto emerald-scrollbar pr-1 space-y-1 relative z-10">
+                                    {Array.from({length: 24}, (_, i) => String(i).padStart(2, '0')).map(h => (
+                                      <div
+                                        key={`h-${h}`}
+                                        onClick={() => setEditTime(`${h}:${editTime.split(':')[1]}`)}
+                                        className={`cursor-pointer py-2 text-center rounded-xl font-mono text-sm transition-all duration-300 ${editTime.split(':')[0] === h ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)] font-bold scale-105' : 'text-zinc-400 hover:bg-emerald-500/20 hover:text-emerald-300'}`}
+                                      >
+                                        {h}
+                                      </div>
+                                    ))}
                                   </div>
-                                ))}
-                              </div>
-                              
-                              {/* 分隔线 */}
-                              <div className="w-px bg-emerald-500/20 my-2 relative z-10"></div>
-                              
-                              {/* 分钟列 */}
-                              <div className="flex-1 h-48 overflow-y-auto emerald-scrollbar pl-1 pr-1 space-y-1 relative z-10">
-                                {Array.from({length: 60}, (_, i) => String(i).padStart(2, '0')).map(m => (
-                                  <div
-                                    key={`m-${m}`}
-                                    onClick={() => setEditTime(`${editTime.split(':')[0]}:${m}`)}
-                                    className={`cursor-pointer py-2 text-center rounded-xl font-mono text-sm transition-all duration-300 ${editTime.split(':')[1] === m ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)] font-bold scale-105' : 'text-zinc-400 hover:bg-emerald-500/20 hover:text-emerald-300'}`}
-                                  >
-                                    {m}
+                                  
+                                  {/* 分隔线 */}
+                                  <div className="w-px bg-emerald-500/20 my-2 relative z-10"></div>
+                                  
+                                  {/* 分钟列 */}
+                                  <div className="flex-1 h-full overflow-y-auto emerald-scrollbar pl-1 pr-1 space-y-1 relative z-10">
+                                    {Array.from({length: 60}, (_, i) => String(i).padStart(2, '0')).map(m => (
+                                      <div
+                                        key={`m-${m}`}
+                                        onClick={() => setEditTime(`${editTime.split(':')[0]}:${m}`)}
+                                        className={`cursor-pointer py-2 text-center rounded-xl font-mono text-sm transition-all duration-300 ${editTime.split(':')[1] === m ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)] font-bold scale-105' : 'text-zinc-400 hover:bg-emerald-500/20 hover:text-emerald-300'}`}
+                                      >
+                                        {m}
+                                      </div>
+                                    ))}
                                   </div>
-                                ))}
-                              </div>
-                            </motion.div>
-                          </>
-                        )}
-                      </AnimatePresence>
+                                </div>
+                              </motion.div>
+                            </>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     </div>
                   </div>
 
@@ -273,7 +292,7 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                   </div>
 
                   <div className="flex gap-4 pt-4 border-t border-emerald-500/10 relative z-20">
-                    <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 font-bold tracking-widest text-[10px] hover:text-white hover:bg-white/10 transition-all active:scale-95">取消</button>
+                    <button type="button" onClick={() => { setIsModalOpen(false); handleBlur(); }} className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 font-bold tracking-widest text-[10px] hover:text-white hover:bg-white/10 transition-all active:scale-95">取消</button>
                     
                     {/* 🚀 如果该日志已经存在，则允许舰长将其彻底清除 */}
                     {activeLog && (
@@ -372,6 +391,8 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
             
             {days.map(day => {
               const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear()
+              
+              // 动态判断当前日期是否有真实存入的状态
               const hasLog = !!logs[day]
 
               return (
@@ -392,6 +413,7 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
 
                   <span className={`text-sm md:text-base font-bold relative z-10 ${isToday ? "font-[family-name:var(--font-space)]" : "font-mono"}`}>{day}</span>
                   
+                  {/* 当且仅当有真实存入的状态时，才显示绿点 */}
                   {hasLog && (
                     <div className="absolute bottom-2 flex gap-0.5 z-10">
                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></div>
