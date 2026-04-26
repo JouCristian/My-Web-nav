@@ -86,14 +86,14 @@ export default async function DashboardPage() {
     orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }]
   })
 
-  // 拦截器 1 和 2 逻辑保持原样
+  // 🛡️ 状态 1：拦截器逻辑保持原样
   if (!isCaptain && isProfileIncomplete) {
     return (
       <main className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-red-500/5 -rotate-12 blur-[100px] pointer-events-none animate-pulse"></div>
         <div className="relative z-10 w-full max-w-lg">
           <div className="flex justify-end mb-6">
-            <TransitionLink href="/" className="group flex items-center gap-4 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-red-500/30 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+            <TransitionLink href="/" className="group flex items-center gap-4 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
               <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-red-500/20 transition-colors">
                 <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.8)]" />
                 <div className="absolute inset-0 rounded-full border border-red-500/30 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
@@ -105,7 +105,7 @@ export default async function DashboardPage() {
             </TransitionLink>
           </div>
 
-          <div className="bg-[#06060a]/90 border border-red-500/30 p-10 rounded-[2.5rem] backdrop-blur-2xl shadow-[0_0_80px_rgba(239,68,68,0.1)] animate-module-card">
+          <div className="bg-[#06060a]/90 border border-red-500/30 p-10 rounded-[2.5rem] backdrop-blur-2xl shadow-[0_0_80px_rgba(239,68,68,0.1)]">
             <div className="flex items-center gap-4 mb-8 border-b border-red-500/20 pb-6">
               <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">🛡️</div>
               <div>
@@ -130,11 +130,12 @@ export default async function DashboardPage() {
     )
   }
 
+  // 🛡️ 状态 2：拦截器逻辑保持原样
   if (!isCaptain && dbUser.role === "PENDING") {
     return (
       <main className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[400px] bg-blue-500/5 -rotate-12 blur-[120px] pointer-events-none"></div>
-        <div className="relative z-10 w-full max-w-2xl bg-[#06060a]/90 border border-blue-500/20 p-10 md:p-16 rounded-[3.5rem] backdrop-blur-2xl shadow-[0_0_80px_rgba(59,130,246,0.1)] text-center animate-module-card">
+        <div className="relative z-10 w-full max-w-2xl bg-[#06060a]/90 border border-blue-500/20 p-10 md:p-16 rounded-[3.5rem] backdrop-blur-2xl shadow-[0_0_80px_rgba(59,130,246,0.1)] text-center">
           <div className="relative w-24 h-24 mx-auto mb-10">
             <div className="absolute inset-0 rounded-full border-2 border-blue-500/20"></div>
             <div className="absolute inset-0 rounded-full border-t-2 border-blue-400 animate-spin"></div>
@@ -173,25 +174,20 @@ export default async function DashboardPage() {
     )
   }
 
+  // ✅ 状态 3：正式指挥大屏
   return (
     <main className="min-h-screen py-16 px-8 xl:px-24 text-white relative flex flex-col gap-12">
       
-      {/* 🚀 注入全息连贯动画与苹果级滚动条 */}
+      {/* 🚀 注入全局连贯动画与苹果级滚动条 */}
       <style dangerouslySetInnerHTML={{ __html: `
-        /* 核心修复：彻底抛弃 translateX，改用 bg-position 实现无限丝滑连贯的全息扫描 */
-        @keyframes shimmer-seamless { 
-          0% { background-position: 200% center; } 
-          100% { background-position: -200% center; } 
-        }
+        @keyframes shimmer-seamless { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
         @keyframes pulse-slow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-        
         @keyframes button-breathe { 0%, 100% { transform: scale(1); border-color: rgba(255,255,255,0.1); } 50% { transform: scale(1.02); border-color: rgba(59,130,246,0.5); } }
         @keyframes core-pulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 12px rgba(59,130,246,0.8); } 50% { transform: scale(1.3); box-shadow: 0 0 24px rgba(59,130,246,1); } }
         
         .hover-breathe:hover { animation: button-breathe 2.5s cubic-bezier(0.34, 1.56, 0.64, 1) infinite; }
         .group:hover .group-hover-pulse { animation: core-pulse 2s cubic-bezier(0.34, 1.56, 0.64, 1) infinite; }
 
-        /* iOS 风格幽灵滚动条 */
         .ios-scrollbar::-webkit-scrollbar { width: 5px; }
         .ios-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .ios-scrollbar::-webkit-scrollbar-thumb {
@@ -206,23 +202,21 @@ export default async function DashboardPage() {
 
       <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-blue-500/5 blur-[150px] rounded-full pointer-events-none"></div>
 
-      {/* ================= 头部导视 (整合日历与专属抬头) ================= */}
+      {/* ================= 头部导视 (专属抬头 & 星历组件) ================= */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 relative z-10 w-full">
-        {/* 左侧：专属舰队抬头 */}
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-3">
             <span className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></span>
             <span className="text-xs font-mono text-blue-400 uppercase tracking-[0.5em]">Sector: Command Center</span>
           </div>
-          {/* 🚀 字号调整，防止文字过长折行 */}
+          {/* 🚀 专属舰队抬头替换 */}
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-[0.08em] font-[family-name:var(--font-space)] bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-zinc-500">
             「一生一芯」·西科星际舰队
           </h1>
         </div>
 
-        {/* 右侧：日历模块 与 返回按钮的组合装甲 */}
         <div className="flex flex-col md:flex-row items-center gap-6 shrink-0 w-full lg:w-auto justify-between lg:justify-end">
-          {/* 🚀 插入动态星历组件 */}
+          {/* 🚀 全息星历组件 */}
           <DashboardClock />
 
           <TransitionLink href="/" className="group hover-breathe flex items-center gap-4 bg-black/40 px-6 py-4 rounded-2xl border border-white/10 backdrop-blur-md transition-all duration-500 active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)] shrink-0">
@@ -241,10 +235,8 @@ export default async function DashboardPage() {
       {/* ================= 核心：置顶巨型公告卡片 ================= */}
       <div className="relative z-10 w-full rounded-[3.5rem] border border-blue-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-[0_0_100px_rgba(59,130,246,0.1)] flex flex-col">
         
-        {/* 💫 全息横条 (Holographic Bar) */}
+        {/* 💫 全息横条 */}
         <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[#0a0d1a]/80 border border-blue-500/30 rounded-3xl p-6 lg:px-10 lg:py-6 mb-8 overflow-hidden shadow-[inset_0_0_30px_rgba(59,130,246,0.1)]">
-          
-          {/* 🚀 修复版全息扫描线：使用线性渐变 + bg-position 打造极致连贯流水感 */}
           <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(59,130,246,0.15),transparent)] bg-[length:200%_100%] animate-[shimmer-seamless_4s_linear_infinite] pointer-events-none"></div>
           
           <div className="flex items-center gap-5 relative z-10">
@@ -262,20 +254,21 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* 📜 独立封装的内嵌滚动公告舱 (固定高度约展示3条) */}
-        <div className="relative bg-[#060813]/60 border border-white/5 rounded-[2rem] p-4 lg:p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.8)]">
-          <div className="flex flex-col gap-4 h-[340px] overflow-y-auto ios-scrollbar pr-2 md:pr-4 relative z-10">
+        {/* 📜 稳定版滚动公告舱 (修复 image_a8b492.jpg 的显示 BUG) */}
+        <div className="relative bg-[#060813]/60 border border-white/5 rounded-[2rem] p-4 lg:p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.8)] overflow-hidden">
+          {/* 🚀 锁定高度，超过约3条触发滚动 */}
+          <div className="flex flex-col gap-1 h-[340px] overflow-y-auto ios-scrollbar pr-2 md:pr-4 relative z-10">
             {broadcasts.length > 0 ? (
               broadcasts.map(item => <BroadcastCard key={item.id} announcement={item} isManager={isManager} />)
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center border border-white/5 bg-white/[0.02] rounded-[1.5rem] text-zinc-600 font-mono tracking-widest italic">
+              <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600 font-mono tracking-widest italic">
                 <span className="text-4xl mb-4 opacity-20">📡</span>
                 <span>暂未接收到任何深空广播信号...</span>
               </div>
             )}
           </div>
           
-          {/* 底部暗场遮罩，视觉暗示可以继续下滑 */}
+          {/* 底部渐变遮罩 */}
           {broadcasts.length > 3 && (
             <div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-[#060813] to-transparent pointer-events-none rounded-b-[2rem] z-20"></div>
           )}

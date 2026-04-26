@@ -79,7 +79,7 @@ export async function revokeRecruitProfile() {
  * ==========================================
  */
 
-// 🚀 核心修复：销毁公告并刷新主大屏，彻底解决 crash 问题
+// 🚀 核心修复：执行销毁并刷新主中枢，解决 image_a937ba.png 的 crash
 export async function deleteBroadcast(id: string) {
   const session = await auth()
   const user = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
@@ -87,33 +87,32 @@ export async function deleteBroadcast(id: string) {
 
   await prisma.announcement.delete({ where: { id } })
   
-  // 确保重绘主中枢，防止 image_a937ba.png 报错
+  // 必须刷新 /dashboard 路径
   revalidatePath("/dashboard") 
 }
 
 export async function approveCrew(userId: string) {
   const session = await auth()
-  const operator = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
-  if (operator?.role !== "OWNER" && operator?.role !== "ADMIN") throw new Error("权限不足")
+  const user = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
+  if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("权限不足")
   await prisma.user.update({ where: { id: userId }, data: { role: "MEMBER" } })
   revalidatePath("/dashboard/crew")
 }
 
 export async function rejectCrew(userId: string) {
   const session = await auth()
-  const operator = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
-  if (operator?.role !== "OWNER" && operator?.role !== "ADMIN") throw new Error("权限不足")
+  const user = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
+  if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("权限不足")
   await prisma.user.update({ where: { id: userId }, data: { realName: null, studentId: null, feishuLink: null, role: "PENDING" } })
   revalidatePath("/dashboard/crew")
 }
 
 export async function toggleAdminRole(userId: string, makeAdmin: boolean) {
   const session = await auth()
-  if (!session?.user?.email) throw new Error("未授权访问")
-  const currentUser = await prisma.user.findUnique({ where: { email: session.user.email } })
-  if (currentUser?.role !== "OWNER") throw new Error("权限溢出")
+  const currentUser = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
+  if (currentUser?.role !== "OWNER") throw new Error("仅最高指挥官可进行任命")
   const targetUser = await prisma.user.findUnique({ where: { id: userId } })
-  if (!targetUser || targetUser.role === "OWNER") throw new Error("目标坐标丢失")
+  if (!targetUser || targetUser.role === "OWNER") throw new Error("无法修改目标")
   await prisma.user.update({ where: { id: userId }, data: { role: makeAdmin ? "ADMIN" : "MEMBER" } })
   revalidatePath("/dashboard/crew")
 }
