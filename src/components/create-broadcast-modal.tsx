@@ -14,7 +14,7 @@ export function CreateBroadcastModal() {
   const [selectedType, setSelectedType] = useState({ value: 'INFO', label: 'INFO - 日常简讯' })
   const [isPinned, setIsPinned] = useState(false)
 
-  // 🚀 核心修复：更精准的量子焦点环坐标计算
+  // 🚀 量子焦点环状态
   const [focusStyle, setFocusStyle] = useState({ top: 0, height: 0, opacity: 0, width: 0, left: 0 })
   const formRef = useRef<HTMLFormElement>(null)
 
@@ -23,24 +23,32 @@ export function CreateBroadcastModal() {
   const openModal = () => { setIsOpen(true); setTimeout(() => setIsAnimating(true), 10); }
   const closeModal = () => { setIsAnimating(false); setTimeout(() => setIsOpen(false), 600); }
 
-  // 🚀 物理校准：捕获输入框相对于 Form 容器的绝对物理位置
+  // 🚀 终极物理校准：免疫 Scale 缩放的 DOM 节点坐标计算法
   const handleFocus = (e: any) => {
-    if (!formRef.current) return
-    const formRect = formRef.current.getBoundingClientRect()
-    const targetRect = e.target.getBoundingClientRect()
+    if (!formRef.current || !e.target) return;
     
+    let top = 0;
+    let left = 0;
+    let el = e.target;
+    
+    // 向上递归计算绝对偏移量，彻底无视外层 transform: scale 的干扰
+    while (el && el !== formRef.current) {
+      top += el.offsetTop;
+      left += el.offsetLeft;
+      el = el.offsetParent;
+    }
+
     setFocusStyle({
-      top: targetRect.top - formRect.top,
-      left: targetRect.left - formRect.left,
-      width: targetRect.width,
-      height: targetRect.height,
+      top: top,
+      left: left,
+      width: e.target.offsetWidth,
+      height: e.target.offsetHeight,
       opacity: 1
-    })
+    });
   }
 
   const modalContent = isOpen ? (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      {/* 🌌 通透背景调优 */}
       <div className={`absolute inset-0 bg-[#02040a]/40 backdrop-blur-[20px] transition-all duration-700 ${isAnimating ? "opacity-100" : "opacity-0"}`} onClick={closeModal}></div>
       
       <div className={`relative w-full max-w-xl z-10 ${isAnimating ? "quantum-particle-in" : "quantum-particle-out"}`}>
@@ -52,9 +60,9 @@ export function CreateBroadcastModal() {
             action={async (fd) => { fd.append('type', selectedType.value); fd.append('isPinned', String(isPinned)); await createBroadcast(fd); closeModal(); }} 
             className="relative space-y-8"
           >
-            {/* 🚀 量子焦点环：现在它能精准飞跃至任何输入位置 */}
+            {/* 🚀 量子焦点环：提升 Z-index，确保完美包裹在输入框最外层 */}
             <div 
-              className="absolute border-2 border-blue-500 shadow-[0_0_25px_rgba(59,130,246,0.5)] rounded-2xl pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] z-0" 
+              className="absolute border-2 border-blue-500 shadow-[0_0_25px_rgba(59,130,246,0.5)] rounded-2xl pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] z-20" 
               style={{ 
                 top: focusStyle.top, 
                 left: focusStyle.left, 
@@ -64,7 +72,7 @@ export function CreateBroadcastModal() {
               }}
             ></div>
 
-            {/* Apple 风格置顶 Switch */}
+            {/* 置顶 Switch */}
             <div className="flex items-center justify-between px-6 py-4 rounded-2xl bg-white/[0.03] border border-white/5 relative z-10">
               <span className="text-[10px] font-bold text-zinc-500 tracking-[0.2em] uppercase">标记为重要置顶广播</span>
               <button type="button" onClick={() => setIsPinned(!isPinned)} className={`relative w-12 h-6 rounded-full transition-all duration-500 ${isPinned ? "bg-purple-600 shadow-[0_0_15px_rgba(168,85,247,0.6)]" : "bg-zinc-800"}`}>
@@ -72,8 +80,8 @@ export function CreateBroadcastModal() {
               </button>
             </div>
 
-            {/* 🚀 修复版自定义下拉框：增加 Z-index 与不透明度 */}
-            <div className="space-y-3 relative z-[20]">
+            {/* 下拉菜单 (已修复透明度) */}
+            <div className="space-y-3 relative z-[30]">
               <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-4">广播级别</label>
               <div className="relative">
                 <div onClick={() => setSelectOpen(!selectOpen)} className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white cursor-pointer flex justify-between items-center hover:bg-white/5 transition-all">
@@ -81,8 +89,7 @@ export function CreateBroadcastModal() {
                   <span className={`transition-transform duration-300 ${selectOpen ? 'rotate-180' : ''}`}>▼</span>
                 </div>
                 
-                {/* 🚀 下拉菜单强化：采用 bg-[#0d1117] 纯净背景，彻底解决重叠问题 */}
-                <div className={`absolute top-[120%] left-0 w-full bg-[#0d1117] border border-white/10 rounded-3xl p-2 z-[100] shadow-2xl transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] ${selectOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-4 pointer-events-none'}`}>
+                <div className={`absolute top-[120%] left-0 w-full bg-[#0d1117] border border-white/10 rounded-3xl p-2 shadow-2xl transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] ${selectOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-4 pointer-events-none'}`}>
                   {[
                     {v:'INFO', l:'INFO - 日常简讯'},
                     {v:'UPDATE', l:'UPDATE - 系统更新'},
