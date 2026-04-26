@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createRoot } from "react-dom/client"
 
-// 🚀 核心黑魔法：脱离当前页面的独立动画遮罩层
+// 🚀 脱离态独立渲染层
 const StandaloneOverlay = ({ onSignOut, onComplete }: { onSignOut: () => Promise<void>, onComplete: () => void }) => {
   const [phase, setPhase] = useState<'BLUR' | 'SHRINK' | 'MORPH' | 'EXPAND' | 'DONE'>('BLUR')
 
@@ -16,7 +16,6 @@ const StandaloneOverlay = ({ onSignOut, onComplete }: { onSignOut: () => Promise
       
       // 2. SHRINK阶段：红环非线性弹簧蓄力塌缩
       setPhase('SHRINK');
-      // 给足时间，享受“弹簧被缓缓压至极限”的物理视觉
       await new Promise(r => setTimeout(r, 1600)); 
       
       // 3. MORPH阶段：幻化为全息绿色，水滴失重波动
@@ -33,9 +32,8 @@ const StandaloneOverlay = ({ onSignOut, onComplete }: { onSignOut: () => Promise
       // 留出时间给后台渲染新页面，同时前台绿水滴继续波动
       await new Promise(r => setTimeout(r, 1200)); 
       
-      // 4. EXPAND阶段：弹簧释放，绿环爆发推开黑幕，模糊同步消散
+      // 4. EXPAND阶段：弹簧释放，绿环爆发推开黑幕
       setPhase('EXPAND');
-      // 等待扩张动画与模糊消散动画彻底完成
       await new Promise(r => setTimeout(r, 1800)); 
       
       // 5. 销毁前台脱离层
@@ -55,21 +53,14 @@ const StandaloneOverlay = ({ onSignOut, onComplete }: { onSignOut: () => Promise
         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
       />
 
-      {/* 🚀 独立磨砂玻璃层：精准消除断层 BUG
-          通过强制同步 animate backdropFilter，确保在任何浏览器下都能丝滑消散到 0px */}
+      {/* 🚀 核心修复：极速消散的磨砂层
+          抛弃冗长的非线性过渡，在 EXPAND 绿环扩张开始的瞬间(0.2s内)，直接将透明度降为0。
+          这样绿环露出的就是完全清晰的页面，彻底干掉残留的磨砂罩和 GPU 断层！ */}
       <motion.div
-        initial={{ opacity: 0, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
-        animate={{
-          opacity: (phase === 'EXPAND' || phase === 'DONE') ? 0 : 1,
-          backdropFilter: (phase === 'EXPAND' || phase === 'DONE') ? "blur(0px)" : "blur(20px)",
-          WebkitBackdropFilter: (phase === 'EXPAND' || phase === 'DONE') ? "blur(0px)" : "blur(20px)",
-        }}
-        transition={
-          phase === 'EXPAND' 
-            ? { type: "spring", stiffness: 45, damping: 14, mass: 1 } // 🚀 完美绑定绿环的弹簧参数
-            : { duration: 0.8 }
-        }
-        className="absolute inset-0 bg-[#02040a]/20 z-[99998]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: (phase === 'EXPAND' || phase === 'DONE') ? 0 : 1 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+        className="absolute inset-0 backdrop-blur-[20px] bg-[#02040a]/40 z-[99998]"
       />
 
       {/* 🚀 核心物理渲染圈 (全息激光水滴) */}
@@ -88,23 +79,23 @@ const StandaloneOverlay = ({ onSignOut, onComplete }: { onSignOut: () => Promise
           SHRINK: {
             width: "36px", height: "36px", 
             borderWidth: "2px", 
-            // 🚀 虚幻质感：边缘高亮，内心几乎透明，强烈的内外红光晕
+            // 虚幻质感：边缘高亮，内心几乎透明，强烈的内外红光晕
             borderColor: "rgba(239, 68, 68, 0.7)", 
             backgroundColor: "rgba(239, 68, 68, 0.05)", 
             boxShadow: "0 0 0 200vmax black, 0 0 25px 4px rgba(239, 68, 68, 0.6), inset 0 0 12px 2px rgba(239, 68, 68, 0.4)", 
             borderRadius: "50%",
             scale: 1,
-            // 🚀 弹簧蓄力感：低劲度，强阻尼，模拟被渐渐压紧的迟缓感
+            // 弹簧蓄力感：低劲度，强阻尼，模拟被渐渐压紧的迟缓感
             transition: { type: "spring", stiffness: 40, damping: 12, mass: 1.2 } 
           },
           MORPH: {
             width: "36px", height: "36px",
             borderWidth: "2px",
-            // 🚀 虚幻质感：转化为翡翠绿激光光晕
+            // 虚幻质感：转化为翡翠绿激光光晕
             borderColor: "rgba(16, 185, 129, 0.7)", 
             backgroundColor: "rgba(16, 185, 129, 0.05)", 
             boxShadow: "0 0 0 200vmax black, 0 0 25px 4px rgba(16, 185, 129, 0.6), inset 0 0 12px 2px rgba(16, 185, 129, 0.4)", 
-            // 🚀 行业级失重波动矩阵
+            // 行业级失重波动矩阵
             borderRadius: ["50%", "30% 70% 70% 30% / 30% 30% 70% 70%", "70% 30% 30% 70% / 70% 70% 30% 30%", "50%"],
             scale: [1, 1.25, 0.85, 1.15, 1], // 配合形变产生呼吸脉冲
             transition: {
@@ -120,11 +111,11 @@ const StandaloneOverlay = ({ onSignOut, onComplete }: { onSignOut: () => Promise
             borderWidth: "4px",
             borderColor: "rgba(16, 185, 129, 0)", // 边缘光圈消散
             backgroundColor: "rgba(16, 185, 129, 0)",
-            // 🚀 随着元素变大到 300vmax，外围的黑色阴影被物理推挤出屏幕
+            // 随着元素变大到 300vmax，外围的黑色阴影被物理推挤出屏幕
             boxShadow: "0 0 0 200vmax black, 0 0 0px 0px rgba(16, 185, 129, 0)", 
             borderRadius: "50%",
             scale: 1,
-            // 🚀 弹簧释放感：高劲度，提供爆发的舒展感，并在末端伴随舒适回弹
+            // 弹簧释放爆发
             transition: { type: "spring", stiffness: 45, damping: 14, mass: 1 } 
           },
           DONE: {
@@ -133,7 +124,6 @@ const StandaloneOverlay = ({ onSignOut, onComplete }: { onSignOut: () => Promise
           }
         }}
         style={{
-          // 绝对居中，保证各种比例屏幕下都是完美圆圈
           position: "absolute",
           top: "50%",
           left: "50%",
@@ -194,7 +184,6 @@ export function SignOutButton({ onSignOut }: { onSignOut: () => Promise<void> })
     if (isExiting) return
     setIsExiting(true)
 
-    // 创建脱离于 React 路由系统的独立 DOM 容器
     const overlayDiv = document.createElement('div')
     document.body.appendChild(overlayDiv)
     const root = createRoot(overlayDiv)
