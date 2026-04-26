@@ -26,13 +26,27 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
   const closeReadModal = () => { setIsReadClosing(true); setIsReadAnimating(false); setTimeout(() => setIsReadOpen(false), 600); }
 
   const openDelModal = () => { setIsDelClosing(false); setIsDelOpen(true); setTimeout(() => setIsDelAnimating(true), 10); }
-  const closeDelModal = () => { setIsDelClosing(true); setIsDelAnimating(false); setTimeout(() => setIsDelOpen(false), 600); }
+  // 🚀 核心：修改 closeDelModal 为 async，并强制等待
+  const closeDelModalWithAnimation = async () => {
+    setIsDelClosing(true)
+    setIsDelAnimating(false)
+    await new Promise(resolve => setTimeout(resolve, 600))
+    setIsDelOpen(false)
+  }
 
   const executeDelete = async () => {
+    if (isPending) return
     setIsPending(true)
-    try { await deleteBroadcast(announcement.id) } 
-    catch (error) { console.error(error) } 
-    finally { setIsPending(false); closeDelModal() }
+    
+    // 视觉先行
+    await closeDelModalWithAnimation()
+    
+    try { 
+      await deleteBroadcast(announcement.id) 
+    } catch (error) { 
+      console.error(error)
+      setIsPending(false) 
+    } 
   }
 
   // 🚀 阵营色彩光谱

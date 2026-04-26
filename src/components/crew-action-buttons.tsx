@@ -1,3 +1,4 @@
+// src/components/crew-action-buttons.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -21,18 +22,26 @@ export function CrewActionButtons({ userId, realName }: { userId: string, realNa
     setTimeout(() => setIsAnimating(true), 10)
   }
 
-  const closeModal = () => {
+  // 🚀 核心：同步动画关闭引擎
+  const closeModalWithAnimation = async () => {
     setIsClosing(true)
     setIsAnimating(false)
-    setTimeout(() => { setIsOpen(false); setModalType(null); }, 600)
+    // 强制等待 600ms 粒子消散动画完成
+    await new Promise(resolve => setTimeout(resolve, 600))
+    setIsOpen(false)
+    setModalType(null)
   }
 
   const handleAction = async () => {
+    if (isPending) return
     setIsPending(true)
+    
+    // 🚀 视觉先行：先执行粒子消散动画，增强操作确认感
+    await closeModalWithAnimation()
+    
     try {
       if (modalType === "APPROVE") await approveCrew(userId)
       else await rejectCrew(userId)
-      closeModal()
     } catch (error) {
       console.error(error)
     } finally {
@@ -42,18 +51,14 @@ export function CrewActionButtons({ userId, realName }: { userId: string, realNa
 
   const modalContent = isOpen ? (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      {/* 背景遮罩：低模糊、高通透 */}
-      <div className={`absolute inset-0 bg-[#02040a]/60 backdrop-blur-[10px] transition-all duration-500 ${isAnimating ? "opacity-100" : "opacity-0"}`} onClick={closeModal}></div>
+      <div className={`absolute inset-0 bg-[#02040a]/60 backdrop-blur-[10px] transition-all duration-500 ${isAnimating ? "opacity-100" : "opacity-0"}`} onClick={() => !isPending && closeModalWithAnimation()}></div>
       
-      {/* 🚀 弹窗本体：从下弹入弹性动效 */}
       <div className={`relative w-full max-w-md z-10 ${isClosing ? "quantum-particle-out" : isAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
         <div className={`w-full rounded-[2.5rem] border bg-[#060813]/95 p-10 shadow-2xl text-center overflow-hidden 
           ${modalType === 'APPROVE' ? 'border-emerald-500/30 shadow-emerald-500/10' : 'border-red-500/30 shadow-red-500/10'}`}>
           
-          {/* 经典的网格背景 */}
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
           
-          {/* 动态图标状态机 */}
           <div className={`relative w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-6 
             ${modalType === 'APPROVE' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
             <div className={`absolute inset-0 rounded-full border border-t-transparent animate-spin ${modalType === 'APPROVE' ? 'border-emerald-500/40' : 'border-red-500/40'}`}></div>
@@ -74,7 +79,7 @@ export function CrewActionButtons({ userId, realName }: { userId: string, realNa
           </div>
           
           <div className="flex w-full gap-4 relative z-10">
-            <button onClick={closeModal} disabled={isPending} className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/10 text-zinc-500 font-bold tracking-[0.2em] text-[10px] hover:text-white transition-all">取消序列</button>
+            <button onClick={() => closeModalWithAnimation()} disabled={isPending} className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/10 text-zinc-500 font-bold tracking-[0.2em] text-[10px] hover:text-white transition-all">取消序列</button>
             <button 
               onClick={handleAction} 
               disabled={isPending} 
@@ -86,23 +91,25 @@ export function CrewActionButtons({ userId, realName }: { userId: string, realNa
           </div>
         </div>
       </div>
+      
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes slide-up-elastic { 0% { opacity: 0; transform: translateY(80px) scale(0.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+        .animate-slide-up-elastic { animation: slide-up-elastic 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        .quantum-particle-out { animation: dissipate 0.6s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
+        @keyframes dissipate { 
+          0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 
+          100% { opacity: 0; filter: blur(20px) brightness(0.5); transform: scale(0.85); } 
+        }
+      `}} />
     </div>
   ) : null;
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes slide-up-elastic { 0% { opacity: 0; transform: translateY(80px) scale(0.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
-        .animate-slide-up-elastic { animation: slide-up-elastic 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-        .quantum-particle-out { animation: dissipate 0.6s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
-        @keyframes dissipate { 0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 100% { opacity: 0; filter: blur(20px) brightness(0.5); transform: scale(0.85); } }
-      `}} />
-
       <div className="flex gap-4">
         <button onClick={() => openModal("APPROVE")} className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold tracking-widest uppercase hover:bg-emerald-500/20 transition-all active:scale-95">批准入舰</button>
         <button onClick={() => openModal("REJECT")} className="px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold tracking-widest uppercase hover:bg-red-500/20 transition-all active:scale-95">拒绝</button>
       </div>
-
       {isMounted && createPortal(modalContent, document.body)}
     </>
   )
