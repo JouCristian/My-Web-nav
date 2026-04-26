@@ -1,3 +1,4 @@
+// src/components/remove-crew-button.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -14,7 +15,7 @@ export function RemoveCrewButton({ userId, realName }: { userId: string, realNam
 
   const openModal = () => {
     setIsOpen(true)
-    requestAnimationFrame(() => setIsAnimating(true))
+    setTimeout(() => setIsAnimating(true), 10)
   }
 
   const closeModal = () => {
@@ -37,15 +38,43 @@ export function RemoveCrewButton({ userId, realName }: { userId: string, realNam
 
   const modalContent = isOpen ? (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-0" style={{ perspective: '1000px' }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        :root { 
+          --quantum-easing-in: cubic-bezier(0.16, 1, 0.3, 1); 
+          --quantum-easing-out: cubic-bezier(0.7, 0, 0.84, 0); 
+        }
+        .quantum-particle-in { animation: aggregate 0.8s var(--quantum-easing-in) forwards; }
+        .quantum-particle-out { animation: dissipate 0.6s var(--quantum-easing-out) forwards; }
+        .quantum-breathe-alert { animation: alert-breathe 2s ease-in-out infinite; }
+        
+        @keyframes aggregate { 
+          0% { opacity: 0; filter: blur(40px) brightness(2); transform: scale(1.15); } 
+          100% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 
+        }
+        @keyframes dissipate { 
+          0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 
+          100% { opacity: 0; filter: blur(40px) brightness(0.5); transform: scale(0.85); } 
+        }
+        @keyframes alert-breathe { 
+          0%, 100% { transform: scale(1); } 
+          50% { transform: scale(1.05); } 
+        }
+        @keyframes shimmer { 
+          0% { transform: translateX(-100%); } 
+          100% { transform: translateX(100%); } 
+        }
+      `}} />
+
+      {/* 🚀 视觉校准：调整为 /50 遮罩和 40px 模糊，确保背景星空若隐若现 */}
       <div 
-        className={`absolute inset-0 bg-[#02040a]/80 backdrop-blur-[60px] transition-all duration-700 ease-out ${
+        className={`absolute inset-0 bg-[#02040a]/50 backdrop-blur-[40px] transition-all duration-700 ease-out ${
           isAnimating ? "opacity-100" : "opacity-0 backdrop-blur-none"
         }`}
         onClick={closeModal}
       ></div>
       
       <div className={`relative w-full max-w-[440px] z-10 ${isAnimating ? "quantum-particle-in" : "quantum-particle-out"}`}>
-        <div className="quantum-breathe w-full h-full rounded-[2.5rem] border bg-[#060813]/90 p-10 flex flex-col items-center text-center overflow-hidden border-red-500/40 shadow-[0_0_80px_-15px_rgba(239,68,68,0.4)]">
+        <div className="quantum-breathe-alert w-full h-full rounded-[2.5rem] border bg-[#060813]/90 p-10 flex flex-col items-center text-center overflow-hidden border-red-500/40 shadow-[0_0_80px_-15px_rgba(239,68,68,0.4)]">
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
           
           <div className="relative w-20 h-20 rounded-full flex items-center justify-center mb-6">
@@ -60,7 +89,7 @@ export function RemoveCrewButton({ userId, realName }: { userId: string, realNam
           
           <div className="text-zinc-400/80 text-sm mb-10 leading-loose font-mono tracking-wider">
             <p>警告：正在褫夺 <span className="text-white font-bold">[{realName}]</span> 的舰队编制。</p>
-            <p>该操作将永久销毁其星际档案并切断所有通讯链，<span className="text-red-500 font-bold border-b border-red-500/50 pb-0.5">绝对不可逆转</span>。</p>
+            <p>该操作将永久销毁其星际档案，<span className="text-red-500 font-bold border-b border-red-500/50 pb-0.5">不可逆转</span>。</p>
           </div>
           
           <div className="flex w-full gap-5 z-10">
@@ -77,7 +106,6 @@ export function RemoveCrewButton({ userId, realName }: { userId: string, realNam
 
   return (
     <>
-      {/* 小巧隐蔽的危险操作按钮 */}
       <button 
         onClick={openModal}
         title="驱逐该船员"
