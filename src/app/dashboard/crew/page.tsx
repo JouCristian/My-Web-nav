@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { CrewActionButtons } from "@/components/crew-action-buttons"
+import { RemoveCrewButton } from "@/components/remove-crew-button" // 🚀 引入驱逐武器
 
 export default async function CrewArchivesPage() {
   const session = await auth()
@@ -11,7 +12,6 @@ export default async function CrewArchivesPage() {
 
   const allUsers = await prisma.user.findMany()
 
-  // 1. 档案准入过滤：只有填了姓名学号的才显示 
   const validUsers = allUsers.filter((user: any) => {
     if (user.role === "PENDING") {
       return user.realName !== null && user.studentId !== null;
@@ -19,7 +19,6 @@ export default async function CrewArchivesPage() {
     return true; 
   })
 
-  // 2. 严格排版序位：舰长 > 领航员 > 船员 [cite: 30, 31, 34]
   const roleWeight: Record<string, number> = { OWNER: 4, ADMIN: 3, MEMBER: 2, PENDING: 1 }
   const sortedUsers = validUsers.sort((a: any, b: any) => {
     const weightA = roleWeight[a.role as string] || 0
@@ -33,7 +32,6 @@ export default async function CrewArchivesPage() {
 
   return (
     <main className="min-h-screen bg-transparent p-6 md:p-10 text-white relative overflow-hidden">
-      {/* 🔮 注入全局战术动效引擎 */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
         .hover-glow:hover { box-shadow: 0 0 40px -10px rgba(59, 130, 246, 0.2); }
@@ -70,7 +68,6 @@ export default async function CrewArchivesPage() {
             const isOwner = user.role === "OWNER";
             const isAdmin = user.role === "ADMIN";
             const isPending = user.role === "PENDING";
-            // 🚀 核心逻辑：感应当前登录者是否为号主本人
             const isSelf = session.user?.email === user.email;
             
             const roleStyles = isOwner 
@@ -117,51 +114,48 @@ export default async function CrewArchivesPage() {
                   {isManager && isPending ? (
                     <CrewActionButtons userId={user.id} realName={user.realName || "未知新兵"} />
                   ) : (
-                    <div className="flex items-center gap-8">
+                    <div className="flex items-center gap-6">
                       {!isPending && (
                         user.feishuLink ? (
-                          /* ✅ 通讯就绪：全员开放点击 */
-                          <a 
-                            href={user.feishuLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="group/fs relative flex items-center gap-3 bg-[#060813]/60 border border-teal-500/30 px-5 py-2.5 rounded-xl shrink-0 overflow-hidden transition-all duration-500 hover:border-teal-500 hover:shadow-[0_0_20px_rgba(20,184,166,0.2)]"
-                          >
+                          <a href={user.feishuLink} target="_blank" rel="noopener noreferrer" className="group/fs relative flex items-center gap-3 bg-[#060813]/60 border border-teal-500/30 px-5 py-2.5 rounded-xl shrink-0 overflow-hidden transition-all duration-500 hover:border-teal-500 hover:shadow-[0_0_20px_rgba(20,184,166,0.2)]">
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-teal-400/10 to-transparent -translate-x-full group-hover/fs:animate-[shimmer_2s_infinite]"></div>
                             <div className="relative flex items-center gap-3">
                               <div className="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)] animate-pulse"></div>
-                              <span className="text-[10px] text-teal-300 font-mono uppercase tracking-[0.2em] font-bold">飞书链接已就绪</span>
+                              <span className="text-[10px] text-teal-300 font-mono uppercase tracking-[0.2em] font-bold">通讯就绪</span>
                             </div>
                           </a>
                         ) : (
-                          /* 🚨 缺失通讯链：差异化交互逻辑 */
                           isSelf ? (
-                            /* 号主本人：显示可点击的跳转按钮 */
-                            <Link 
-                              href="/profile" 
-                              className="group/fs relative flex items-center gap-3 bg-[#060813]/60 border border-red-500/30 px-5 py-2.5 rounded-xl shrink-0 overflow-hidden transition-all duration-500 hover:border-red-500 hover:shadow-[0_0_20px_rgba(239,68,68,0.2)]"
-                            >
+                            <Link href="/profile" className="group/fs relative flex items-center gap-3 bg-[#060813]/60 border border-red-500/30 px-5 py-2.5 rounded-xl shrink-0 overflow-hidden transition-all duration-500 hover:border-red-500 hover:shadow-[0_0_20px_rgba(239,68,68,0.2)]">
                               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/10 to-transparent -translate-x-full group-hover/fs:animate-[shimmer_2s_infinite]"></div>
                               <div className="relative flex items-center gap-3">
                                 <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-ping"></div>
-                                <span className="text-[10px] text-red-400 font-mono uppercase tracking-[0.2em] font-bold">缺失飞书链接 前往补全</span>
+                                <span className="text-[10px] text-red-400 font-mono uppercase tracking-[0.2em] font-bold">缺失通讯链 前往补全</span>
                               </div>
                             </Link>
                           ) : (
-                            /* 其他船员：仅显示不可点击的警告标签 */
                             <div className="relative flex items-center gap-3 bg-[#060813]/40 border border-red-500/10 px-5 py-2.5 rounded-xl shrink-0 opacity-40">
                               <div className="w-2 h-2 rounded-full bg-red-500/50 shadow-[0_0_5px_rgba(239,68,68,0.3)]"></div>
-                              <span className="text-[10px] text-red-400/60 font-mono uppercase tracking-[0.2em] font-bold">飞书链接缺失</span>
+                              <span className="text-[10px] text-red-400/60 font-mono uppercase tracking-[0.2em] font-bold">通讯失联</span>
                             </div>
                           )
                         )
                       )}
+                      
                       <div className="flex flex-col items-end border-l border-white/10 pl-6">
                         <span className="text-[9px] uppercase font-mono tracking-[0.3em] text-zinc-600 mb-1">Authorization</span>
                         <span className={`text-[11px] font-bold tracking-[0.2em] uppercase ${isOwner ? 'text-yellow-500' : isAdmin ? 'text-purple-400' : 'text-emerald-400'}`}>
                           {user.role}
                         </span>
                       </div>
+
+                      {/* 🚀 驱逐护卫系统：管理员可见，且目标不能是自己，也不能是OWNER */}
+                      {isManager && !isSelf && !isOwner && !isPending && (
+                        <div className="border-l border-white/10 pl-6 flex items-center">
+                          <RemoveCrewButton userId={user.id} realName={user.realName || user.nickname || "未知宇航员"} />
+                        </div>
+                      )}
+
                     </div>
                   )}
                 </div>
