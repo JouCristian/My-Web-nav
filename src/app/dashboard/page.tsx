@@ -8,7 +8,6 @@ import { TransitionLink } from "@/components/transition-link"
 import { BroadcastCard } from "@/components/broadcast-card"
 import { CreateBroadcastModal } from "@/components/create-broadcast-modal"
 import { DashboardClock } from "@/components/dashboard-clock"
-// 🚀 引入全新的航行日志日历组件
 import { FlightLogCalendar } from "@/components/flight-log-calendar"
 
 const THEME_MAP = {
@@ -87,7 +86,7 @@ export default async function DashboardPage() {
     orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }]
   })
 
-  // 🛡️ 状态 1：拦截器逻辑 (省略，保持不变)
+  // 🛡️ 状态 1：拦截器逻辑
   if (!isCaptain && isProfileIncomplete) {
     return (
       <main className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -131,7 +130,7 @@ export default async function DashboardPage() {
     )
   }
 
-  // 🛡️ 状态 2：拦截器逻辑 (省略，保持不变)
+  // 🛡️ 状态 2：拦截器逻辑
   if (!isCaptain && dbUser.role === "PENDING") {
     return (
       <main className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -232,7 +231,7 @@ export default async function DashboardPage() {
       {/* ================= 🚀 核心重构：双子星 3:2 分栏布局 ================= */}
       <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mt-4">
         
-        {/* 1. 左侧：全舰公告大屏 (缩小至 2/3 宽度) */}
+        {/* 1. 左侧：全舰公告大屏 */}
         <div className="lg:col-span-2 rounded-[3.5rem] border border-blue-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-[0_0_100px_rgba(59,130,246,0.1)] flex flex-col h-full">
           
           <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[#0a0d1a]/80 border border-blue-500/30 rounded-3xl p-6 lg:px-10 lg:py-6 mb-8 overflow-hidden shadow-[inset_0_0_30px_rgba(59,130,246,0.1)]">
@@ -253,8 +252,9 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          <div className="relative flex-1 min-h-[380px] bg-[#02040a]/40 border border-white/5 rounded-[2rem] shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col">
-            <div className="flex flex-col gap-4 flex-1 overflow-y-auto ios-scrollbar px-4 lg:px-8 pt-6 pb-24 relative z-10">
+          {/* 🚀 关键修复：拔掉 flex-1，给滚动容器锁死 h-[420px]，确保能完美滚动，不被内容撑开 */}
+          <div className="relative bg-[#02040a]/40 border border-white/5 rounded-[2rem] shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] overflow-hidden">
+            <div className="flex flex-col gap-4 h-[420px] overflow-y-auto ios-scrollbar px-4 lg:px-8 pt-6 pb-24 relative z-10">
               {broadcasts.length > 0 ? (
                 broadcasts.map(item => <BroadcastCard key={item.id} announcement={item} isManager={isManager} />)
               ) : (
