@@ -43,26 +43,14 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
   const blanks = Array.from({ length: firstDay }, (_, i) => i)
 
-  // 🚀 核心修复 1：使用递归 offsetTop 算法。
-  // 彻底免疫 CSS Scale 缩放带来的 getBoundingClientRect 坐标失真问题！
+  // 🖱️ 焦点动画核心逻辑：递归定位偏移量，免疫变形缩放带来的失真
   const handleFocus = (e: any) => {
     if (!formRef.current || !e.target) return;
     let top = 0, left = 0, el = e.target;
-    
-    // 不断向上寻址，直到追溯到 form 表单的边界，从而算出绝对精准的局部坐标
     while (el && el !== formRef.current) {
-      top += el.offsetTop; 
-      left += el.offsetLeft; 
-      el = el.offsetParent;
+      top += el.offsetTop; left += el.offsetLeft; el = el.offsetParent;
     }
-    
-    setFocusStyle({ 
-      top, 
-      left, 
-      width: e.target.offsetWidth, 
-      height: e.target.offsetHeight, 
-      opacity: 1 
-    });
+    setFocusStyle({ top, left, width: e.target.offsetWidth, height: e.target.offsetHeight, opacity: 1 });
   }
   const handleBlur = () => { setFocusStyle(prev => ({ ...prev, opacity: 0 })) }
 
@@ -81,7 +69,7 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
     }
     setIsModalOpen(true)
     setIsTimePickerOpen(false) 
-    handleBlur() // 确保每次打开都是无焦点的纯净状态
+    handleBlur() 
   }
 
   // 💾 保存日志
@@ -181,7 +169,7 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
               {modalMode === "EDIT" && (
                 <form ref={formRef} className="space-y-6 relative z-10" onSubmit={(e) => { e.preventDefault(); handleSaveLog(); }}>
                   
-                  {/* 🚀 核心动画：悬浮追踪焦点框，精准贴合 */}
+                  {/* 🚀 核心动画：悬浮追踪焦点框 */}
                   <motion.div 
                     initial={false}
                     animate={focusStyle}
@@ -200,11 +188,10 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                       />
                     </div>
                     
-                    {/* 🚀 核心重构 2：隔离层，解决跳跃 BUG */}
+                    {/* 自定义时间选择器 */}
                     <div className="w-1/3 space-y-2 relative z-30">
                       <label className="text-[10px] text-emerald-500/60 uppercase tracking-[0.2em] ml-2">精确时间 / Time</label>
                       
-                      {/* 将时间伪输入框和下拉框彻底隔离开，避免下拉框的 DOM 被注入 margins */}
                       <div className="relative w-full">
                         {/* 伪装的 Input 框 */}
                         <div 
@@ -223,21 +210,25 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                         <AnimatePresence>
                           {isTimePickerOpen && (
                             <>
-                              {/* 遮罩移入 Portal，点击外部即刻安全关闭 */}
-                              {mounted && createPortal(
-                                <div className="fixed inset-0 z-[10000]" onClick={(e) => { e.stopPropagation(); setIsTimePickerOpen(false); handleBlur(); }}></div>,
-                                document.body
-                              )}
+                              {/* 🚀 核心修复：抛弃 Portal，使用基于当前弹窗相对定位的 z-40 遮罩 
+                                  这样遮罩层不再覆盖整个屏幕导致滚轮被拦截，同时又能完美点击外部关闭！ */}
+                              <div 
+                                className="fixed inset-0 z-[40] cursor-default" 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  setIsTimePickerOpen(false); 
+                                  handleBlur(); 
+                                }} 
+                              />
                               
                               <motion.div
                                 initial={{ opacity: 0, scale: 0.9, y: -10 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.9, y: -10 }}
                                 transition={springConfig}
-                                // 彻底漂浮，保证没有任何 layout 挤压
-                                className="absolute top-[110%] right-0 mt-2 z-[10001] w-56"
+                                // 🚀 z-50 保证在 z-40 遮罩之上，完美接收滚轮事件
+                                className="absolute top-[110%] right-0 mt-2 z-[50] w-56"
                               >
-                                {/* 内部继续享有 CSS 的呼吸动效，而不与 Framer Motion 的 scale 冲突 */}
                                 <div className="animate-modal-breathe w-full h-48 bg-[#060813]/95 border border-emerald-500/30 rounded-[2rem] shadow-[0_0_50px_rgba(16,185,129,0.3)] p-3 flex gap-2 overflow-hidden backdrop-blur-xl">
                                   <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent pointer-events-none"></div>
                                   
@@ -294,7 +285,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                   <div className="flex gap-4 pt-4 border-t border-emerald-500/10 relative z-20">
                     <button type="button" onClick={() => { setIsModalOpen(false); handleBlur(); }} className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 font-bold tracking-widest text-[10px] hover:text-white hover:bg-white/10 transition-all active:scale-95">取消</button>
                     
-                    {/* 🚀 如果该日志已经存在，则允许舰长将其彻底清除 */}
                     {activeLog && (
                       <button type="button" onClick={handleClearLog} className="flex-1 py-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 font-bold tracking-widest text-[10px] hover:bg-red-500 hover:text-white transition-all shadow-[0_0_20px_rgba(239,68,68,0.2)] active:scale-95 flex items-center justify-center gap-2">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -339,7 +329,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
 
                   <div className="flex gap-4 pt-8 mt-6 border-t border-emerald-500/10">
                     <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 font-bold tracking-widest text-[10px] hover:text-white hover:bg-white/10 transition-all active:scale-95">关闭档案</button>
-                    {/* 🚀 舰长/管理员的专属修改权限 */}
                     {isManager && activeLog && (
                       <button type="button" onClick={handleEditExistingLog} className="flex-1 py-4 rounded-2xl bg-emerald-600/20 border border-emerald-500/50 text-emerald-400 font-bold tracking-widest text-[10px] hover:bg-emerald-500 hover:text-white transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] active:scale-95 flex items-center justify-center gap-2">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
@@ -391,8 +380,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
             
             {days.map(day => {
               const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear()
-              
-              // 动态判断当前日期是否有真实存入的状态
               const hasLog = !!logs[day]
 
               return (
@@ -413,7 +400,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
 
                   <span className={`text-sm md:text-base font-bold relative z-10 ${isToday ? "font-[family-name:var(--font-space)]" : "font-mono"}`}>{day}</span>
                   
-                  {/* 当且仅当有真实存入的状态时，才显示绿点 */}
                   {hasLog && (
                     <div className="absolute bottom-2 flex gap-0.5 z-10">
                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></div>
