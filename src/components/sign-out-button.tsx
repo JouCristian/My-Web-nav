@@ -5,42 +5,40 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createRoot } from "react-dom/client"
 
-// 🚀 核心黑魔法：脱离当前页面的独立动画遮罩层。
-// 无论后台页面怎么跳转、怎么刷新，这个动画都会坚持执行完毕，彻底杜绝“硬切”！
+// 🚀 脱离态独立渲染层
 const StandaloneOverlay = ({ onSignOut, onComplete }: { onSignOut: () => Promise<void>, onComplete: () => void }) => {
-  // 5个精密衔接的物理相位
   const [phase, setPhase] = useState<'BLUR' | 'SHRINK' | 'MORPH' | 'EXPAND' | 'DONE'>('BLUR')
 
   useEffect(() => {
     const runSequence = async () => {
-      // 1. BLUR：瞬间覆盖高斯模糊，红圈在屏幕外就绪
+      // 1. BLUR阶段：准备就绪
       await new Promise(r => setTimeout(r, 50)); 
       
-      // 2. SHRINK：红圈向内塌缩，阴影吞噬屏幕变黑
+      // 2. SHRINK阶段：弹簧蓄力塌缩
       setPhase('SHRINK');
-      await new Promise(r => setTimeout(r, 1200));
+      // 延长等待时间，让用户充分享受“弹簧被缓缓压紧”的非线性丝滑感
+      await new Promise(r => setTimeout(r, 1800)); 
       
-      // 3. MORPH：红点变成绿色，开始太空失重水滴波动
+      // 3. MORPH阶段：红绿幻化，太空水滴失重波动
       setPhase('MORPH');
-      // 给一点时间让用户看清水滴动画
-      await new Promise(r => setTimeout(r, 800)); 
+      await new Promise(r => setTimeout(r, 1000)); 
       
-      // 🚀 关键节点：在水滴波动期间，静默执行退出的网络请求！
-      // 此时无论后台怎么跳转，前台动画都不会被打断
+      // 🚀 静默执行退出，后台页面开始重载
       try {
         await onSignOut();
       } catch(e) {
         console.error("Sign out sequence error:", e)
       }
       
-      // 预留时间让未登录页面在后台渲染完毕
-      await new Promise(r => setTimeout(r, 600)); 
+      // 留出时间给后台渲染新页面，同时前台水滴继续波动
+      await new Promise(r => setTimeout(r, 1000)); 
       
-      // 4. EXPAND：后台准备就绪，绿环向外爆发，拉开黑幕，模糊非线性消散
+      // 4. EXPAND阶段：弹簧释放，绿环爆发，黑幕推开
       setPhase('EXPAND');
-      await new Promise(r => setTimeout(r, 1200));
+      // 等待扩张动画与模糊消散动画彻底完成
+      await new Promise(r => setTimeout(r, 1800)); 
       
-      // 5. 动画结束，销毁脱离层
+      // 5. 销毁前台脱离层
       setPhase('DONE');
       setTimeout(onComplete, 300);
     }
@@ -51,74 +49,77 @@ const StandaloneOverlay = ({ onSignOut, onComplete }: { onSignOut: () => Promise
   return (
     <div className="fixed inset-0 z-[99999] overflow-hidden pointer-events-none flex items-center justify-center">
       
-      {/* 🚀 永驻的低透明度量子噪点，彻底根治色彩断层 */}
+      {/* 🚀 量子噪点层：防断层 */}
       <div 
         className="absolute inset-0 opacity-[0.12] mix-blend-overlay z-[100000] pointer-events-none" 
         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
       />
 
-      {/* 🚀 核心全息扫描圈 */}
+      {/* 🚀 核心修复：将磨砂玻璃层独立出来！
+          它只负责覆盖全屏的模糊，并通过 opacity 进行平滑消散，彻底根治 GPU 的硬切断层 BUG */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{
+          opacity: phase === 'BLUR' || phase === 'SHRINK' || phase === 'MORPH' ? 1 : 0
+        }}
+        // 配合绿环扩张，进行长达 1.5 秒的幽灵般消散
+        transition={{ duration: phase === 'EXPAND' ? 1.5 : 0.8, ease: "easeInOut" }}
+        className="absolute inset-0 backdrop-blur-[20px] bg-[#02040a]/40 z-[99999]"
+      />
+
+      {/* 🚀 核心物理渲染圈 (全息激光水滴) */}
       <motion.div
         initial="BLUR"
         animate={phase}
         variants={{
           BLUR: {
-            width: "300vmax", // 初始极其巨大，在屏幕外
-            height: "300vmax",
-            borderWidth: "4px",
-            borderColor: "rgba(239, 68, 68, 1)", 
-            backgroundColor: "rgba(239, 68, 68, 0)", // 内部透明
-            boxShadow: "0 0 0 0vmax black", // 阴影还没进来
-            backdropFilter: "blur(20px)", // 高斯模糊覆盖全屏
-            WebkitBackdropFilter: "blur(20px)",
+            width: "300vmax", height: "300vmax",
+            borderWidth: "2px", borderColor: "rgba(239, 68, 68, 0)", 
+            backgroundColor: "rgba(239, 68, 68, 0)",
+            boxShadow: "0 0 0 0vmax black, 0 0 0px 0px rgba(239, 68, 68, 0)", 
             borderRadius: "50%",
             scale: 1,
           },
           SHRINK: {
-            width: "24px",
-            height: "24px",
-            borderWidth: "12px", // 变成实心小点
-            borderColor: "rgba(239, 68, 68, 1)",
-            backgroundColor: "rgba(239, 68, 68, 1)",
-            // 🚀 核心魔法：使用庞大的黑色阴影填补红圈外的空白！红圈缩到哪，黑色就跟到哪！
-            boxShadow: "0 0 0 200vmax black", 
-            backdropFilter: "blur(20px)", // 内部依然模糊，但范围仅剩24px
-            WebkitBackdropFilter: "blur(20px)",
+            // 稍大一点(40px)让水滴的动态更清晰
+            width: "40px", height: "40px", 
+            borderWidth: "2px", 
+            borderColor: "rgba(239, 68, 68, 0.9)", // 高亮激光边
+            backgroundColor: "rgba(239, 68, 68, 0.15)", // 虚幻通透的内芯
+            // 黑色阴影吞噬背景，同时加上内外红光晕
+            boxShadow: "0 0 0 200vmax black, 0 0 20px 2px rgba(239, 68, 68, 0.8), inset 0 0 10px 2px rgba(239, 68, 68, 0.5)", 
             borderRadius: "50%",
             scale: 1,
-            transition: { type: "spring", stiffness: 100, damping: 20 }
+            // 🚀 弹簧被缓缓压紧的非线性动画
+            transition: { type: "spring", stiffness: 45, damping: 12 } 
           },
           MORPH: {
-            width: "24px",
-            height: "24px",
-            borderWidth: "12px",
-            borderColor: "rgba(16, 185, 129, 1)", // 顶级色彩过度：转为翡翠绿
-            backgroundColor: "rgba(16, 185, 129, 1)",
-            boxShadow: "0 0 0 200vmax black, 0 0 30px 10px rgba(16, 185, 129, 0.4)", // 绿色光晕
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            // 🚀 行业级失重波动算法矩阵
+            width: "40px", height: "40px",
+            borderWidth: "2px",
+            borderColor: "rgba(16, 185, 129, 0.9)", // 转换为翡翠绿激光边
+            backgroundColor: "rgba(16, 185, 129, 0.15)", // 绿色通透内芯
+            boxShadow: "0 0 0 200vmax black, 0 0 20px 2px rgba(16, 185, 129, 0.8), inset 0 0 10px 2px rgba(16, 185, 129, 0.5)", 
+            // 太空水滴失重波动计算矩阵
             borderRadius: ["50%", "30% 70% 70% 30% / 30% 30% 70% 70%", "70% 30% 30% 70% / 70% 70% 30% 30%", "50%"],
-            scale: [1, 1.3, 0.8, 1.2, 1], // 模拟水滴的呼吸脉冲
+            scale: [1, 1.25, 0.85, 1.15, 1], // 水滴的呼吸脉冲感
             transition: {
-              backgroundColor: { duration: 0.8 },
-              borderColor: { duration: 0.8 },
-              borderRadius: { duration: 2, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" },
-              scale: { duration: 2, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }
+              backgroundColor: { duration: 1 },
+              borderColor: { duration: 1 },
+              boxShadow: { duration: 1 },
+              borderRadius: { duration: 2.5, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" },
+              scale: { duration: 2.5, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }
             }
           },
           EXPAND: {
-            width: "300vmax", // 猛然向外拉开黑幕
-            height: "300vmax",
-            borderWidth: "2px",
-            borderColor: "rgba(16, 185, 129, 0)", // 绿环非线性消散
+            width: "300vmax", height: "300vmax",
+            borderWidth: "4px",
+            borderColor: "rgba(16, 185, 129, 0)", // 绿环飞出时非线性消散
             backgroundColor: "rgba(16, 185, 129, 0)",
-            boxShadow: "0 0 0 0vmax black, 0 0 0px 0px rgba(16, 185, 129, 0)", // 阴影退去，露出未登录页面
-            backdropFilter: "blur(0px)", // 高斯模糊随着绿环拉开而丝滑消散
-            WebkitBackdropFilter: "blur(0px)",
+            boxShadow: "0 0 0 0vmax black, 0 0 0px 0px rgba(16, 185, 129, 0)", // 黑幕被强力推走
             borderRadius: "50%",
             scale: 1,
-            transition: { type: "spring", stiffness: 70, damping: 25 }
+            // 🚀 弹簧释放爆发的非线性动画 (阻尼略大，确保尾段优雅)
+            transition: { type: "spring", stiffness: 35, damping: 15 } 
           },
           DONE: {
             opacity: 0,
@@ -126,17 +127,18 @@ const StandaloneOverlay = ({ onSignOut, onComplete }: { onSignOut: () => Promise
           }
         }}
         style={{
-          // 🚀 绝对居中锚定，无论任何屏幕尺寸，永远保证是完美圆形
+          // 绝对居中锚定，永远是完美的圆
           position: "absolute",
           top: "50%",
           left: "50%",
           x: "-50%",
           y: "-50%",
+          zIndex: 100001
         }}
       />
 
-      {/* 🚀 状态文字浮层，配合水滴的变形进行交互 */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center z-[100001]">
+      {/* 🚀 状态文字浮层 */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center z-[100002]">
         <AnimatePresence mode="wait">
           {phase === 'SHRINK' && (
             <motion.div
@@ -145,12 +147,12 @@ const StandaloneOverlay = ({ onSignOut, onComplete }: { onSignOut: () => Promise
               animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
               exit={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
               transition={{ duration: 0.8 }}
-              className="text-center mt-32"
+              className="text-center mt-36"
             >
               <div className="text-red-500 font-mono text-xs tracking-[0.5em] animate-pulse drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">
                 CRITICAL: SYSTEM LOCKDOWN
               </div>
-              <div className="text-white font-bold text-3xl tracking-[0.2em] font-[family-name:var(--font-space)] mt-4">
+              <div className="text-white font-bold text-3xl tracking-[0.2em] font-[family-name:var(--font-space)] mt-4 drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">
                 &gt; PURGING DATA
               </div>
             </motion.div>
@@ -162,12 +164,12 @@ const StandaloneOverlay = ({ onSignOut, onComplete }: { onSignOut: () => Promise
               animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
               exit={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
               transition={{ duration: 0.8 }}
-              className="text-center mt-32"
+              className="text-center mt-36"
             >
               <div className="text-emerald-500 font-mono text-xs tracking-[0.5em] animate-pulse drop-shadow-[0_0_10px_rgba(16,185,129,0.8)]">
                 ESTABLISHING SECURE LINK
               </div>
-              <div className="text-white font-bold text-3xl tracking-[0.2em] font-[family-name:var(--font-space)] mt-4">
+              <div className="text-white font-bold text-3xl tracking-[0.2em] font-[family-name:var(--font-space)] mt-4 drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">
                 &gt; SAFE MODE READY
               </div>
             </motion.div>
@@ -186,17 +188,15 @@ export function SignOutButton({ onSignOut }: { onSignOut: () => Promise<void> })
     if (isExiting) return
     setIsExiting(true)
 
-    // 🚀 创建脱离于 React 路由系统的独立 DOM 容器
+    // 创建脱离于 React 路由系统的独立 DOM 容器
     const overlayDiv = document.createElement('div')
     document.body.appendChild(overlayDiv)
     const root = createRoot(overlayDiv)
 
-    // 将动画交由独立 root 渲染
     root.render(
       <StandaloneOverlay 
         onSignOut={onSignOut} 
         onComplete={() => {
-          // 动画大功告成后，完美销毁容器，不留一丝痕迹
           root.unmount()
           overlayDiv.remove()
           setIsExiting(false)
