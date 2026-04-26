@@ -1,7 +1,7 @@
 // src/components/flight-log-calendar.tsx
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
 
@@ -14,14 +14,21 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"VIEW" | "EDIT">("VIEW")
 
-  // 🚀 核心修复：使用真实的 React 状态来模拟数据库日志存储
-  // 初始状态为空，没有任何多余的假数据！
+  // 模拟数据库日志存储
   const [logs, setLogs] = useState<Record<number, { title: string, time: string, content: string }>>({})
 
   // 📝 表单录入状态
   const [editTitle, setEditTitle] = useState("")
   const [editTime, setEditTime] = useState("")
   const [editContent, setEditContent] = useState("")
+
+  // 🚀 自定义时间选择器状态
+  const [isTimePickerOpen, setIsTimePickerOpen] = useState(false)
+  const timeInputRef = useRef<HTMLDivElement>(null)
+
+  // 🚀 焦点追踪框状态 (Focus Tracking)
+  const formRef = useRef<HTMLFormElement>(null)
+  const [focusStyle, setFocusStyle] = useState({ top: 0, left: 0, width: 0, height: 0, opacity: 0 })
 
   // 权限鉴定
   const isManager = userRole === "OWNER" || userRole === "ADMIN"
@@ -36,42 +43,66 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
   const blanks = Array.from({ length: firstDay }, (_, i) => i)
 
-  // 🖱️ 点击日历卡片逻辑
+  // 🖱️ 焦点动画核心逻辑：计算目标输入框的位置，让发光框飞过去
+  const handleFocus = (e: any) => {
+    if (!formRef.current || !e.target) return
+    const formRect = formRef.current.getBoundingClientRect()
+    const targetRect = e.target.getBoundingClientRect()
+
+    setFocusStyle({
+      top: targetRect.top - formRect.top,
+      left: targetRect.left - formRect.left,
+      width: targetRect.width,
+      height: targetRect.height,
+      opacity: 1
+    })
+  }
+  const handleBlur = () => { setFocusStyle(prev => ({ ...prev, opacity: 0 })) }
+
+  // 🖱️ 点击日历卡片
   const handleDayClick = (day: number) => {
     setSelectedDay(day)
     const hasLog = !!logs[day]
     
     if (!hasLog) {
-      // 没有记录时：管理层进入录入模式，船员进入查看空状态模式
       setModalMode(isManager ? "EDIT" : "VIEW")
-      // 清空表单，准备录入新数据
       setEditTitle("")
       setEditTime(`${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
       setEditContent("")
     } else {
-      // 有记录时：所有人默认进入只读详情模式
       setModalMode("VIEW")
     }
     setIsModalOpen(true)
+    setIsTimePickerOpen(false) // 确保时间选择器初始关闭
   }
 
-  // 💾 保存日志逻辑
+  // 💾 保存日志
   const handleSaveLog = () => {
     if (!selectedDay) return
     setLogs(prev => ({
       ...prev,
       [selectedDay]: { title: editTitle, time: editTime, content: editContent }
     }))
-    setIsModalOpen(false) // 录入完成后关闭弹窗，绿点会亮起
+    setIsModalOpen(false) 
   }
 
-  // ✏️ 触发修改逻辑 (仅舰长/管理员可用)
+  // 🗑️ 清除日志 (防止点错日期)
+  const handleClearLog = () => {
+    if (!selectedDay) return
+    setLogs(prev => {
+      const newLogs = { ...prev }
+      delete newLogs[selectedDay]
+      return newLogs
+    })
+    setIsModalOpen(false) 
+  }
+
   const handleEditExistingLog = () => {
     if (!selectedDay || !logs[selectedDay]) return
     setEditTitle(logs[selectedDay].title)
     setEditTime(logs[selectedDay].time)
     setEditContent(logs[selectedDay].content)
-    setModalMode("EDIT") // 从只读切换到编辑模式
+    setModalMode("EDIT") 
   }
 
   // 🍏 Apple 级非线性物理弹簧参数
@@ -98,6 +129,12 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
               50% { transform: scale(1.02); box-shadow: 0 0 100px rgba(16, 185, 129, 0.35); border-color: rgba(16, 185, 129, 0.4); }
             }
             .animate-modal-breathe { animation: modal-breathe 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+            
+            /* 🚀 为自定义时间选择器设计的专属翡翠滚动条 */
+            .emerald-scrollbar::-webkit-scrollbar { width: 4px; }
+            .emerald-scrollbar::-webkit-scrollbar-track { background: transparent; }
+            .emerald-scrollbar::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 10px; }
+            .emerald-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(16, 185, 129, 0.5); }
           `}} />
 
           <motion.div 
@@ -132,39 +169,120 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
 
               {/* 🛡️ 模态 1：编辑写入模式 */}
               {modalMode === "EDIT" && (
-                <form className="space-y-6 relative z-10" onSubmit={(e) => { e.preventDefault(); handleSaveLog(); }}>
+                <form ref={formRef} className="space-y-6 relative z-10" onSubmit={(e) => { e.preventDefault(); handleSaveLog(); }}>
+                  
+                  {/* 🚀 核心动画：悬浮追踪焦点框 */}
+                  <motion.div 
+                    initial={false}
+                    animate={focusStyle}
+                    transition={springConfig}
+                    className="absolute z-0 rounded-2xl border-2 border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.6)] pointer-events-none"
+                  />
+
                   <div className="flex gap-4">
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 space-y-2 relative z-10">
                       <label className="text-[10px] text-emerald-500/60 uppercase tracking-[0.2em] ml-2">日志标题 / Title</label>
                       <input 
                         required type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} 
+                        onFocus={handleFocus} onBlur={handleBlur}
                         placeholder="输入巡航记录标题..." 
-                        className="w-full bg-black/40 border border-emerald-500/20 rounded-2xl px-5 py-4 outline-none focus:border-emerald-500/50 transition-all text-white font-[family-name:var(--font-space)] shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]" 
+                        className="w-full bg-black/40 border border-emerald-500/20 rounded-2xl px-5 py-4 outline-none text-white font-[family-name:var(--font-space)] shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] transition-colors" 
                       />
                     </div>
-                    <div className="w-1/3 space-y-2">
+                    
+                    {/* 🚀 核心重构：顶级审美的自定义时间选择器 */}
+                    <div className="w-1/3 space-y-2 relative z-30">
                       <label className="text-[10px] text-emerald-500/60 uppercase tracking-[0.2em] ml-2">精确时间 / Time</label>
-                      <input 
-                        required type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} 
-                        className="w-full bg-black/40 border border-emerald-500/20 rounded-2xl px-5 py-4 outline-none focus:border-emerald-500/50 transition-all text-emerald-400 font-mono shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] [color-scheme:dark]" 
-                      />
+                      
+                      {/* 伪装的 Input 框 */}
+                      <div 
+                        ref={timeInputRef}
+                        onClick={(e) => {
+                          setIsTimePickerOpen(true);
+                          if (timeInputRef.current) handleFocus({ target: timeInputRef.current });
+                        }}
+                        className="w-full bg-black/40 border border-emerald-500/20 rounded-2xl px-5 py-4 text-emerald-400 font-mono shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] transition-colors cursor-pointer flex justify-between items-center"
+                      >
+                        <span className="font-bold tracking-widest">{editTime}</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-emerald-500/60"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      </div>
+
+                      {/* 弹出的苹果级丝滑非线性菜单 */}
+                      <AnimatePresence>
+                        {isTimePickerOpen && (
+                          <>
+                            {/* 点击外部关闭 */}
+                            <div className="fixed inset-0 z-40" onClick={() => { setIsTimePickerOpen(false); handleBlur(); }}></div>
+                            
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.9, y: -10 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                              transition={springConfig}
+                              className="absolute top-[110%] right-0 mt-2 p-3 w-56 bg-[#060813]/95 border border-emerald-500/30 rounded-[2rem] shadow-[0_0_50px_rgba(16,185,129,0.3)] z-50 flex gap-2 animate-modal-breathe overflow-hidden backdrop-blur-xl"
+                            >
+                              {/* 辉光背景 */}
+                              <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent pointer-events-none"></div>
+                              
+                              {/* 小时列 */}
+                              <div className="flex-1 h-48 overflow-y-auto emerald-scrollbar pr-1 space-y-1 relative z-10">
+                                {Array.from({length: 24}, (_, i) => String(i).padStart(2, '0')).map(h => (
+                                  <div
+                                    key={`h-${h}`}
+                                    onClick={() => setEditTime(`${h}:${editTime.split(':')[1]}`)}
+                                    className={`cursor-pointer py-2 text-center rounded-xl font-mono text-sm transition-all duration-300 ${editTime.split(':')[0] === h ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)] font-bold scale-105' : 'text-zinc-400 hover:bg-emerald-500/20 hover:text-emerald-300'}`}
+                                  >
+                                    {h}
+                                  </div>
+                                ))}
+                              </div>
+                              
+                              {/* 分隔线 */}
+                              <div className="w-px bg-emerald-500/20 my-2 relative z-10"></div>
+                              
+                              {/* 分钟列 */}
+                              <div className="flex-1 h-48 overflow-y-auto emerald-scrollbar pl-1 pr-1 space-y-1 relative z-10">
+                                {Array.from({length: 60}, (_, i) => String(i).padStart(2, '0')).map(m => (
+                                  <div
+                                    key={`m-${m}`}
+                                    onClick={() => setEditTime(`${editTime.split(':')[0]}:${m}`)}
+                                    className={`cursor-pointer py-2 text-center rounded-xl font-mono text-sm transition-all duration-300 ${editTime.split(':')[1] === m ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)] font-bold scale-105' : 'text-zinc-400 hover:bg-emerald-500/20 hover:text-emerald-300'}`}
+                                  >
+                                    {m}
+                                  </div>
+                                ))}
+                              </div>
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 relative z-10">
                     <label className="text-[10px] text-emerald-500/60 uppercase tracking-[0.2em] ml-2 flex items-center justify-between">
                       <span>详细纪要 / Markdown Support</span>
                       <span className="text-zinc-600 font-normal tracking-normal lowercase border border-white/5 bg-white/5 px-2 py-0.5 rounded-md">.md</span>
                     </label>
                     <textarea 
                       required rows={6} value={editContent} onChange={(e) => setEditContent(e.target.value)} 
+                      onFocus={handleFocus} onBlur={handleBlur}
                       placeholder="支持 Markdown 语法，详细记录本次舰队巡航或集结情况..." 
-                      className="ios-scrollbar w-full bg-black/40 border border-emerald-500/20 rounded-2xl px-5 py-4 outline-none focus:border-emerald-500/50 transition-all text-zinc-300 resize-none shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]" 
+                      className="ios-scrollbar w-full bg-black/40 border border-emerald-500/20 rounded-2xl px-5 py-4 outline-none text-zinc-300 resize-none shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] transition-colors" 
                     />
                   </div>
 
-                  <div className="flex gap-4 pt-4 border-t border-emerald-500/10">
+                  <div className="flex gap-4 pt-4 border-t border-emerald-500/10 relative z-20">
                     <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 font-bold tracking-widest text-[10px] hover:text-white hover:bg-white/10 transition-all active:scale-95">取消</button>
+                    
+                    {/* 🚀 如果该日志已经存在，则允许舰长将其彻底清除 */}
+                    {activeLog && (
+                      <button type="button" onClick={handleClearLog} className="flex-1 py-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 font-bold tracking-widest text-[10px] hover:bg-red-500 hover:text-white transition-all shadow-[0_0_20px_rgba(239,68,68,0.2)] active:scale-95 flex items-center justify-center gap-2">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        清除档案
+                      </button>
+                    )}
+
                     <button type="submit" className="flex-1 py-4 rounded-2xl bg-emerald-600/20 border border-emerald-500/50 text-emerald-400 font-bold tracking-widest text-[10px] hover:bg-emerald-500 hover:text-white transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] active:scale-95 flex items-center justify-center gap-2">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
                       刻录进档案
@@ -254,8 +372,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
             
             {days.map(day => {
               const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear()
-              
-              // 动态判断当前日期是否有真实存入的状态
               const hasLog = !!logs[day]
 
               return (
@@ -276,7 +392,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
 
                   <span className={`text-sm md:text-base font-bold relative z-10 ${isToday ? "font-[family-name:var(--font-space)]" : "font-mono"}`}>{day}</span>
                   
-                  {/* 当且仅当有真实存入的状态时，才显示绿点 */}
                   {hasLog && (
                     <div className="absolute bottom-2 flex gap-0.5 z-10">
                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></div>
