@@ -1,118 +1,118 @@
 // src/components/crew-action-buttons.tsx
 "use client"
 
-import { useState, useEffect } from "react"
-import { createPortal } from "react-dom"
-import { approveUser, rejectUser } from "../app/dashboard/crew/actions"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { approveCrew, rejectCrew } from "@/app/actions" // 假设您的 action 在这里
 
 export function CrewActionButtons({ userId, realName }: { userId: string, realName: string }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [modalType, setModalType] = useState<"APPROVE" | "REJECT" | null>(null)
   const [isPending, setIsPending] = useState(false)
-  const [modalType, setModalType] = useState<'approve' | 'reject' | null>(null)
-  const [isAnimating, setIsAnimating] = useState(false)
-  const [isMounted, setIsMounted] = useState(false)
+  const router = useRouter()
 
-  useEffect(() => { setIsMounted(true) }, [])
-
-  const openModal = (type: 'approve' | 'reject') => {
-    setModalType(type)
-    requestAnimationFrame(() => setIsAnimating(true))
-  }
-
-  const closeModal = () => {
-    if (isPending) return
-    setIsAnimating(false) 
-    setTimeout(() => setModalType(null), 600)
-  }
-
-  const executeAction = async () => {
-    if (!modalType) return
+  const handleAction = async () => {
     setIsPending(true)
     try {
-      if (modalType === 'approve') await approveUser(userId)
-      else await rejectUser(userId)
-    } catch (error) { console.error(error) } 
-    finally { setIsPending(false); closeModal(); }
+      if (modalType === "APPROVE") {
+        await approveCrew(userId)
+      } else {
+        await rejectCrew(userId)
+      }
+      setIsOpen(false)
+      router.refresh()
+    } catch (error) {
+      console.error("Action failed:", error)
+    } finally {
+      setIsPending(false)
+    }
   }
 
-  const modalContent = modalType ? (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-0" style={{ perspective: '1000px' }}>
-      <div 
-        className={`absolute inset-0 bg-[#02040a]/60 backdrop-blur-[60px] transition-all duration-700 ease-out ${
-          isAnimating ? "opacity-100" : "opacity-0 backdrop-blur-none"
-        }`}
-        onClick={closeModal}
-      ></div>
-      
-      <div className={`relative w-full max-w-[440px] z-10 ${isAnimating ? "quantum-particle-in" : "quantum-particle-out"}`}>
-        <div 
-          className="quantum-breathe w-full h-full rounded-[2.5rem] border bg-[#060813]/80 p-10 flex flex-col items-center text-center overflow-hidden shadow-[0_0_60px_-15px_rgba(59,130,246,0.3)]"
-          style={{ borderColor: modalType === 'approve' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)' }}
-        >
-          {/* ...量子弹窗内容保持不变... */}
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-          <div className="relative w-20 h-20 rounded-full flex items-center justify-center mb-6">
-            <div className={`absolute inset-0 rounded-full border border-t-transparent animate-spin ${modalType === 'approve' ? 'border-emerald-500/50' : 'border-red-500/50'}`}></div>
-            <div className={`relative z-10 w-12 h-12 rounded-full flex items-center justify-center border bg-black/50 ${modalType === 'approve' ? 'border-emerald-500/50 text-emerald-400' : 'border-red-500/50 text-red-500'}`}>
-              {modalType === 'approve' ? '✔' : '✖'}
-            </div>
-          </div>
-          <h3 className={`text-xl font-bold tracking-[0.2em] font-[family-name:var(--font-space)] mb-4 ${modalType === 'approve' ? 'text-emerald-400' : 'text-red-400'}`}>{modalType === 'approve' ? '授权重组序列' : '不可逆覆写协议'}</h3>
-          <div className="text-zinc-400/80 text-sm mb-10 leading-loose font-mono tracking-wider">
-             {modalType === 'approve' ? <p>正在将新兵 <span className="text-emerald-300 font-bold">[{realName}]</span> 编入主序列。</p> : <p>目标 <span className="text-red-400 font-bold">[{realName}]</span> 的档案将化为尘埃。</p>}
-          </div>
-          <div className="flex w-full gap-5">
-            <button onClick={closeModal} disabled={isPending} className="flex-1 py-4 rounded-2xl bg-black/40 border border-white/10 text-zinc-500 font-bold tracking-[0.2em] text-[10px] hover:text-white transition-all">取消序列</button>
-            <button onClick={executeAction} disabled={isPending} className={`flex-1 py-4 rounded-2xl font-bold tracking-[0.2em] text-[10px] transition-all ${modalType === 'approve' ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-400' : 'bg-red-500/20 border border-red-500/50 text-red-500'}`}>
-              {isPending ? '...' : '执行指令'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  ) : null;
+  const openModal = (type: "APPROVE" | "REJECT") => {
+    setModalType(type)
+    setIsOpen(true)
+  }
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: `
-        :root { --quantum-easing-in: cubic-bezier(0.16, 1, 0.3, 1); --quantum-easing-out: cubic-bezier(0.7, 0, 0.84, 0); }
-        .quantum-particle-in { animation: aggregate 0.8s var(--quantum-easing-in) forwards; }
-        .quantum-particle-out { animation: dissipate 0.6s var(--quantum-easing-out) forwards; }
-        .quantum-breathe { animation: core-breathe 4s ease-in-out infinite; }
-        @keyframes aggregate { 0% { opacity: 0; filter: blur(40px) brightness(2); transform: scale(1.15); } 100% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } }
-        @keyframes dissipate { 0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 100% { opacity: 0; filter: blur(40px) brightness(0.5); transform: scale(0.85); } }
-        @keyframes core-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
-        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-      `}} />
-
-      {/* 🚀 顶级重绘：战术指令按钮区  */}
-      <div className="flex items-center gap-4">
-        {/* 核准按钮 */}
-        <button 
-          onClick={() => openModal('approve')}
-          className="group relative px-6 py-3 rounded-2xl bg-[#060813]/60 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold tracking-[0.3em] uppercase overflow-hidden transition-all duration-500 hover:border-emerald-500 hover:shadow-[0_0_25px_rgba(16,185,129,0.2)] active:scale-95"
+      {/* 🚀 外部控制按钮组 */}
+      <div className="flex gap-3">
+        <button
+          onClick={() => openModal("APPROVE")}
+          className="group relative px-4 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/5 text-emerald-400 text-xs font-bold tracking-widest uppercase transition-all hover:border-emerald-500 hover:bg-emerald-500/10 active:scale-95"
         >
-          {/* 流光能量条 */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-400/10 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
-          <div className="relative flex items-center gap-3">
-            <span className="text-sm">✔</span>
-            <span className="border-l border-emerald-500/20 pl-3">允许加入</span>
-          </div>
+          批准入舰
         </button>
-
-        {/* 驳回按钮 */}
-        <button 
-          onClick={() => openModal('reject')}
-          className="group relative px-6 py-3 rounded-2xl bg-[#060813]/60 border border-red-500/30 text-red-500 text-[10px] font-bold tracking-[0.3em] uppercase overflow-hidden transition-all duration-500 hover:border-red-500 hover:shadow-[0_0_25px_rgba(239,68,68,0.2)] active:scale-95"
+        <button
+          onClick={() => openModal("REJECT")}
+          className="group relative px-4 py-2 rounded-xl border border-red-500/30 bg-red-500/5 text-red-400 text-xs font-bold tracking-widest uppercase transition-all hover:border-red-500 hover:bg-red-500/10 active:scale-95"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/10 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
-          <div className="relative flex items-center gap-3">
-            <span className="text-sm">✖</span>
-            <span className="border-l border-red-500/20 pl-3">驳回申请</span>
-          </div>
+          拒绝
         </button>
       </div>
 
-      {isMounted && createPortal(modalContent, document.body)}
+      {/* 🚀 指令确认终端 (Modal) */}
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          {/* 背景遮罩：深邃且带模糊 */}
+          <div 
+            className="absolute inset-0 bg-[#020205]/80 backdrop-blur-sm animate-in fade-in duration-500" 
+            onClick={() => !isPending && setIsOpen(false)}
+          />
+
+          {/* 弹窗主体：延续 Module A 的设计语言 */}
+          <div className={`relative w-full max-w-md overflow-hidden rounded-[2.5rem] border backdrop-blur-2xl bg-black/60 shadow-[0_0_80px_-20px_rgba(0,0,0,0.5)] transition-all duration-500 animate-in zoom-in-95 slide-in-from-bottom-8 
+            ${modalType === "APPROVE" ? 'border-emerald-500/30' : 'border-red-500/30'}`}
+          >
+            {/* 顶部能量条装饰 */}
+            <div className={`h-1.5 w-full ${modalType === "APPROVE" ? 'bg-emerald-500/40' : 'bg-red-500/40'} relative overflow-hidden`}>
+               <div className={`absolute inset-0 w-1/2 animate-[shimmer_2s_infinite] ${modalType === "APPROVE" ? 'bg-emerald-400' : 'bg-red-400'}`} />
+            </div>
+
+            <div className="p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className={`w-3 h-3 rounded-full animate-pulse ${modalType === "APPROVE" ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.8)]' : 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.8)]'}`} />
+                <span className="text-[10px] font-mono font-bold tracking-[0.4em] text-zinc-500 uppercase">
+                  Security Protocol
+                </span>
+              </div>
+
+              <h2 className="text-2xl font-bold text-white tracking-wider mb-2 font-[family-name:var(--font-space)]">
+                {modalType === "APPROVE" ? "确认批准入舰？" : "确认拒绝申请？"}
+              </h2>
+              
+              <p className="text-zinc-400 text-sm leading-relaxed mb-10">
+                正在处理 <span className="text-white font-bold mx-1">{realName}</span> 的船员档案。
+                {modalType === "APPROVE" 
+                  ? "批准后，该成员将获得基础甲板通行权限。" 
+                  : "拒绝后，该申请将被永久移出待处理队列。"}
+              </p>
+
+              <div className="flex gap-4">
+                <button
+                  disabled={isPending}
+                  onClick={() => setIsOpen(false)}
+                  className="flex-1 px-6 py-4 rounded-2xl border border-white/10 bg-white/5 text-zinc-400 text-xs font-bold tracking-[0.2em] uppercase transition-all hover:bg-white/10 active:scale-95 disabled:opacity-50"
+                >
+                  取消发送
+                </button>
+                <button
+                  disabled={isPending}
+                  onClick={handleAction}
+                  className={`flex-1 px-6 py-4 rounded-2xl text-black text-xs font-bold tracking-[0.2em] uppercase transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2
+                    ${modalType === "APPROVE" ? 'bg-emerald-400 hover:bg-emerald-300 shadow-[0_0_30px_rgba(52,211,153,0.3)]' : 'bg-red-500 hover:bg-red-400 shadow-[0_0_30px_rgba(239,68,68,0.3)]'}`}
+                >
+                  {isPending ? (
+                    <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                  ) : (
+                    "确认执行"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
