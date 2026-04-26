@@ -86,7 +86,7 @@ export default async function DashboardPage() {
     orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }]
   })
 
-  // 🛡️ 状态 1：拦截器逻辑保持原样
+  // 🛡️ 状态 1：拦截器逻辑
   if (!isCaptain && isProfileIncomplete) {
     return (
       <main className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -130,7 +130,7 @@ export default async function DashboardPage() {
     )
   }
 
-  // 🛡️ 状态 2：拦截器逻辑保持原样
+  // 🛡️ 状态 2：拦截器逻辑
   if (!isCaptain && dbUser.role === "PENDING") {
     return (
       <main className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -209,14 +209,12 @@ export default async function DashboardPage() {
             <span className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></span>
             <span className="text-xs font-mono text-blue-400 uppercase tracking-[0.5em]">Sector: Command Center</span>
           </div>
-          {/* 🚀 专属舰队抬头替换 */}
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-[0.08em] font-[family-name:var(--font-space)] bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-zinc-500">
             「一生一芯」·西科星际舰队
           </h1>
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-6 shrink-0 w-full lg:w-auto justify-between lg:justify-end">
-          {/* 🚀 全息星历组件 */}
           <DashboardClock />
 
           <TransitionLink href="/" className="group hover-breathe flex items-center gap-4 bg-black/40 px-6 py-4 rounded-2xl border border-white/10 backdrop-blur-md transition-all duration-500 active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)] shrink-0">
@@ -254,9 +252,8 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* 📜 稳定版滚动公告舱 (修复 image_a8b492.jpg 的显示 BUG) */}
-        <div className="relative bg-[#060813]/60 border border-white/5 rounded-[2rem] p-4 lg:p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.8)] overflow-hidden">
-          {/* 🚀 锁定高度，超过约3条触发滚动 */}
+        {/* 🚀 修正：稳定版滚动公告舱，修复遮挡和暗色区域融合问题 */}
+        <div className="relative bg-[#02040a]/40 border border-white/5 rounded-[2rem] p-4 lg:p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] overflow-hidden">
           <div className="flex flex-col gap-1 h-[340px] overflow-y-auto ios-scrollbar pr-2 md:pr-4 relative z-10">
             {broadcasts.length > 0 ? (
               broadcasts.map(item => <BroadcastCard key={item.id} announcement={item} isManager={isManager} />)
@@ -268,9 +265,9 @@ export default async function DashboardPage() {
             )}
           </div>
           
-          {/* 底部渐变遮罩 */}
+          {/* 🚀 修正：底部渐变遮罩颜色与背景匹配，避免出现突兀的色块截断 */}
           {broadcasts.length > 3 && (
-            <div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-[#060813] to-transparent pointer-events-none rounded-b-[2rem] z-20"></div>
+            <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-[#02040a] to-transparent pointer-events-none rounded-b-[2rem] z-20"></div>
           )}
         </div>
       </div>
@@ -283,10 +280,7 @@ export default async function DashboardPage() {
           <div className="h-px bg-white/20 flex-1"></div>
         </div>
 
-        {/* 🟣 紫微星 - 大幅放大 */}
         <ModuleCard moduleId="Module B" title="船员档案室" subtitle="Starship Crew Database & Authorization" icon="👥" link="/dashboard/crew" isActive={true} theme="purple" />
-        
-        {/* ☀️ 日冕金 - 大幅放大 */}
         <ModuleCard moduleId="Module C" title="跃迁集结" subtitle="Fleet Attendance & Leave Requests" icon="⏳" link="/dashboard/attendance" isActive={true} theme="yellow" />
       </div>
 

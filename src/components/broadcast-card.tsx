@@ -58,9 +58,9 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
 
   // 阵营色彩渲染
   const typeStyles: Record<string, any> = {
-    INFO: { shadow: "rgba(59, 130, 246, 0.6)", glow: "rgba(59, 130, 246, 0.2)", border: "rgba(59, 130, 246, 0.5)", text: "text-blue-400", bg: "bg-blue-500/[0.02]", borderHover: "group-hover:border-blue-500/30", label: "INFO" },
-    UPDATE: { shadow: "rgba(16, 185, 129, 0.6)", glow: "rgba(16, 185, 129, 0.2)", border: "rgba(16, 185, 129, 0.5)", text: "text-emerald-400", bg: "bg-emerald-500/[0.02]", borderHover: "group-hover:border-emerald-500/30", label: "UPDATE" },
-    ALERT: { shadow: "rgba(239, 68, 68, 0.6)", glow: "rgba(239, 68, 68, 0.2)", border: "rgba(239, 68, 68, 0.5)", text: "text-red-400", bg: "bg-red-500/[0.02]", borderHover: "group-hover:border-red-500/30", label: "ALERT" }
+    INFO: { shadow: "rgba(59, 130, 246, 0.6)", glow: "rgba(59, 130, 246, 0.2)", border: "rgba(59, 130, 246, 0.5)", text: "text-blue-400", bg: "bg-blue-500/[0.05]", borderHover: "group-hover:border-blue-500/30", label: "INFO" },
+    UPDATE: { shadow: "rgba(16, 185, 129, 0.6)", glow: "rgba(16, 185, 129, 0.2)", border: "rgba(16, 185, 129, 0.5)", text: "text-emerald-400", bg: "bg-emerald-500/[0.05]", borderHover: "group-hover:border-emerald-500/30", label: "UPDATE" },
+    ALERT: { shadow: "rgba(239, 68, 68, 0.6)", glow: "rgba(239, 68, 68, 0.2)", border: "rgba(239, 68, 68, 0.5)", text: "text-red-400", bg: "bg-red-500/[0.05]", borderHover: "group-hover:border-red-500/30", label: "ALERT" }
   }
   const style = typeStyles[announcement.type] || typeStyles.INFO
 
@@ -104,12 +104,16 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
   ) : null;
 
   return (
-    /* 🚀 物理吸附包裹层：使用最稳定的 max-height 逻辑，修复 image_a8b492.jpg 消失的问题 */
+    /* 🚀 修正：移除复杂的贝塞尔曲线和不稳定过渡，强制声明 opacity-100 */
     <div 
-      className={`transition-all duration-[600ms] ease-[cubic-bezier(0.5,1.5,0.5,1.25)] overflow-hidden ${isVanishing ? 'max-h-0 opacity-0 mb-0 scale-x-95 translate-y-[-20px] pointer-events-none' : 'max-h-[500px] mb-4'}`}
+      className={`relative overflow-hidden transition-all duration-500 ease-in-out ${
+        isVanishing 
+          ? 'max-h-0 opacity-0 mb-0 scale-95 pointer-events-none' 
+          : 'max-h-[500px] opacity-100 mb-4'
+      }`}
     >
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes vanish-dissipate { 0% { opacity: 1; filter: blur(0px) brightness(1); } 100% { opacity: 0; filter: blur(20px) brightness(3); transform: scale(1.05); } }
+        @keyframes vanish-dissipate { 0% { opacity: 1; filter: blur(0px); } 100% { opacity: 0; filter: blur(20px); transform: scale(1.1); } }
         .animate-vanish-dissipate { animation: vanish-dissipate 0.6s forwards; }
         @keyframes slide-up-elastic { 0% { opacity: 0; transform: translateY(80px) scale(0.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
         .animate-slide-up-elastic { animation: slide-up-elastic 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
@@ -121,26 +125,32 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
 
       <div 
         onClick={openReadModal}
-        className={`cursor-pointer group relative w-full flex items-center gap-8 p-6 rounded-2xl border transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-[1.015] backdrop-blur-md overflow-hidden ${
-          isVanishing ? 'animate-vanish-dissipate' : announcement.isPinned ? "border-purple-500/40 bg-purple-500/[0.05] shadow-[0_0_30px_rgba(168,85,247,0.15)]" : `border-white/5 ${style.bg} ${style.borderHover}`
+        className={`cursor-pointer group relative w-full flex items-center gap-8 p-6 rounded-2xl border transition-all duration-500 hover:scale-[1.01] ${
+          isVanishing ? 'animate-vanish-dissipate' : 
+          announcement.isPinned 
+            ? "border-purple-500/40 bg-purple-500/10 shadow-[0_0_30px_rgba(168,85,247,0.15)]" 
+            : `border-white/10 ${style.bg} hover:bg-white/[0.05] ${style.borderHover}`
         }`}
       >
-        <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-        {announcement.isPinned && <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1.5 h-10 bg-purple-500 rounded-full shadow-[0_0_20px_rgba(168,85,247,1)] animate-pulse"></div>}
+        {/* 🚀 修正：添加基础暗色垫底，防止在透明模糊背景下消失 */}
+        <div className="absolute inset-0 bg-black/20 rounded-2xl pointer-events-none"></div>
 
-        <div className="flex flex-col items-center justify-center min-w-[90px] border-r border-white/5 pr-8 relative z-10">
+        <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"></div>
+        {announcement.isPinned && <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1.5 h-10 bg-purple-500 rounded-full shadow-[0_0_20px_rgba(168,85,247,1)] animate-pulse z-20"></div>}
+
+        <div className="flex flex-col items-center justify-center min-w-[90px] border-r border-white/10 pr-8 relative z-10">
           <div className={`text-[10px] font-mono font-bold tracking-widest mb-1 ${style.text}`}>{style.label}</div>
           <div className={`w-1.5 h-1.5 rounded-full animate-pulse`} style={{ backgroundColor: style.shadow, boxShadow: `0 0 10px ${style.shadow}` }}></div>
         </div>
 
         <div className="flex-1 flex flex-col md:flex-row md:items-center gap-6 overflow-hidden relative z-10">
           <h3 className={`text-lg font-bold text-white tracking-wide shrink-0 font-[family-name:var(--font-space)] transition-colors ${style.text}`}>{announcement.title}</h3>
-          <p className="text-zinc-500 text-sm font-light truncate max-w-xl">{announcement.content}</p>
+          <p className="text-zinc-400 text-sm font-light truncate max-w-xl">{announcement.content}</p>
         </div>
 
         <div className="flex items-center gap-8 shrink-0 relative z-10">
-          <div className="flex flex-col items-end opacity-40 text-[9px] font-mono tracking-widest uppercase"><span className="text-zinc-400">By {announcement.author?.realName || "HQ"}</span><span>{new Date(announcement.createdAt).toLocaleDateString()}</span></div>
-          {isManager && (<button onClick={(e) => { e.stopPropagation(); openDelModal(); }} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-500/20 text-zinc-700 hover:text-red-500 transition-all text-xl active:scale-90">✕</button>)}
+          <div className="flex flex-col items-end opacity-60 text-[9px] font-mono tracking-widest uppercase"><span className="text-zinc-300">By {announcement.author?.realName || "HQ"}</span><span>{new Date(announcement.createdAt).toLocaleDateString()}</span></div>
+          {isManager && (<button onClick={(e) => { e.stopPropagation(); openDelModal(); }} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-500 transition-all text-xl active:scale-90">✕</button>)}
         </div>
       </div>
       {isMounted && createPortal(<>{readModalContent}{delModalContent}</>, document.body)}
