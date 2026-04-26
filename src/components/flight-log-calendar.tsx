@@ -14,6 +14,15 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"VIEW" | "EDIT">("VIEW")
 
+  // 🚀 核心修复：使用真实的 React 状态来模拟数据库日志存储
+  // 初始状态为空，没有任何多余的假数据！
+  const [logs, setLogs] = useState<Record<number, { title: string, time: string, content: string }>>({})
+
+  // 📝 表单录入状态
+  const [editTitle, setEditTitle] = useState("")
+  const [editTime, setEditTime] = useState("")
+  const [editContent, setEditContent] = useState("")
+
   // 权限鉴定
   const isManager = userRole === "OWNER" || userRole === "ADMIN"
 
@@ -27,26 +36,42 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
   const blanks = Array.from({ length: firstDay }, (_, i) => i)
 
-  // 🚀 模拟后端返回的航行日志数据 (后续模块D将接入真实 DB)
-  const mockLogs: Record<number, { title: string, time: string, content: string }> = {
-    12: { title: "C-137 星区异常引力波探测", time: "14:20", content: "在此坐标发现高频引力波，已排除敌对势力干扰。\n\n全舰维持二级戒备状态，护盾系统充能完毕。" },
-    18: { title: "例行舰船维护与曲率充能", time: "09:00", content: "左舷引擎组清理完成，曲率驱动器充能达到 100%。\n\n各部门均已确认状态，随时准备下一次时空跃迁。" },
-    25: { title: "跃迁集结完毕，舰队归位", time: "10:30", content: "全员已抵达目标星域，集结率 98%。\n\n开始执行「一生一芯」探测任务，探测器已释放。" }
-  }
-  const loggedDays = Object.keys(mockLogs).map(Number)
-
+  // 🖱️ 点击日历卡片逻辑
   const handleDayClick = (day: number) => {
     setSelectedDay(day)
-    const hasLog = !!mockLogs[day]
+    const hasLog = !!logs[day]
     
-    // 核心逻辑：没日志时，管理层直接写，船员看空提示；有日志时，都看详情。
     if (!hasLog) {
+      // 没有记录时：管理层进入录入模式，船员进入查看空状态模式
       setModalMode(isManager ? "EDIT" : "VIEW")
+      // 清空表单，准备录入新数据
+      setEditTitle("")
+      setEditTime(`${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
+      setEditContent("")
     } else {
+      // 有记录时：所有人默认进入只读详情模式
       setModalMode("VIEW")
     }
-    
     setIsModalOpen(true)
+  }
+
+  // 💾 保存日志逻辑
+  const handleSaveLog = () => {
+    if (!selectedDay) return
+    setLogs(prev => ({
+      ...prev,
+      [selectedDay]: { title: editTitle, time: editTime, content: editContent }
+    }))
+    setIsModalOpen(false) // 录入完成后关闭弹窗，绿点会亮起
+  }
+
+  // ✏️ 触发修改逻辑 (仅舰长/管理员可用)
+  const handleEditExistingLog = () => {
+    if (!selectedDay || !logs[selectedDay]) return
+    setEditTitle(logs[selectedDay].title)
+    setEditTime(logs[selectedDay].time)
+    setEditContent(logs[selectedDay].content)
+    setModalMode("EDIT") // 从只读切换到编辑模式
   }
 
   // 🍏 Apple 级非线性物理弹簧参数
@@ -54,15 +79,13 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
 
   if (!mounted) return null
 
-  // 当前选中的日志（如果有）
-  const activeLog = selectedDay ? mockLogs[selectedDay] : null
+  const activeLog = selectedDay ? logs[selectedDay] : null
 
   const modalContent = (
     <AnimatePresence>
       {isModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           
-          {/* 背景模糊遮罩 */}
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px]" 
@@ -77,7 +100,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
             .animate-modal-breathe { animation: modal-breathe 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
           `}} />
 
-          {/* 🚀 航行日志弹窗 (弹簧入场 + CSS 呼吸外壳) */}
           <motion.div 
             initial={{ opacity: 0, scale: 0.8, y: 40 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -85,10 +107,8 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
             transition={springConfig}
             className="relative w-full max-w-2xl z-10"
           >
-            {/* 这个盒子专门负责连绵不断的呼吸放大与发光 */}
             <div className="animate-modal-breathe w-full rounded-[3.5rem] bg-[#060813]/95 border p-8 md:p-12 overflow-hidden relative transition-all duration-500">
               
-              {/* 背景装饰 */}
               <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
               <div className="absolute -top-32 -right-32 w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none animate-pulse"></div>
 
@@ -112,15 +132,22 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
 
               {/* 🛡️ 模态 1：编辑写入模式 */}
               {modalMode === "EDIT" && (
-                <form className="space-y-6 relative z-10" onSubmit={(e) => e.preventDefault()}>
+                <form className="space-y-6 relative z-10" onSubmit={(e) => { e.preventDefault(); handleSaveLog(); }}>
                   <div className="flex gap-4">
                     <div className="flex-1 space-y-2">
                       <label className="text-[10px] text-emerald-500/60 uppercase tracking-[0.2em] ml-2">日志标题 / Title</label>
-                      <input type="text" defaultValue={activeLog?.title || ""} placeholder="输入巡航记录标题..." className="w-full bg-black/40 border border-emerald-500/20 rounded-2xl px-5 py-4 outline-none focus:border-emerald-500/50 transition-all text-white font-[family-name:var(--font-space)] shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]" />
+                      <input 
+                        required type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} 
+                        placeholder="输入巡航记录标题..." 
+                        className="w-full bg-black/40 border border-emerald-500/20 rounded-2xl px-5 py-4 outline-none focus:border-emerald-500/50 transition-all text-white font-[family-name:var(--font-space)] shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]" 
+                      />
                     </div>
                     <div className="w-1/3 space-y-2">
                       <label className="text-[10px] text-emerald-500/60 uppercase tracking-[0.2em] ml-2">精确时间 / Time</label>
-                      <input type="time" defaultValue={activeLog?.time || `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`} className="w-full bg-black/40 border border-emerald-500/20 rounded-2xl px-5 py-4 outline-none focus:border-emerald-500/50 transition-all text-emerald-400 font-mono shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] [color-scheme:dark]" />
+                      <input 
+                        required type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} 
+                        className="w-full bg-black/40 border border-emerald-500/20 rounded-2xl px-5 py-4 outline-none focus:border-emerald-500/50 transition-all text-emerald-400 font-mono shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] [color-scheme:dark]" 
+                      />
                     </div>
                   </div>
 
@@ -129,12 +156,16 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                       <span>详细纪要 / Markdown Support</span>
                       <span className="text-zinc-600 font-normal tracking-normal lowercase border border-white/5 bg-white/5 px-2 py-0.5 rounded-md">.md</span>
                     </label>
-                    <textarea rows={6} defaultValue={activeLog?.content || ""} placeholder="支持 Markdown 语法，详细记录本次舰队巡航或集结情况..." className="ios-scrollbar w-full bg-black/40 border border-emerald-500/20 rounded-2xl px-5 py-4 outline-none focus:border-emerald-500/50 transition-all text-zinc-300 resize-none shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]" />
+                    <textarea 
+                      required rows={6} value={editContent} onChange={(e) => setEditContent(e.target.value)} 
+                      placeholder="支持 Markdown 语法，详细记录本次舰队巡航或集结情况..." 
+                      className="ios-scrollbar w-full bg-black/40 border border-emerald-500/20 rounded-2xl px-5 py-4 outline-none focus:border-emerald-500/50 transition-all text-zinc-300 resize-none shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]" 
+                    />
                   </div>
 
                   <div className="flex gap-4 pt-4 border-t border-emerald-500/10">
                     <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 font-bold tracking-widest text-[10px] hover:text-white hover:bg-white/10 transition-all active:scale-95">取消</button>
-                    <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 rounded-2xl bg-emerald-600/20 border border-emerald-500/50 text-emerald-400 font-bold tracking-widest text-[10px] hover:bg-emerald-500 hover:text-white transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] active:scale-95 flex items-center justify-center gap-2">
+                    <button type="submit" className="flex-1 py-4 rounded-2xl bg-emerald-600/20 border border-emerald-500/50 text-emerald-400 font-bold tracking-widest text-[10px] hover:bg-emerald-500 hover:text-white transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] active:scale-95 flex items-center justify-center gap-2">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
                       刻录进档案
                     </button>
@@ -155,7 +186,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                         </div>
                       </div>
                       
-                      {/* 🚀 滚轮滑动容器 */}
                       <div className="bg-black/40 border border-emerald-500/20 rounded-[2rem] p-6 md:p-8 shadow-[inset_0_0_40px_rgba(0,0,0,0.5)] max-h-[40vh] overflow-y-auto ios-scrollbar">
                         <div className="text-zinc-300 text-sm md:text-base leading-relaxed whitespace-pre-wrap font-mono">
                           {activeLog.content}
@@ -174,7 +204,7 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                     <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 font-bold tracking-widest text-[10px] hover:text-white hover:bg-white/10 transition-all active:scale-95">关闭档案</button>
                     {/* 🚀 舰长/管理员的专属修改权限 */}
                     {isManager && activeLog && (
-                      <button type="button" onClick={() => setModalMode("EDIT")} className="flex-1 py-4 rounded-2xl bg-emerald-600/20 border border-emerald-500/50 text-emerald-400 font-bold tracking-widest text-[10px] hover:bg-emerald-500 hover:text-white transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] active:scale-95 flex items-center justify-center gap-2">
+                      <button type="button" onClick={handleEditExistingLog} className="flex-1 py-4 rounded-2xl bg-emerald-600/20 border border-emerald-500/50 text-emerald-400 font-bold tracking-widest text-[10px] hover:bg-emerald-500 hover:text-white transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] active:scale-95 flex items-center justify-center gap-2">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                         覆写卷宗
                       </button>
@@ -224,7 +254,9 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
             
             {days.map(day => {
               const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear()
-              const hasLog = loggedDays.includes(day)
+              
+              // 动态判断当前日期是否有真实存入的状态
+              const hasLog = !!logs[day]
 
               return (
                 <motion.div
@@ -244,9 +276,10 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
 
                   <span className={`text-sm md:text-base font-bold relative z-10 ${isToday ? "font-[family-name:var(--font-space)]" : "font-mono"}`}>{day}</span>
                   
+                  {/* 当且仅当有真实存入的状态时，才显示绿点 */}
                   {hasLog && (
                     <div className="absolute bottom-2 flex gap-0.5 z-10">
-                       <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_5px_#10b981]"></div>
+                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></div>
                     </div>
                   )}
                 </motion.div>
