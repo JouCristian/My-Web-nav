@@ -77,32 +77,24 @@ export async function fetchMetadata(url: string) {
 
 /**
  * ==========================================
- * 🛡️ 模块 2：指挥中枢权限与档案管理
+ * 🛡️ 模块 2：个人档案管理
  * ==========================================
  */
 
 /**
- * 🚀 新增：处理新兵档案补全的 Server Action 
- * 该函数用于强制录入真实姓名与学号，这是进入指挥中枢的先决条件
+ * 🚀 更新新兵档案
+ * 用于强制录入真实姓名、学号和飞书链接
  */
 export async function updateRecruitProfile(formData: FormData) {
-  // 1. 获取当前会话，确保操作者已登录
   const session = await auth()
-  if (!session?.user?.email) {
-    throw new Error("检测到非法访问请求：未识别的星际身份")
-  }
+  if (!session?.user?.email) throw new Error("检测到非法访问请求：未识别的星际身份")
 
-  // 2. 提取并校验表单数据 [cite: 76-84]
   const realName = formData.get("realName") as string
   const studentId = formData.get("studentId") as string
   const feishuLink = formData.get("feishuLink") as string
 
-  // 严格执行白皮书要求的必填项校验 
-  if (!realName || !studentId) {
-    throw new Error("档案关键坐标缺失：真实姓名与学号为必填项")
-  }
+  if (!realName || !studentId) throw new Error("档案关键坐标缺失：真实姓名与学号为必填项")
 
-  // 3. 同步至星际数据库 (Prisma User 表) [cite: 62]
   await prisma.user.update({
     where: { email: session.user.email },
     data: { 
@@ -112,20 +104,16 @@ export async function updateRecruitProfile(formData: FormData) {
     }
   })
 
-  // 4. 指令刷新：通知 dashboard 页面重新校验状态 [cite: 20]
-  // 提交后，拦截器会检测到 realName 已存在，从而进入“待核准”或“放行”状态
   revalidatePath("/dashboard")
 }
 
 /**
- * 🚀 新增：撤销已提交的新兵档案
- * 允许船员清空已提交的信息，重新进入录入状态
+ * 🚀 撤销档案
  */
 export async function revokeRecruitProfile() {
   const session = await auth()
   if (!session?.user?.email) throw new Error("未授权的操作")
 
-  // 将档案字段重置为 null，触发拦截器回到 Status 1
   await prisma.user.update({
     where: { email: session.user.email },
     data: { 
@@ -136,4 +124,83 @@ export async function revokeRecruitProfile() {
   })
 
   revalidatePath("/dashboard")
+}
+
+/**
+ * ==========================================
+ * 👑 模块 3：指挥官行政指令 (Admin Operations)
+ * 用于船员档案室的审核与权限任命
+ * ==========================================
+ */
+
+/**
+ * ✅ 1. 批准船员入舰
+ * 将身份从 PENDING 提升为 MEMBER
+ */
+export async function approveCrew(userId: string) {
+  const session = await auth()
+  const operator = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
+  
+  if (operator?.role !== "OWNER" && operator?.role !== "ADMIN") {
+    throw new Error("权限不足：只有管理层可执行此项重组序列")
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { role: "MEMBER" }
+  })
+
+  revalidatePath("/dashboard/crew")
+}
+
+/**
+ * ❌ 2. 拒绝/退回申请
+ * 重置其档案资料，使其回到 Status 1 重新填写
+ */
+export async function rejectCrew(userId: string) {
+  const session = await auth()
+  const operator = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
+  
+  if (operator?.role !== "OWNER" && operator?.role !== "ADMIN") {
+    throw new Error("权限不足：非法覆盖申请序列")
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { 
+      realName: null, 
+      studentId: null,
+      feishuLink: null,
+      role: "PENDING" 
+    }
+  })
+
+  revalidatePath("/dashboard/crew")
+}
+
+/**
+ * 🔱 3. 任命/撤销管理员身份
+ * 仅限最高指挥官 (OWNER) 本人操作
+ */
+export async function toggleAdminRole(userId: string, makeAdmin: boolean) {
+  const session = await auth()
+  if (!session?.user?.email) throw new Error("未授权访问")
+
+  const currentUser = await prisma.user.findUnique({ where: { email: session.user.email } })
+  
+  // 🛡️ 绝对锁：只有舰长本人可以进行此操作
+  if (currentUser?.role !== "OWNER") {
+    throw new Error("权限溢出：只有最高指挥官可开启权限任命通道")
+  }
+
+  const targetUser = await prisma.user.findUnique({ where: { id: userId } })
+  if (!targetUser) throw new Error("目标坐标丢失")
+  if (targetUser.role === "OWNER") throw new Error("无法修改最高指挥官自身的身份层级")
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { role: makeAdmin ? "ADMIN" : "MEMBER" }
+  })
+
+  revalidatePath("/dashboard/crew")
 }
