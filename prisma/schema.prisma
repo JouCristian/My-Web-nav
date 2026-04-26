@@ -150,6 +150,7 @@ model Announcement {
   title     String   // 广播标题
   content   String   @db.Text // 广播内容 (支持长文本)
   type      String   // 广播级别: "INFO"(日常) | "UPDATE"(更新) | "ALERT"(警报)
+  isPinned  Boolean  @default(false) // 🚀 新增：置顶状态
   
   authorId  String   // 发布者ID
   createdAt DateTime @default(now())
