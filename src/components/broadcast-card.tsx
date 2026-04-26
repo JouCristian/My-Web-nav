@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { deleteBroadcast } from "@/app/actions" 
+import ReactMarkdown from "react-markdown" // 🚀 注入 Markdown 核心引擎
 
 export function BroadcastCard({ announcement, isManager }: { announcement: any, isManager: boolean }) {
   const [isVanishing, setIsVanishing] = useState(false) 
@@ -35,11 +36,9 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
   const executeDelete = async () => {
     if (isPending) return
     setIsPending(true)
-    
     await closeDelModalWithAnimation()
     setIsVanishing(true)
     await new Promise(resolve => setTimeout(resolve, 600))
-    
     try { 
       await deleteBroadcast(announcement.id) 
     } catch (error) { 
@@ -50,23 +49,57 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
   }
 
   const typeStyles: Record<string, any> = {
-    INFO: { shadow: "rgba(59, 130, 246, 0.6)", glow: "rgba(59, 130, 246, 0.2)", border: "rgba(59, 130, 246, 0.5)", text: "text-blue-400", bg: "bg-blue-500/[0.05]", borderHover: "group-hover:border-blue-500/30", label: "INFO" },
-    UPDATE: { shadow: "rgba(16, 185, 129, 0.6)", glow: "rgba(16, 185, 129, 0.2)", border: "rgba(16, 185, 129, 0.5)", text: "text-emerald-400", bg: "bg-emerald-500/[0.05]", borderHover: "group-hover:border-emerald-500/30", label: "UPDATE" },
-    ALERT: { shadow: "rgba(239, 68, 68, 0.6)", glow: "rgba(239, 68, 68, 0.2)", border: "rgba(239, 68, 68, 0.5)", text: "text-red-400", bg: "bg-red-500/[0.05]", borderHover: "group-hover:border-red-500/30", label: "ALERT" }
+    INFO: { shadow: "rgba(59, 130, 246, 0.6)", glow: "rgba(59, 130, 246, 0.2)", border: "rgba(59, 130, 246, 0.5)", text: "text-blue-400", mdAccent: "text-blue-400", bg: "bg-blue-500/[0.05]", borderHover: "group-hover:border-blue-500/30", label: "INFO" },
+    UPDATE: { shadow: "rgba(16, 185, 129, 0.6)", glow: "rgba(16, 185, 129, 0.2)", border: "rgba(16, 185, 129, 0.5)", text: "text-emerald-400", mdAccent: "text-emerald-400", bg: "bg-emerald-500/[0.05]", borderHover: "group-hover:border-emerald-500/30", label: "UPDATE" },
+    ALERT: { shadow: "rgba(239, 68, 68, 0.6)", glow: "rgba(239, 68, 68, 0.2)", border: "rgba(239, 68, 68, 0.5)", text: "text-red-400", mdAccent: "text-red-400", bg: "bg-red-500/[0.05]", borderHover: "group-hover:border-red-500/30", label: "ALERT" }
   }
   const style = typeStyles[announcement.type] || typeStyles.INFO
 
+  // 🚀 全息阅读弹窗 (集成 Markdown 渲染)
   const readModalContent = isReadOpen ? (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className={`absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px] transition-all duration-500 ${isReadAnimating ? "opacity-100" : "opacity-0"}`} onClick={closeReadModal}></div>
       <div className={`relative w-full max-w-2xl z-10 ${isReadClosing ? "quantum-particle-out" : isReadAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
         <div className="quantum-breathe-dynamic w-full rounded-[3.5rem] bg-[#060813]/95 p-8 md:p-12 flex flex-col relative overflow-hidden" style={{ '--modal-glow': style.glow, '--modal-shadow': style.shadow, '--modal-border': style.border } as React.CSSProperties}>
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-          <h2 className="text-2xl md:text-4xl font-bold text-white tracking-[0.1em] font-[family-name:var(--font-space)] mb-8 leading-tight relative z-10">{announcement.title}</h2>
-          <div className="relative z-10 bg-black/40 border border-white/5 rounded-[2rem] p-6 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
-            <div className="max-h-[40vh] overflow-y-auto ios-scrollbar pr-4 text-zinc-300 text-sm md:text-base leading-relaxed whitespace-pre-wrap">{announcement.content}</div>
+          
+          <div className="flex items-center justify-between mb-6 relative z-10 border-b border-white/5 pb-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-white tracking-[0.1em] font-[family-name:var(--font-space)] leading-tight">{announcement.title}</h2>
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${style.bg} border-white/10`}>
+              <div className={`w-1.5 h-1.5 rounded-full animate-pulse`} style={{ backgroundColor: style.shadow }}></div>
+              <span className={`text-[10px] font-mono font-bold tracking-widest ${style.text}`}>{style.label}</span>
+            </div>
           </div>
-          <button onClick={closeReadModal} className="mt-8 self-end px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all active:scale-95">关闭加密档案</button>
+
+          <div className="relative z-10 bg-black/40 border border-white/5 rounded-[2.5rem] p-6 md:p-8 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
+            <div className="max-h-[45vh] overflow-y-auto ios-scrollbar pr-4">
+              {/* 🚀 核心逻辑：使用 ReactMarkdown 渲染公告正文 */}
+              <ReactMarkdown 
+                className="text-zinc-300 text-sm md:text-base leading-relaxed break-words"
+                components={{
+                  h1: ({node, ...props}) => <h1 className={`text-xl font-bold ${style.text} mb-4 pb-2 border-b border-white/10`} {...props} />,
+                  h2: ({node, ...props}) => <h2 className="text-lg font-bold text-white/90 mt-6 mb-3" {...props} />,
+                  p: ({node, ...props}) => <p className="mb-4 last:mb-0" {...props} />,
+                  strong: ({node, ...props}) => <strong className={`${style.mdAccent} font-bold`} {...props} />,
+                  ul: ({node, ...props}) => <ul className="list-disc list-inside mb-4 space-y-1" {...props} />,
+                  ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-4 space-y-1" {...props} />,
+                  blockquote: ({node, ...props}) => <blockquote className={`border-l-4 border-white/20 pl-4 py-2 mb-4 bg-white/5 rounded-r-xl italic text-zinc-400`} {...props} />,
+                  code: ({node, ...props}) => <code className="bg-white/10 text-blue-300 px-1.5 py-0.5 rounded font-mono text-sm" {...props} />,
+                  pre: ({node, ...props}) => <pre className="bg-[#02040a]/80 p-4 rounded-2xl border border-white/5 mb-4 overflow-x-auto ios-scrollbar text-xs" {...props} />,
+                }}
+              >
+                {announcement.content}
+              </ReactMarkdown>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center mt-8 relative z-10">
+            <div className="flex flex-col opacity-40 text-[9px] font-mono tracking-widest uppercase">
+              <span className="text-zinc-400">Archived By {announcement.author?.realName || "HQ"}</span>
+              <span>Coordinates: {new Date(announcement.createdAt).toLocaleString()}</span>
+            </div>
+            <button onClick={closeReadModal} className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.05)]">关闭加密档案</button>
+          </div>
         </div>
       </div>
     </div>
@@ -94,7 +127,6 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
   ) : null;
 
   return (
-    /* 🚀 核心修复 1：仅在卡片彻底销毁时才开启 overflow-hidden，平时允许子元素放大溢出 */
     <div 
       className={`relative shrink-0 transition-all duration-500 ease-in-out ${
         isVanishing 
@@ -109,11 +141,10 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
         .animate-slide-up-elastic { animation: slide-up-elastic 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
         .quantum-particle-out { animation: dissipate 0.6s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
         @keyframes dissipate { 0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 100% { opacity: 0; filter: blur(20px) brightness(0.5); transform: scale(0.85); } }
-        @keyframes dynamic-breathe { 0%, 100% { transform: scale(1); box-shadow: 0 0 60px var(--modal-glow), inset 0 0 20px var(--modal-glow); border: 1px solid rgba(255,255,255,0.1); } 50% { transform: scale(1.03); box-shadow: 0 0 100px var(--modal-shadow), inset 0 0 40px var(--modal-glow); border: 1px solid var(--modal-border); } }
+        @keyframes dynamic-breathe { 0%, 100% { transform: scale(1); box-shadow: 0 0 60px var(--modal-glow), inset 0 0 20px var(--modal-glow); border: 1px solid rgba(255,255,255,0.1); } 50% { transform: scale(1.015); box-shadow: 0 0 100px var(--modal-shadow), inset 0 0 40px var(--modal-glow); border: 1px solid var(--modal-border); } }
         .quantum-breathe-dynamic { animation: dynamic-breathe 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
       `}} />
 
-      {/* 🚀 核心修复 2：增加 hover:z-20 确保放大时处于顶层，添加 hover:shadow-2xl 增强悬浮立体感 */}
       <div 
         onClick={openReadModal}
         className={`cursor-pointer group relative w-full flex items-center gap-8 p-6 rounded-2xl border transition-all duration-500 hover:scale-[1.015] hover:z-20 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${
@@ -124,7 +155,6 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
         }`}
       >
         <div className="absolute inset-0 bg-black/40 rounded-2xl pointer-events-none"></div>
-
         <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"></div>
         {announcement.isPinned && <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1.5 h-10 bg-purple-500 rounded-full shadow-[0_0_20px_rgba(168,85,247,1)] animate-pulse z-20"></div>}
 
