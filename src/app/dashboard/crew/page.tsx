@@ -79,9 +79,6 @@ export default async function CrewArchivesPage() {
               <AdminAuthModal users={allUsers} />
             )}
 
-            {/* 升级版「返回中枢」 */}
-            <Link href="/dashboard" className="group hover-breathe flex items-center gap-4 bg-black/60 px-6 py-3.5 rounded-2xl border border-white/10 backdrop-blur-md transition-all duration-500 active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.3)]">
-            
             {/* 🚀 升级版「返回中枢」：默认休眠，Hover 时平滑唤醒所有动效 */}
             <Link href="/dashboard" className="group hover-breathe flex items-center gap-4 bg-black/60 px-6 py-3.5 rounded-2xl border border-white/10 backdrop-blur-md transition-all duration-500 active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.3)]">
               <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-purple-500/20 transition-all duration-500 overflow-hidden">
