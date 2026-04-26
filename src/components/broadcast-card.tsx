@@ -3,10 +3,10 @@
 
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
-import { deleteBroadcast } from "@/app/actions"
+import { deleteBroadcast } from "@/app/actions" // 🚀 修正导入路径，防止删除时崩掉
 
 export function BroadcastCard({ announcement, isManager }: { announcement: any, isManager: boolean }) {
-  // 🚀 核心动效控制：量子消散状态
+  // 🚀 核心动效：量子消散状态机
   const [isVanishing, setIsVanishing] = useState(false)
   
   const [isReadOpen, setIsReadOpen] = useState(false)
@@ -24,7 +24,6 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
 
   const openReadModal = () => { setIsReadClosing(false); setIsReadOpen(true); setTimeout(() => setIsReadAnimating(true), 10); }
   const closeReadModal = () => { setIsReadClosing(true); setIsReadAnimating(false); setTimeout(() => setIsReadOpen(false), 600); }
-
   const openDelModal = () => { setIsDelClosing(false); setIsDelOpen(true); setTimeout(() => setIsDelAnimating(true), 10); }
   
   const closeDelModalWithAnimation = async () => {
@@ -33,7 +32,7 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
     setIsDelOpen(false);
   }
 
-  // 🚀 执行销毁：视觉先行，确保粒子消散与弹簧吸附完整呈现
+  // 🚀 执行销毁：视觉先行，同步粒子消散与弹簧吸附
   const executeDelete = async () => {
     if (isPending) return
     setIsPending(true)
@@ -44,14 +43,14 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
     // 2. 触发列表卡片本体的量子消散
     setIsVanishing(true)
     
-    // 3. 强制等待 600ms 消散动画与物理吸附完成
+    // 3. 强制等待 600ms，确保非线性消散与高度收缩完整呈现
     await new Promise(resolve => setTimeout(resolve, 600))
     
     try { 
       await deleteBroadcast(announcement.id) 
     } catch (error) { 
       console.error(error)
-      setIsVanishing(false) // 失败则恢复状态
+      setIsVanishing(false) // 失败回滚
       setIsPending(false) 
     } 
   }
@@ -76,13 +75,9 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
           </div>
           <h2 className="text-2xl md:text-4xl font-bold text-white tracking-[0.1em] font-[family-name:var(--font-space)] mb-8 leading-tight relative z-10">{announcement.title}</h2>
           <div className="relative z-10 bg-black/40 border border-white/5 rounded-[2rem] p-6 md:p-8 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
-            <div className="max-h-[40vh] overflow-y-auto ios-scrollbar pr-4 text-zinc-300 text-sm md:text-base leading-relaxed md:leading-loose font-light whitespace-pre-wrap tracking-wide">{announcement.content}</div>
-            <div className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-black/60 to-transparent pointer-events-none rounded-b-[2rem]"></div>
+            <div className="max-h-[40vh] overflow-y-auto ios-scrollbar pr-4 text-zinc-300 text-sm md:text-base leading-relaxed whitespace-pre-wrap">{announcement.content}</div>
           </div>
-          <div className="flex justify-between items-center mt-10 relative z-10">
-            <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Authorized by <span className="text-white font-bold">{announcement.author?.realName || "Fleet Command"}</span></div>
-            <button onClick={closeReadModal} className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all active:scale-95">关闭加密档案</button>
-          </div>
+          <button onClick={closeReadModal} className="mt-8 self-end px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all">关闭加密档案</button>
         </div>
       </div>
     </div>
@@ -97,11 +92,11 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
           <div className="w-16 h-16 mx-auto bg-red-500/10 border border-red-500/30 rounded-full flex items-center justify-center mb-6 text-red-500 animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.2)]">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
           </div>
-          <h3 className="text-xl font-bold tracking-[0.2em] font-[family-name:var(--font-space)] mb-3 text-red-500">不可逆覆写协议</h3>
+          <h3 className="text-xl font-bold tracking-[0.2em] mb-3 text-red-500 font-[family-name:var(--font-space)]">不可逆覆写协议</h3>
           <p className="text-zinc-400 text-sm mb-8 leading-relaxed">目标 <span className="text-white font-bold">[{announcement.title}]</span> 的档案将转化为尘埃。</p>
           <div className="flex w-full gap-4 relative z-10">
-            <button onClick={closeDelModalWithAnimation} disabled={isPending} className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/5 text-zinc-500 font-bold text-[10px] uppercase tracking-widest hover:text-white transition-all">取消序列</button>
-            <button onClick={executeDelete} disabled={isPending} className="flex-1 py-4 rounded-2xl bg-red-600/20 border border-red-500/50 text-red-400 font-bold text-[10px] uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-red-500/20 flex items-center justify-center">
+            <button onClick={closeDelModalWithAnimation} disabled={isPending} className="flex-1 py-4 rounded-2xl bg-white/5 text-zinc-500 font-bold text-[10px] tracking-widest">取消序列</button>
+            <button onClick={executeDelete} disabled={isPending} className="flex-1 py-4 rounded-2xl bg-red-600/20 border border-red-500/50 text-red-400 font-bold text-[10px] tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-red-500/20 flex items-center justify-center">
               {isPending ? <div className="w-4 h-4 border-2 border-t-transparent border-current rounded-full animate-spin"></div> : '执行指令'}
             </button>
           </div>
@@ -111,10 +106,13 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
   ) : null;
 
   return (
-    /* 🚀 弹簧吸附包裹层：当 isVanishing 时，利用贝塞尔曲线迅速收缩高度 */
-    <div className={`transition-all duration-[600ms] ease-[cubic-bezier(0.5,1.5,0.5,1)] overflow-hidden ${isVanishing ? 'max-h-0 opacity-0 mb-0 pointer-events-none scale-x-90' : 'max-h-[500px] mb-4'}`}>
+    /* 🚀 物理弹簧吸附层：当 isVanishing 为 true 时，使用贝塞尔曲线快速缩减高度并消失 */
+    <div className={`transition-all duration-[600ms] ease-[cubic-bezier(0.5,1.5,0.5,1.25)] overflow-hidden ${isVanishing ? 'max-h-0 opacity-0 mb-0 pointer-events-none scale-x-95 translate-y-[-20px]' : 'max-h-[500px] mb-4'}`}>
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes vanish-dissipate { 0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 100% { opacity: 0; filter: blur(30px) brightness(2); transform: scale(1.05); } }
+        @keyframes vanish-dissipate { 
+          0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 
+          100% { opacity: 0; filter: blur(20px) brightness(2); transform: scale(1.05); } 
+        }
         .animate-vanish-dissipate { animation: vanish-dissipate 0.6s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
         
         @keyframes slide-up-elastic { 0% { opacity: 0; transform: translateY(80px) scale(0.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
@@ -123,7 +121,6 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
         @keyframes dissipate { 0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 100% { opacity: 0; filter: blur(20px) brightness(0.5); transform: scale(0.85); } }
         @keyframes dynamic-breathe { 0%, 100% { transform: scale(1); box-shadow: 0 0 60px var(--modal-glow), inset 0 0 20px var(--modal-glow); border: 1px solid rgba(255,255,255,0.1); } 50% { transform: scale(1.03); box-shadow: 0 0 100px var(--modal-shadow), inset 0 0 40px var(--modal-glow); border: 1px solid var(--modal-border); } }
         .quantum-breathe-dynamic { animation: dynamic-breathe 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
-        .ios-scrollbar::-webkit-scrollbar { width: 6px; } .ios-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
       `}} />
 
       <div 

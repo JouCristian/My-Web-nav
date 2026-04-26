@@ -1,4 +1,3 @@
-// src/app/actions.ts
 'use server'
 
 import { prisma } from "@/lib/db"
@@ -15,17 +14,12 @@ export async function addBookmark(formData: FormData) {
   const name = formData.get("name") as string
   const url = formData.get("url") as string
   const description = formData.get("description") as string
-
-  await prisma.bookmark.create({
-    data: { name, url, description }
-  })
+  await prisma.bookmark.create({ data: { name, url, description } })
   revalidatePath("/")
 }
 
 export async function deleteBookmark(id: number) {
-  await prisma.bookmark.delete({
-    where: { id }
-  })
+  await prisma.bookmark.delete({ where: { id } })
   revalidatePath("/")
 }
 
@@ -57,11 +51,11 @@ export async function fetchMetadata(url: string) {
  */
 export async function updateRecruitProfile(formData: FormData) {
   const session = await auth()
-  if (!session?.user?.email) throw new Error("未识别的星际身份")
+  if (!session?.user?.email) throw new Error("检测到非法访问请求")
   const realName = formData.get("realName") as string
   const studentId = formData.get("studentId") as string
   const feishuLink = formData.get("feishuLink") as string
-  if (!realName || !studentId) throw new Error("姓名与学号为必填项")
+  if (!realName || !studentId) throw new Error("档案关键坐标缺失")
   await prisma.user.update({
     where: { email: session.user.email },
     data: { realName, studentId, feishuLink: feishuLink || null }
@@ -85,39 +79,41 @@ export async function revokeRecruitProfile() {
  * ==========================================
  */
 
-// 🚀 核心修复：执行销毁公告并刷新主大屏
+// 🚀 核心修复：销毁公告并刷新主大屏，彻底解决 crash 问题
 export async function deleteBroadcast(id: string) {
   const session = await auth()
   const user = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
   if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("权限不足")
 
   await prisma.announcement.delete({ where: { id } })
-  // 刷新主中枢路径，防止 image_a937ba.png 报错
+  
+  // 确保重绘主中枢，防止 image_a937ba.png 报错
   revalidatePath("/dashboard") 
 }
 
 export async function approveCrew(userId: string) {
   const session = await auth()
-  const user = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
-  if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("权限不足")
+  const operator = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
+  if (operator?.role !== "OWNER" && operator?.role !== "ADMIN") throw new Error("权限不足")
   await prisma.user.update({ where: { id: userId }, data: { role: "MEMBER" } })
   revalidatePath("/dashboard/crew")
 }
 
 export async function rejectCrew(userId: string) {
   const session = await auth()
-  const user = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
-  if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("权限不足")
+  const operator = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
+  if (operator?.role !== "OWNER" && operator?.role !== "ADMIN") throw new Error("权限不足")
   await prisma.user.update({ where: { id: userId }, data: { realName: null, studentId: null, feishuLink: null, role: "PENDING" } })
   revalidatePath("/dashboard/crew")
 }
 
 export async function toggleAdminRole(userId: string, makeAdmin: boolean) {
   const session = await auth()
-  const currentUser = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
-  if (currentUser?.role !== "OWNER") throw new Error("仅最高指挥官可进行任命")
+  if (!session?.user?.email) throw new Error("未授权访问")
+  const currentUser = await prisma.user.findUnique({ where: { email: session.user.email } })
+  if (currentUser?.role !== "OWNER") throw new Error("权限溢出")
   const targetUser = await prisma.user.findUnique({ where: { id: userId } })
-  if (!targetUser || targetUser.role === "OWNER") throw new Error("无法修改目标")
+  if (!targetUser || targetUser.role === "OWNER") throw new Error("目标坐标丢失")
   await prisma.user.update({ where: { id: userId }, data: { role: makeAdmin ? "ADMIN" : "MEMBER" } })
   revalidatePath("/dashboard/crew")
 }
