@@ -10,40 +10,43 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
   const [viewDate, setViewDate] = useState(new Date())
   const [mounted, setMounted] = useState(false)
   
-  // 📝 状态机：日志数据、弹窗控制、3D翻转控制
+  // 📝 核心状态机
   const [isFlipped, setIsFlipped] = useState(false)
-  const [selectedDay, setSelectedDay] = useState<number | null>(null)
+  // 🚀 核心修复：将 selectedDay 升级为唯一时空标识 selectedDateKey，防止点击崩溃
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"VIEW" | "EDIT">("VIEW")
   const [logs, setLogs] = useState<Record<string, { title: string, time: string, content: string }>>({})
 
-  // 📝 编辑状态
   const [editTitle, setEditTitle] = useState("")
-  const [editTime, setEditTime] = useState("")
+  const [editTime, setEditTime] = useState("12:00") // 赋予安全默认值
   const [editContent, setEditContent] = useState("")
+  
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false)
+  const timeInputRef = useRef<HTMLDivElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
   const [focusStyle, setFocusStyle] = useState({ top: 0, left: 0, width: 0, height: 0, opacity: 0 })
 
   const isManager = userRole === "OWNER" || userRole === "ADMIN"
 
-  // 💾 数据持久化
   useEffect(() => { 
     setMounted(true);
     const savedLogs = localStorage.getItem("STARFLEET_FLIGHT_LOGS");
     if (savedLogs) try { setLogs(JSON.parse(savedLogs)); } catch (e) { console.error(e); }
   }, [])
-  useEffect(() => { if (mounted) localStorage.setItem("STARFLEET_FLIGHT_LOGS", JSON.stringify(logs)); }, [logs, mounted])
+  
+  useEffect(() => { 
+    if (mounted) localStorage.setItem("STARFLEET_FLIGHT_LOGS", JSON.stringify(logs)); 
+  }, [logs, mounted])
 
-  // 📅 日历计算
   const year = viewDate.getFullYear(); const month = viewDate.getMonth()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const firstDay = new Date(year, month, 1).getDay()
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
   const blanks = Array.from({ length: firstDay }, (_, i) => i)
-  const getDateKey = (day: number) => `${year}-${month + 1}-${day}`
 
-  // 🖱️ 交互逻辑
+  const getDateKey = (y: number, m: number, d: number) => `${y}-${m + 1}-${d}`
+
   const handleFocus = (e: any) => {
     if (!formRef.current || !e.target) return;
     let top = 0, left = 0, el = e.target;
@@ -54,14 +57,16 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
   const handleDayClick = (day: number, specificYear?: number, specificMonth?: number) => {
     const targetYear = specificYear ?? year;
     const targetMonth = specificMonth ?? month;
-    const key = `${targetYear}-${targetMonth + 1}-${day}`;
+    const key = getDateKey(targetYear, targetMonth, day);
     
-    setSelectedDay(day); 
+    setSelectedDateKey(key); 
     const hasLog = !!logs[key]
     
     if (!hasLog) {
       setModalMode(isManager ? "EDIT" : "VIEW");
-      setEditTitle(""); setEditTime(`${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`); setEditContent("");
+      setEditTitle(""); 
+      setEditTime(`${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`); 
+      setEditContent("");
     } else {
       setModalMode("VIEW");
     }
@@ -69,42 +74,44 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
   }
 
   const handleSaveLog = () => {
-    if (selectedDay) {
-      setLogs(p => ({...p, [getDateKey(selectedDay)]: { title: editTitle, time: editTime, content: editContent }}));
+    if (selectedDateKey) {
+      setLogs(p => ({...p, [selectedDateKey]: { title: editTitle, time: editTime, content: editContent }}));
       setIsModalOpen(false);
     }
   }
 
   const handleClearLog = () => {
-    if (selectedDay) {
-      setLogs(p => { const n = {...p}; delete n[getDateKey(selectedDay)]; return n; });
+    if (selectedDateKey) {
+      setLogs(p => { const n = {...p}; delete n[selectedDateKey]; return n; });
       setIsModalOpen(false);
     }
   }
 
   const handleEditExistingLog = () => {
-    const dateKey = selectedDay ? getDateKey(selectedDay) : ""
-    if (!dateKey || !logs[dateKey]) return
-    setEditTitle(logs[dateKey].title)
-    setEditTime(logs[dateKey].time)
-    setEditContent(logs[dateKey].content)
+    if (!selectedDateKey || !logs[selectedDateKey]) return
+    setEditTitle(logs[selectedDateKey].title)
+    setEditTime(logs[selectedDateKey].time)
+    setEditContent(logs[selectedDateKey].content)
     setModalMode("EDIT") 
   }
 
-  // 🍏 Apple 级非线性物理弹簧
+  // 🚀 安全的时间更新逻辑，避免拆分 undefined
+  const updateHour = (h: string) => { const parts = editTime.split(':'); setEditTime(`${h}:${parts[1] || '00'}`); }
+  const updateMinute = (m: string) => { const parts = editTime.split(':'); setEditTime(`${parts[0] || '12'}:${m}`); }
+
   const flipSpring = { type: "spring", stiffness: 220, damping: 14, mass: 1 }
   const uiSpring = { type: "spring", stiffness: 350, damping: 25 }
 
   if (!mounted) return null
 
-  const activeLog = selectedDay ? logs[getDateKey(selectedDay)] : null
+  const activeLog = selectedDateKey ? logs[selectedDateKey] : null
 
   const modalContent = (
     <AnimatePresence>
       {isModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px]" onClick={() => setIsModalOpen(false)} />
-          <style dangerouslySetInnerHTML={{ __html: `@keyframes modal-breathe { 0%, 100% { transform: scale(1); box-shadow: 0 0 60px rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.2); } 50% { transform: scale(1.02); box-shadow: 0 0 100px rgba(16, 185, 129, 0.35); border-color: rgba(16, 185, 129, 0.4); } } .animate-modal-breathe { animation: modal-breathe 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; } .emerald-scrollbar::-webkit-scrollbar { width: 4px; } .emerald-scrollbar::-webkit-scrollbar-track { background: transparent; } .emerald-scrollbar::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 10px; } .emerald-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(16, 185, 129, 0.5); }`}} />
+          <style dangerouslySetInnerHTML={{ __html: `@keyframes modal-breathe { 0%, 100% { transform: scale(1); box-shadow: 0 0 60px rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.2); } 50% { transform: scale(1.01); box-shadow: 0 0 100px rgba(16, 185, 129, 0.35); border-color: rgba(16, 185, 129, 0.4); } } .animate-modal-breathe { animation: modal-breathe 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; } .emerald-scrollbar::-webkit-scrollbar { width: 4px; } .emerald-scrollbar::-webkit-scrollbar-track { background: transparent; } .emerald-scrollbar::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 10px; } .emerald-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(16, 185, 129, 0.5); }`}} />
           
           <motion.div initial={{ opacity: 0, scale: 0.8, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20, filter: "blur(10px)" }} transition={uiSpring} className="relative w-full max-w-2xl z-10" >
             <div className="animate-modal-breathe w-full rounded-[3.5rem] bg-[#060813]/95 border p-8 md:p-12 overflow-hidden relative transition-all duration-500">
@@ -118,12 +125,11 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-emerald-500 tracking-[0.15em] font-[family-name:var(--font-space)]">{modalMode === "EDIT" ? "星际日志录入" : "航行档案卷宗"}</h2>
-                    <p className="text-emerald-400/50 font-mono text-[10px] uppercase tracking-widest mt-1">Stardate: {year}-{String(month+1).padStart(2,'0')}-{String(selectedDay).padStart(2,'0')}</p>
+                    <p className="text-emerald-400/50 font-mono text-[10px] uppercase tracking-widest mt-1">Stardate: {selectedDateKey}</p>
                   </div>
                 </div>
               </div>
 
-              {/* 🛡️ 模态 1：编辑写入模式 */}
               {modalMode === "EDIT" && (
                 <form ref={formRef} className="space-y-6 relative z-10" onSubmit={(e) => { e.preventDefault(); handleSaveLog(); }}>
                   <motion.div initial={false} animate={focusStyle} transition={uiSpring} className="absolute z-0 rounded-2xl border-2 border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.6)] pointer-events-none" />
@@ -137,7 +143,7 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                     <div className="w-1/3 space-y-2 relative z-30">
                       <label className="text-[10px] text-emerald-500/60 uppercase tracking-[0.2em] ml-2">精确时间 / Time</label>
                       <div className="relative w-full">
-                        <div ref={timeInputRef} onClick={() => { setIsTimePickerOpen(true); if (timeInputRef.current) handleFocus({ target: timeInputRef.current }); }} className="w-full bg-black/40 border border-emerald-500/20 rounded-2xl px-5 py-4 text-emerald-400 font-mono shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] transition-colors cursor-pointer flex justify-between items-center relative z-10" >
+                        <div ref={timeInputRef} onClick={(e) => { setIsTimePickerOpen(true); if (timeInputRef.current) handleFocus({ target: timeInputRef.current }); }} className="w-full bg-black/40 border border-emerald-500/20 rounded-2xl px-5 py-4 text-emerald-400 font-mono shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] transition-colors cursor-pointer flex justify-between items-center relative z-10" >
                           <span className="font-bold tracking-widest">{editTime}</span>
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-emerald-500/60"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         </div>
@@ -150,13 +156,13 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                                   <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent pointer-events-none"></div>
                                   <div className="flex-1 h-full overflow-y-auto emerald-scrollbar pr-1 space-y-1 relative z-10">
                                     {Array.from({length: 24}, (_, i) => String(i).padStart(2, '0')).map(h => (
-                                      <div key={`h-${h}`} onClick={() => setEditTime(`${h}:${editTime.split(':')[1]}`)} className={`cursor-pointer py-2 text-center rounded-xl font-mono text-sm transition-all duration-300 ${editTime.split(':')[0] === h ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)] font-bold scale-105' : 'text-zinc-400 hover:bg-emerald-500/20 hover:text-emerald-300'}`} >{h}</div>
+                                      <div key={`h-${h}`} onClick={() => updateHour(h)} className={`cursor-pointer py-2 text-center rounded-xl font-mono text-sm transition-all duration-300 ${editTime.split(':')[0] === h ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)] font-bold scale-105' : 'text-zinc-400 hover:bg-emerald-500/20 hover:text-emerald-300'}`} >{h}</div>
                                     ))}
                                   </div>
                                   <div className="w-px bg-emerald-500/20 my-2 relative z-10"></div>
                                   <div className="flex-1 h-full overflow-y-auto emerald-scrollbar pl-1 pr-1 space-y-1 relative z-10">
                                     {Array.from({length: 60}, (_, i) => String(i).padStart(2, '0')).map(m => (
-                                      <div key={`m-${m}`} onClick={() => setEditTime(`${editTime.split(':')[0]}:${m}`)} className={`cursor-pointer py-2 text-center rounded-xl font-mono text-sm transition-all duration-300 ${editTime.split(':')[1] === m ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)] font-bold scale-105' : 'text-zinc-400 hover:bg-emerald-500/20 hover:text-emerald-300'}`} >{m}</div>
+                                      <div key={`m-${m}`} onClick={() => updateMinute(m)} className={`cursor-pointer py-2 text-center rounded-xl font-mono text-sm transition-all duration-300 ${editTime.split(':')[1] === m ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)] font-bold scale-105' : 'text-zinc-400 hover:bg-emerald-500/20 hover:text-emerald-300'}`} >{m}</div>
                                     ))}
                                   </div>
                                 </div>
@@ -182,7 +188,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                 </form>
               )}
 
-              {/* 🛡️ 模态 2：详情只读模式 (Markdown 渲染) */}
               {modalMode === "VIEW" && (
                 <div className="relative z-10 flex flex-col">
                   {activeLog ? (
@@ -196,8 +201,8 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                       </div>
                       
                       <div className="bg-black/40 border border-emerald-500/20 rounded-[2rem] p-6 md:p-8 shadow-[inset_0_0_40px_rgba(0,0,0,0.5)] max-h-[40vh] overflow-y-auto emerald-scrollbar">
-                        <ReactMarkdown className="text-zinc-300 text-sm md:text-base leading-relaxed break-words" components={{ h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-emerald-400 mb-4 pb-2 border-b border-emerald-500/20" {...props} />, h2: ({node, ...props}) => <h2 className="text-xl font-bold text-emerald-400/90 mt-6 mb-3" {...props} />, h3: ({node, ...props}) => <h3 className="text-lg font-bold text-emerald-400/80 mt-4 mb-2" {...props} />, p: ({node, ...props}) => <p className="mb-4 last:mb-0 leading-relaxed" {...props} />, strong: ({node, ...props}) => <strong className="text-emerald-300 font-bold" {...props} />, ul: ({node, ...props}) => <ul className="list-disc list-inside mb-4 text-zinc-300" {...props} />, ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-4 text-zinc-300" {...props} />, li: ({node, ...props}) => <li className="mb-1" {...props} />, blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-emerald-500/50 pl-4 py-2 mb-4 bg-emerald-500/5 rounded-r-lg text-emerald-200/80 italic" {...props} />, code: ({node, ...props}) => <code className="bg-emerald-500/10 text-emerald-300 px-1.5 py-0.5 rounded font-mono text-sm" {...props} />, pre: ({node, ...props}) => <pre className="bg-[#02040a]/80 p-4 rounded-xl border border-emerald-500/20 mb-4 overflow-x-auto emerald-scrollbar text-sm" {...props} />, a: ({node, ...props}) => <a className="text-emerald-400 hover:text-emerald-300 underline underline-offset-4 decoration-emerald-500/30 transition-colors" target="_blank" rel="noopener noreferrer" {...props} /> }} >
-                          {activeLog.content}
+                        <ReactMarkdown className="text-zinc-300 text-sm md:text-base leading-relaxed break-words" components={{ h1: ({node, ...p}) => <h1 className="text-2xl font-bold text-emerald-400 mb-4 pb-2 border-b border-emerald-500/20" {...p} />, h2: ({node, ...p}) => <h2 className="text-xl font-bold text-emerald-400/90 mt-6 mb-3" {...p} />, h3: ({node, ...p}) => <h3 className="text-lg font-bold text-emerald-400/80 mt-4 mb-2" {...p} />, p: ({node, ...p}) => <p className="mb-4 last:mb-0 leading-relaxed" {...p} />, strong: ({node, ...p}) => <strong className="text-emerald-300 font-bold" {...p} />, ul: ({node, ...p}) => <ul className="list-disc list-inside mb-4 text-zinc-300" {...p} />, ol: ({node, ...p}) => <ol className="list-decimal list-inside mb-4 text-zinc-300" {...p} />, li: ({node, ...p}) => <li className="mb-1" {...p} />, blockquote: ({node, ...p}) => <blockquote className="border-l-4 border-emerald-500/50 pl-4 py-2 mb-4 bg-emerald-500/5 rounded-r-lg text-emerald-200/80 italic" {...p} />, code: ({node, ...p}) => <code className="bg-emerald-500/10 text-emerald-300 px-1.5 py-0.5 rounded font-mono text-sm" {...p} />, pre: ({node, ...p}) => <pre className="bg-[#02040a]/80 p-4 rounded-xl border border-emerald-500/20 mb-4 overflow-x-auto emerald-scrollbar text-sm" {...p} />, a: ({node, ...p}) => <a className="text-emerald-400 hover:text-emerald-300 underline underline-offset-4 decoration-emerald-500/30 transition-colors" target="_blank" rel="noopener noreferrer" {...p} /> }} >
+                          {activeLog.content || ""}
                         </ReactMarkdown>
                       </div>
                     </>
@@ -212,7 +217,7 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                   <div className="flex gap-4 pt-8 mt-6 border-t border-emerald-500/10">
                     <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 font-bold tracking-widest text-[10px] hover:text-white hover:bg-white/10 transition-all active:scale-95">关闭档案</button>
                     
-                    {/* 🚀 核心修复：将一键清除按钮提权到外层，让舰长/管理员随时可以纠错删除 */}
+                    {/* 🚀 一键清除按钮提权：舰长/管理员在外部即可直接销毁日志 */}
                     {isManager && activeLog && (
                       <button type="button" onClick={handleClearLog} className="flex-1 py-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 font-bold tracking-widest text-[10px] hover:bg-red-500 hover:text-white transition-all shadow-[0_0_20px_rgba(239,68,68,0.2)] active:scale-95 flex items-center justify-center gap-2">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -240,7 +245,7 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
     <>
       <div className="relative h-full flex flex-col" style={{ perspective: "1500px" }}>
         
-        {/* 🚀 顶栏重构：灵动量子岛设计 (Dynamic Quantum Island) */}
+        {/* 🚀 顶栏：灵动量子岛设计 */}
         <div className="flex items-center justify-between mb-8 px-2 relative z-20">
           <div className="flex flex-col">
             <div className="flex items-center gap-3 mb-1">
@@ -252,29 +257,29 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
             </h2>
           </div>
 
-          {/* 🚀 灵动岛：融为一体的控制胶囊 */}
-          <motion.div layout className="flex items-center bg-[#02040a]/60 border border-emerald-500/20 p-1.5 rounded-2xl backdrop-blur-xl shadow-[0_0_20px_rgba(16,185,129,0.1)]">
-            <AnimatePresence mode="popLayout">
+          {/* 🚀 极其稳定的宽度遮罩动画，抛弃危险的 layout 属性 */}
+          <div className="flex items-center bg-[#02040a]/60 border border-emerald-500/20 p-1.5 rounded-2xl backdrop-blur-xl shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+            <AnimatePresence>
               {!isFlipped && (
                 <motion.div 
-                  initial={{ opacity: 0, width: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, width: "auto", scale: 1 }}
-                  exit={{ opacity: 0, width: 0, scale: 0.8 }}
-                  transition={uiSpring}
-                  className="flex items-center overflow-hidden"
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: 100 }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  className="flex items-center overflow-hidden whitespace-nowrap"
                 >
-                  <button onClick={() => setViewDate(new Date(year, month - 1))} className="w-8 h-8 flex items-center justify-center hover:bg-emerald-500/20 rounded-xl transition-all text-emerald-500 hover:text-emerald-300">◀</button>
-                  <div className="px-3 text-xs font-mono font-bold text-emerald-400 tracking-widest whitespace-nowrap">{year}-{String(month+1).padStart(2,'0')}</div>
-                  <button onClick={() => setViewDate(new Date(year, month + 1))} className="w-8 h-8 flex items-center justify-center hover:bg-emerald-500/20 rounded-xl transition-all text-emerald-500 hover:text-emerald-300">▶</button>
-                  <div className="w-px h-5 bg-emerald-500/20 mx-2"></div>
+                  <button onClick={() => setViewDate(new Date(year, month - 1))} className="w-7 h-7 flex items-center justify-center hover:bg-emerald-500/20 rounded-xl transition-all text-emerald-500 hover:text-emerald-300">◀</button>
+                  <div className="flex-1 text-center text-[10px] font-mono font-bold text-emerald-400 tracking-widest">{year}-{String(month+1).padStart(2,'0')}</div>
+                  <button onClick={() => setViewDate(new Date(year, month + 1))} className="w-7 h-7 flex items-center justify-center hover:bg-emerald-500/20 rounded-xl transition-all text-emerald-500 hover:text-emerald-300">▶</button>
+                  <div className="w-px h-4 bg-emerald-500/20 mx-2 shrink-0"></div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* 3D 翻转触发器：量子脉冲核心 */}
+            {/* 3D 翻转触发器 */}
             <button 
               onClick={() => setIsFlipped(!isFlipped)}
-              className={`group relative w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 ${isFlipped ? 'bg-emerald-500 text-black' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}`}
+              className={`group relative w-8 h-8 shrink-0 rounded-xl flex items-center justify-center transition-all duration-300 ${isFlipped ? 'bg-emerald-500 text-black' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}`}
             >
               {!isFlipped && <div className="absolute inset-[-4px] rounded-[14px] border border-emerald-500/30 opacity-0 group-hover:opacity-100 animate-[ping_2s_infinite]"></div>}
               <motion.div animate={{ rotate: isFlipped ? 180 : 0 }} transition={uiSpring}>
@@ -285,13 +290,14 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                 )}
               </motion.div>
             </button>
-          </motion.div>
+          </div>
         </div>
 
-        {/* 🚀 核心翻转容器 */}
-        <motion.div animate={{ rotateY: isFlipped ? 180 : 0 }} transition={flipSpring} style={{ transformStyle: "preserve-3d" }} className="relative flex-1">
-          {/* 正面：全息日历卡片 */}
-          <div className="absolute inset-0 backface-hidden z-10 flex flex-col" style={{ backfaceVisibility: "hidden" }}>
+        {/* 🚀 核心 3D 翻转容器修复版 */}
+        <motion.div animate={{ rotateY: isFlipped ? 180 : 0 }} transition={flipSpring} style={{ transformStyle: "preserve-3d" }} className="relative flex-1 w-full h-full">
+          
+          {/* 正面：全息日历卡片 (强制硬件加速解决透视 BUG) */}
+          <div className="absolute inset-0 flex flex-col" style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", zIndex: isFlipped ? 0 : 10 }}>
              <div className="flex-1 flex flex-col bg-[#02040a]/40 border border-white/5 rounded-[2rem] p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)]">
                 <div className="grid grid-cols-7 gap-2 mb-4 border-b border-white/5 pb-4">
                   {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => <div key={d} className="text-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest">{d}</div>)}
@@ -300,7 +306,7 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                   {blanks.map(i => <div key={`b-${i}`} className="aspect-square" />)}
                   {days.map(day => {
                     const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
-                    const hasLog = !!logs[getDateKey(day)];
+                    const hasLog = !!logs[getDateKey(year, month, day)];
                     return (
                       <motion.div key={day} onClick={() => handleDayClick(day)} whileHover={{ scale: 1.2, zIndex: 20 }} transition={uiSpring} className={`cursor-pointer aspect-square rounded-2xl flex flex-col items-center justify-center relative transition-colors duration-300 ${isToday ? "bg-emerald-500/20 border border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.3)] text-white" : "bg-white/[0.02] border border-white/5 text-zinc-400 hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-300"}`} >
                         {isToday && <div className="absolute inset-0 rounded-2xl border-2 border-emerald-400 opacity-50 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]"></div>}
@@ -313,8 +319,8 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
              </div>
           </div>
 
-          {/* 背面：档案全集列表 (统一高度 + 内部滚动) */}
-          <div className="absolute inset-0 backface-hidden z-20 flex flex-col" style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden" }}>
+          {/* 背面：档案全集列表 */}
+          <div className="absolute inset-0 flex flex-col" style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", zIndex: isFlipped ? 10 : 0 }}>
              <div className="flex-1 flex flex-col bg-[#02040a]/60 border border-emerald-500/20 rounded-[2rem] p-6 shadow-[inset_0_0_50px_rgba(16,185,129,0.1)] overflow-hidden">
                 <div className="flex items-center justify-between mb-4 border-b border-emerald-500/10 pb-3">
                   <span className="text-[10px] font-mono text-emerald-400/60 uppercase tracking-[0.2em]">Stored Archives: {Object.keys(logs).length}</span>
@@ -343,6 +349,7 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                 </div>
              </div>
           </div>
+
         </motion.div>
       </div>
       {mounted && createPortal(modalContent, document.body)}
