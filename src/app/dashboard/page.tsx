@@ -8,6 +8,8 @@ import { TransitionLink } from "@/components/transition-link"
 import { BroadcastCard } from "@/components/broadcast-card"
 import { CreateBroadcastModal } from "@/components/create-broadcast-modal"
 import { DashboardClock } from "@/components/dashboard-clock"
+// 🚀 引入全新的航行日志日历组件
+import { FlightLogCalendar } from "@/components/flight-log-calendar"
 
 const THEME_MAP = {
   blue: {
@@ -85,7 +87,7 @@ export default async function DashboardPage() {
     orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }]
   })
 
-  // 🛡️ 状态 1：拦截器逻辑
+  // 🛡️ 状态 1：拦截器逻辑 (省略，保持不变)
   if (!isCaptain && isProfileIncomplete) {
     return (
       <main className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -129,7 +131,7 @@ export default async function DashboardPage() {
     )
   }
 
-  // 🛡️ 状态 2：拦截器逻辑
+  // 🛡️ 状态 2：拦截器逻辑 (省略，保持不变)
   if (!isCaptain && dbUser.role === "PENDING") {
     return (
       <main className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -227,46 +229,57 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="relative z-10 w-full rounded-[3.5rem] border border-blue-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-[0_0_100px_rgba(59,130,246,0.1)] flex flex-col">
+      {/* ================= 🚀 核心重构：双子星 3:2 分栏布局 ================= */}
+      <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mt-4">
         
-        <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[#0a0d1a]/80 border border-blue-500/30 rounded-3xl p-6 lg:px-10 lg:py-6 mb-8 overflow-hidden shadow-[inset_0_0_30px_rgba(59,130,246,0.1)]">
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(59,130,246,0.15),transparent)] bg-[length:200%_100%] animate-[shimmer-seamless_4s_linear_infinite] pointer-events-none"></div>
+        {/* 1. 左侧：全舰公告大屏 (缩小至 2/3 宽度) */}
+        <div className="lg:col-span-2 rounded-[3.5rem] border border-blue-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-[0_0_100px_rgba(59,130,246,0.1)] flex flex-col h-full">
           
-          <div className="flex items-center gap-5 relative z-10">
-            <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.2)]">
-              <span className="text-2xl animate-[pulse-slow_3s_infinite]">📢</span>
-            </div>
-            <div>
-              <h2 className="text-2xl lg:text-3xl font-bold tracking-[0.2em] text-white font-[family-name:var(--font-space)] drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">全舰公告大屏</h2>
-              <p className="text-blue-400/60 font-mono text-[10px] uppercase tracking-widest mt-1">Live Fleet-wide Broadcast System</p>
-            </div>
-          </div>
-
-          <div className="relative z-10">
-            {isManager && <CreateBroadcastModal />}
-          </div>
-        </div>
-
-        {/* 🚀 核心修复 3：移除容器的 p-4，并在内部滚动区使用 px-4，为卡片放大留出左右的安全呼吸边界，避免被父级切掉 */}
-        <div className="relative bg-[#02040a]/40 border border-white/5 rounded-[2rem] shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] overflow-hidden">
-          <div className="flex flex-col gap-4 h-[380px] overflow-y-auto ios-scrollbar px-4 lg:px-8 pt-6 pb-24 relative z-10">
-            {broadcasts.length > 0 ? (
-              broadcasts.map(item => <BroadcastCard key={item.id} announcement={item} isManager={isManager} />)
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600 font-mono tracking-widest italic">
-                <span className="text-4xl mb-4 opacity-20">📡</span>
-                <span>暂未接收到任何深空广播信号...</span>
+          <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[#0a0d1a]/80 border border-blue-500/30 rounded-3xl p-6 lg:px-10 lg:py-6 mb-8 overflow-hidden shadow-[inset_0_0_30px_rgba(59,130,246,0.1)]">
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(59,130,246,0.15),transparent)] bg-[length:200%_100%] animate-[shimmer-seamless_4s_linear_infinite] pointer-events-none"></div>
+            
+            <div className="flex items-center gap-5 relative z-10">
+              <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+                <span className="text-2xl animate-[pulse-slow_3s_infinite]">📢</span>
               </div>
+              <div>
+                <h2 className="text-2xl lg:text-3xl font-bold tracking-[0.2em] text-white font-[family-name:var(--font-space)] drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">全舰公告大屏</h2>
+                <p className="text-blue-400/60 font-mono text-[10px] uppercase tracking-widest mt-1">Live Fleet-wide Broadcast</p>
+              </div>
+            </div>
+
+            <div className="relative z-10">
+              {isManager && <CreateBroadcastModal />}
+            </div>
+          </div>
+
+          <div className="relative flex-1 min-h-[380px] bg-[#02040a]/40 border border-white/5 rounded-[2rem] shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col">
+            <div className="flex flex-col gap-4 flex-1 overflow-y-auto ios-scrollbar px-4 lg:px-8 pt-6 pb-24 relative z-10">
+              {broadcasts.length > 0 ? (
+                broadcasts.map(item => <BroadcastCard key={item.id} announcement={item} isManager={isManager} />)
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600 font-mono tracking-widest italic">
+                  <span className="text-4xl mb-4 opacity-20">📡</span>
+                  <span>暂未接收到任何深空广播信号...</span>
+                </div>
+              )}
+            </div>
+            
+            {broadcasts.length > 3 && (
+              <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-[#060813] via-[#060813]/80 to-transparent pointer-events-none rounded-b-[2rem] z-20"></div>
             )}
           </div>
-          
-          {broadcasts.length > 3 && (
-            <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-[#060813] via-[#060813]/80 to-transparent pointer-events-none rounded-b-[2rem] z-20"></div>
-          )}
         </div>
+
+        {/* 2. 右侧：航行日志 (占宽 1/3，通过 items-stretch 保持高度一致) */}
+        <div className="lg:col-span-1 rounded-[3.5rem] border border-emerald-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-[0_0_100px_rgba(16,185,129,0.15)] flex flex-col h-full relative overflow-hidden group">
+          <div className="absolute inset-0 bg-emerald-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+          <FlightLogCalendar />
+        </div>
+
       </div>
 
-      <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col gap-12 mt-6">
+      <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col gap-12 mt-12">
         <div className="flex items-center gap-4 opacity-40 mb-2">
           <div className="h-px bg-white/20 flex-1"></div>
           <span className="text-[10px] font-mono uppercase tracking-[0.5em] text-white">System Modules</span>
