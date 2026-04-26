@@ -123,7 +123,7 @@ function RealisticEarth({ scrollProgressRef }: { scrollProgressRef: React.Mutabl
 // ==========================================
 // 🚀 核心更新：引入四大剧本数组
 // ==========================================
-const SCRIPT_NAMES = ["默认航线", "星际穿越", "轨道空降", "深空苏醒"];
+const SCRIPT_NAMES = ["默认航线", "边缘掠阵", "高轨侦察", "深空环绕"];
 const SCRIPTS = [
   // 剧本 0: 默认航线
   [
@@ -132,26 +132,31 @@ const SCRIPTS = [
     { progress: 0.65, pos: new THREE.Vector3(-600, 1200, 800), lookAt: new THREE.Vector3(0, 50, -200) },
     { progress: 1.0, pos: new THREE.Vector3(0, 2000, 1700), lookAt: new THREE.Vector3(0, 0, 0) }
   ],
-  // 剧本 1: 星际穿越 (史诗感大弧线)
+// 剧本 1: 边缘掠阵 (史诗感大弧线，巨物擦肩而过)
+  // 运镜特色：从正前方远景切入，向左侧大角度滑行，最后从后方高处脱离。始终保持在 2500 以上的安全距离。
   [
-    { progress: 0.0, pos: new THREE.Vector3(0, 100, 4000), lookAt: new THREE.Vector3(0, 0, 0) },
-    { progress: 0.30, pos: new THREE.Vector3(-2500, 400, 1500), lookAt: new THREE.Vector3(0, 0, 0) },
-    { progress: 0.65, pos: new THREE.Vector3(-300, 10, 500), lookAt: new THREE.Vector3(1000, 0, -1000) },
-    { progress: 1.0, pos: new THREE.Vector3(800, 200, -2000), lookAt: new THREE.Vector3(0, 0, 0) }
+    { progress: 0.0, pos: new THREE.Vector3(0, 800, 4500), lookAt: new THREE.Vector3(0, 0, 0) },
+    { progress: 0.35, pos: new THREE.Vector3(-3500, 1200, 2000), lookAt: new THREE.Vector3(0, 200, 0) },
+    { progress: 0.70, pos: new THREE.Vector3(-2500, 400, -1500), lookAt: new THREE.Vector3(1000, 0, 0) }, // 视线偏离中心，看向右侧，营造掠过感
+    { progress: 1.0, pos: new THREE.Vector3(1500, 1500, -3800), lookAt: new THREE.Vector3(0, 0, 0) }
   ],
-  // 剧本 2: 轨道空降 (紧张坠落感)
+  
+  // 剧本 2: 高轨侦察 (上帝视角，平滑俯瞰)
+  // 运镜特色：始终保持在高空，像卫星一样在核心区上方划过一道优美的抛物线，绝对不进入杂乱的中低空。
   [
-    { progress: 0.0, pos: new THREE.Vector3(0, 3500, 0), lookAt: new THREE.Vector3(0, 0, 0) },
-    { progress: 0.40, pos: new THREE.Vector3(1500, 1200, 1500), lookAt: new THREE.Vector3(0, 0, 0) },
-    { progress: 0.70, pos: new THREE.Vector3(0, 150, 800), lookAt: new THREE.Vector3(0, 400, -1000) },
-    { progress: 1.0, pos: new THREE.Vector3(-800, -300, 1200), lookAt: new THREE.Vector3(0, 100, 0) }
+    { progress: 0.0, pos: new THREE.Vector3(2000, 3800, 2500), lookAt: new THREE.Vector3(0, 0, 0) },
+    { progress: 0.40, pos: new THREE.Vector3(-1500, 3000, 2000), lookAt: new THREE.Vector3(0, -500, 0) }, // 微微低头
+    { progress: 0.75, pos: new THREE.Vector3(-3500, 2000, -500), lookAt: new THREE.Vector3(0, 0, 0) },
+    { progress: 1.0, pos: new THREE.Vector3(-2000, 2500, -3500), lookAt: new THREE.Vector3(0, 0, 0) }
   ],
-  // 剧本 3: 深空苏醒 (悬疑推进)
+  
+  // 剧本 3: 深空环绕 (电影级长镜头，缓慢且深邃)
+  // 运镜特色：在极远的距离（半径 3500+）进行极其平滑的半圆形轨道环绕，视线始终锁定核心，展现宏伟全景。
   [
-    { progress: 0.0, pos: new THREE.Vector3(2000, 500, 3000), lookAt: new THREE.Vector3(4000, 1000, 0) },
-    { progress: 0.35, pos: new THREE.Vector3(1200, 200, 2500), lookAt: new THREE.Vector3(0, 0, 0) },
-    { progress: 0.75, pos: new THREE.Vector3(200, 50, 600), lookAt: new THREE.Vector3(0, 0, 0) },
-    { progress: 1.0, pos: new THREE.Vector3(0, 0, 200), lookAt: new THREE.Vector3(0, 0, -2000) }
+    { progress: 0.0, pos: new THREE.Vector3(4000, 500, 1000), lookAt: new THREE.Vector3(0, 0, 0) },
+    { progress: 0.35, pos: new THREE.Vector3(3000, 800, 3000), lookAt: new THREE.Vector3(0, 200, 0) },
+    { progress: 0.70, pos: new THREE.Vector3(0, 600, 4000), lookAt: new THREE.Vector3(0, 0, 0) },
+    { progress: 1.0, pos: new THREE.Vector3(-3500, 400, 2500), lookAt: new THREE.Vector3(0, -200, 0) } // 结尾微微压低视线，留出深空余韵
   ]
 ];
 
