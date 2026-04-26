@@ -92,6 +92,9 @@ model User {
   sessions      Session[]
   attendances   Attendance[]
   leaveRequests LeaveRequest[]
+
+  // 🚀 新增：该船员发布的公告列表
+  announcements Announcement[]
 }
 
 // ==========================================
@@ -137,4 +140,20 @@ model Bookmark {
   url         String
   description String?
   createdAt   DateTime @default(now())
+}
+
+// ==========================================
+// 📢 模块 A：全舰公告大屏 (Broadcast System)
+// ==========================================
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String   // 广播标题
+  content   String   @db.Text // 广播内容 (支持长文本)
+  type      String   // 广播级别: "INFO"(日常) | "UPDATE"(更新) | "ALERT"(警报)
+  
+  authorId  String   // 发布者ID
+  createdAt DateTime @default(now())
+
+  // 关系映射：谁发布了这条公告
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
 }
