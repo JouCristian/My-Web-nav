@@ -4,29 +4,61 @@ import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { updateRecruitProfile, revokeRecruitProfile } from "@/app/actions"
 import Link from "next/link"
-// 🚀 引入跃迁连接器
 import { TransitionLink } from "@/components/transition-link"
 
-const ModuleCard = ({ moduleId, title, subtitle, icon, link, isActive }: {
-  moduleId: string; title: string; subtitle: string; icon: string; link: string; isActive: boolean;
+// 🚀 顶级设计师调参：阵营色彩光谱映射 (Color Theme Mapping)
+const THEME_MAP = {
+  blue: {
+    border: "border-blue-500/20 hover:border-blue-500/60",
+    shadow: "shadow-[0_0_40px_rgba(59,130,246,0.1)]",
+    blob: "bg-blue-500/10 group-hover:bg-blue-500/25",
+    iconBox: "bg-blue-500/10 border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.15)] group-hover:bg-blue-500/20",
+    subtitle: "text-blue-200/40",
+    activeText: "text-blue-400"
+  },
+  purple: {
+    border: "border-purple-500/20 hover:border-purple-500/60",
+    shadow: "shadow-[0_0_40px_rgba(168,85,247,0.1)]",
+    blob: "bg-purple-500/10 group-hover:bg-purple-500/25",
+    iconBox: "bg-purple-500/10 border-purple-500/20 shadow-[0_0_20px_rgba(168,85,247,0.15)] group-hover:bg-purple-500/20",
+    subtitle: "text-purple-200/40",
+    activeText: "text-purple-400"
+  },
+  yellow: {
+    border: "border-yellow-500/20 hover:border-yellow-500/60",
+    shadow: "shadow-[0_0_40px_rgba(234,179,8,0.1)]",
+    blob: "bg-yellow-500/10 group-hover:bg-yellow-500/25",
+    iconBox: "bg-yellow-500/10 border-yellow-500/20 shadow-[0_0_20px_rgba(234,179,8,0.15)] group-hover:bg-yellow-500/20",
+    subtitle: "text-yellow-200/40",
+    activeText: "text-yellow-400"
+  }
+}
+
+const ModuleCard = ({ moduleId, title, subtitle, icon, link, isActive, theme = "purple" }: {
+  moduleId: string; title: string; subtitle: string; icon: string; link: string; isActive: boolean; theme?: "blue" | "purple" | "yellow"
 }) => {
+  const styles = THEME_MAP[theme];
+
   return (
     <Link 
       href={isActive ? link : "#"} 
-      className={`group relative h-80 rounded-[3rem] border border-purple-500/20 bg-[#06060a]/95 p-10 flex flex-col justify-between overflow-hidden transition-all duration-500 hover:border-purple-500/60 active:scale-[0.97] ${isActive ? 'animate-module-card shadow-[0_0_40px_rgba(168,85,247,0.05)]' : 'opacity-60 grayscale'}`}
+      className={`group relative h-80 rounded-[3rem] border ${styles.border} bg-[#06060a]/95 p-10 flex flex-col justify-between overflow-hidden transition-all duration-500 active:scale-[0.97] ${isActive ? `animate-module-card ${styles.shadow}` : 'opacity-60 grayscale'}`}
     >
-      <div className="absolute inset-0 animate-purple-flow opacity-40 group-hover:opacity-100 transition-opacity duration-700"></div>
-      <div className="absolute -top-20 -right-20 w-48 h-48 bg-purple-500/10 blur-[60px] rounded-full group-hover:bg-purple-500/25 transition-all duration-700"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-40 group-hover:opacity-100 transition-opacity duration-700"></div>
+      
+      {/* 非线性模糊能量球 */}
+      <div className={`absolute -top-20 -right-20 w-48 h-48 blur-[60px] rounded-full transition-all duration-700 ${styles.blob}`}></div>
+      
       <div className="relative z-10">
-        <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-8 text-3xl shadow-[0_0_20px_rgba(168,85,247,0.1)] group-hover:scale-110 group-hover:bg-purple-500/20 transition-all duration-500">
+        <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center mb-8 text-3xl group-hover:scale-110 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${styles.iconBox}`}>
           {icon}
         </div>
         <h3 className="text-2xl font-bold text-white tracking-[0.15em] font-[family-name:var(--font-space)] mb-3">{title}</h3>
-        <p className="text-sm text-purple-200/40 font-mono tracking-widest leading-relaxed">{subtitle}</p>
+        <p className={`text-sm font-mono tracking-widest leading-relaxed ${styles.subtitle}`}>{subtitle}</p>
       </div>
-      <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-purple-400/40 uppercase tracking-[0.3em] border-t border-white/5 pt-6">
+      <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-zinc-500 uppercase tracking-[0.3em] border-t border-white/5 pt-6">
         <span>{moduleId}</span>
-        <span className={`flex items-center gap-2 transition-all duration-500 ${isActive ? 'text-purple-400 group-hover:gap-4' : 'text-zinc-700'}`}>
+        <span className={`flex items-center gap-2 transition-all duration-500 ${isActive ? `${styles.activeText} group-hover:gap-4` : 'text-zinc-700'}`}>
           {isActive ? 'Authorize Access' : 'System Locked'}
           <span className="text-lg">➔</span>
         </span>
@@ -48,19 +80,13 @@ export default async function DashboardPage() {
   const isCaptain = session.user.isCaptain;
   const isProfileIncomplete = !dbUser.realName || !dbUser.studentId;
 
-  // ==========================================
-  // 🚨 拦截器：状态 1 (新兵无档案，防爆门拦截)
-  // ==========================================
+  // ... 拦截器状态1 代码保持不变 ...
   if (!isCaptain && isProfileIncomplete) {
     return (
       <main className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
-        
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-red-500/5 -rotate-12 blur-[100px] pointer-events-none animate-pulse"></div>
-
         <div className="relative z-10 w-full max-w-lg">
-          
           <div className="flex justify-end mb-6">
-            {/* 🚀 升级为 TransitionLink */}
             <TransitionLink href="/" className="group flex items-center gap-4 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-red-500/30 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
               <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-red-500/20 transition-colors">
                 <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.8)]" />
@@ -93,20 +119,16 @@ export default async function DashboardPage() {
               <button type="submit" className="w-full bg-red-500/20 border border-red-500/50 text-red-400 font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-white transition-all tracking-[0.3em]">提交建档</button>
             </form>
           </div>
-
         </div>
       </main>
     )
   }
 
-  // ==========================================
-  // ⏳ 拦截器：状态 2 (档案审核中：量子审核舱 UI)
-  // ==========================================
+  // ... 拦截器状态2 代码保持不变 ...
   if (!isCaptain && dbUser.role === "PENDING") {
     return (
       <main className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[400px] bg-blue-500/5 -rotate-12 blur-[120px] pointer-events-none"></div>
-
         <div className="relative z-10 w-full max-w-2xl bg-[#06060a]/90 border border-blue-500/20 p-10 md:p-16 rounded-[3.5rem] backdrop-blur-2xl shadow-[0_0_80px_rgba(59,130,246,0.1)] text-center animate-module-card">
           <div className="relative w-24 h-24 mx-auto mb-10">
             <div className="absolute inset-0 rounded-full border-2 border-blue-500/20"></div>
@@ -117,12 +139,9 @@ export default async function DashboardPage() {
               </svg>
             </div>
           </div>
-
           <h2 className="text-3xl font-bold text-white tracking-[0.2em] font-[family-name:var(--font-space)] mb-4">档案同步审核中</h2>
           <p className="text-zinc-500 font-mono text-sm tracking-widest uppercase mb-12">Awaiting Command Clearance...</p>
-
           <div className="flex justify-center mb-16">
-            {/* 🚀 升级为 TransitionLink */}
             <TransitionLink href="/" className="group flex items-center gap-4 bg-black/40 px-8 py-4 rounded-2xl border border-white/10 hover:border-blue-500/30 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
               <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/20 transition-colors">
                 <div className="w-3 h-3 rounded-full bg-blue-400 animate-pulse shadow-[0_0_15px_rgba(96,165,250,0.8)]" />
@@ -134,7 +153,6 @@ export default async function DashboardPage() {
               </div>
             </TransitionLink>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-white/5 pt-10">
             <Link href="/contact" className="flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold hover:bg-emerald-500 hover:text-white transition-all text-sm tracking-widest">
               <span>联系舰长加速审核 ✅</span>
@@ -166,8 +184,7 @@ export default async function DashboardPage() {
           </h1>
         </div>
 
-        {/* 🚀 升级为 TransitionLink */}
-        <TransitionLink href="/" className="group flex items-center gap-4 bg-black/40 px-6 py-4 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+        <TransitionLink href="/" className="group flex items-center gap-4 bg-black/40 px-6 py-4 rounded-2xl border border-white/10 backdrop-blur-md hover:border-white/30 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
           <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/20 transition-colors">
             <div className="w-3 h-3 rounded-full bg-blue-400 animate-pulse shadow-[0_0_15px_rgba(96,165,250,0.8)]" />
             <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
@@ -180,9 +197,14 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-        <ModuleCard moduleId="Module A" title="公告大屏" subtitle="Fleet-wide Broadcast System" icon="📢" link="/dashboard/board" isActive={true} />
-        <ModuleCard moduleId="Module B" title="船员档案室" subtitle="Starship Crew Database" icon="👥" link="/dashboard/crew" isActive={true} />
-        <ModuleCard moduleId="Module C" title="跃迁集结" subtitle="Attendance & Leave Requests" icon="⏳" link="/dashboard/attendance" isActive={true} />
+        {/* 🌌 星光蓝 (Starlight Blue) */}
+        <ModuleCard moduleId="Module A" title="公告大屏" subtitle="Fleet-wide Broadcast System" icon="📢" link="/dashboard/board" isActive={true} theme="blue" />
+        
+        {/* 🟣 紫微星 (Nebula Purple) */}
+        <ModuleCard moduleId="Module B" title="船员档案室" subtitle="Starship Crew Database" icon="👥" link="/dashboard/crew" isActive={true} theme="purple" />
+        
+        {/* ☀️ 日冕金 (Corona Gold) */}
+        <ModuleCard moduleId="Module C" title="跃迁集结" subtitle="Attendance & Leave Requests" icon="⏳" link="/dashboard/attendance" isActive={true} theme="yellow" />
       </div>
 
       <div className="mt-auto flex justify-between items-center opacity-20 pointer-events-none border-t border-white/5 pt-8">
