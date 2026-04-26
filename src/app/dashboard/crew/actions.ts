@@ -52,3 +52,26 @@ export async function expelUser(userId: string) {
 
   revalidatePath("/dashboard/crew")
 }
+// 🚀 4. 任命/撤销管理员：舰长专属特权
+export async function toggleAdminRole(userId: string, makeAdmin: boolean) {
+  const session = await auth()
+  if (!session?.user?.email) throw new Error("Unauthorized")
+
+  const currentUser = await prisma.user.findUnique({ where: { email: session.user.email } })
+  // 🛡️ 绝对安全锁：只有舰长本人可以进行此操作
+  if (currentUser?.role !== "OWNER") {
+    throw new Error("Access Denied: 只有最高指挥官可以任命管理员")
+  }
+
+  const targetUser = await prisma.user.findUnique({ where: { id: userId } })
+  if (!targetUser) throw new Error("Target missing")
+  if (targetUser.role === "OWNER") throw new Error("Cannot modify OWNER role")
+
+  // 执行神级权限重写
+  await prisma.user.update({
+    where: { id: userId },
+    data: { role: makeAdmin ? "ADMIN" : "MEMBER" }
+  })
+
+  revalidatePath("/dashboard/crew")
+}
