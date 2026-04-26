@@ -180,9 +180,9 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-        <ModuleCard moduleId="Module A" title="公告大屏" subtitle="Fleet-wide Broadcast System" icon="📢" link="/dashboard/board" isActive={false} />
+        <ModuleCard moduleId="Module A" title="公告大屏" subtitle="Fleet-wide Broadcast System" icon="📢" link="/dashboard/board" isActive={true} />
         <ModuleCard moduleId="Module B" title="船员档案室" subtitle="Starship Crew Database" icon="👥" link="/dashboard/crew" isActive={true} />
-        <ModuleCard moduleId="Module C" title="跃迁集结" subtitle="Attendance & Leave Requests" icon="⏳" link="/dashboard/attendance" isActive={false} />
+        <ModuleCard moduleId="Module C" title="跃迁集结" subtitle="Attendance & Leave Requests" icon="⏳" link="/dashboard/attendance" isActive={true} />
       </div>
 
       <div className="mt-auto flex justify-between items-center opacity-20 pointer-events-none border-t border-white/5 pt-8">
