@@ -83,11 +83,16 @@ export async function revokeRecruitProfile() {
 export async function deleteBroadcast(id: string) {
   const session = await auth()
   const user = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
-  if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("权限不足")
-
-  await prisma.announcement.delete({ where: { id } })
   
-  // 必须刷新 /dashboard 路径
+  if (user?.role !== "OWNER" && user?.role !== "ADMIN") {
+    throw new Error("权限不足：非法操作指挥序列")
+  }
+
+  await prisma.announcement.delete({
+    where: { id }
+  })
+
+  // 🚀 核心修复：刷新当前主中枢路径，彻底解决崩溃问题
   revalidatePath("/dashboard") 
 }
 
