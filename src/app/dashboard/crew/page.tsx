@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { CrewActionButtons } from "@/components/crew-action-buttons"
-import { RemoveCrewButton } from "@/components/remove-crew-button" // 🚀 引入驱逐武器
+import { RemoveCrewButton } from "@/components/remove-crew-button"
 
 export default async function CrewArchivesPage() {
   const session = await auth()
@@ -32,9 +32,29 @@ export default async function CrewArchivesPage() {
 
   return (
     <main className="min-h-screen bg-transparent p-6 md:p-10 text-white relative overflow-hidden">
+      {/* 🚀 注入全舰统一的交互引擎样式 */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-        .hover-glow:hover { box-shadow: 0 0 40px -10px rgba(59, 130, 246, 0.2); }
+        
+        /* 按钮整体的非线性呼吸 */
+        @keyframes button-breathe {
+          0%, 100% { transform: scale(1); border-color: rgba(255, 255, 255, 0.1); }
+          50% { transform: scale(1.02); border-color: rgba(168, 85, 247, 0.3); }
+        }
+
+        /* 核心紫色点的能量脉冲 */
+        @keyframes core-pulse {
+          0%, 100% { transform: scale(1); box-shadow: 0 0 12px rgba(168, 85, 247, 0.8); }
+          50% { transform: scale(1.3); box-shadow: 0 0 24px rgba(168, 85, 247, 1); }
+        }
+
+        .animate-button-breathe {
+          animation: button-breathe 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
+        .animate-core-pulse {
+          animation: core-pulse 2s ease-in-out infinite;
+        }
       `}} />
 
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[400px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none"></div>
@@ -52,15 +72,21 @@ export default async function CrewArchivesPage() {
             <h1 className="text-3xl md:text-4xl font-bold tracking-[0.2em] font-[family-name:var(--font-space)] text-white">船员档案室</h1>
           </div>
           
-          <Link href="/dashboard" className="group flex items-center gap-3 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md hover:border-purple-500/30 transition-all active:scale-95">
-            <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-purple-500/20 transition-colors">
-              <div className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse shadow-[0_0_12px_rgba(192,132,252,0.8)]" />
-            </div>
-            <div className="flex flex-col items-start text-left">
-              <span className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-mono group-hover:text-purple-400 transition-colors">Return</span>
-              <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">返回中枢</span>
-            </div>
-          </Link>
+          <div className="flex flex-wrap gap-4">
+            {/* 🚀 升级版「返回中枢」：注入呼吸与核心脉冲 */}
+            <Link href="/dashboard" className="animate-button-breathe group flex items-center gap-4 bg-black/60 px-6 py-3.5 rounded-2xl border border-white/10 backdrop-blur-md hover:border-purple-500/50 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.3)]">
+              <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-purple-500/20 transition-colors overflow-hidden">
+                {/* 紫色能量点 */}
+                <div className="animate-core-pulse w-2.5 h-2.5 rounded-full bg-purple-400" />
+                {/* 环绕光圈 */}
+                <div className="absolute inset-0 rounded-full border border-purple-500/30 animate-[ping_3s_infinite]" />
+              </div>
+              <div className="flex flex-col items-start text-left">
+                <span className="text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-mono group-hover:text-purple-400 transition-colors">Return</span>
+                <span className="text-base font-bold text-white tracking-[0.15em] font-[family-name:var(--font-space)]">返回中枢</span>
+              </div>
+            </Link>
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -114,10 +140,15 @@ export default async function CrewArchivesPage() {
                   {isManager && isPending ? (
                     <CrewActionButtons userId={user.id} realName={user.realName || "未知新兵"} />
                   ) : (
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-8">
                       {!isPending && (
                         user.feishuLink ? (
-                          <a href={user.feishuLink} target="_blank" rel="noopener noreferrer" className="group/fs relative flex items-center gap-3 bg-[#060813]/60 border border-teal-500/30 px-5 py-2.5 rounded-xl shrink-0 overflow-hidden transition-all duration-500 hover:border-teal-500 hover:shadow-[0_0_20px_rgba(20,184,166,0.2)]">
+                          <a 
+                            href={user.feishuLink} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="group/fs relative flex items-center gap-3 bg-[#060813]/60 border border-teal-500/30 px-5 py-2.5 rounded-xl shrink-0 overflow-hidden transition-all duration-500 hover:border-teal-500 hover:shadow-[0_0_20px_rgba(20,184,166,0.2)]"
+                          >
                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-teal-400/10 to-transparent -translate-x-full group-hover/fs:animate-[shimmer_2s_infinite]"></div>
                             <div className="relative flex items-center gap-3">
                               <div className="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)] animate-pulse"></div>
@@ -126,7 +157,10 @@ export default async function CrewArchivesPage() {
                           </a>
                         ) : (
                           isSelf ? (
-                            <Link href="/profile" className="group/fs relative flex items-center gap-3 bg-[#060813]/60 border border-red-500/30 px-5 py-2.5 rounded-xl shrink-0 overflow-hidden transition-all duration-500 hover:border-red-500 hover:shadow-[0_0_20px_rgba(239,68,68,0.2)]">
+                            <Link 
+                              href="/profile" 
+                              className="group/fs relative flex items-center gap-3 bg-[#060813]/60 border border-red-500/30 px-5 py-2.5 rounded-xl shrink-0 overflow-hidden transition-all duration-500 hover:border-red-500 hover:shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                            >
                               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/10 to-transparent -translate-x-full group-hover/fs:animate-[shimmer_2s_infinite]"></div>
                               <div className="relative flex items-center gap-3">
                                 <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-ping"></div>
@@ -149,13 +183,11 @@ export default async function CrewArchivesPage() {
                         </span>
                       </div>
 
-                      {/* 🚀 驱逐护卫系统：管理员可见，且目标不能是自己，也不能是OWNER */}
                       {isManager && !isSelf && !isOwner && !isPending && (
                         <div className="border-l border-white/10 pl-6 flex items-center">
                           <RemoveCrewButton userId={user.id} realName={user.realName || user.nickname || "未知宇航员"} />
                         </div>
                       )}
-
                     </div>
                   )}
                 </div>
