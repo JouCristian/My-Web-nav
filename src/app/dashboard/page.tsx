@@ -252,7 +252,6 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          {/* 🚀 关键修复：拔掉 flex-1，给滚动容器锁死 h-[420px]，确保能完美滚动，不被内容撑开 */}
           <div className="relative bg-[#02040a]/40 border border-white/5 rounded-[2rem] shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] overflow-hidden">
             <div className="flex flex-col gap-4 h-[420px] overflow-y-auto ios-scrollbar px-4 lg:px-8 pt-6 pb-24 relative z-10">
               {broadcasts.length > 0 ? (
@@ -271,10 +270,12 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* 2. 右侧：航行日志 (占宽 1/3，通过 items-stretch 保持高度一致) */}
+        {/* 2. 右侧：航行日志 (传入当前用户的角色以判定读写权限) */}
         <div className="lg:col-span-1 rounded-[3.5rem] border border-emerald-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-[0_0_100px_rgba(16,185,129,0.15)] flex flex-col h-full relative overflow-hidden group">
           <div className="absolute inset-0 bg-emerald-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-          <FlightLogCalendar />
+          
+          {/* 🚀 核心修改：传入 userRole，给组件提供权限校验依据 */}
+          <FlightLogCalendar userRole={dbUser.role || "PENDING"} />
         </div>
 
       </div>
