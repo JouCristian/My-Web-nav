@@ -90,29 +90,34 @@ export function CreateBroadcastModal() {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: `
-        /* 🚀 新增底部阻尼弹射动画 */
-        @keyframes slide-up-elastic {
-          0% { opacity: 0; transform: translateY(80px) scale(0.9); }
-          100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
+        /* ... 保留之前的弹窗动画 ... */
+        @keyframes slide-up-elastic { 0% { opacity: 0; transform: translateY(80px) scale(0.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
         .animate-slide-up-elastic { animation: slide-up-elastic 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-        
         .quantum-particle-out { animation: dissipate 0.6s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
         .quantum-breathe-heavy { animation: heavy-breathe 2s ease-in-out infinite; }
-        
-        @keyframes dissipate { 
-          0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 
-          100% { opacity: 0; filter: blur(40px) brightness(0.5); transform: scale(0.85); } 
-        }
-        @keyframes heavy-breathe { 
-          0%, 100% { transform: scale(1); } 
-          50% { transform: scale(1.05); } 
-        }
-        
+        @keyframes dissipate { 0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 100% { opacity: 0; filter: blur(40px) brightness(0.5); transform: scale(0.85); } }
+        @keyframes heavy-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         .ios-scrollbar::-webkit-scrollbar { width: 5px; }
         .ios-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+
+        /* 🚀 新增：发布按钮的专属弹性呼吸 (Hover 激活) */
+        @keyframes btn-publish-breathe {
+          0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(59,130,246,0.3); }
+          50% { transform: scale(1.03); box-shadow: 0 0 50px rgba(59,130,246,0.6); }
+        }
+        .hover-breathe-publish:hover {
+          animation: btn-publish-breathe 2.5s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+        }
       `}} />
-      <button onClick={openModal} className="group px-8 py-4 rounded-2xl bg-blue-600/10 border border-blue-500/30 text-blue-400 font-bold tracking-[0.2em] uppercase hover:bg-blue-600 hover:text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.1)]">+ 发布全舰广播</button>
+      
+      {/* 🚀 默认静止状态，悬浮时激活背景色过渡与贝塞尔呼吸动效 */}
+      <button 
+        onClick={openModal} 
+        className="group hover-breathe-publish px-8 py-4 rounded-2xl bg-blue-600/10 border border-blue-500/30 text-blue-400 font-bold tracking-[0.2em] uppercase hover:bg-blue-600 hover:text-white transition-all duration-500 active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.1)]"
+      >
+        + 发布全舰广播
+      </button>
+
       {isMounted && createPortal(modalContent, document.body)}
     </>
   )

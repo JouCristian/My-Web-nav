@@ -32,28 +32,27 @@ export default async function CrewArchivesPage() {
 
   return (
     <main className="min-h-screen bg-transparent p-6 md:p-10 text-white relative overflow-hidden">
-      {/* 🚀 注入全舰统一的交互引擎样式 */}
+      {/* 🚀 注入全舰统一的交互引擎样式：修改为仅 Hover 触发的非线性动画 */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
         
-        /* 按钮整体的非线性呼吸 */
         @keyframes button-breathe {
           0%, 100% { transform: scale(1); border-color: rgba(255, 255, 255, 0.1); }
-          50% { transform: scale(1.05); border-color: rgba(168, 85, 247, 0.3); }
+          50% { transform: scale(1.02); border-color: rgba(168, 85, 247, 0.5); }
         }
 
-        /* 核心紫色点的能量脉冲 */
         @keyframes core-pulse {
           0%, 100% { transform: scale(1); box-shadow: 0 0 12px rgba(168, 85, 247, 0.8); }
           50% { transform: scale(1.3); box-shadow: 0 0 24px rgba(168, 85, 247, 1); }
         }
 
-        .animate-button-breathe {
-          animation: button-breathe 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        /* 核心改动：绑定 Hover 状态，注入贝塞尔弹性曲线 */
+        .hover-breathe:hover {
+          animation: button-breathe 2.5s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
         }
 
-        .animate-core-pulse {
-          animation: core-pulse 1.3s ease-in-out infinite;
+        .group:hover .group-hover-pulse {
+          animation: core-pulse 2s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
         }
       `}} />
 
@@ -73,16 +72,16 @@ export default async function CrewArchivesPage() {
           </div>
           
           <div className="flex flex-wrap gap-4">
-            {/* 🚀 升级版「返回中枢」：注入呼吸与核心脉冲 */}
-            <Link href="/dashboard" className="animate-button-breathe group flex items-center gap-4 bg-black/60 px-6 py-3.5 rounded-2xl border border-white/10 backdrop-blur-md hover:border-purple-500/50 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.3)]">
-              <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-purple-500/20 transition-colors overflow-hidden">
-                {/* 紫色能量点 */}
-                <div className="animate-core-pulse w-2.5 h-2.5 rounded-full bg-purple-400" />
-                {/* 环绕光圈 */}
-                <div className="absolute inset-0 rounded-full border border-purple-500/30 animate-[ping_3s_infinite]" />
+            {/* 🚀 升级版「返回中枢」：默认休眠，Hover 时平滑唤醒所有动效 */}
+            <Link href="/dashboard" className="group hover-breathe flex items-center gap-4 bg-black/60 px-6 py-3.5 rounded-2xl border border-white/10 backdrop-blur-md transition-all duration-500 active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.3)]">
+              <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-purple-500/20 transition-all duration-500 overflow-hidden">
+                {/* 能量点：休眠时静止，Hover 时产生脉冲 */}
+                <div className="w-2.5 h-2.5 rounded-full bg-purple-400 group-hover-pulse transition-all duration-500" />
+                {/* 环绕光圈：休眠时隐藏，Hover 时产生扩散波纹 */}
+                <div className="absolute inset-0 rounded-full border border-purple-500/30 opacity-0 group-hover:opacity-100 group-hover:animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite] transition-all duration-500" />
               </div>
               <div className="flex flex-col items-start text-left">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-mono group-hover:text-purple-400 transition-colors">Return</span>
+                <span className="text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-mono group-hover:text-purple-400 transition-colors duration-500">Return</span>
                 <span className="text-base font-bold text-white tracking-[0.15em] font-[family-name:var(--font-space)]">返回中枢</span>
               </div>
             </Link>
