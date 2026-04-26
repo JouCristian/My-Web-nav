@@ -104,14 +104,14 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
   ) : null;
 
   return (
-    /* 🚀 修正：移除复杂的贝塞尔曲线和不稳定过渡，强制声明 opacity-100 */
-    <div 
-      className={`relative overflow-hidden transition-all duration-500 ease-in-out ${
+        /* 🚀 修正：添加 shrink-0 强制卡片保持原始高度不被挤压，移除 mb-4 交给父容器统一控制间距 */
+        <div 
+        className={`relative overflow-hidden shrink-0 transition-all duration-500 ease-in-out ${
         isVanishing 
-          ? 'max-h-0 opacity-0 mb-0 scale-95 pointer-events-none' 
-          : 'max-h-[500px] opacity-100 mb-4'
-      }`}
-    >
+            ? 'max-h-0 opacity-0 scale-95 pointer-events-none !mt-0' 
+            : 'max-h-[500px] opacity-100'
+        }`}
+        >
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes vanish-dissipate { 0% { opacity: 1; filter: blur(0px); } 100% { opacity: 0; filter: blur(20px); transform: scale(1.1); } }
         .animate-vanish-dissipate { animation: vanish-dissipate 0.6s forwards; }

@@ -252,9 +252,14 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* 🚀 修正：稳定版滚动公告舱，修复遮挡和暗色区域融合问题 */}
+        {/* 🚀 修正：稳定版滚动公告舱 */}
         <div className="relative bg-[#02040a]/40 border border-white/5 rounded-[2rem] p-4 lg:p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] overflow-hidden">
-          <div className="flex flex-col gap-1 h-[340px] overflow-y-auto ios-scrollbar pr-2 md:pr-4 relative z-10">
+          
+          {/* 🚀 修正：
+              1. 使用 gap-4 替代卡片自带的 margin
+              2. 增加 pb-24 (底部内边距)，这是核心！它能让最后一条公告彻底滚出底部的渐变遮挡区 
+          */}
+          <div className="flex flex-col gap-4 h-[340px] overflow-y-auto ios-scrollbar pr-2 md:pr-4 pb-24 relative z-10">
             {broadcasts.length > 0 ? (
               broadcasts.map(item => <BroadcastCard key={item.id} announcement={item} isManager={isManager} />)
             ) : (
@@ -265,12 +270,11 @@ export default async function DashboardPage() {
             )}
           </div>
           
-          {/* 🚀 修正：底部渐变遮罩颜色与背景匹配，避免出现突兀的色块截断 */}
+          {/* 底部渐变遮罩：增加高度让渐变更柔和 */}
           {broadcasts.length > 3 && (
-            <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-[#02040a] to-transparent pointer-events-none rounded-b-[2rem] z-20"></div>
+            <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-[#060813] via-[#060813]/80 to-transparent pointer-events-none rounded-b-[2rem] z-20"></div>
           )}
         </div>
-      </div>
 
       {/* ================= 垂直阵列：放大居中模块 ================= */}
       <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col gap-12 mt-6">
