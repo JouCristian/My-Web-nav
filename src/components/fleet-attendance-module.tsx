@@ -43,11 +43,14 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
 
   useEffect(() => { 
     setMounted(true)
-    const saved = localStorage.getItem("STARFLEET_ATTENDANCE_V4")
+    // 🚀 更新了存储槽位为 V6，清洗掉之前可能损坏的空数据
+    const saved = localStorage.getItem("STARFLEET_ATTENDANCE_V6")
     if (saved) try { setLogs(JSON.parse(saved)) } catch (e) { console.error(e) }
   }, [])
   
-  useEffect(() => { if (mounted) localStorage.setItem("STARFLEET_ATTENDANCE_V4", JSON.stringify(logs)) }, [logs, mounted])
+  useEffect(() => { 
+    if (mounted) localStorage.setItem("STARFLEET_ATTENDANCE_V6", JSON.stringify(logs)) 
+  }, [logs, mounted])
 
   useEffect(() => {
     let timer: NodeJS.Timeout
@@ -97,10 +100,17 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
   const formatTime = (secs: number) => `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`
 
   const handleSaveAndClose = () => {
-    const todayKey = `${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate()}`
+    const d = new Date();
+    const todayKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
     const missing = allCrew.filter(c => !presentCrew.includes(c))
     const newLog: RollCallLog = { id: Date.now().toString(), timestamp: Date.now(), present: presentCrew, missing: missing }
-    setLogs(prev => ({ ...prev, [todayKey]: [...(prev[todayKey] || []), newLog] }))
+    
+    // 🚀 双重保险：强制同步更新状态并直接写入磁盘，彻底粉碎数据丢失 BUG
+    setLogs(prev => {
+      const updated = { ...prev, [todayKey]: [...(prev[todayKey] || []), newLog] }
+      localStorage.setItem("STARFLEET_ATTENDANCE_V6", JSON.stringify(updated))
+      return updated
+    })
     setIsSummaryOpen(false)
   }
 
@@ -132,11 +142,14 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
     exit: { opacity: 0, scale: 0.85, filter: "blur(30px) brightness(0.2)", transition: { duration: 0.4 } }
   }
 
+  // ===================== 弹窗 UI 组件 =====================
   const summaryModal = (
     <AnimatePresence>
       {isSummaryOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/60" />
+          
+          {/* 🚀 修复 UI：将 overflow-hidden 和 rounded 放到了同一个层级，防止黄框被切掉 */}
           <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative w-full max-w-xl z-10">
             <div className="animate-modal-heavy-breathe w-full rounded-[2.5rem] bg-[#060813]/95 border-2 border-amber-500/50 p-8 md:p-10 shadow-[0_0_80px_rgba(245,158,11,0.2)] overflow-hidden">
               <div className="text-center mb-8">
@@ -174,8 +187,10 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
       {selectedDateKey && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="absolute inset-0 bg-[#02040a]/70 backdrop-blur-[20px]" onClick={()=>{setSelectedDateKey(null); setSelectedLogId(null)}} />
-          <motion.div layout variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10 overflow-hidden rounded-[2.5rem]">
-            <div className="animate-modal-heavy-breathe min-w-[500px] bg-[#060813]/95 border-2 border-amber-500/50 p-8 shadow-2xl">
+          
+          <motion.div layout variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10">
+            {/* 🚀 修复 UI：独立圆角控制，保证外围黄框完美显示 */}
+            <div className="animate-modal-heavy-breathe min-w-[500px] md:w-[600px] bg-[#060813]/95 border-2 border-amber-500/50 rounded-[2.5rem] shadow-[0_0_80px_rgba(245,158,11,0.2)] p-8 overflow-hidden relative">
               <AnimatePresence mode="wait">
                 {!selectedLogId ? (
                   <motion.div key="list" variants={{in:{x:0, opacity:1}, out:{x:-50, opacity:0}}} initial="out" animate="in" exit="out" transition={{type:"spring", stiffness:300, damping:30}}>
@@ -287,7 +302,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                           <div className="w-20 bg-black/50 border border-amber-500/30 rounded-2xl p-3 text-center text-4xl font-mono text-amber-400 group-hover:border-amber-400 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">{inputSecs}</div>
                         </div>
 
-                        {/* 🚀 修复后的纯正下拉舱 (去除了全屏遮罩模糊与固定居中，恢复 Absolute 挂载) */}
                         <AnimatePresence>
                           {isTimePickerOpen && (
                             <>
@@ -317,7 +331,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                                             onClick={() => setTempMins(m)} 
                                             className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}
                                           >
-                                            {/* 🚀 layoutId "会飞"的高亮框 */}
                                             {isSelected && (
                                               <motion.div
                                                 layoutId="activeMin"
@@ -344,7 +357,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                                             onClick={() => setTempSecs(s)} 
                                             className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}
                                           >
-                                            {/* 🚀 layoutId "会飞"的高亮框 */}
                                             {isSelected && (
                                               <motion.div
                                                 layoutId="activeSec"
@@ -360,13 +372,7 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                                     </div>
                                   </div>
                                   
-                                  {/* 确认时间按钮 */}
-                                  <button 
-                                    onClick={() => { setInputMins(tempMins); setInputSecs(tempSecs); setIsTimePickerOpen(false); }} 
-                                    className="w-full py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold tracking-[0.2em] text-[10px] hover:bg-amber-500 hover:text-black transition-all active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.1)]"
-                                  >
-                                    确认时间
-                                  </button>
+                                  <button onClick={() => { setInputMins(tempMins); setInputSecs(tempSecs); setIsTimePickerOpen(false); }} className="w-full py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold tracking-[0.2em] text-[10px] hover:bg-amber-500 hover:text-black transition-all active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.1)]">确认时间</button>
                                 </div>
                               </motion.div>
                             </>
@@ -478,61 +484,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
           </div>
         </div>
       </div>
-      
-      {mounted && createPortal(
-        <AnimatePresence>
-          {selectedDateKey && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-              <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="absolute inset-0 bg-[#02040a]/70 backdrop-blur-[20px]" onClick={()=>{setSelectedDateKey(null); setSelectedLogId(null)}} />
-              <motion.div layout variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10 overflow-hidden rounded-[2.5rem]">
-                <div className="animate-modal-heavy-breathe min-w-[500px] bg-[#060813]/95 border-2 border-amber-500/50 p-8 shadow-2xl">
-                  <AnimatePresence mode="wait">
-                    {!selectedLogId ? (
-                      <motion.div key="list" variants={{in:{x:0, opacity:1}, out:{x:-50, opacity:0}}} initial="out" animate="in" exit="out" transition={{type:"spring", stiffness:300, damping:30}}>
-                        <div className="flex justify-between items-center mb-6 border-b border-amber-500/20 pb-4">
-                          <h2 className="text-xl font-bold text-amber-400 tracking-[0.2em]">历史集结档案</h2>
-                          <span className="text-amber-500/60 font-mono text-sm">{selectedDateKey}</span>
-                        </div>
-                        <div className="max-h-[350px] overflow-y-auto amber-scrollbar pr-2 space-y-3 mb-6 min-h-[100px]">
-                           {currentDayLogs.length > 0 ? currentDayLogs.map(log => (
-                             <div key={log.id} onClick={() => setSelectedLogId(log.id)} className="group relative flex justify-between items-center bg-white/5 border border-white/10 hover:border-amber-500/40 p-5 rounded-2xl cursor-pointer transition-all active:scale-[0.98] overflow-hidden">
-                               <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(245,158,11,0.05),transparent)] -translate-x-full group-hover:animate-[shimmer-seamless_2s_infinite] pointer-events-none" />
-                               <div className="z-10"><div className="text-sm font-bold text-white group-hover:text-amber-300">签到记录 / {new Date(log.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</div><div className="text-[10px] font-mono text-zinc-500 uppercase mt-1">Status: SYNCED - {log.present.length} Crew</div></div>
-                               <div className="text-amber-500/50 group-hover:text-amber-400 group-hover:translate-x-1 transition-transform">➔</div>
-                             </div>
-                           )) : <div className="text-center py-10 text-zinc-600 font-mono text-xs tracking-widest">NO RECORDS ON THIS STARDATE</div>}
-                        </div>
-                        <button onClick={()=>setSelectedDateKey(null)} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-zinc-400 font-bold hover:text-white transition-all">关闭档案室</button>
-                      </motion.div>
-                    ) : (
-                      <motion.div key="detail" variants={{in:{x:0, opacity:1}, out:{x:50, opacity:0}}} initial="out" animate="in" exit="out" transition={{type:"spring", stiffness:300, damping:30}}>
-                        <div className="flex items-center gap-4 mb-6 border-b border-amber-500/20 pb-4">
-                          <button onClick={()=>setSelectedLogId(null)} className="w-10 h-10 rounded-xl bg-white/5 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-400 transition-all flex items-center justify-center">◀</button>
-                          <div><h2 className="text-xl font-bold text-amber-400 tracking-[0.2em]">档案详情</h2>{activeDetail && <span className="text-[10px] font-mono text-zinc-500 uppercase">Ref: {new Date(activeDetail.timestamp).toLocaleString()}</span>}</div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-6">
-                           <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 h-[300px] flex flex-col">
-                             <div className="text-[10px] text-emerald-500/60 font-mono uppercase mb-3">Present ({activeDetail?.present.length})</div>
-                             <div className="flex-1 overflow-y-auto emerald-scrollbar space-y-2 pr-1">
-                               {activeDetail?.present.map(c => (<div key={c} className="text-xs font-bold text-emerald-400 bg-emerald-500/5 border border-emerald-500/10 p-2 rounded-lg">{c}</div>))}
-                             </div>
-                           </div>
-                           <div className="bg-black/40 border border-red-500/20 rounded-2xl p-4 h-[300px] flex flex-col">
-                             <div className="text-[10px] text-red-500/60 font-mono uppercase mb-3">Missing ({activeDetail?.missing.length})</div>
-                             <div className="flex-1 overflow-y-auto red-scrollbar space-y-2 pr-1">
-                               {activeDetail?.missing.map(c => (<div key={c} className="text-xs font-bold text-red-400 bg-red-500/5 border border-red-500/10 p-2 rounded-lg">{c}</div>))}
-                             </div>
-                           </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-      , document.body)}
     </>
   )
 }
