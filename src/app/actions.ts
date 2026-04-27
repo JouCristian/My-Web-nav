@@ -273,3 +273,15 @@ export async function updateLeaveStatusAction(id: string, status: "APPROVED" | "
   })
   revalidatePath("/dashboard/attendance")
 }
+// 4. 船员撤回自己的请假申请
+export async function revokeLeaveRequestAction(id: string) {
+  const session = await auth()
+  if (!session?.user?.email) throw new Error("Unauthorized")
+
+  // 直接从数据库彻底销毁这条记录
+  await prisma.leaveRequest.delete({
+    where: { id }
+  })
+  
+  revalidatePath("/dashboard/attendance")
+}
