@@ -8,13 +8,22 @@ import { createPortal } from "react-dom"
 // 模拟舰队成员名单
 const FLEET_CREW = ["Cmdr. Shepard", "Lt. Ripley", "Eng. Isaac", "Pilot Cooper", "Dr. Brand", "Spec. Nova"]
 
+// 🚀 数据结构升级：支持每天存储多条签到记录
+type RollCallLog = {
+  id: string;
+  timestamp: number;
+  present: string[];
+  missing: string[];
+}
+
 export function FleetAttendanceModule({ userRole, userName = "Captain" }: { userRole: string, userName?: string }) {
   const [mounted, setMounted] = useState(false)
   
   // 📅 日历状态
   const [viewDate, setViewDate] = useState(new Date())
-  const [logs, setLogs] = useState<Record<string, { present: string[], missing: string[] }>>({})
+  const [logs, setLogs] = useState<Record<string, RollCallLog[]>>({})
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
+  const [selectedLogId, setSelectedLogId] = useState<string | null>(null) // 控制下钻的二级弹窗
   
   // ⏱️ 实时集结状态机
   const [isRollCallActive, setIsRollCallActive] = useState(false)
@@ -22,7 +31,7 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
   const [inputMins, setInputMins] = useState("01")
   const [inputSecs, setInputSecs] = useState("00")
   
-  // 🚀 自定义时间选择器下拉舱状态
+  // 🚀 自定义时间选择器状态
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false)
   const [tempMins, setTempMins] = useState("01")
   const [tempSecs, setTempSecs] = useState("00")
@@ -35,18 +44,19 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
   const [isHolding, setIsHolding] = useState(false)
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null)
 
+  // 🚀 权限逻辑：舰长和管理员不参与签到，不计入应到人数
   const isManager = userRole === "OWNER" || userRole === "ADMIN"
-  const allCrew = [userName, ...FLEET_CREW]
+  const allCrew = isManager ? [...FLEET_CREW] : [userName, ...FLEET_CREW]
 
   // 💾 本地持久化
   useEffect(() => { 
     setMounted(true)
-    const saved = localStorage.getItem("STARFLEET_ATTENDANCE")
+    const saved = localStorage.getItem("STARFLEET_ATTENDANCE_V2")
     if (saved) try { setLogs(JSON.parse(saved)) } catch (e) { console.error(e) }
   }, [])
   
   useEffect(() => { 
-    if (mounted) localStorage.setItem("STARFLEET_ATTENDANCE", JSON.stringify(logs)) 
+    if (mounted) localStorage.setItem("STARFLEET_ATTENDANCE_V2", JSON.stringify(logs)) 
   }, [logs, mounted])
 
   // ⏱️ 倒计时与模拟实时签到引擎
@@ -56,7 +66,7 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
       timer = setTimeout(() => {
         setCountdown(prev => prev - 1)
         if (Math.random() < 0.15) {
-          const missing = FLEET_CREW.filter(c => !presentCrew.includes(c))
+          const missing = allCrew.filter(c => !presentCrew.includes(c))
           if (missing.length > 0) {
             const randomCrew = missing[Math.floor(Math.random() * missing.length)]
             setPresentCrew(prev => [...prev, randomCrew])
@@ -68,7 +78,7 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
       setIsSummaryOpen(true)
     }
     return () => clearTimeout(timer)
-  }, [isRollCallActive, countdown, presentCrew])
+  }, [isRollCallActive, countdown, presentCrew, allCrew])
 
   const startRollCall = () => {
     const totalSecs = (parseInt(inputMins) || 0) * 60 + (parseInt(inputSecs) || 0)
@@ -94,7 +104,18 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
   const handleSaveAndClose = () => {
     const todayKey = `${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate()}`
     const missing = allCrew.filter(c => !presentCrew.includes(c))
-    setLogs(prev => ({ ...prev, [todayKey]: { present: presentCrew, missing: missing } }))
+    
+    const newLog: RollCallLog = {
+      id: Date.now().toString(),
+      timestamp: Date.now(),
+      present: presentCrew,
+      missing: missing
+    }
+
+    setLogs(prev => ({
+      ...prev,
+      [todayKey]: [...(prev[todayKey] || []), newLog] // 🚀 累加而不是覆盖
+    }))
     setIsSummaryOpen(false)
   }
 
@@ -111,37 +132,37 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
   }
 
-  // 🚀 核心：定义弹窗的【弹簧入场】与【粒子模糊消散】动画
+  // 🚀 弹窗物理动画（粒子消散退出）
   const modalVariants = {
     hidden: { opacity: 0, scale: 0.85, y: 30, filter: "blur(10px) brightness(1)" },
-    visible: { 
-      opacity: 1, scale: 1, y: 0, filter: "blur(0px) brightness(1)", 
-      transition: { type: "spring", stiffness: 350, damping: 25, mass: 1 } 
-    },
-    // 粒子化消散退出：缩小 + 强模糊 + 变暗
-    exit: { 
-      opacity: 0, scale: 0.9, y: 10, filter: "blur(20px) brightness(0.4)", 
-      transition: { duration: 0.4, ease: [0.7, 0, 0.84, 0] } 
-    }
+    visible: { opacity: 1, scale: 1, y: 0, filter: "blur(0px) brightness(1)", transition: { type: "spring", stiffness: 350, damping: 25, mass: 1 } },
+    exit: { opacity: 0, scale: 0.9, y: 10, filter: "blur(20px) brightness(0.4)", transition: { duration: 0.4, ease: [0.7, 0, 0.84, 0] } }
   }
 
-  // 背景遮罩专属动画：杜绝断层，强制与弹窗同步平滑褪去
-  const overlayVariants = {
-    hidden: { opacity: 0, backdropFilter: "blur(0px)" },
-    visible: { opacity: 1, backdropFilter: "blur(12px)", transition: { duration: 0.4 } },
-    exit: { opacity: 0, backdropFilter: "blur(0px)", transition: { duration: 0.4, ease: "easeInOut" } }
+  // 🚀 iOS级侧滑动画
+  const listVariants = {
+    hidden: { opacity: 0, x: -30, scale: 0.95 },
+    visible: { opacity: 1, x: 0, scale: 1, transition: { type: "spring", stiffness: 300, damping: 25 } },
+    exit: { opacity: 0, x: -30, scale: 0.95, transition: { duration: 0.2 } }
+  }
+  const detailVariants = {
+    hidden: { opacity: 0, x: 30, scale: 0.95 },
+    visible: { opacity: 1, x: 0, scale: 1, transition: { type: "spring", stiffness: 300, damping: 25 } },
+    exit: { opacity: 0, x: 30, scale: 0.95, transition: { duration: 0.2 } }
   }
 
   if (!mounted) return null
-  const activeHistory = selectedDateKey ? logs[selectedDateKey] : null
+
+  // 获取当前查看的具体记录详情
+  const currentDayLogs = selectedDateKey ? logs[selectedDateKey] || [] : []
+  const activeDetail = currentDayLogs.find(l => l.id === selectedLogId)
 
   // ===================== 弹窗 UI 组件 =====================
   const summaryModal = (
     <AnimatePresence>
       {isSummaryOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/60" />
-          <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 opacity-[0.1] mix-blend-overlay pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px]" />
           
           <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative w-full max-w-xl z-10">
             <div className="w-full rounded-[2.5rem] bg-[#060813]/95 border border-amber-500/30 p-8 md:p-10 shadow-[0_0_80px_rgba(245,158,11,0.2)] overflow-hidden">
@@ -154,16 +175,18 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
               </div>
 
               <div className="grid grid-cols-2 gap-6 mb-8">
+                {/* 左侧绿区 */}
                 <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
                   <div className="text-[10px] text-emerald-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between"><span>已就位 (Synced)</span><span>{presentCrew.length}</span></div>
-                  <div className="space-y-2 max-h-[200px] overflow-y-auto amber-scrollbar pr-1">
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto emerald-scrollbar pr-1">
                     {presentCrew.map(c => <div key={c} className="text-sm font-bold text-emerald-400 bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/20">{c}</div>)}
                     {presentCrew.length === 0 && <div className="text-xs text-zinc-600 italic">无人响应...</div>}
                   </div>
                 </div>
+                {/* 右侧红区 */}
                 <div className="bg-black/40 border border-red-500/20 rounded-2xl p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
                   <div className="text-[10px] text-red-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between"><span>未响应 (Missing)</span><span>{allCrew.length - presentCrew.length}</span></div>
-                  <div className="space-y-2 max-h-[200px] overflow-y-auto amber-scrollbar pr-1">
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto red-scrollbar pr-1">
                     {allCrew.filter(c => !presentCrew.includes(c)).map(c => <div key={c} className="text-sm font-bold text-red-400 bg-red-500/10 px-3 py-2 rounded-lg border border-red-500/20">{c}</div>)}
                     {allCrew.length === presentCrew.length && <div className="text-xs text-emerald-500/50 italic">全员集结完毕！</div>}
                   </div>
@@ -182,32 +205,78 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
     <AnimatePresence>
       {selectedDateKey && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/60" onClick={() => setSelectedDateKey(null)} />
-          <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative w-full max-w-xl z-10" >
-            <div className="w-full rounded-[2.5rem] bg-[#060813]/95 border border-amber-500/30 p-8 shadow-[0_0_80px_rgba(245,158,11,0.2)] overflow-hidden">
-              <div className="flex justify-between items-center mb-6 border-b border-amber-500/20 pb-4">
-                <h2 className="text-xl font-bold text-amber-400 tracking-[0.2em] font-[family-name:var(--font-space)]">历史集结档案</h2>
-                <span className="text-amber-500/60 font-mono text-sm">{selectedDateKey}</span>
-              </div>
-              {activeHistory ? (
-                 <div className="grid grid-cols-2 gap-6 mb-6">
-                 <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-                   <div className="text-[10px] text-emerald-500/60 font-mono uppercase tracking-widest mb-3">已就位 ({activeHistory.present.length})</div>
-                   <div className="space-y-2 max-h-[30vh] overflow-y-auto amber-scrollbar pr-1">
-                     {activeHistory.present.map(c => <div key={c} className="text-sm font-bold text-emerald-400 bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/20">{c}</div>)}
-                   </div>
-                 </div>
-                 <div className="bg-black/40 border border-red-500/20 rounded-2xl p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-                   <div className="text-[10px] text-red-500/60 font-mono uppercase tracking-widest mb-3">未响应 ({activeHistory.missing.length})</div>
-                   <div className="space-y-2 max-h-[30vh] overflow-y-auto amber-scrollbar pr-1">
-                     {activeHistory.missing.map(c => <div key={c} className="text-sm font-bold text-red-400 bg-red-500/10 px-3 py-2 rounded-lg border border-red-500/20">{c}</div>)}
-                   </div>
-                 </div>
-               </div>
-              ) : (
-                <div className="h-[20vh] flex items-center justify-center text-zinc-600 font-mono text-xs tracking-widest">NO RECORDS FOUND</div>
-              )}
-              <button onClick={() => setSelectedDateKey(null)} className="w-full py-4 rounded-xl bg-white/5 border border-white/10 text-zinc-400 font-bold tracking-[0.2em] hover:bg-white/10 hover:text-white transition-all active:scale-95">关闭档案</button>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px]" onClick={() => { setSelectedDateKey(null); setSelectedLogId(null); }} />
+          
+          <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative w-full max-w-xl z-10 overflow-hidden rounded-[2.5rem]">
+            <div className="w-full h-full bg-[#060813]/95 border border-amber-500/30 p-8 shadow-[0_0_80px_rgba(245,158,11,0.2)] relative">
+              
+              <AnimatePresence mode="wait">
+                {/* 1. 列表视图 (List View) */}
+                {!selectedLogId ? (
+                  <motion.div key="list" variants={listVariants} initial="hidden" animate="visible" exit="exit" className="flex flex-col h-full">
+                    <div className="flex justify-between items-center mb-6 border-b border-amber-500/20 pb-4">
+                      <h2 className="text-xl font-bold text-amber-400 tracking-[0.2em] font-[family-name:var(--font-space)]">历史集结档案</h2>
+                      <span className="text-amber-500/60 font-mono text-sm">{selectedDateKey}</span>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto amber-scrollbar pr-2 space-y-3 mb-6 max-h-[40vh]">
+                      {currentDayLogs.length > 0 ? (
+                        currentDayLogs.map(log => (
+                          <div 
+                            key={log.id} 
+                            onClick={() => setSelectedLogId(log.id)}
+                            className="group flex justify-between items-center bg-black/40 border border-white/10 hover:border-amber-500/40 p-4 rounded-xl cursor-pointer transition-all hover:bg-amber-500/10 active:scale-[0.98]"
+                          >
+                            <div>
+                              <div className="text-sm font-bold text-white mb-1 group-hover:text-amber-300 transition-colors">
+                                签到记录 / {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                              <div className="text-xs font-mono text-zinc-500">
+                                响应率: {log.present.length} / {log.present.length + log.missing.length}
+                              </div>
+                            </div>
+                            <div className="text-amber-500/50 group-hover:text-amber-400 group-hover:translate-x-1 transition-transform">➔</div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="h-full min-h-[20vh] flex items-center justify-center text-zinc-600 font-mono text-xs tracking-widest">NO RECORDS FOUND</div>
+                      )}
+                    </div>
+                    
+                    <button onClick={() => setSelectedDateKey(null)} className="w-full py-4 rounded-xl bg-white/5 border border-white/10 text-zinc-400 font-bold tracking-[0.2em] hover:bg-white/10 hover:text-white transition-all active:scale-95">关闭档案</button>
+                  </motion.div>
+                ) : (
+                  
+                  // 2. 详情视图 (Detail View)
+                  <motion.div key="detail" variants={detailVariants} initial="hidden" animate="visible" exit="exit" className="flex flex-col h-full">
+                    <div className="flex items-center gap-4 mb-6 border-b border-amber-500/20 pb-4">
+                      <button onClick={() => setSelectedLogId(null)} className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/5 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-400 transition-all">◀</button>
+                      <div className="flex-1">
+                        <h2 className="text-xl font-bold text-amber-400 tracking-[0.2em] font-[family-name:var(--font-space)]">档案详情</h2>
+                        {activeDetail && <span className="text-amber-500/60 font-mono text-[10px] tracking-widest uppercase">Ref: {new Date(activeDetail.timestamp).toLocaleString()}</span>}
+                      </div>
+                    </div>
+
+                    {activeDetail && (
+                      <div className="grid grid-cols-2 gap-6 mb-6">
+                        <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
+                          <div className="text-[10px] text-emerald-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between"><span>已就位</span><span>{activeDetail.present.length}</span></div>
+                          <div className="space-y-2 max-h-[30vh] overflow-y-auto emerald-scrollbar pr-1">
+                            {activeDetail.present.map(c => <div key={c} className="text-sm font-bold text-emerald-400 bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/20">{c}</div>)}
+                          </div>
+                        </div>
+                        <div className="bg-black/40 border border-red-500/20 rounded-2xl p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
+                          <div className="text-[10px] text-red-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between"><span>未响应</span><span>{activeDetail.missing.length}</span></div>
+                          <div className="space-y-2 max-h-[30vh] overflow-y-auto red-scrollbar pr-1">
+                            {activeDetail.missing.map(c => <div key={c} className="text-sm font-bold text-red-400 bg-red-500/10 px-3 py-2 rounded-lg border border-red-500/20">{c}</div>)}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
             </div>
           </motion.div>
         </div>
@@ -217,21 +286,35 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
 
   return (
     <>
-      {/* 🚀 重写全局极简滚动条，杜绝浏览器原生丑陋样式 */}
       <style dangerouslySetInnerHTML={{ __html: `
         .amber-scrollbar::-webkit-scrollbar { width: 6px; } 
         .amber-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 10px; } 
         .amber-scrollbar::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.3); border-radius: 10px; border: 1px solid rgba(0,0,0,0.8); } 
         .amber-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 0.6); }
+        
+        .emerald-scrollbar::-webkit-scrollbar { width: 6px; } 
+        .emerald-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 10px; } 
+        .emerald-scrollbar::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.3); border-radius: 10px; border: 1px solid rgba(0,0,0,0.8); } 
+        .emerald-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(16, 185, 129, 0.6); }
+
+        .red-scrollbar::-webkit-scrollbar { width: 6px; } 
+        .red-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 10px; } 
+        .red-scrollbar::-webkit-scrollbar-thumb { background: rgba(239, 68, 68, 0.3); border-radius: 10px; border: 1px solid rgba(0,0,0,0.8); } 
+        .red-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(239, 68, 68, 0.6); }
+
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
       `}} />
 
       <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mt-4">
         
         {/* ================= 左舷：打卡控制中枢 ================= */}
-        <div className="lg:col-span-2 rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-2xl flex flex-col h-full relative overflow-hidden">
-          <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
+        {/* 🚀 核心修复：移除外层卡片的 overflow-hidden，释放Z轴空间，防止下拉框被切断 */}
+        <div className="lg:col-span-2 rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-2xl flex flex-col h-full relative">
           
+          <div className="absolute inset-0 rounded-[3.5rem] overflow-hidden pointer-events-none z-0">
+            <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
+          </div>
+
           <div className="flex items-center justify-between mb-8 relative z-10">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.2)]"><span className="text-2xl">⏳</span></div>
@@ -242,37 +325,23 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
 
           <div className="flex-1 flex flex-col items-center justify-center bg-[#02040a]/60 border border-white/5 rounded-[2rem] p-8 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] relative z-10">
             
-            {/* 尚未开始状态：舰长设置倒计时 */}
             {!isRollCallActive && (
               <div className="w-full max-w-md flex flex-col items-center gap-8 relative">
                 {isManager ? (
                   <>
                     <div className="text-center mb-4 relative z-20">
                       <div className="text-zinc-500 font-mono text-[10px] tracking-[0.3em] uppercase mb-4">Set Countdown Window</div>
-                      
-                      {/* 🚀 核心修改：移除 input，使用全息非线性动画下拉舱 */}
                       <div className="relative">
-                        <div 
-                          onClick={() => {
-                            setTempMins(inputMins); setTempSecs(inputSecs);
-                            setIsTimePickerOpen(true);
-                          }}
-                          className="flex items-center justify-center gap-4 cursor-pointer group"
-                        >
-                          <div className="w-28 bg-black/50 border border-amber-500/30 rounded-2xl p-4 text-center text-5xl font-mono text-amber-400 group-hover:border-amber-400 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
-                            {inputMins}
-                          </div>
+                        <div onClick={() => { setTempMins(inputMins); setTempSecs(inputSecs); setIsTimePickerOpen(true); }} className="flex items-center justify-center gap-4 cursor-pointer group" >
+                          <div className="w-28 bg-black/50 border border-amber-500/30 rounded-2xl p-4 text-center text-5xl font-mono text-amber-400 group-hover:border-amber-400 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">{inputMins}</div>
                           <span className="text-4xl text-amber-500/50 font-bold group-hover:text-amber-400 transition-colors">:</span>
-                          <div className="w-28 bg-black/50 border border-amber-500/30 rounded-2xl p-4 text-center text-5xl font-mono text-amber-400 group-hover:border-amber-400 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
-                            {inputSecs}
-                          </div>
+                          <div className="w-28 bg-black/50 border border-amber-500/30 rounded-2xl p-4 text-center text-5xl font-mono text-amber-400 group-hover:border-amber-400 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">{inputSecs}</div>
                         </div>
 
-                        {/* 🚀 阻尼非线性动画下拉舱 */}
                         <AnimatePresence>
                           {isTimePickerOpen && (
                             <>
-                              <div className="fixed inset-0 z-[40]" onClick={(e) => { e.stopPropagation(); setIsTimePickerOpen(false); }} />
+                              <div className="fixed inset-0 z-[40] cursor-default" onClick={(e) => { e.stopPropagation(); setIsTimePickerOpen(false); }} />
                               <motion.div 
                                 initial={{ opacity: 0, scale: 0.9, y: -20, filter: "blur(10px)" }}
                                 animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
@@ -284,33 +353,19 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                                   <div className="flex justify-between items-center px-4 font-mono text-[10px] text-amber-500/60 tracking-widest uppercase"><span>MINUTES</span><span>SECONDS</span></div>
                                   <div className="flex gap-2 h-48 relative">
                                     <div className="absolute inset-0 bg-gradient-to-b from-[#060813] via-transparent to-[#060813] pointer-events-none z-10" />
-                                    
-                                    {/* 分钟滚轮 */}
                                     <div className="flex-1 h-full overflow-y-auto amber-scrollbar relative z-0 pr-1 text-center space-y-2">
                                       {Array.from({length: 60}, (_, i) => String(i).padStart(2, '0')).map(m => (
-                                        <div key={`m-${m}`} onClick={() => setTempMins(m)} className={`cursor-pointer py-2 rounded-xl font-mono text-lg transition-all duration-300 ${tempMins === m ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.3)] font-bold scale-110' : 'text-zinc-500 hover:text-amber-200'}`}>
-                                          {m}
-                                        </div>
+                                        <div key={`m-${m}`} onClick={() => setTempMins(m)} className={`cursor-pointer py-2 rounded-xl font-mono text-lg transition-all duration-300 ${tempMins === m ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.3)] font-bold scale-110' : 'text-zinc-500 hover:text-amber-200'}`}>{m}</div>
                                       ))}
                                     </div>
                                     <div className="w-px bg-amber-500/20 my-2 z-0"></div>
-                                    {/* 秒钟滚轮 */}
                                     <div className="flex-1 h-full overflow-y-auto amber-scrollbar relative z-0 pl-1 text-center space-y-2">
                                       {Array.from({length: 60}, (_, i) => String(i).padStart(2, '0')).map(s => (
-                                        <div key={`s-${s}`} onClick={() => setTempSecs(s)} className={`cursor-pointer py-2 rounded-xl font-mono text-lg transition-all duration-300 ${tempSecs === s ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.3)] font-bold scale-110' : 'text-zinc-500 hover:text-amber-200'}`}>
-                                          {s}
-                                        </div>
+                                        <div key={`s-${s}`} onClick={() => setTempSecs(s)} className={`cursor-pointer py-2 rounded-xl font-mono text-lg transition-all duration-300 ${tempSecs === s ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.3)] font-bold scale-110' : 'text-zinc-500 hover:text-amber-200'}`}>{s}</div>
                                       ))}
                                     </div>
                                   </div>
-                                  
-                                  {/* 确认按钮 */}
-                                  <button 
-                                    onClick={() => { setInputMins(tempMins); setInputSecs(tempSecs); setIsTimePickerOpen(false); }}
-                                    className="w-full py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold tracking-widest text-[10px] hover:bg-amber-500 hover:text-black transition-all active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.1)]"
-                                  >
-                                    CONFIRM SEQUENCE
-                                  </button>
+                                  <button onClick={() => { setInputMins(tempMins); setInputSecs(tempSecs); setIsTimePickerOpen(false); }} className="w-full py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold tracking-widest text-[10px] hover:bg-amber-500 hover:text-black transition-all active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.1)]">CONFIRM SEQUENCE</button>
                                 </div>
                               </motion.div>
                             </>
@@ -330,7 +385,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
               </div>
             )}
 
-            {/* 集结进行中状态 */}
             {isRollCallActive && (
               <div className="w-full flex flex-col items-center">
                 <div className={`text-7xl md:text-9xl font-bold font-mono tracking-tighter mb-12 transition-colors duration-500 ${countdown <= 10 ? 'text-red-500 drop-shadow-[0_0_40px_rgba(239,68,68,0.8)] animate-pulse' : 'text-amber-400 drop-shadow-[0_0_40px_rgba(245,158,11,0.6)]'}`}>
@@ -349,16 +403,18 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                   })}
                 </div>
 
-                {/* 🚀 核心交互：长按防误触签到引擎 (Hold-to-Sync) */}
-                <button 
-                  onPointerDown={startHold} onPointerUp={stopHold} onPointerLeave={stopHold}
-                  disabled={presentCrew.includes(userName)}
-                  className="relative overflow-hidden w-full max-w-md h-16 rounded-2xl bg-white/5 border border-white/10 group active:scale-[0.98] transition-transform select-none"
-                >
-                  <div className={`absolute left-0 top-0 bottom-0 bg-gradient-to-r from-amber-600 to-amber-400 transition-all ${isHolding ? 'w-full duration-[1500ms] ease-linear' : 'w-0 duration-300 ease-out'}`} />
-                  <div className="absolute inset-0 flex items-center justify-center mix-blend-difference pointer-events-none z-10"><span className="text-white font-bold tracking-[0.4em] font-mono drop-shadow-md">{presentCrew.includes(userName) ? '✓ 已成功连接' : 'HOLD TO SYNC'}</span></div>
-                  {!presentCrew.includes(userName) && !isHolding && (<div className="absolute inset-0 flex items-center justify-center pointer-events-none"><span className="text-zinc-500 font-bold tracking-[0.4em] font-mono transition-opacity duration-300 group-hover:text-amber-500/50">HOLD TO SYNC</span></div>)}
-                </button>
+                {/* 🚀 舰长特权：不用签到，因此不显示长按按钮 */}
+                {!isManager && (
+                  <button 
+                    onPointerDown={startHold} onPointerUp={stopHold} onPointerLeave={stopHold}
+                    disabled={presentCrew.includes(userName)}
+                    className="relative overflow-hidden w-full max-w-md h-16 rounded-2xl bg-white/5 border border-white/10 group active:scale-[0.98] transition-transform select-none"
+                  >
+                    <div className={`absolute left-0 top-0 bottom-0 bg-gradient-to-r from-amber-600 to-amber-400 transition-all ${isHolding ? 'w-full duration-[1500ms] ease-linear' : 'w-0 duration-300 ease-out'}`} />
+                    <div className="absolute inset-0 flex items-center justify-center mix-blend-difference pointer-events-none z-10"><span className="text-white font-bold tracking-[0.4em] font-mono drop-shadow-md">{presentCrew.includes(userName) ? '✓ 已成功连接' : '长按完成签到'}</span></div>
+                    {!presentCrew.includes(userName) && !isHolding && (<div className="absolute inset-0 flex items-center justify-center pointer-events-none"><span className="text-zinc-500 font-bold tracking-[0.4em] font-mono transition-opacity duration-300 group-hover:text-amber-500/50">长按完成签到</span></div>)}
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -386,7 +442,7 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
               {days.map(day => {
                 const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
                 const logKey = getDateKey(year, month, day);
-                const hasLog = !!logs[logKey];
+                const hasLog = logs[logKey] && logs[logKey].length > 0;
                 return (
                   <motion.div 
                     key={day} onClick={() => hasLog && setSelectedDateKey(logKey)} 
