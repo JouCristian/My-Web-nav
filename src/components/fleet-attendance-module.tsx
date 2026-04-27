@@ -4,13 +4,14 @@
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
-import { startGlobalRollCall, submitAttendance, checkLiveRollCall } from "@/app/actions"
+import { startGlobalRollCall, submitAttendance, checkLiveRollCall, getLeaveRequestsAction } from "@/app/actions"
 
 type RollCallLog = {
   id: string;
   timestamp: number;
   present: string[];
   missing: string[];
+  onLeave?: string[]; 
 }
 
 export function FleetAttendanceModule({ 
@@ -37,20 +38,18 @@ export function FleetAttendanceModule({
   const [inputMins, setInputMins] = useState("01")
   const [inputSecs, setInputSecs] = useState("00")
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false)
-  const [tempMins, setTempMins] = useState("01")
-  const [tempSecs, setTempSecs] = useState("00")
   
   const [presentCrew, setPresentCrew] = useState<string[]>([])
   const [isSummaryOpen, setIsSummaryOpen] = useState(false)
   const [isHolding, setIsHolding] = useState(false)
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null)
 
-  // 🚀 特权弹窗状态
   const [isAbsenceModalOpen, setIsAbsenceModalOpen] = useState(false)
   const [selectedAbsenceCrew, setSelectedAbsenceCrew] = useState<string | null>(null)
 
+  const [leaveRequests, setLeaveRequests] = useState<any[]>([])
+
   const isManager = userRole === "OWNER" || userRole === "ADMIN"
-  // 如果是管理员，allCrew 就是单纯的 crewMembers；如果是普通船员，还要把自己加进去
   const allCrew = isManager ? [...crewMembers] : Array.from(new Set([userName, ...crewMembers])).filter(Boolean)
 
   useEffect(() => { 
@@ -63,7 +62,19 @@ export function FleetAttendanceModule({
     if (mounted) localStorage.setItem("STARFLEET_ATTENDANCE_V6", JSON.stringify(logs)) 
   }, [logs, mounted])
 
-  // 亚空间雷达
+  useEffect(() => {
+    if (!mounted) return
+    const fetchLeaves = async () => {
+      try {
+        const res = await getLeaveRequestsAction()
+        setLeaveRequests(res)
+      } catch(e) {}
+    }
+    fetchLeaves()
+    const interval = setInterval(fetchLeaves, 3000)
+    return () => clearInterval(interval)
+  }, [mounted])
+
   useEffect(() => {
     if (!mounted) return
     let isFetching = false
@@ -156,11 +167,31 @@ export function FleetAttendanceModule({
   const getDateKey = (y: number, m: number, d: number) => `${y}-${m + 1}-${d}`
   const formatTime = (secs: number) => `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`
 
+  const now = Date.now()
+  
+  const activeLeaves = leaveRequests.filter(req => {
+    if (req.status !== "APPROVED") return false;
+    const start = new Date(req.startTime).getTime()
+    const end = new Date(req.endTime).getTime()
+    return now >= start && now <= end
+  })
+  const onLeaveCrewNames = activeLeaves.map(r => r.applicant)
+  
+  const unresponded = allCrew.filter(c => !presentCrew.includes(c))
+  const trueMissing = unresponded.filter(c => !onLeaveCrewNames.includes(c))
+  const currentlyOnLeave = unresponded.filter(c => onLeaveCrewNames.includes(c))
+
   const handleSaveAndClose = () => {
     const d = new Date();
     const todayKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
-    const missing = allCrew.filter(c => !presentCrew.includes(c))
-    const newLog: RollCallLog = { id: Date.now().toString(), timestamp: Date.now(), present: presentCrew, missing: missing }
+    
+    const newLog: RollCallLog = { 
+      id: Date.now().toString(), 
+      timestamp: Date.now(), 
+      present: presentCrew, 
+      missing: trueMissing,
+      onLeave: currentlyOnLeave
+    }
     
     setLogs(prev => {
       const updated = { ...prev, [todayKey]: [...(prev[todayKey] || []), newLog] }
@@ -187,7 +218,6 @@ export function FleetAttendanceModule({
     if (selectedLogId === logId) setSelectedLogId(null)
   }
 
-  // 🚀 获取某位船员的所有缺勤记录
   const getAbsencesForCrew = (crewName: string) => {
     const absences: { dateKey: string, log: RollCallLog }[] = [];
     Object.keys(logs).forEach(dateKey => {
@@ -198,15 +228,20 @@ export function FleetAttendanceModule({
     return absences.sort((a, b) => b.log.timestamp - a.log.timestamp);
   }
 
-  // 🚀 舰长特权：抹除特定船员的特定缺勤记录
+  // 🚀 核心修复：舰长补签逻辑 (删除缺勤黑历史并转为出勤)
   const handleDeleteAbsence = (dateKey: string, logId: string, crewName: string) => {
     setLogs(prev => {
       const newState = { ...prev };
       if (newState[dateKey]) {
         newState[dateKey] = newState[dateKey].map(log => {
           if (log.id === logId) {
-            // 将其从 missing 数组中剔除，等同于销毁了其缺勤黑历史
-            return { ...log, missing: log.missing.filter(c => c !== crewName) }
+            return { 
+              ...log, 
+              // 将该名船员从缺勤红名单剔除
+              missing: log.missing.filter(c => c !== crewName),
+              // 并同时将他转入出勤绿名单 (使用 Set 防止意外重复)
+              present: Array.from(new Set([...log.present, crewName]))
+            }
           }
           return log;
         });
@@ -279,7 +314,6 @@ export function FleetAttendanceModule({
             </div>
             
             <div className="flex items-center gap-3">
-              {/* 🚀 舰长专属按钮：缺勤档案管理 */}
               {isManager && (
                 <button 
                   onClick={() => setIsAbsenceModalOpen(true)} 
@@ -454,9 +488,7 @@ export function FleetAttendanceModule({
         </div>
       </div>
       
-      {/* ==================================================== */}
       {/* 🚀 新增特权模块：缺勤档案管理双栏弹窗 (仅舰长可见) */}
-      {/* ==================================================== */}
       {mounted && isManager && createPortal(
         <AnimatePresence>
           {isAbsenceModalOpen && (
@@ -509,11 +541,10 @@ export function FleetAttendanceModule({
                                   <div className="text-[10px] text-zinc-500 uppercase tracking-widest">Recorded at {new Date(log.timestamp).toLocaleTimeString()}</div>
                                 </div>
                                 
-                                {/* 🚀 抹除按钮 */}
                                 <button 
                                   onClick={() => handleDeleteAbsence(dateKey, log.id, selectedAbsenceCrew)}
                                   className="group/del relative w-10 h-10 rounded-xl bg-black/40 border border-white/5 hover:bg-red-500/20 hover:border-red-500/50 hover:shadow-[0_0_15px_rgba(239,68,68,0.4)] transition-all flex items-center justify-center active:scale-90 overflow-hidden" 
-                                  title="从档案中抹除该缺勤记录"
+                                  title="从档案中抹除并标记为已出勤"
                                 >
                                   <div className="absolute inset-0 rounded-xl bg-red-500/30 opacity-0 group-hover/del:opacity-100 group-hover/del:animate-pulse pointer-events-none" />
                                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4 text-zinc-500 group-hover/del:text-red-400 transition-all duration-300 group-hover/del:scale-110 relative z-10">
@@ -619,14 +650,26 @@ export function FleetAttendanceModule({
                             <div className="grid grid-cols-2 gap-4 flex-1 overflow-hidden">
                                <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 flex flex-col h-full shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
                                  <div className="text-[10px] text-emerald-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between"><span>已就位</span><span>{activeDetail?.present.length}</span></div>
-                                 <div className="flex-1 overflow-y-auto emerald-scrollbar space-y-2 pr-1">
+                                 <div className="flex-1 overflow-y-auto emerald-scrollbar space-y-2 pr-1 min-h-0">
                                    {activeDetail?.present.map(c => (<div key={c} className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-lg">{c}</div>))}
                                  </div>
                                </div>
+                               
                                <div className="bg-black/40 border border-red-500/20 rounded-2xl p-4 flex flex-col h-full shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-                                 <div className="text-[10px] text-red-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between"><span>未响应</span><span>{activeDetail?.missing.length}</span></div>
-                                 <div className="flex-1 overflow-y-auto red-scrollbar space-y-2 pr-1">
-                                   {activeDetail?.missing.map(c => (<div key={c} className="text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">{c}</div>))}
+                                 <div className="text-[10px] text-red-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between shrink-0">
+                                   <span>未响应 / 休假</span>
+                                   <span>{(activeDetail?.missing?.length || 0) + (activeDetail?.onLeave?.length || 0)}</span>
+                                 </div>
+                                 <div className="flex-1 overflow-y-auto red-scrollbar space-y-2 pr-1 min-h-0">
+                                   {activeDetail?.missing?.map(c => (
+                                     <div key={c} className="text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">{c}</div>
+                                   ))}
+                                   {activeDetail?.onLeave?.map(c => (
+                                     <div key={c} className="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-lg flex justify-between items-center">
+                                       {c}
+                                       <span className="text-[9px] bg-amber-500/20 px-1.5 py-0.5 rounded text-amber-400 border border-amber-500/30">休假中</span>
+                                     </div>
+                                   ))}
                                  </div>
                                </div>
                             </div>
@@ -657,18 +700,30 @@ export function FleetAttendanceModule({
                   </div>
     
                   <div className="grid grid-cols-2 gap-6 mb-8">
-                    <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-                      <div className="text-[10px] text-emerald-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between"><span>已就位 (Synced)</span><span>{presentCrew.length}</span></div>
-                      <div className="space-y-2 h-[250px] overflow-y-auto emerald-scrollbar pr-1">
+                    <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] flex flex-col h-full">
+                      <div className="text-[10px] text-emerald-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between shrink-0"><span>已就位 (Synced)</span><span>{presentCrew.length}</span></div>
+                      <div className="flex-1 overflow-y-auto emerald-scrollbar pr-1 space-y-2 min-h-0 h-[250px]">
                         {presentCrew.map(c => <div key={c} className="text-sm font-bold text-emerald-400 bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/20">{c}</div>)}
                         {presentCrew.length === 0 && <div className="text-xs text-zinc-600 italic">无人响应...</div>}
                       </div>
                     </div>
-                    <div className="bg-black/40 border border-red-500/20 rounded-2xl p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-                      <div className="text-[10px] text-red-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between"><span>未响应 (Missing)</span><span>{allCrew.length - presentCrew.length}</span></div>
-                      <div className="space-y-2 h-[250px] overflow-y-auto red-scrollbar pr-1">
-                        {allCrew.filter(c => !presentCrew.includes(c)).map(c => <div key={c} className="text-sm font-bold text-red-400 bg-red-500/10 px-3 py-2 rounded-lg border border-red-500/20">{c}</div>)}
-                        {allCrew.length === presentCrew.length && <div className="text-xs text-emerald-500/50 italic">全员集结完毕！</div>}
+                    
+                    <div className="bg-black/40 border border-red-500/20 rounded-2xl p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] flex flex-col h-full">
+                      <div className="text-[10px] text-red-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between shrink-0">
+                        <span>未响应 (Missing/Leave)</span>
+                        <span>{trueMissing.length + currentlyOnLeave.length}</span>
+                      </div>
+                      <div className="flex-1 overflow-y-auto red-scrollbar pr-1 space-y-2 min-h-0 h-[250px]">
+                        {trueMissing.map(c => (
+                          <div key={c} className="text-xs font-bold text-red-400 bg-red-500/10 px-3 py-2 rounded-lg border border-red-500/20">{c}</div>
+                        ))}
+                        {currentlyOnLeave.map(c => (
+                          <div key={c} className="text-xs font-bold text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20 flex justify-between items-center">
+                            {c}
+                            <span className="text-[9px] bg-amber-500/20 px-1.5 py-0.5 rounded text-amber-400 border border-amber-500/30">休假中</span>
+                          </div>
+                        ))}
+                        {(trueMissing.length + currentlyOnLeave.length) === 0 && <div className="text-xs text-emerald-500/50 italic">全员集结完毕！</div>}
                       </div>
                     </div>
                   </div>
