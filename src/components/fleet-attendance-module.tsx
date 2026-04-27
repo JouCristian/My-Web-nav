@@ -5,8 +5,6 @@ import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
 
-const FLEET_CREW = ["Cmdr. Shepard", "Lt. Ripley", "Eng. Isaac", "Pilot Cooper", "Dr. Brand", "Spec. Nova"]
-
 type RollCallLog = {
   id: string;
   timestamp: number;
@@ -14,17 +12,24 @@ type RollCallLog = {
   missing: string[];
 }
 
-export function FleetAttendanceModule({ userRole, userName = "Captain" }: { userRole: string, userName?: string }) {
+// 🚀 核心修改：新增 crewMembers 属性接收真实的数据库船员名单
+export function FleetAttendanceModule({ 
+  userRole, 
+  userName = "Captain",
+  crewMembers = [] 
+}: { 
+  userRole: string, 
+  userName?: string,
+  crewMembers?: string[]
+}) {
   const [mounted, setMounted] = useState(false)
   
-  // 📅 日历状态
   const [viewDate, setViewDate] = useState(new Date())
   const [logs, setLogs] = useState<Record<string, RollCallLog[]>>({})
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null)
   const [calendarDirection, setCalendarDirection] = useState(1) 
   
-  // ⏱️ 实时集结状态
   const [isRollCallActive, setIsRollCallActive] = useState(false)
   const [countdown, setCountdown] = useState(0)
   const [inputMins, setInputMins] = useState("01")
@@ -39,7 +44,8 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const isManager = userRole === "OWNER" || userRole === "ADMIN"
-  const allCrew = isManager ? [...FLEET_CREW] : [userName, ...FLEET_CREW]
+  // 🚀 核心修改：使用真实的船员名单进行去重整合
+  const allCrew = isManager ? [...crewMembers] : Array.from(new Set([userName, ...crewMembers])).filter(Boolean)
 
   useEffect(() => { 
     setMounted(true)
@@ -56,20 +62,14 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
     if (isRollCallActive && countdown > 0) {
       timer = setTimeout(() => {
         setCountdown(prev => prev - 1)
-        if (Math.random() < 0.15) {
-          const missing = allCrew.filter(c => !presentCrew.includes(c))
-          if (missing.length > 0) {
-            const randomCrew = missing[Math.floor(Math.random() * missing.length)]
-            setPresentCrew(prev => [...prev, randomCrew])
-          }
-        }
+        // 🚀 核心修改：已彻底移除 Math.random() 的自动假签到引擎，现在需要真实的人工操作或真实的网络推送
       }, 1000)
     } else if (isRollCallActive && countdown === 0) {
       setIsRollCallActive(false)
       setIsSummaryOpen(true)
     }
     return () => clearTimeout(timer)
-  }, [isRollCallActive, countdown, presentCrew, allCrew])
+  }, [isRollCallActive, countdown])
 
   const startRollCall = () => {
     const totalSecs = (parseInt(inputMins) || 0) * 60 + (parseInt(inputSecs) || 0)
@@ -109,9 +109,8 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
     setIsSummaryOpen(false)
   }
 
-  // 🚀 舰长特权：删除日志记录功能
   const handleDeleteLog = (e: React.MouseEvent, logId: string) => {
-    e.stopPropagation() // 拦截点击事件，防止触发进入详情页
+    e.stopPropagation() 
     if (!selectedDateKey) return
 
     setLogs(prev => {
@@ -122,14 +121,13 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
       if (updatedLogs.length > 0) {
         newState[selectedDateKey] = updatedLogs
       } else {
-        delete newState[selectedDateKey] // 如果全删光了，清除这一天的键值
+        delete newState[selectedDateKey] 
       }
       
       localStorage.setItem("STARFLEET_ATTENDANCE_V6", JSON.stringify(newState))
       return newState
     })
 
-    // 如果当前正在查看这条日志的详情，强制关闭详情页
     if (selectedLogId === logId) {
       setSelectedLogId(null)
     }
@@ -157,16 +155,12 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
     visible: { opacity: 1, backdropFilter: "blur(15px)", transition: { duration: 0.4 } },
     exit: { opacity: 0, backdropFilter: "blur(0px)", transition: { duration: 0.4 } }
   }
-
-  // 核心模态框粒子消散 + 阻尼入场
   const modalVariants = {
     hidden: { opacity: 0, scale: 0.8, filter: "blur(20px) brightness(0.5)" },
     visible: { opacity: 1, scale: 1, filter: "blur(0px) brightness(1)", transition: { type: "spring", stiffness: 300, damping: 25 } },
     exit: { opacity: 0, scale: 0.85, filter: "blur(30px) brightness(0.2)", transition: { duration: 0.3, ease: "easeOut" } }
   }
   const springTransition = { type: "spring", stiffness: 350, damping: 25, mass: 0.8 }
-
-  // 🚀 专为列表项设计的极度 Q弹阻尼特效
   const bouncySpring = { type: "spring", stiffness: 500, damping: 20, mass: 1 }
 
   return (
@@ -201,7 +195,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
 
       <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mt-4">
         
-        {/* ================= 左舷：打卡控制中枢 ================= */}
         <div className="lg:col-span-2 rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-2xl flex flex-col h-full relative">
           <div className="absolute inset-0 rounded-[3.5rem] overflow-hidden pointer-events-none z-0">
             <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
@@ -234,7 +227,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                           {isTimePickerOpen && (
                             <>
                               <div className="fixed inset-0 z-[40]" onClick={(e) => { e.stopPropagation(); setIsTimePickerOpen(false); }} />
-                              
                               <motion.div 
                                 initial={{ opacity: 0, scale: 0.9, y: -20, filter: "blur(10px)" }}
                                 animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
@@ -243,12 +235,9 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                                 className="absolute top-[120%] left-1/2 -translate-x-1/2 z-[50] w-64"
                               >
                                 <div className="w-full bg-[#060813]/95 border border-amber-500/40 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(245,158,11,0.2)] p-4 flex flex-col gap-4 backdrop-blur-xl">
-                                  <div className="flex justify-between items-center px-4 font-mono text-[10px] text-amber-500/60 tracking-widest uppercase">
-                                    <span>MINUTES</span><span>SECONDS</span>
-                                  </div>
+                                  <div className="flex justify-between items-center px-4 font-mono text-[10px] text-amber-500/60 tracking-widest uppercase"><span>MINUTES</span><span>SECONDS</span></div>
                                   <div className="flex gap-2 h-40 relative">
                                     <div className="absolute inset-0 bg-gradient-to-b from-[#060813] via-transparent to-[#060813] pointer-events-none z-10" />
-                                    
                                     <div className="flex-1 h-full overflow-y-auto overflow-x-hidden amber-scrollbar relative z-0 pr-2 pl-1 text-center space-y-1">
                                       {Array.from({length: 60}, (_, i) => String(i).padStart(2, '0')).map(m => {
                                         const isSelected = tempMins === m;
@@ -281,7 +270,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                         </AnimatePresence>
                       </div>
                     </div>
-
                     <button onClick={startRollCall} className="relative group w-full py-5 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-amber-400 font-bold tracking-[0.3em] text-lg transition-all duration-500 ease-out hover:bg-amber-500 hover:text-black hover:scale-[1.02] shadow-[0_0_30px_rgba(245,158,11,0.2)] active:scale-95 z-10 overflow-hidden">
                       <div className="absolute inset-0 rounded-2xl border-2 border-amber-400 opacity-0 group-hover:animate-ping pointer-events-none"></div>
                       <span className="relative z-10">发起全舰集结指令</span>
@@ -388,12 +376,10 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
             <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
               <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/70 backdrop-blur-[20px]" onClick={()=>{setSelectedDateKey(null); setSelectedLogId(null)}} />
               
-              {/* 粒子模糊层 */}
               <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10">
                 <div className="flex items-center justify-center gap-6 w-full max-w-6xl pointer-events-none">
                   <AnimatePresence mode="wait">
                     
-                    {/* 内层：左侧列表 */}
                     <motion.div 
                       layout 
                       transition={springTransition}
@@ -407,7 +393,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                               <span className="text-amber-500/60 font-mono text-sm">{selectedDateKey}</span>
                             </div>
                             
-                            {/* 🚀 修复点：使用 popLayout 让记录被删除后，底下的元素瞬间上弹补位 */}
                             <div className="flex-1 overflow-y-auto amber-scrollbar pr-2 flex flex-col gap-3 mb-6 relative min-h-[100px]">
                               <AnimatePresence mode="popLayout">
                                 {currentDayLogs.length > 0 ? currentDayLogs.map(log => (
@@ -416,9 +401,8 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                                     key={log.id} 
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
-                                    /* 🚀 删除时的粒子消散退场动画 */
                                     exit={{ opacity: 0, scale: 0.5, filter: "blur(10px) brightness(2)", transition: { duration: 0.25 } }}
-                                    transition={bouncySpring} // Q弹效果
+                                    transition={bouncySpring}
                                     onClick={() => setSelectedLogId(log.id)} 
                                     className={`group relative flex justify-between items-center border hover:border-amber-500/40 p-5 rounded-2xl cursor-pointer transition-colors active:scale-[0.98] overflow-hidden ${selectedLogId === log.id ? 'bg-amber-500/20 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'bg-white/5 border-white/10'}`}
                                   >
@@ -432,13 +416,8 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                                     </div>
                                     
                                     <div className="flex items-center gap-4 z-10">
-                                      {/* 🚀 舰长特权：删除日志按钮 */}
                                       {isManager && (
-                                        <div 
-                                          onClick={(e) => handleDeleteLog(e, log.id)}
-                                          className="w-8 h-8 rounded-lg flex items-center justify-center bg-red-500/10 text-red-500/50 hover:bg-red-500 hover:text-white transition-all hover:scale-110 active:scale-90"
-                                          title="删除该记录"
-                                        >
+                                        <div onClick={(e) => handleDeleteLog(e, log.id)} className="w-8 h-8 rounded-lg flex items-center justify-center bg-red-500/10 text-red-500/50 hover:bg-red-500 hover:text-white transition-all hover:scale-110 active:scale-90" title="删除该记录">
                                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                         </div>
                                       )}
@@ -446,12 +425,7 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                                     </div>
                                   </motion.div>
                                 )) : (
-                                  <motion.div 
-                                    key="no-records"
-                                    layout
-                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                    className="absolute inset-0 flex flex-col items-center justify-center text-zinc-600 font-mono text-xs tracking-widest gap-4"
-                                  >
+                                  <motion.div key="no-records" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col items-center justify-center text-zinc-600 font-mono text-xs tracking-widest gap-4">
                                     <span className="text-4xl opacity-30">📭</span>NO RECORDS ON THIS STARDATE
                                   </motion.div>
                                 )}
