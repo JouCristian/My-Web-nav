@@ -22,7 +22,7 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
   const [logs, setLogs] = useState<Record<string, RollCallLog[]>>({})
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null)
-  const [calendarDirection, setCalendarDirection] = useState(1) // 1:向右翻, -1:向左翻
+  const [calendarDirection, setCalendarDirection] = useState(1) 
   
   // ⏱️ 实时集结状态
   const [isRollCallActive, setIsRollCallActive] = useState(false)
@@ -79,7 +79,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
     setIsRollCallActive(true)
   }
 
-  // 🚀 零延迟、立刻触发 3D 月份翻转
   const changeMonth = (dir: number) => {
     setCalendarDirection(dir)
     setViewDate(new Date(year, month + dir))
@@ -127,13 +126,11 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
   const currentDayLogs = selectedDateKey ? logs[selectedDateKey] || [] : []
   const activeDetail = currentDayLogs.find(l => l.id === selectedLogId)
 
-  // ===================== 弹窗 UI 动画 =====================
   const overlayVariants = {
     hidden: { opacity: 0, backdropFilter: "blur(0px)" },
     visible: { opacity: 1, backdropFilter: "blur(15px)", transition: { duration: 0.4 } },
     exit: { opacity: 0, backdropFilter: "blur(0px)", transition: { duration: 0.4 } }
   }
-  // 粒子消散退出动画
   const modalVariants = {
     hidden: { opacity: 0, scale: 0.8, filter: "blur(20px) brightness(0.5)" },
     visible: { opacity: 1, scale: 1, filter: "blur(0px) brightness(1)", transition: { type: "spring", stiffness: 300, damping: 25 } },
@@ -170,9 +167,7 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
 
       <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mt-4">
         
-        {/* ================= 左舷：打卡控制中枢 ================= */}
         <div className="lg:col-span-2 rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-2xl flex flex-col h-full relative">
-          
           <div className="absolute inset-0 rounded-[3.5rem] overflow-hidden pointer-events-none z-0">
             <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
           </div>
@@ -224,24 +219,43 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                                       {Array.from({length: 60}, (_, i) => String(i).padStart(2, '0')).map(m => {
                                         const isSelected = tempMins === m;
                                         return (
-                                          <div key={`m-${m}`} onClick={() => setTempMins(m)} className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}>
+                                          <div 
+                                            key={`m-${m}`} 
+                                            onClick={() => setTempMins(m)} 
+                                            className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}
+                                          >
                                             {isSelected && (
-                                              <motion.div layoutId="activeMin" className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0" initial={false} transition={{ type: "spring", stiffness: 400, damping: 30 }} />
+                                              <motion.div
+                                                layoutId="activeMin"
+                                                className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0"
+                                                initial={false}
+                                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                              />
                                             )}
                                             <span className="relative z-10">{m}</span>
                                           </div>
                                         )
                                       })}
                                     </div>
+                                    
                                     <div className="w-px bg-amber-500/20 my-2 z-0"></div>
                                     
                                     <div className="flex-1 h-full overflow-y-auto overflow-x-hidden amber-scrollbar relative z-0 pl-2 pr-1 text-center space-y-1">
                                       {Array.from({length: 60}, (_, i) => String(i).padStart(2, '0')).map(s => {
                                         const isSelected = tempSecs === s;
                                         return (
-                                          <div key={`s-${s}`} onClick={() => setTempSecs(s)} className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}>
+                                          <div 
+                                            key={`s-${s}`} 
+                                            onClick={() => setTempSecs(s)} 
+                                            className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}
+                                          >
                                             {isSelected && (
-                                              <motion.div layoutId="activeSec" className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0" initial={false} transition={{ type: "spring", stiffness: 400, damping: 30 }} />
+                                              <motion.div
+                                                layoutId="activeSec"
+                                                className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0"
+                                                initial={false}
+                                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                              />
                                             )}
                                             <span className="relative z-10">{s}</span>
                                           </div>
@@ -249,6 +263,7 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                                       })}
                                     </div>
                                   </div>
+                                  
                                   <button onClick={() => { setInputMins(tempMins); setInputSecs(tempSecs); setIsTimePickerOpen(false); }} className="w-full py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold tracking-[0.2em] text-[10px] hover:bg-amber-500 hover:text-black transition-all active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.1)]">确认时间</button>
                                 </div>
                               </motion.div>
@@ -309,8 +324,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
 
         {/* ================= 右舷：时空日历矩阵 ================= */}
         <div className="lg:col-span-1 rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 shadow-[0_0_100px_rgba(245,158,11,0.1)] flex flex-col h-full relative overflow-hidden group">
-          {/* 🚀 核心修复 1：加上 pointer-events-none，防止遮挡鼠标点击事件 */}
-          <div className="absolute inset-0 bg-amber-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"></div>
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(245,158,11,1) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,1) 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
           <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent,rgba(245,158,11,0.08),transparent)] bg-[length:200%_200%] animate-[shimmer-seamless_4s_linear_infinite] pointer-events-none"></div>
 
@@ -329,10 +342,10 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
             </div>
             
             <AnimatePresence mode="wait" custom={calendarDirection}>
+              {/* 🚀 提取内部注释，修复 JSX 编译错误 */}
               <motion.div
                 key={viewDate.toISOString()}
                 custom={calendarDirection}
-                {/* 🚀 核心修复 2：采用立即触发的左右 (rotateY) 3D 翻转，去除冗长的延迟 */}
                 initial={(d: number) => ({ rotateY: d * 90, opacity: 0, scale: 0.95 })}
                 animate={{ rotateY: 0, opacity: 1, scale: 1 }}
                 exit={(d: number) => ({ rotateY: d * -90, opacity: 0, scale: 0.95 })}
@@ -350,7 +363,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                   return (
                     <motion.div 
                       key={day} onClick={() => setSelectedDateKey(logKey)} 
-                      {/* 🚀 核心修复 3：零延迟物理弹簧悬浮，瞬间放大跟手 */}
                       whileHover={{ scale: 1.15, translateZ: 20 }}
                       transition={{ type: "spring", stiffness: 500, damping: 25 }}
                       className={`cursor-pointer aspect-square rounded-xl flex items-center justify-center relative transition-colors duration-200 ${isToday ? 'border-2 border-amber-400 bg-amber-400/20 z-10 animate-star-pulse':'border border-transparent hover:bg-white/5'}`}
