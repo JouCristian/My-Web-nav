@@ -40,7 +40,6 @@ const SciFiDateTimePicker = ({ isOpen, onConfirm, onCancel }: { isOpen: boolean,
       animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
       exit={{ opacity: 0, y: -10, scale: 0.95, filter: "blur(10px)" }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      // 🚀 核心修复：纯实心背景，极强阴影，彻底阻断背景透视和穿透点击
       className="absolute top-[110%] left-0 w-full bg-[#060813] border border-amber-500/50 rounded-2xl p-5 z-[100] shadow-[0_30px_60px_rgba(0,0,0,0.95),0_0_20px_rgba(245,158,11,0.2)]"
       onClick={e => e.stopPropagation()} 
     >
@@ -48,7 +47,6 @@ const SciFiDateTimePicker = ({ isOpen, onConfirm, onCancel }: { isOpen: boolean,
         <span>Date</span><span>Hour</span><span>Minute</span>
       </div>
       <div className="flex h-48 gap-2 relative">
-        {/* 🚀 核心修复：渐变遮罩层 z-10，滚轮放到 z-20，彻底解决拦截滑动事件的 BUG */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#060813] via-transparent to-[#060813] pointer-events-none z-10" />
         
         <div className="flex-[2] h-full overflow-y-auto amber-scrollbar relative z-20 pr-1 text-center space-y-1">
@@ -303,13 +301,14 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
               <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
                 <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/70 backdrop-blur-[20px]" onClick={() => setIsModalOpen(false)} />
                 <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10 w-full max-w-md">
-                  <form onSubmit={handleSubmit} className="w-full bg-[#060813]/95 border-2 border-amber-500/50 rounded-[2.5rem] p-8 shadow-[0_0_80px_rgba(245,158,11,0.2)] overflow-hidden relative">
+                  
+                  {/* 🚀 核心修复：彻底移除了这里的 overflow-hidden */}
+                  <form onSubmit={handleSubmit} className="w-full bg-[#060813]/95 border-2 border-amber-500/50 rounded-[2.5rem] p-8 shadow-[0_0_80px_rgba(245,158,11,0.2)] relative">
                     <div className="flex justify-between items-center mb-6 border-b border-amber-500/20 pb-4">
                       <h2 className="text-xl font-bold text-amber-400 tracking-[0.2em]">新建离舰申请</h2>
                       <span className="text-amber-500/60 font-mono text-[10px]">Awaiting Submit</span>
                     </div>
 
-                    {/* 🚀 核心修复：提升整个输入框区域的 z-index 到 50，彻底碾压底部的提交按钮 */}
                     <div className="space-y-6 mb-8 relative z-50">
                       
                       {/* 事由输入 */}
