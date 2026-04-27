@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 import { TransitionLink } from "@/components/transition-link"
 import { FleetAttendanceModule } from "@/components/fleet-attendance-module" 
 import { LeaveRequestModule } from "@/components/leave-request-module" 
-import { AttendanceDashboardModule } from "@/components/attendance-dashboard-module" // 🚀 引入态势感知看板
+import { AttendanceDashboardModule } from "@/components/attendance-dashboard-module"
 
 export default async function AttendancePage() {
   const session = await auth()
@@ -14,21 +14,30 @@ export default async function AttendancePage() {
   const dbUser = await prisma.user.findUnique({ where: { email: session.user.email } })
   if (!dbUser) redirect("/")
 
-  // 🚀 核心数据预处理：分拣出指挥官和普通船员
+  // 🚀 防空洞级过滤：取消 realName 必须不为空的死板限制，确保所有舰长无论有没有实名都被查出来
   const allUsers = await prisma.user.findMany({
     where: { 
-      role: { in: ["MEMBER", "ADMIN", "OWNER"] }, 
-      realName: { not: null }
+      role: { in: ["MEMBER", "ADMIN", "OWNER"] }
     }
   })
   
-  // 传给看板左侧展示的管理层
-  const managerNames = allUsers.filter(u => u.role === "ADMIN" || u.role === "OWNER").map(u => u.realName as string)
-  // 传给右侧柱状图统计的普通船员（如果管理员也需要统计，可以取消这个 filter 限制）
-  const crewMembers = allUsers.filter(u => u.role === "MEMBER").map(u => u.realName as string)
+  // 🚀 舰长专属数据流：优先用真实姓名，没有就用网名，再没有就叫 Commander
+  const managersData = allUsers
+    .filter(u => u.role === "ADMIN" || u.role === "OWNER")
+    .map(u => ({
+      name: (u.realName || u.name || u.nickname || u.githubName || "Commander") as string,
+      role: u.role as string,
+      image: (u.image || u.customAvatar || null) as string | null
+    }))
 
-  // 用于主集结模块的总名单
-  const allRealNames = allUsers.map(u => u.realName as string)
+  // 🚀 船员名单
+  const crewMembers = allUsers
+    .filter(u => u.role === "MEMBER")
+    .map(u => (u.realName || u.name || u.nickname || u.githubName || "Unknown") as string)
+
+  // 主集结模块用的全员名单
+  const allRealNames = allUsers.map(u => (u.realName || u.name || u.nickname || u.githubName || "Unknown") as string)
+  const currentUserName = (dbUser.realName || dbUser.name || dbUser.nickname || dbUser.githubName || "Unknown") as string
 
   return (
     <main className="min-h-screen py-16 px-8 xl:px-24 text-white relative flex flex-col gap-12 overflow-x-hidden">
@@ -62,23 +71,21 @@ export default async function AttendancePage() {
         </div>
       </div>
 
-      {/* 🚀 战术布局网格体系 */}
       <div className="relative z-10 w-full flex flex-col gap-8">
         
         {/* 上半区：集结大盘与历史日历 */}
-        <FleetAttendanceModule userRole={dbUser.role || "PENDING"} userName={dbUser.realName || "Unknown"} crewMembers={allRealNames} />
+        <FleetAttendanceModule userRole={dbUser.role || "PENDING"} userName={currentUserName} crewMembers={allRealNames} />
         
-        {/* 🚀 下半区：绝对对称的 1/2 空间分配 */}
+        {/* 下半区：绝对对称的 1/2 空间分配 */}
         <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
           
-          {/* 左侧 1/2：休眠申请表 */}
           <div className="h-full">
-            <LeaveRequestModule userRole={dbUser.role || "PENDING"} userName={dbUser.realName || "Unknown"} />
+            <LeaveRequestModule userRole={dbUser.role || "PENDING"} userName={currentUserName} />
           </div>
 
-          {/* 右侧 1/2：全息态势感知看板 */}
           <div className="h-full">
-            <AttendanceDashboardModule managers={managerNames} crewMembers={crewMembers} />
+            {/* 🚀 传入全新的长官数据字典 */}
+            <AttendanceDashboardModule managers={managersData} crewMembers={crewMembers} />
           </div>
 
         </div>

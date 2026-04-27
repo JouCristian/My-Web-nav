@@ -12,7 +12,6 @@ type CrewStats = {
   leave: number;
 }
 
-// 🚀 新增：专为长官定制的复杂数据结构
 export type ManagerData = {
   name: string;
   role: string;
@@ -23,7 +22,7 @@ export function AttendanceDashboardModule({
   managers = [], 
   crewMembers = [] 
 }: { 
-  managers: ManagerData[], 
+  managers: any[], // 🚀 放宽类型，防止旧页面传字符串导致崩溃
   crewMembers: string[] 
 }) {
   const [mounted, setMounted] = useState(false)
@@ -142,48 +141,56 @@ export function AttendanceDashboardModule({
 
         <div className="flex-1 flex gap-6 bg-[#02040a]/80 border border-white/5 rounded-[2rem] p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] relative z-10 h-[350px]">
           
-          {/* 🚀 左半侧：全新重铸的指挥官身份牌矩阵 */}
+          {/* 左侧：管理人员矩阵 */}
           <div className="w-40 md:w-48 border-r border-white/10 flex flex-col pr-4 shrink-0">
             <div className="text-[10px] font-mono text-emerald-500/60 uppercase tracking-widest flex items-center gap-2 mb-4">
               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
               Commanders
             </div>
             <div className="flex-1 overflow-y-auto matrix-scrollbar space-y-3 pr-2">
-              {managers.map((m, idx) => (
-                <div key={idx} className="bg-[#02040a]/60 border border-emerald-500/20 p-3 rounded-2xl flex items-center gap-3 relative overflow-hidden group hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all shadow-[inset_0_0_15px_rgba(0,0,0,0.8)]">
-                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-transparent -translate-x-full group-hover:animate-[shimmer-seamless_2s_infinite] pointer-events-none" />
-                  
-                  {/* 🚀 头像加载引擎：优先展示图，无图自动切割首字母 */}
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 overflow-hidden shadow-[0_0_10px_rgba(16,185,129,0.2)]">
-                    {m.image ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={m.image} alt={m.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-emerald-500 font-bold text-sm">{m.name.charAt(0).toUpperCase()}</span>
-                    )}
-                  </div>
+              {managers.length > 0 ? managers.map((m, idx) => {
+                // 🚀 防御性编程：兼容没有更新 page 的纯字符串情况，彻底防止崩溃！
+                const isObj = typeof m === 'object' && m !== null;
+                const name = isObj ? (m.name || "Unknown") : String(m);
+                const role = isObj ? (m.role || "ADMIN") : "ADMIN";
+                const image = isObj ? m.image : null;
 
-                  {/* 🚀 身份徽章排版 */}
-                  <div className="flex flex-col items-start overflow-hidden relative z-10">
-                    <span className="text-sm font-bold text-white tracking-wider truncate w-full text-left">{m.name}</span>
-                    <div className="flex items-center mt-1">
-                      {m.role === 'OWNER' ? (
-                        <span className="text-[9px] text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md font-mono flex items-center gap-1 shadow-[0_0_5px_rgba(245,158,11,0.2)]">
-                          👑 CAPTAIN
-                        </span>
+                return (
+                  <div key={idx} className="bg-[#02040a]/60 border border-emerald-500/20 p-3 rounded-2xl flex items-center gap-3 relative overflow-hidden group hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all shadow-[inset_0_0_15px_rgba(0,0,0,0.8)]">
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-transparent -translate-x-full group-hover:animate-[shimmer-seamless_2s_infinite] pointer-events-none" />
+                    
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 overflow-hidden shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                      {image ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={image} alt={name} className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-md font-mono flex items-center gap-1 shadow-[0_0_5px_rgba(16,185,129,0.2)]">
-                          🛡️ ADMIN
-                        </span>
+                        <span className="text-emerald-500 font-bold text-sm">{name.charAt(0).toUpperCase()}</span>
                       )}
                     </div>
+
+                    <div className="flex flex-col items-start overflow-hidden relative z-10">
+                      <span className="text-sm font-bold text-white tracking-wider truncate w-full text-left">{name}</span>
+                      <div className="flex items-center mt-1">
+                        {role === 'OWNER' ? (
+                          <span className="text-[9px] text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md font-mono flex items-center gap-1 shadow-[0_0_5px_rgba(245,158,11,0.2)]">
+                            👑 CAPTAIN
+                          </span>
+                        ) : (
+                          <span className="text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-md font-mono flex items-center gap-1 shadow-[0_0_5px_rgba(16,185,129,0.2)]">
+                            🛡️ ADMIN
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              }) : (
+                <div className="text-center py-6 text-zinc-600 font-mono text-[10px] tracking-widest">NO COMMANDERS</div>
+              )}
             </div>
           </div>
 
-          {/* 右半侧：无限延展的船员 3D 统计折线矩阵 */}
+          {/* 右侧：统计折线矩阵 */}
           <div className="flex-1 flex flex-col relative overflow-hidden">
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20 py-8 z-0">
                {[...Array(5)].map((_, i) => <div key={i} className="border-b border-white/20 w-full flex-1" />)}
