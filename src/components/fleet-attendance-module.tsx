@@ -79,7 +79,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
     setIsRollCallActive(true)
   }
 
-  // 🚀 零延迟，触发立刻改变日期，启动日历整体翻转
   const changeMonth = (dir: number) => {
     setCalendarDirection(dir)
     setViewDate(new Date(year, month + dir))
@@ -110,6 +109,32 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
     setIsSummaryOpen(false)
   }
 
+  // 🚀 舰长特权：删除日志记录功能
+  const handleDeleteLog = (e: React.MouseEvent, logId: string) => {
+    e.stopPropagation() // 拦截点击事件，防止触发进入详情页
+    if (!selectedDateKey) return
+
+    setLogs(prev => {
+      const currentLogs = prev[selectedDateKey] || []
+      const updatedLogs = currentLogs.filter(log => log.id !== logId)
+      const newState = { ...prev }
+      
+      if (updatedLogs.length > 0) {
+        newState[selectedDateKey] = updatedLogs
+      } else {
+        delete newState[selectedDateKey] // 如果全删光了，清除这一天的键值
+      }
+      
+      localStorage.setItem("STARFLEET_ATTENDANCE_V6", JSON.stringify(newState))
+      return newState
+    })
+
+    // 如果当前正在查看这条日志的详情，强制关闭详情页
+    if (selectedLogId === logId) {
+      setSelectedLogId(null)
+    }
+  }
+
   const startHold = () => {
     if (presentCrew.includes(userName)) return
     setIsHolding(true)
@@ -127,19 +152,22 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
   const currentDayLogs = selectedDateKey ? logs[selectedDateKey] || [] : []
   const activeDetail = currentDayLogs.find(l => l.id === selectedLogId)
 
-  // ===================== 动画变体库 =====================
   const overlayVariants = {
     hidden: { opacity: 0, backdropFilter: "blur(0px)" },
     visible: { opacity: 1, backdropFilter: "blur(15px)", transition: { duration: 0.4 } },
     exit: { opacity: 0, backdropFilter: "blur(0px)", transition: { duration: 0.4 } }
   }
-  // 🚀 核心修复：独立的粒子消散外层动画，不与 Layout 冲突
+
+  // 核心模态框粒子消散 + 阻尼入场
   const modalVariants = {
     hidden: { opacity: 0, scale: 0.8, filter: "blur(20px) brightness(0.5)" },
     visible: { opacity: 1, scale: 1, filter: "blur(0px) brightness(1)", transition: { type: "spring", stiffness: 300, damping: 25 } },
     exit: { opacity: 0, scale: 0.85, filter: "blur(30px) brightness(0.2)", transition: { duration: 0.3, ease: "easeOut" } }
   }
   const springTransition = { type: "spring", stiffness: 350, damping: 25, mass: 0.8 }
+
+  // 🚀 专为列表项设计的极度 Q弹阻尼特效
+  const bouncySpring = { type: "spring", stiffness: 500, damping: 20, mass: 1 }
 
   return (
     <>
@@ -206,6 +234,7 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                           {isTimePickerOpen && (
                             <>
                               <div className="fixed inset-0 z-[40]" onClick={(e) => { e.stopPropagation(); setIsTimePickerOpen(false); }} />
+                              
                               <motion.div 
                                 initial={{ opacity: 0, scale: 0.9, y: -20, filter: "blur(10px)" }}
                                 animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
@@ -252,6 +281,7 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                         </AnimatePresence>
                       </div>
                     </div>
+
                     <button onClick={startRollCall} className="relative group w-full py-5 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-amber-400 font-bold tracking-[0.3em] text-lg transition-all duration-500 ease-out hover:bg-amber-500 hover:text-black hover:scale-[1.02] shadow-[0_0_30px_rgba(245,158,11,0.2)] active:scale-95 z-10 overflow-hidden">
                       <div className="absolute inset-0 rounded-2xl border-2 border-amber-400 opacity-0 group-hover:animate-ping pointer-events-none"></div>
                       <span className="relative z-10">发起全舰集结指令</span>
@@ -351,19 +381,19 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
         </div>
       </div>
       
-      {/* 🚀 弹窗逻辑：将 layout 限制在内层容器，完美兼容外层粒子退场 */}
+      {/* 🚀 弹窗逻辑 */}
       {mounted && createPortal(
         <AnimatePresence>
           {selectedDateKey && (
             <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
               <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/70 backdrop-blur-[20px]" onClick={()=>{setSelectedDateKey(null); setSelectedLogId(null)}} />
               
-              {/* 外层：负责粒子模糊退出 */}
+              {/* 粒子模糊层 */}
               <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10">
                 <div className="flex items-center justify-center gap-6 w-full max-w-6xl pointer-events-none">
                   <AnimatePresence mode="wait">
                     
-                    {/* 🚀 内层：负责橡皮筋变形 (Layout) 和呼吸动画 */}
+                    {/* 内层：左侧列表 */}
                     <motion.div 
                       layout 
                       transition={springTransition}
@@ -376,16 +406,58 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                               <h2 className="text-xl font-bold text-amber-400 tracking-[0.2em]">历史集结档案</h2>
                               <span className="text-amber-500/60 font-mono text-sm">{selectedDateKey}</span>
                             </div>
-                            <div className="flex-1 overflow-y-auto amber-scrollbar pr-2 space-y-3 mb-6 relative">
-                               {currentDayLogs.length > 0 ? currentDayLogs.map(log => (
-                                 <div key={log.id} onClick={() => setSelectedLogId(log.id)} className={`group relative flex justify-between items-center border hover:border-amber-500/40 p-5 rounded-2xl cursor-pointer transition-all active:scale-[0.98] overflow-hidden ${selectedLogId === log.id ? 'bg-amber-500/20 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'bg-white/5 border-white/10'}`}>
-                                   <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(245,158,11,0.05),transparent)] -translate-x-full group-hover:animate-[shimmer-seamless_2s_infinite] pointer-events-none" />
-                                   <div className="z-10"><div className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors">签到记录 / {new Date(log.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</div><div className="text-[10px] font-mono text-zinc-500 uppercase mt-1">Status: SYNCED - {log.present.length} Crew</div></div>
-                                   <div className="text-amber-500/50 group-hover:text-amber-400 group-hover:translate-x-1 transition-transform">➔</div>
-                                 </div>
-                               )) : <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-600 font-mono text-xs tracking-widest gap-4"><span className="text-4xl opacity-30">📭</span>NO RECORDS ON THIS STARDATE</div>}
+                            
+                            {/* 🚀 修复点：使用 popLayout 让记录被删除后，底下的元素瞬间上弹补位 */}
+                            <div className="flex-1 overflow-y-auto amber-scrollbar pr-2 flex flex-col gap-3 mb-6 relative min-h-[100px]">
+                              <AnimatePresence mode="popLayout">
+                                {currentDayLogs.length > 0 ? currentDayLogs.map(log => (
+                                  <motion.div 
+                                    layout
+                                    key={log.id} 
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    /* 🚀 删除时的粒子消散退场动画 */
+                                    exit={{ opacity: 0, scale: 0.5, filter: "blur(10px) brightness(2)", transition: { duration: 0.25 } }}
+                                    transition={bouncySpring} // Q弹效果
+                                    onClick={() => setSelectedLogId(log.id)} 
+                                    className={`group relative flex justify-between items-center border hover:border-amber-500/40 p-5 rounded-2xl cursor-pointer transition-colors active:scale-[0.98] overflow-hidden ${selectedLogId === log.id ? 'bg-amber-500/20 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'bg-white/5 border-white/10'}`}
+                                  >
+                                    <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(245,158,11,0.05),transparent)] -translate-x-full group-hover:animate-[shimmer-seamless_2s_infinite] pointer-events-none" />
+                                    
+                                    <div className="z-10">
+                                      <div className={`text-sm font-bold mb-1 transition-colors ${selectedLogId === log.id ? 'text-amber-400' : 'text-white group-hover:text-amber-300'}`}>
+                                        签到记录 / {new Date(log.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}
+                                      </div>
+                                      <div className="text-[10px] font-mono text-zinc-500 uppercase mt-1">Status: SYNCED - {log.present.length} Crew</div>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-4 z-10">
+                                      {/* 🚀 舰长特权：删除日志按钮 */}
+                                      {isManager && (
+                                        <div 
+                                          onClick={(e) => handleDeleteLog(e, log.id)}
+                                          className="w-8 h-8 rounded-lg flex items-center justify-center bg-red-500/10 text-red-500/50 hover:bg-red-500 hover:text-white transition-all hover:scale-110 active:scale-90"
+                                          title="删除该记录"
+                                        >
+                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        </div>
+                                      )}
+                                      <div className={`transition-transform ${selectedLogId === log.id ? 'text-amber-400 translate-x-1' : 'text-amber-500/50 group-hover:text-amber-400 group-hover:translate-x-1'}`}>➔</div>
+                                    </div>
+                                  </motion.div>
+                                )) : (
+                                  <motion.div 
+                                    key="no-records"
+                                    layout
+                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                    className="absolute inset-0 flex flex-col items-center justify-center text-zinc-600 font-mono text-xs tracking-widest gap-4"
+                                  >
+                                    <span className="text-4xl opacity-30">📭</span>NO RECORDS ON THIS STARDATE
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </div>
-                            <button onClick={()=>setSelectedDateKey(null)} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-zinc-400 font-bold hover:text-white transition-all active:scale-95">关闭档案室</button>
+                            <button onClick={()=>setSelectedDateKey(null)} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-zinc-400 font-bold hover:text-white transition-all active:scale-95 mt-auto">关闭档案室</button>
                           </motion.div>
                         ) : (
                           <motion.div key="detail" variants={{in:{x:0, opacity:1}, out:{x:50, opacity:0}}} initial="out" animate="in" exit="out" transition={{type:"spring", stiffness:300, damping:30}} className="flex flex-col h-full">
