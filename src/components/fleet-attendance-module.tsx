@@ -38,6 +38,8 @@ export function FleetAttendanceModule({
   const [inputMins, setInputMins] = useState("01")
   const [inputSecs, setInputSecs] = useState("00")
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false)
+  const [tempMins, setTempMins] = useState("01")
+  const [tempSecs, setTempSecs] = useState("00")
   
   const [presentCrew, setPresentCrew] = useState<string[]>([])
   const [isSummaryOpen, setIsSummaryOpen] = useState(false)
@@ -339,7 +341,7 @@ export function FleetAttendanceModule({
                           <div className="w-20 bg-black/50 border border-amber-500/30 rounded-2xl p-3 text-center text-4xl font-mono text-amber-400 group-hover:border-amber-400 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">{inputSecs}</div>
                         </div>
 
-                        {/* 🚀 核心修复区：分离遮罩和弹窗，添加独立的 Key，彻底阻止 Fragment 引发的引擎崩溃 */}
+                        {/* 🚀 彻底修复：拆解渲染树，移除 layoutId 测量引擎引起的引擎崩溃 */}
                         <AnimatePresence>
                           {isTimePickerOpen && (
                             <motion.div 
@@ -370,7 +372,8 @@ export function FleetAttendanceModule({
                                       const isSelected = tempMins === m;
                                       return (
                                         <div key={`m-${m}`} onClick={() => setTempMins(m)} className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}>
-                                          {isSelected && <motion.div layoutId="activeMin" className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0" initial={false} transition={{ type: "spring", stiffness: 400, damping: 30 }} />}
+                                          {/* 🚀 安全替换：使用标准的 scale+opacity 动画，绝对不会报错 */}
+                                          {isSelected && <motion.div className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 400, damping: 25 }} />}
                                           <span className="relative z-10">{m}</span>
                                         </div>
                                       )
@@ -382,7 +385,8 @@ export function FleetAttendanceModule({
                                       const isSelected = tempSecs === s;
                                       return (
                                         <div key={`s-${s}`} onClick={() => setTempSecs(s)} className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}>
-                                          {isSelected && <motion.div layoutId="activeSec" className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0" initial={false} transition={{ type: "spring", stiffness: 400, damping: 30 }} />}
+                                          {/* 🚀 安全替换 */}
+                                          {isSelected && <motion.div className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 400, damping: 25 }} />}
                                           <span className="relative z-10">{s}</span>
                                         </div>
                                       )
@@ -394,7 +398,6 @@ export function FleetAttendanceModule({
                             </motion.div>
                           )}
                         </AnimatePresence>
-                        {/* 🚀 修复区结束 */}
 
                       </div>
                     </div>
