@@ -30,6 +30,9 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
   const [startTime, setStartTime] = useState("")
   const [endTime, setEndTime] = useState("")
 
+  // 🚀 焦点追踪引擎：用于控制发光框在表单间的 Q 弹飞行
+  const [focusedInput, setFocusedInput] = useState<string | null>(null)
+
   const isManager = userRole === "OWNER" || userRole === "ADMIN"
 
   useEffect(() => { setMounted(true) }, [])
@@ -60,11 +63,8 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
     setIsSubmitting(true)
     
     try {
-      // 🚀 核心防空洞修复：在客户端将本地时间转换为绝对的 UTC 零时区字符串再发给服务器
-      // 这样一来，无论服务器在哪个国家，时间绝对不会发生长达 9 小时的漂移错乱！
       const startISO = new Date(startTime).toISOString()
       const endISO = new Date(endTime).toISOString()
-
       await submitLeaveRequestAction(reason, startISO, endISO)
       
       setIsModalOpen(false)
@@ -187,6 +187,7 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
                     </div>
 
                     <div className="flex gap-2 shrink-0 ml-4 opacity-30 group-hover:opacity-100 transition-opacity duration-300">
+                      
                       {isManager && req.status === "PENDING" && (
                         <>
                           <button onClick={() => handleApproval(req.id, "APPROVED")} className="group/op relative w-9 h-9 rounded-xl bg-black/40 border border-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/40 hover:shadow-[0_0_10px_rgba(16,185,129,0.2)] transition-all flex items-center justify-center active:scale-90" title="批准">
@@ -227,7 +228,6 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
         </div>
       </div>
 
-      {/* ======================= 弹窗组件群 ======================= */}
       {mounted && createPortal(
         <>
           <AnimatePresence>
@@ -242,17 +242,50 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
                     </div>
 
                     <div className="space-y-5 mb-8 relative z-10">
+                      {/* 🚀 独立容器与量子焦点追踪：事由 */}
                       <div className="space-y-2">
                         <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-2">离舰事由 / Reason</label>
-                        <input type="text" required value={reason} onChange={e => setReason(e.target.value)} placeholder="如：返回地球探亲" className="w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm text-white outline-none focus:border-amber-400 focus:shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-all" disabled={isSubmitting} />
+                        <div className="relative">
+                          <input 
+                            type="text" required value={reason} onChange={e => setReason(e.target.value)} 
+                            onFocus={() => setFocusedInput('reason')} onBlur={() => setFocusedInput(null)}
+                            placeholder="如：返回地球探亲" 
+                            className="relative z-10 w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm text-white outline-none disabled:opacity-50" disabled={isSubmitting} 
+                          />
+                          {focusedInput === 'reason' && (
+                            <motion.div layoutId="leave-focus-ring" className="absolute inset-0 rounded-xl border border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)] pointer-events-none z-20" transition={{ type: "spring", stiffness: 450, damping: 25 }} />
+                          )}
+                        </div>
                       </div>
+                      
+                      {/* 🚀 独立容器与量子焦点追踪：起始时间 */}
                       <div className="space-y-2">
                         <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-2">离舰时间 / Start Time</label>
-                        <input type="datetime-local" required value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm text-white outline-none focus:border-amber-400 focus:shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-all" style={{ colorScheme: "dark" }} disabled={isSubmitting} />
+                        <div className="relative">
+                          <input 
+                            type="datetime-local" required value={startTime} onChange={e => setStartTime(e.target.value)} 
+                            onFocus={() => setFocusedInput('startTime')} onBlur={() => setFocusedInput(null)}
+                            className="relative z-10 w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm text-white outline-none disabled:opacity-50" style={{ colorScheme: "dark" }} disabled={isSubmitting} 
+                          />
+                          {focusedInput === 'startTime' && (
+                            <motion.div layoutId="leave-focus-ring" className="absolute inset-0 rounded-xl border border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)] pointer-events-none z-20" transition={{ type: "spring", stiffness: 450, damping: 25 }} />
+                          )}
+                        </div>
                       </div>
+
+                      {/* 🚀 独立容器与量子焦点追踪：归舰时间 */}
                       <div className="space-y-2">
                         <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-2">归舰时间 / End Time</label>
-                        <input type="datetime-local" required value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm text-white outline-none focus:border-amber-400 focus:shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-all" style={{ colorScheme: "dark" }} disabled={isSubmitting} />
+                        <div className="relative">
+                          <input 
+                            type="datetime-local" required value={endTime} onChange={e => setEndTime(e.target.value)} 
+                            onFocus={() => setFocusedInput('endTime')} onBlur={() => setFocusedInput(null)}
+                            className="relative z-10 w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm text-white outline-none disabled:opacity-50" style={{ colorScheme: "dark" }} disabled={isSubmitting} 
+                          />
+                          {focusedInput === 'endTime' && (
+                            <motion.div layoutId="leave-focus-ring" className="absolute inset-0 rounded-xl border border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)] pointer-events-none z-20" transition={{ type: "spring", stiffness: 450, damping: 25 }} />
+                          )}
+                        </div>
                       </div>
                     </div>
 
