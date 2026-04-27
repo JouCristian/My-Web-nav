@@ -71,7 +71,7 @@ export default async function AttendancePage() {
         </div>
       </div>
 
-      <div className="relative z-10 w-full flex flex-col gap-8">
+      <div className="relative z-10 w-full flex flex-col gap-8 mb-8">
         
         {/* 上半区：集结大盘与历史日历 */}
         <FleetAttendanceModule userRole={dbUser.role || "PENDING"} userName={currentUserName} crewMembers={allRealNames} />
@@ -84,13 +84,51 @@ export default async function AttendancePage() {
           </div>
 
           <div className="h-full">
-            {/* 🚀 传入全新的长官数据字典 */}
             <AttendanceDashboardModule managers={managersData} crewMembers={crewMembers} />
           </div>
 
         </div>
 
       </div>
+
+      {/* ========================================== */}
+      {/* 🚀 底部系统托底防空洞 (System Footer)      */}
+      {/* ========================================== */}
+      <footer className="w-full mt-auto pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10 select-none">
+        
+        {/* 顶部发光能量分割线 */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-[1px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent"></div>
+        
+        {/* 左侧：连接状态参数 */}
+        <div className="flex items-center gap-4 text-[10px] font-mono text-zinc-600 tracking-[0.2em] uppercase">
+          <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]"></span>
+            <span className="text-emerald-500/80 font-bold">Uplink Active</span>
+          </div>
+          <span className="hidden md:inline opacity-30">/</span>
+          <span className="hidden md:inline">Sec-Level: Omega</span>
+          <span className="hidden md:inline opacity-30">/</span>
+          <span className="hidden md:inline">Node: Sector-7G</span>
+        </div>
+
+        {/* 中间：数据流终点标识 */}
+        <div className="text-[10px] font-mono text-zinc-600 tracking-[0.3em] uppercase text-center opacity-50 hover:opacity-100 hover:text-amber-500/50 transition-colors duration-500">
+          END OF SECURE DATA STREAM &copy; {new Date().getFullYear()} STARFLEET.
+        </div>
+
+        {/* 右侧：赛博朋克斜切装饰矩阵 */}
+        <div className="flex items-center gap-1 opacity-30">
+          {[...Array(6)].map((_, i) => (
+            <div 
+              key={i} 
+              className={`w-1.5 h-3 skew-x-[-20deg] ${
+                i === 5 ? 'bg-amber-500 animate-pulse shadow-[0_0_10px_#f59e0b]' : 'bg-white/40'
+              }`}
+            ></div>
+          ))}
+        </div>
+
+      </footer>
 
     </main>
   )
