@@ -22,7 +22,7 @@ export function AttendanceDashboardModule({
   managers = [], 
   crewMembers = [] 
 }: { 
-  managers: any[], // 🚀 放宽类型，防止旧页面传字符串导致崩溃
+  managers: any[], 
   crewMembers: string[] 
 }) {
   const [mounted, setMounted] = useState(false)
@@ -122,7 +122,7 @@ export function AttendanceDashboardModule({
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(16,185,129,1) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,1) 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
         <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent,rgba(16,185,129,0.05),transparent)] bg-[length:200%_200%] animate-[shimmer-seamless_4s_linear_infinite] pointer-events-none"></div>
 
-        <div className="flex items-center justify-between mb-8 relative z-20">
+        <div className="flex items-center justify-between mb-8 relative z-20 shrink-0">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.2)]">
               <span className="text-2xl">📊</span>
@@ -139,17 +139,18 @@ export function AttendanceDashboardModule({
           </div>
         </div>
 
-        <div className="flex-1 flex gap-6 bg-[#02040a]/80 border border-white/5 rounded-[2rem] p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] relative z-10 h-[350px]">
+        {/* 🚀 核心防爆层：固定高度 350px，内部元素被彻底限制在此区域内 */}
+        <div className="flex-1 flex gap-6 bg-[#02040a]/80 border border-white/5 rounded-[2rem] p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] relative z-10 h-[350px] min-h-[350px] max-h-[350px]">
           
-          {/* 左侧：管理人员矩阵 */}
-          <div className="w-40 md:w-48 border-r border-white/10 flex flex-col pr-4 shrink-0">
-            <div className="text-[10px] font-mono text-emerald-500/60 uppercase tracking-widest flex items-center gap-2 mb-4">
+          {/* 🚀 左侧管理人员区域：强制溢出隐藏 + 纵向滚动 (overflow-y-auto) */}
+          <div className="w-40 md:w-48 border-r border-white/10 flex flex-col pr-4 shrink-0 min-h-0">
+            <div className="text-[10px] font-mono text-emerald-500/60 uppercase tracking-widest flex items-center gap-2 mb-4 shrink-0">
               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
               Commanders
             </div>
-            <div className="flex-1 overflow-y-auto matrix-scrollbar space-y-3 pr-2">
+            {/* 上下滚动条区域 */}
+            <div className="flex-1 overflow-y-auto matrix-scrollbar space-y-3 pr-2 min-h-0 pb-4">
               {managers.length > 0 ? managers.map((m, idx) => {
-                // 🚀 防御性编程：兼容没有更新 page 的纯字符串情况，彻底防止崩溃！
                 const isObj = typeof m === 'object' && m !== null;
                 const name = isObj ? (m.name || "Unknown") : String(m);
                 const role = isObj ? (m.role || "ADMIN") : "ADMIN";
@@ -190,13 +191,14 @@ export function AttendanceDashboardModule({
             </div>
           </div>
 
-          {/* 右侧：统计折线矩阵 */}
-          <div className="flex-1 flex flex-col relative overflow-hidden">
+          {/* 🚀 右侧 3D 柱状图区域：强制溢出隐藏 + 横向滚动 (overflow-x-auto) */}
+          <div className="flex-1 flex flex-col relative overflow-hidden min-w-0">
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20 py-8 z-0">
                {[...Array(5)].map((_, i) => <div key={i} className="border-b border-white/20 w-full flex-1" />)}
             </div>
             
-            <div className="flex-1 overflow-x-auto matrix-scrollbar flex items-end gap-8 pb-2 pt-10 px-4 relative z-10">
+            {/* 左右滚动条区域 */}
+            <div className="flex-1 overflow-x-auto matrix-scrollbar flex items-end gap-8 pb-2 pt-10 px-4 relative z-10 min-w-0">
               <AnimatePresence>
                 {stats.length > 0 ? stats.map(s => (
                   <motion.div 
