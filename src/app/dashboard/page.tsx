@@ -27,13 +27,14 @@ const THEME_MAP = {
     subtitle: "text-purple-200/40",
     activeText: "text-purple-400"
   },
+  // 🚀 恢复金色主题配置
   yellow: {
-    border: "border-yellow-500/20 hover:border-yellow-500/60",
-    shadow: "shadow-[0_0_40px_rgba(234,179,8,0.1)] hover:shadow-[0_0_80px_rgba(234,179,8,0.2)]",
-    blob: "bg-yellow-500/10 group-hover:bg-yellow-500/25",
-    iconBox: "bg-yellow-500/10 border-yellow-500/20 shadow-[0_0_20px_rgba(234,179,8,0.15)] group-hover:bg-yellow-500/20 text-yellow-400",
-    subtitle: "text-yellow-200/40",
-    activeText: "text-yellow-400"
+    border: "border-amber-500/20 hover:border-amber-500/60",
+    shadow: "shadow-[0_0_40px_rgba(245,158,11,0.1)] hover:shadow-[0_0_80px_rgba(245,158,11,0.2)]",
+    blob: "bg-amber-500/10 group-hover:bg-amber-500/25",
+    iconBox: "bg-amber-500/10 border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.15)] group-hover:bg-amber-500/20 text-amber-400",
+    subtitle: "text-amber-200/40",
+    activeText: "text-amber-400"
   }
 }
 
@@ -45,7 +46,7 @@ const ModuleCard = ({ moduleId, title, subtitle, icon, link, isActive, theme = "
   return (
     <Link 
       href={isActive ? link : "#"} 
-      className={`group relative w-full h-[360px] rounded-[3.5rem] border ${styles.border} bg-[#06060a]/95 p-12 flex flex-col justify-between overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-[0.98] ${isActive ? `hover:-translate-y-2 ${styles.shadow}` : 'opacity-60 grayscale'}`}
+      className={`group relative w-full h-[360px] rounded-[3.5rem] border ${styles.border} bg-[#06060a]/95 p-10 lg:p-12 flex flex-col justify-between overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-[0.98] ${isActive ? `hover:-translate-y-2 ${styles.shadow}` : 'opacity-60 grayscale'}`}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-40 group-hover:opacity-100 transition-opacity duration-700"></div>
       <div className={`absolute -top-20 -right-20 w-64 h-64 blur-[80px] rounded-full transition-all duration-1000 ${styles.blob}`}></div>
@@ -54,12 +55,12 @@ const ModuleCard = ({ moduleId, title, subtitle, icon, link, isActive, theme = "
         <div className={`w-20 h-20 rounded-[2rem] border flex items-center justify-center mb-8 text-4xl group-hover:scale-110 transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${styles.iconBox}`}>
           {icon}
         </div>
-        <h3 className="text-4xl font-bold text-white tracking-[0.15em] font-[family-name:var(--font-space)] mb-4">{title}</h3>
-        <p className={`text-base font-mono tracking-widest leading-relaxed ${styles.subtitle}`}>{subtitle}</p>
+        <h3 className="text-3xl lg:text-4xl font-bold text-white tracking-[0.15em] font-[family-name:var(--font-space)] mb-4">{title}</h3>
+        <p className={`text-sm lg:text-base font-mono tracking-widest leading-relaxed ${styles.subtitle}`}>{subtitle}</p>
       </div>
       
-      <div className="relative z-10 flex items-center justify-between text-[12px] font-mono text-zinc-500 uppercase tracking-[0.4em] border-t border-white/5 pt-8">
-        <span className="bg-white/5 px-4 py-2 rounded-lg">{moduleId}</span>
+      <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-[11px] lg:text-[12px] font-mono text-zinc-500 uppercase tracking-[0.4em] border-t border-white/5 pt-8">
+        <span className="bg-white/5 px-4 py-2 rounded-lg shrink-0">{moduleId}</span>
         <span className={`flex items-center gap-3 transition-all duration-500 ${isActive ? `${styles.activeText} group-hover:gap-6` : 'text-zinc-700'}`}>
           {isActive ? 'Authorize Access' : 'System Locked'}
           <span className="text-xl">➔</span>
@@ -228,12 +229,11 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ================= 🚀 核心重构：双子星 3:2 分栏布局 ================= */}
+      {/* ================= 模块 D & B：公告与日志 ================= */}
       <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mt-4">
         
-        {/* 1. 左侧：全舰公告大屏 */}
+        {/* 左侧：全舰公告大屏 */}
         <div className="lg:col-span-2 rounded-[3.5rem] border border-blue-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-[0_0_100px_rgba(59,130,246,0.1)] flex flex-col h-full">
-          
           <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[#0a0d1a]/80 border border-blue-500/30 rounded-3xl p-6 lg:px-10 lg:py-6 mb-8 overflow-hidden shadow-[inset_0_0_30px_rgba(59,130,246,0.1)]">
             <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(59,130,246,0.15),transparent)] bg-[length:200%_100%] animate-[shimmer-seamless_4s_linear_infinite] pointer-events-none"></div>
             
@@ -270,25 +270,42 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* 2. 右侧：航行日志 (传入当前用户的角色以判定读写权限) */}
+        {/* 右侧：航行日志 */}
         <div className="lg:col-span-1 rounded-[3.5rem] border border-emerald-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-[0_0_100px_rgba(16,185,129,0.15)] flex flex-col h-full relative overflow-hidden group">
           <div className="absolute inset-0 bg-emerald-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-          
-          {/* 🚀 核心修改：传入 userRole，给组件提供权限校验依据 */}
           <FlightLogCalendar userRole={dbUser.role || "PENDING"} />
         </div>
-
       </div>
 
-      <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col gap-12 mt-12">
+      {/* ================= 🚀 核心修改：左右平分的子模块入口区域 ================= */}
+      <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col gap-8 mt-12">
         <div className="flex items-center gap-4 opacity-40 mb-2">
           <div className="h-px bg-white/20 flex-1"></div>
-          <span className="text-[10px] font-mono uppercase tracking-[0.5em] text-white">System Modules</span>
+          <span className="text-[10px] font-mono uppercase tracking-[0.5em] text-white">System Sub-Modules</span>
           <div className="h-px bg-white/20 flex-1"></div>
         </div>
 
-        <ModuleCard moduleId="Module B" title="船员档案室" subtitle="Starship Crew Database & Authorization" icon="👥" link="/dashboard/crew" isActive={true} theme="purple" />
-        <ModuleCard moduleId="Module C" title="跃迁集结" subtitle="Fleet Attendance & Leave Requests" icon="⏳" link="/dashboard/attendance" isActive={true} theme="yellow" />
+        {/* 🚀 左右对齐的并排容器 (md:grid-cols-2) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
+          <ModuleCard 
+            moduleId="Module B" 
+            title="船员档案室" 
+            subtitle="Starship Crew Database & Authorization" 
+            icon="👥" 
+            link="/dashboard/crew" 
+            isActive={true} 
+            theme="purple" 
+          />
+          <ModuleCard 
+            moduleId="Module C" 
+            title="跃迁集结" 
+            subtitle="Fleet Attendance & Leave Requests" 
+            icon="⏳" 
+            link="/dashboard/attendance" 
+            isActive={true} 
+            theme="yellow" 
+          />
+        </div>
       </div>
 
       <div className="mt-16 flex justify-between items-center opacity-20 pointer-events-none border-t border-white/5 pt-8">
