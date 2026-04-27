@@ -4,7 +4,6 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
-// 🚀 引入我们刚刚新增的撤回接口
 import { submitLeaveRequestAction, getLeaveRequestsAction, updateLeaveStatusAction, revokeLeaveRequestAction } from "@/app/actions"
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED"
@@ -23,9 +22,8 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
   const [mounted, setMounted] = useState(false)
   const [requests, setRequests] = useState<LeaveRequest[]>([])
   
-  // 弹窗状态
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [revokeTargetId, setRevokeTargetId] = useState<string | null>(null) // 🚀 控制撤回确认弹窗
+  const [revokeTargetId, setRevokeTargetId] = useState<string | null>(null) 
   
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [reason, setReason] = useState("")
@@ -36,7 +34,6 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
 
   useEffect(() => { setMounted(true) }, [])
 
-  // 实时通讯雷达
   useEffect(() => {
     if (!mounted) return
     let isFetching = false
@@ -57,7 +54,6 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
     return () => clearInterval(interval)
   }, [mounted])
 
-  // 提交申请
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!reason || !startTime || !endTime) return
@@ -76,20 +72,19 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
     }
   }
 
-  // 🚀 船员执行撤回操作
+  // 🚀 船员撤回 & 舰长删除 统一执行接口
   const executeRevoke = async (id: string) => {
     // 乐观更新：立刻在前端移除该条记录，实现 Q弹向上的顺位替补
     setRequests(prev => prev.filter(req => req.id !== id))
-    setRevokeTargetId(null) // 关闭弹窗，触发粒子消散
+    setRevokeTargetId(null) 
 
     try {
       await revokeLeaveRequestAction(id)
     } catch (e) {
-      console.error("Revoke failed", e)
+      console.error("Action failed", e)
     }
   }
 
-  // 舰长审批操作
   const handleApproval = async (id: string, newStatus: RequestStatus) => {
     setRequests(prev => prev.map(req => req.id === id ? { ...req, status: newStatus } : req))
     try {
@@ -108,13 +103,11 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
     return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
   }
 
-  // 🚀 核心动效库
   const overlayVariants = {
     hidden: { opacity: 0, backdropFilter: "blur(0px)" },
     visible: { opacity: 1, backdropFilter: "blur(15px)", transition: { duration: 0.4 } },
     exit: { opacity: 0, backdropFilter: "blur(0px)", transition: { duration: 0.4 } }
   }
-  // 粒子消散退场特效
   const modalVariants = {
     hidden: { opacity: 0, scale: 0.8, filter: "blur(20px) brightness(0.5)" },
     visible: { opacity: 1, scale: 1, filter: "blur(0px) brightness(1)", transition: { type: "spring", stiffness: 300, damping: 25 } },
@@ -134,6 +127,13 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
 
   return (
     <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .amber-scrollbar::-webkit-scrollbar { width: 4px; } 
+        .amber-scrollbar::-webkit-scrollbar-track { background: transparent; } 
+        .amber-scrollbar::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.3); border-radius: 10px; border: 1px solid transparent; background-clip: padding-box; } 
+        .amber-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 0.6); }
+      `}} />
+
       <div className="w-full rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-[0_0_100px_rgba(245,158,11,0.05)] flex flex-col h-full relative overflow-hidden group">
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(245,158,11,1) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,1) 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
         <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent,rgba(245,158,11,0.05),transparent)] bg-[length:200%_200%] animate-[shimmer-seamless_4s_linear_infinite] pointer-events-none"></div>
@@ -156,7 +156,6 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
           )}
         </div>
 
-        {/* 🚀 核心修复：外层负责边框和背景，内层通过 h-[320px] 彻底锁死高度，触发内部滚动 */}
         <div className="bg-[#02040a]/80 border border-white/5 rounded-[2rem] p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] relative z-10">
           <div className="h-[320px] overflow-y-auto amber-scrollbar pr-2 flex flex-col gap-4 relative">
             <AnimatePresence mode="popLayout">
@@ -166,10 +165,9 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
                   key={req.id}
                   initial={{ opacity: 0, scale: 0.9, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  // 删除时的退场动画
                   exit={{ opacity: 0, scale: 0.8, filter: "blur(10px)", transition: { duration: 0.25 } }}
                   transition={bouncySpring}
-                  className={`relative p-5 rounded-2xl border transition-all ${req.status === 'PENDING' ? 'bg-amber-500/5 border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.05)]' : 'bg-white/5 border-white/10 opacity-70'}`}
+                  className={`relative p-5 rounded-2xl border transition-all ${req.status === 'PENDING' ? 'bg-amber-500/5 border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.05)]' : 'bg-white/5 border-white/10 opacity-70 hover:opacity-100'}`}
                 >
                   <div className="flex justify-between items-start">
                     <div>
@@ -187,13 +185,26 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
 
                     {/* 控制台操作区 */}
                     <div className="flex flex-col gap-2 shrink-0 ml-4">
+                      {/* 舰长审批功能 */}
                       {isManager && req.status === "PENDING" && (
-                        <>
+                        <div className="flex gap-2">
                           <button onClick={() => handleApproval(req.id, "APPROVED")} className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center active:scale-90" title="批准">✓</button>
-                          <button onClick={() => handleApproval(req.id, "REJECTED")} className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center active:scale-90" title="驳回">✕</button>
-                        </>
+                          <button onClick={() => handleApproval(req.id, "REJECTED")} className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-500 hover:bg-amber-500 hover:text-white transition-all flex items-center justify-center active:scale-90" title="驳回">✕</button>
+                        </div>
                       )}
-                      {/* 🚀 船员的撤回按钮 */}
+                      
+                      {/* 🚀 舰长的全局删除权限 (即使记录已处理也能删) */}
+                      {isManager && (
+                        <button 
+                          onClick={() => setRevokeTargetId(req.id)} 
+                          className="w-full h-10 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center active:scale-90" 
+                          title="永久销毁该记录"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      )}
+
+                      {/* 船员的撤回按钮 */}
                       {!isManager && req.status === "PENDING" && req.applicant === userName && (
                         <button 
                           onClick={() => setRevokeTargetId(req.id)} 
@@ -259,7 +270,7 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
             )}
           </AnimatePresence>
 
-          {/* 🚀 2. 船员撤回操作的二次确认弹窗 */}
+          {/* 🚀 2. 删除/撤回操作的二次确认弹窗 */}
           <AnimatePresence>
             {revokeTargetId && (
               <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
@@ -269,12 +280,15 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
                     <div className="w-16 h-16 mx-auto rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 mb-4 shadow-[0_0_20px_rgba(239,68,68,0.2)]">
                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                     </div>
-                    <h3 className="text-xl font-bold text-red-400 tracking-widest mb-2 font-[family-name:var(--font-space)]">撤回离舰申请</h3>
-                    <p className="text-zinc-400 text-xs tracking-wider mb-8">此操作将从星舰主控台中永久销毁该记录，确认执行？</p>
+                    {/* 🚀 动态权限警告文本 */}
+                    <h3 className="text-xl font-bold text-red-400 tracking-widest mb-2 font-[family-name:var(--font-space)]">
+                      {isManager ? "永久销毁档案" : "撤回离舰申请"}
+                    </h3>
+                    <p className="text-zinc-400 text-xs tracking-wider mb-8">此操作将从星舰主控台中永久抹除该数据，确认执行？</p>
                     
                     <div className="flex gap-4">
                       <button onClick={() => setRevokeTargetId(null)} className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-zinc-400 font-bold tracking-widest text-xs hover:bg-white/10 hover:text-white transition-all active:scale-95">取消</button>
-                      <button onClick={() => executeRevoke(revokeTargetId)} className="flex-1 py-3 rounded-xl bg-red-500/20 border border-red-500/50 text-red-400 font-bold tracking-widest text-xs hover:bg-red-500 hover:text-white transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)] active:scale-95">销毁记录</button>
+                      <button onClick={() => executeRevoke(revokeTargetId)} className="flex-1 py-3 rounded-xl bg-red-500/20 border border-red-500/50 text-red-400 font-bold tracking-widest text-xs hover:bg-red-500 hover:text-white transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)] active:scale-95">确认执行</button>
                     </div>
                   </div>
                 </motion.div>
