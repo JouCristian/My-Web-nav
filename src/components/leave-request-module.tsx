@@ -60,7 +60,13 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
     setIsSubmitting(true)
     
     try {
-      await submitLeaveRequestAction(reason, startTime, endTime)
+      // 🚀 核心防空洞修复：在客户端将本地时间转换为绝对的 UTC 零时区字符串再发给服务器
+      // 这样一来，无论服务器在哪个国家，时间绝对不会发生长达 9 小时的漂移错乱！
+      const startISO = new Date(startTime).toISOString()
+      const endISO = new Date(endTime).toISOString()
+
+      await submitLeaveRequestAction(reason, startISO, endISO)
+      
       setIsModalOpen(false)
       setReason(""); setStartTime(""); setEndTime("");
       const res = await getLeaveRequestsAction()
@@ -180,10 +186,7 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
                       </div>
                     </div>
 
-                    {/* 🚀 极其干练的美学操作区：悬浮点亮、并排矩阵 */}
                     <div className="flex gap-2 shrink-0 ml-4 opacity-30 group-hover:opacity-100 transition-opacity duration-300">
-                      
-                      {/* 舰长专属：批准与驳回 */}
                       {isManager && req.status === "PENDING" && (
                         <>
                           <button onClick={() => handleApproval(req.id, "APPROVED")} className="group/op relative w-9 h-9 rounded-xl bg-black/40 border border-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/40 hover:shadow-[0_0_10px_rgba(16,185,129,0.2)] transition-all flex items-center justify-center active:scale-90" title="批准">
@@ -197,7 +200,6 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
                         </>
                       )}
                       
-                      {/* 舰长全局删除 / 船员本人撤销 */}
                       {(isManager || (!isManager && req.status === "PENDING" && req.applicant === userName)) && (
                         <button 
                           onClick={() => setRevokeTargetId(req.id)} 
@@ -228,7 +230,6 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
       {/* ======================= 弹窗组件群 ======================= */}
       {mounted && createPortal(
         <>
-          {/* 1. 船员填写申请表单弹窗 */}
           <AnimatePresence>
             {isModalOpen && (
               <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
@@ -267,7 +268,6 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
             )}
           </AnimatePresence>
 
-          {/* 🚀 2. 删除/撤回操作的二次确认弹窗 */}
           <AnimatePresence>
             {revokeTargetId && (
               <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">

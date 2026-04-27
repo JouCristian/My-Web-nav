@@ -225,6 +225,9 @@ export async function submitLeaveRequestAction(reason: string, startTime: string
 }
 
 // 2. 舰长/船员拉取实时请假列表
+// src/app/actions.ts 中的获取请假列表接口
+
+// 2. 舰长/船员拉取实时请假列表
 export async function getLeaveRequestsAction() {
   const session = await auth()
   if (!session?.user?.email) return []
@@ -252,7 +255,8 @@ export async function getLeaveRequestsAction() {
 
   return requests.map(r => ({
     id: r.id,
-    applicant: r.user.realName || r.user.name || "Unknown",
+    // 🚀 核心修复：加入所有命名维度的降级策略，确保百分百匹配到真实船员！
+    applicant: r.user.realName || r.user.name || r.user.nickname || r.user.githubName || "Unknown",
     reason: r.reason,
     startTime: r.startTime.toISOString(),
     endTime: r.endTime.toISOString(),
