@@ -22,7 +22,7 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
   const [logs, setLogs] = useState<Record<string, RollCallLog[]>>({})
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null)
-  const [isFlipping, setIsFlipping] = useState(false)
+  const [calendarDirection, setCalendarDirection] = useState(1) // 1:向右翻, -1:向左翻
   
   // ⏱️ 实时集结状态
   const [isRollCallActive, setIsRollCallActive] = useState(false)
@@ -43,7 +43,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
 
   useEffect(() => { 
     setMounted(true)
-    // 🚀 更新了存储槽位为 V6，清洗掉之前可能损坏的空数据
     const saved = localStorage.getItem("STARFLEET_ATTENDANCE_V6")
     if (saved) try { setLogs(JSON.parse(saved)) } catch (e) { console.error(e) }
   }, [])
@@ -80,12 +79,10 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
     setIsRollCallActive(true)
   }
 
-  const changeMonth = async (dir: number) => {
-    if (isFlipping) return
-    setIsFlipping(true)
-    await new Promise(r => setTimeout(r, 300))
+  // 🚀 零延迟、立刻触发 3D 月份翻转
+  const changeMonth = (dir: number) => {
+    setCalendarDirection(dir)
     setViewDate(new Date(year, month + dir))
-    setIsFlipping(false)
   }
 
   const year = viewDate.getFullYear(); const month = viewDate.getMonth()
@@ -105,7 +102,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
     const missing = allCrew.filter(c => !presentCrew.includes(c))
     const newLog: RollCallLog = { id: Date.now().toString(), timestamp: Date.now(), present: presentCrew, missing: missing }
     
-    // 🚀 双重保险：强制同步更新状态并直接写入磁盘，彻底粉碎数据丢失 BUG
     setLogs(prev => {
       const updated = { ...prev, [todayKey]: [...(prev[todayKey] || []), newLog] }
       localStorage.setItem("STARFLEET_ATTENDANCE_V6", JSON.stringify(updated))
@@ -131,113 +127,18 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
   const currentDayLogs = selectedDateKey ? logs[selectedDateKey] || [] : []
   const activeDetail = currentDayLogs.find(l => l.id === selectedLogId)
 
+  // ===================== 弹窗 UI 动画 =====================
   const overlayVariants = {
     hidden: { opacity: 0, backdropFilter: "blur(0px)" },
     visible: { opacity: 1, backdropFilter: "blur(15px)", transition: { duration: 0.4 } },
     exit: { opacity: 0, backdropFilter: "blur(0px)", transition: { duration: 0.4 } }
   }
+  // 粒子消散退出动画
   const modalVariants = {
     hidden: { opacity: 0, scale: 0.8, filter: "blur(20px) brightness(0.5)" },
     visible: { opacity: 1, scale: 1, filter: "blur(0px) brightness(1)", transition: { type: "spring", stiffness: 300, damping: 25 } },
     exit: { opacity: 0, scale: 0.85, filter: "blur(30px) brightness(0.2)", transition: { duration: 0.4 } }
   }
-
-  // ===================== 弹窗 UI 组件 =====================
-  const summaryModal = (
-    <AnimatePresence>
-      {isSummaryOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/60" />
-          
-          {/* 🚀 修复 UI：将 overflow-hidden 和 rounded 放到了同一个层级，防止黄框被切掉 */}
-          <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative w-full max-w-xl z-10">
-            <div className="animate-modal-heavy-breathe w-full rounded-[2.5rem] bg-[#060813]/95 border-2 border-amber-500/50 p-8 md:p-10 shadow-[0_0_80px_rgba(245,158,11,0.2)] overflow-hidden">
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 mb-4 shadow-[0_0_20px_rgba(245,158,11,0.2)]"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
-                <h2 className="text-2xl font-bold text-amber-400 tracking-[0.2em] font-[family-name:var(--font-space)]">集结通道已关闭</h2>
-                <p className="text-zinc-500 font-mono text-xs mt-2 uppercase tracking-widest">Synchronization Complete</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-6 mb-8">
-                <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-                  <div className="text-[10px] text-emerald-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between"><span>已就位 (Synced)</span><span>{presentCrew.length}</span></div>
-                  <div className="space-y-2 h-[250px] overflow-y-auto emerald-scrollbar pr-1">
-                    {presentCrew.map(c => <div key={c} className="text-sm font-bold text-emerald-400 bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/20">{c}</div>)}
-                    {presentCrew.length === 0 && <div className="text-xs text-zinc-600 italic">无人响应...</div>}
-                  </div>
-                </div>
-                <div className="bg-black/40 border border-red-500/20 rounded-2xl p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
-                  <div className="text-[10px] text-red-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between"><span>未响应 (Missing)</span><span>{allCrew.length - presentCrew.length}</span></div>
-                  <div className="space-y-2 h-[250px] overflow-y-auto red-scrollbar pr-1">
-                    {allCrew.filter(c => !presentCrew.includes(c)).map(c => <div key={c} className="text-sm font-bold text-red-400 bg-red-500/10 px-3 py-2 rounded-lg border border-red-500/20">{c}</div>)}
-                    {allCrew.length === presentCrew.length && <div className="text-xs text-emerald-500/50 italic">全员集结完毕！</div>}
-                  </div>
-                </div>
-              </div>
-              <button onClick={handleSaveAndClose} className="w-full py-4 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 font-bold tracking-[0.2em] hover:bg-amber-500 hover:text-black transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] active:scale-95">刻录入舰队档案</button>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
-  )
-
-  const historyModal = (
-    <AnimatePresence>
-      {selectedDateKey && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="absolute inset-0 bg-[#02040a]/70 backdrop-blur-[20px]" onClick={()=>{setSelectedDateKey(null); setSelectedLogId(null)}} />
-          
-          <motion.div layout variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10">
-            {/* 🚀 修复 UI：独立圆角控制，保证外围黄框完美显示 */}
-            <div className="animate-modal-heavy-breathe min-w-[500px] md:w-[600px] bg-[#060813]/95 border-2 border-amber-500/50 rounded-[2.5rem] shadow-[0_0_80px_rgba(245,158,11,0.2)] p-8 overflow-hidden relative">
-              <AnimatePresence mode="wait">
-                {!selectedLogId ? (
-                  <motion.div key="list" variants={{in:{x:0, opacity:1}, out:{x:-50, opacity:0}}} initial="out" animate="in" exit="out" transition={{type:"spring", stiffness:300, damping:30}}>
-                    <div className="flex justify-between items-center mb-6 border-b border-amber-500/20 pb-4">
-                      <h2 className="text-xl font-bold text-amber-400 tracking-[0.2em]">历史集结档案</h2>
-                      <span className="text-amber-500/60 font-mono text-sm">{selectedDateKey}</span>
-                    </div>
-                    <div className="max-h-[350px] overflow-y-auto amber-scrollbar pr-2 space-y-3 mb-6 min-h-[100px]">
-                       {currentDayLogs.length > 0 ? currentDayLogs.map(log => (
-                         <div key={log.id} onClick={() => setSelectedLogId(log.id)} className="group relative flex justify-between items-center bg-white/5 border border-white/10 hover:border-amber-500/40 p-5 rounded-2xl cursor-pointer transition-all active:scale-[0.98] overflow-hidden">
-                           <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(245,158,11,0.05),transparent)] -translate-x-full group-hover:animate-[shimmer-seamless_2s_infinite] pointer-events-none" />
-                           <div className="z-10"><div className="text-sm font-bold text-white group-hover:text-amber-300">签到记录 / {new Date(log.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</div><div className="text-[10px] font-mono text-zinc-500 uppercase mt-1">Status: SYNCED - {log.present.length} Crew</div></div>
-                           <div className="text-amber-500/50 group-hover:text-amber-400 group-hover:translate-x-1 transition-transform">➔</div>
-                         </div>
-                       )) : <div className="text-center py-10 text-zinc-600 font-mono text-xs tracking-widest">NO RECORDS ON THIS STARDATE</div>}
-                    </div>
-                    <button onClick={()=>setSelectedDateKey(null)} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-zinc-400 font-bold hover:text-white transition-all">关闭档案室</button>
-                  </motion.div>
-                ) : (
-                  <motion.div key="detail" variants={{in:{x:0, opacity:1}, out:{x:50, opacity:0}}} initial="out" animate="in" exit="out" transition={{type:"spring", stiffness:300, damping:30}}>
-                    <div className="flex items-center gap-4 mb-6 border-b border-amber-500/20 pb-4">
-                      <button onClick={()=>setSelectedLogId(null)} className="w-10 h-10 rounded-xl bg-white/5 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-400 transition-all flex items-center justify-center">◀</button>
-                      <div><h2 className="text-xl font-bold text-amber-400 tracking-[0.2em]">档案详情</h2>{activeDetail && <span className="text-[10px] font-mono text-zinc-500 uppercase">Ref: {new Date(activeDetail.timestamp).toLocaleString()}</span>}</div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-6">
-                       <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 h-[300px] flex flex-col">
-                         <div className="text-[10px] text-emerald-500/60 font-mono uppercase mb-3">Present ({activeDetail?.present.length})</div>
-                         <div className="flex-1 overflow-y-auto emerald-scrollbar space-y-2 pr-1">
-                           {activeDetail?.present.map(c => (<div key={c} className="text-xs font-bold text-emerald-400 bg-emerald-500/5 border border-emerald-500/10 p-2 rounded-lg">{c}</div>))}
-                         </div>
-                       </div>
-                       <div className="bg-black/40 border border-red-500/20 rounded-2xl p-4 h-[300px] flex flex-col">
-                         <div className="text-[10px] text-red-500/60 font-mono uppercase mb-3">Missing ({activeDetail?.missing.length})</div>
-                         <div className="flex-1 overflow-y-auto red-scrollbar space-y-2 pr-1">
-                           {activeDetail?.missing.map(c => (<div key={c} className="text-xs font-bold text-red-400 bg-red-500/5 border border-red-500/10 p-2 rounded-lg">{c}</div>))}
-                         </div>
-                       </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
-  )
 
   return (
     <>
@@ -265,8 +166,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
         .red-scrollbar::-webkit-scrollbar-track { background: transparent; } 
         .red-scrollbar::-webkit-scrollbar-thumb { background: rgba(239, 68, 68, 0.3); border-radius: 10px; border: 1px solid transparent; background-clip: padding-box; } 
         .red-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(239, 68, 68, 0.6); }
-
-        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
       `}} />
 
       <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mt-4">
@@ -321,49 +220,28 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                                   <div className="flex gap-2 h-40 relative">
                                     <div className="absolute inset-0 bg-gradient-to-b from-[#060813] via-transparent to-[#060813] pointer-events-none z-10" />
                                     
-                                    {/* 分钟滚轮区 */}
                                     <div className="flex-1 h-full overflow-y-auto overflow-x-hidden amber-scrollbar relative z-0 pr-2 pl-1 text-center space-y-1">
                                       {Array.from({length: 60}, (_, i) => String(i).padStart(2, '0')).map(m => {
                                         const isSelected = tempMins === m;
                                         return (
-                                          <div 
-                                            key={`m-${m}`} 
-                                            onClick={() => setTempMins(m)} 
-                                            className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}
-                                          >
+                                          <div key={`m-${m}`} onClick={() => setTempMins(m)} className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}>
                                             {isSelected && (
-                                              <motion.div
-                                                layoutId="activeMin"
-                                                className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0"
-                                                initial={false}
-                                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                                              />
+                                              <motion.div layoutId="activeMin" className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0" initial={false} transition={{ type: "spring", stiffness: 400, damping: 30 }} />
                                             )}
                                             <span className="relative z-10">{m}</span>
                                           </div>
                                         )
                                       })}
                                     </div>
-                                    
                                     <div className="w-px bg-amber-500/20 my-2 z-0"></div>
                                     
-                                    {/* 秒钟滚轮区 */}
                                     <div className="flex-1 h-full overflow-y-auto overflow-x-hidden amber-scrollbar relative z-0 pl-2 pr-1 text-center space-y-1">
                                       {Array.from({length: 60}, (_, i) => String(i).padStart(2, '0')).map(s => {
                                         const isSelected = tempSecs === s;
                                         return (
-                                          <div 
-                                            key={`s-${s}`} 
-                                            onClick={() => setTempSecs(s)} 
-                                            className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}
-                                          >
+                                          <div key={`s-${s}`} onClick={() => setTempSecs(s)} className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}>
                                             {isSelected && (
-                                              <motion.div
-                                                layoutId="activeSec"
-                                                className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0"
-                                                initial={false}
-                                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                                              />
+                                              <motion.div layoutId="activeSec" className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0" initial={false} transition={{ type: "spring", stiffness: 400, damping: 30 }} />
                                             )}
                                             <span className="relative z-10">{s}</span>
                                           </div>
@@ -371,7 +249,6 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                                       })}
                                     </div>
                                   </div>
-                                  
                                   <button onClick={() => { setInputMins(tempMins); setInputSecs(tempSecs); setIsTimePickerOpen(false); }} className="w-full py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold tracking-[0.2em] text-[10px] hover:bg-amber-500 hover:text-black transition-all active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.1)]">确认时间</button>
                                 </div>
                               </motion.div>
@@ -432,6 +309,8 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
 
         {/* ================= 右舷：时空日历矩阵 ================= */}
         <div className="lg:col-span-1 rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 shadow-[0_0_100px_rgba(245,158,11,0.1)] flex flex-col h-full relative overflow-hidden group">
+          {/* 🚀 核心修复 1：加上 pointer-events-none，防止遮挡鼠标点击事件 */}
+          <div className="absolute inset-0 bg-amber-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"></div>
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(245,158,11,1) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,1) 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
           <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent,rgba(245,158,11,0.08),transparent)] bg-[length:200%_200%] animate-[shimmer-seamless_4s_linear_infinite] pointer-events-none"></div>
 
@@ -449,26 +328,32 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
               {['S','M','T','W','T','F','S'].map(d=>(<div key={d} className="text-center text-[10px] font-mono text-zinc-600">{d}</div>))}
             </div>
             
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait" custom={calendarDirection}>
               <motion.div
                 key={viewDate.toISOString()}
-                initial={{ rotateX: 90, opacity: 0 }}
-                animate={{ rotateX: 0, opacity: 1 }}
-                exit={{ rotateX: -90, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                custom={calendarDirection}
+                {/* 🚀 核心修复 2：采用立即触发的左右 (rotateY) 3D 翻转，去除冗长的延迟 */}
+                initial={(d: number) => ({ rotateY: d * 90, opacity: 0, scale: 0.95 })}
+                animate={{ rotateY: 0, opacity: 1, scale: 1 }}
+                exit={(d: number) => ({ rotateY: d * -90, opacity: 0, scale: 0.95 })}
+                transition={{ type: "spring", stiffness: 280, damping: 25 }}
                 className="grid grid-cols-7 gap-1 h-[320px]"
                 style={{ transformStyle: "preserve-3d" }}
               >
-                {blanks.map(i => <div key={`b-${i}`} className="aspect-square opacity-0" />)}
+                {blanks.map(i => <div key={`b-${i}`} className="aspect-square opacity-0 pointer-events-none" />)}
+                
                 {days.map(day => {
                   const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
                   const logKey = getDateKey(year, month, day);
                   const hasLog = logs[logKey]?.length > 0;
+                  
                   return (
                     <motion.div 
                       key={day} onClick={() => setSelectedDateKey(logKey)} 
-                      whileHover={{ scale: 1.1, translateZ: 20 }}
-                      className={`cursor-pointer aspect-square rounded-xl flex items-center justify-center relative transition-all duration-500 ${isToday ? 'border-2 border-amber-400 bg-amber-400/20 z-10 animate-star-pulse':'border border-transparent hover:bg-white/5'}`}
+                      {/* 🚀 核心修复 3：零延迟物理弹簧悬浮，瞬间放大跟手 */}
+                      whileHover={{ scale: 1.15, translateZ: 20 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                      className={`cursor-pointer aspect-square rounded-xl flex items-center justify-center relative transition-colors duration-200 ${isToday ? 'border-2 border-amber-400 bg-amber-400/20 z-10 animate-star-pulse':'border border-transparent hover:bg-white/5'}`}
                     >
                       {isToday && (
                         <div className="absolute inset-0 rounded-xl border-2 border-amber-400 animate-[ping_1.5s_infinite] opacity-50" />
@@ -478,12 +363,106 @@ export function FleetAttendanceModule({ userRole, userName = "Captain" }: { user
                     </motion.div>
                   )
                 })}
-                {trailingBlanks.map(i => <div key={`t-${i}`} className="aspect-square opacity-0" />)}
+                {trailingBlanks.map(i => <div key={`t-${i}`} className="aspect-square opacity-0 pointer-events-none" />)}
               </motion.div>
             </AnimatePresence>
           </div>
         </div>
       </div>
+      
+      {mounted && createPortal(
+        <AnimatePresence>
+          {selectedDateKey && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+              <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/70" onClick={()=>{setSelectedDateKey(null); setSelectedLogId(null)}} />
+              
+              <motion.div layout variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10 overflow-hidden rounded-[2.5rem]">
+                <div className="animate-modal-heavy-breathe min-w-[500px] md:w-[600px] bg-[#060813]/95 border-2 border-amber-500/50 p-8 shadow-2xl">
+                  <AnimatePresence mode="wait">
+                    {!selectedLogId ? (
+                      <motion.div key="list" variants={{in:{x:0, opacity:1}, out:{x:-50, opacity:0}}} initial="out" animate="in" exit="out" transition={{type:"spring", stiffness:300, damping:30}}>
+                        <div className="flex justify-between items-center mb-6 border-b border-amber-500/20 pb-4">
+                          <h2 className="text-xl font-bold text-amber-400 tracking-[0.2em]">历史集结档案</h2>
+                          <span className="text-amber-500/60 font-mono text-sm">{selectedDateKey}</span>
+                        </div>
+                        <div className="max-h-[350px] overflow-y-auto amber-scrollbar pr-2 space-y-3 mb-6 min-h-[100px]">
+                           {currentDayLogs.length > 0 ? currentDayLogs.map(log => (
+                             <div key={log.id} onClick={() => setSelectedLogId(log.id)} className="group relative flex justify-between items-center bg-white/5 border border-white/10 hover:border-amber-500/40 p-5 rounded-2xl cursor-pointer transition-all active:scale-[0.98] overflow-hidden">
+                               <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(245,158,11,0.05),transparent)] -translate-x-full group-hover:animate-[shimmer-seamless_2s_infinite] pointer-events-none" />
+                               <div className="z-10"><div className="text-sm font-bold text-white group-hover:text-amber-300">签到记录 / {new Date(log.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</div><div className="text-[10px] font-mono text-zinc-500 uppercase mt-1">Status: SYNCED - {log.present.length} Crew</div></div>
+                               <div className="text-amber-500/50 group-hover:text-amber-400 group-hover:translate-x-1 transition-transform">➔</div>
+                             </div>
+                           )) : <div className="text-center py-10 text-zinc-600 font-mono text-xs tracking-widest">NO RECORDS ON THIS STARDATE</div>}
+                        </div>
+                        <button onClick={()=>setSelectedDateKey(null)} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-zinc-400 font-bold hover:text-white transition-all">关闭档案室</button>
+                      </motion.div>
+                    ) : (
+                      <motion.div key="detail" variants={{in:{x:0, opacity:1}, out:{x:50, opacity:0}}} initial="out" animate="in" exit="out" transition={{type:"spring", stiffness:300, damping:30}}>
+                        <div className="flex items-center gap-4 mb-6 border-b border-amber-500/20 pb-4">
+                          <button onClick={()=>setSelectedLogId(null)} className="w-10 h-10 rounded-xl bg-white/5 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-400 transition-all flex items-center justify-center">◀</button>
+                          <div><h2 className="text-xl font-bold text-amber-400 tracking-[0.2em]">档案详情</h2>{activeDetail && <span className="text-[10px] font-mono text-zinc-500 uppercase">Ref: {new Date(activeDetail.timestamp).toLocaleString()}</span>}</div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-6">
+                           <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 h-[300px] flex flex-col">
+                             <div className="text-[10px] text-emerald-500/60 font-mono uppercase mb-3">Present ({activeDetail?.present.length})</div>
+                             <div className="flex-1 overflow-y-auto emerald-scrollbar space-y-2 pr-1">
+                               {activeDetail?.present.map(c => (<div key={c} className="text-xs font-bold text-emerald-400 bg-emerald-500/5 border border-emerald-500/10 p-2 rounded-lg">{c}</div>))}
+                             </div>
+                           </div>
+                           <div className="bg-black/40 border border-red-500/20 rounded-2xl p-4 h-[300px] flex flex-col">
+                             <div className="text-[10px] text-red-500/60 font-mono uppercase mb-3">Missing ({activeDetail?.missing.length})</div>
+                             <div className="flex-1 overflow-y-auto red-scrollbar space-y-2 pr-1">
+                               {activeDetail?.missing.map(c => (<div key={c} className="text-xs font-bold text-red-400 bg-red-500/5 border border-red-500/10 p-2 rounded-lg">{c}</div>))}
+                             </div>
+                           </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      , document.body)}
+
+      {/* 🚀 独立结算弹窗 */}
+      {mounted && createPortal(
+        <AnimatePresence>
+          {isSummaryOpen && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+              <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/60" />
+              <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative w-full max-w-xl z-10">
+                <div className="animate-modal-heavy-breathe w-full rounded-[2.5rem] bg-[#060813]/95 border-2 border-amber-500/50 p-8 md:p-10 shadow-[0_0_80px_rgba(245,158,11,0.2)] overflow-hidden">
+                  <div className="text-center mb-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 mb-4 shadow-[0_0_20px_rgba(245,158,11,0.2)]"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
+                    <h2 className="text-2xl font-bold text-amber-400 tracking-[0.2em] font-[family-name:var(--font-space)]">集结通道已关闭</h2>
+                    <p className="text-zinc-500 font-mono text-xs mt-2 uppercase tracking-widest">Synchronization Complete</p>
+                  </div>
+    
+                  <div className="grid grid-cols-2 gap-6 mb-8">
+                    <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
+                      <div className="text-[10px] text-emerald-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between"><span>已就位 (Synced)</span><span>{presentCrew.length}</span></div>
+                      <div className="space-y-2 h-[250px] overflow-y-auto emerald-scrollbar pr-1">
+                        {presentCrew.map(c => <div key={c} className="text-sm font-bold text-emerald-400 bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/20">{c}</div>)}
+                        {presentCrew.length === 0 && <div className="text-xs text-zinc-600 italic">无人响应...</div>}
+                      </div>
+                    </div>
+                    <div className="bg-black/40 border border-red-500/20 rounded-2xl p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
+                      <div className="text-[10px] text-red-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between"><span>未响应 (Missing)</span><span>{allCrew.length - presentCrew.length}</span></div>
+                      <div className="space-y-2 h-[250px] overflow-y-auto red-scrollbar pr-1">
+                        {allCrew.filter(c => !presentCrew.includes(c)).map(c => <div key={c} className="text-sm font-bold text-red-400 bg-red-500/10 px-3 py-2 rounded-lg border border-red-500/20">{c}</div>)}
+                        {allCrew.length === presentCrew.length && <div className="text-xs text-emerald-500/50 italic">全员集结完毕！</div>}
+                      </div>
+                    </div>
+                  </div>
+                  <button onClick={handleSaveAndClose} className="w-full py-4 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 font-bold tracking-[0.2em] hover:bg-amber-500 hover:text-black transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] active:scale-95">刻录入舰队档案</button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      , document.body)}
     </>
   )
 }
