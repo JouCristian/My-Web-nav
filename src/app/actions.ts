@@ -121,3 +121,80 @@ export async function toggleAdminRole(userId: string, makeAdmin: boolean) {
   await prisma.user.update({ where: { id: userId }, data: { role: makeAdmin ? "ADMIN" : "MEMBER" } })
   revalidatePath("/dashboard/crew")
 }
+
+/**
+ * ==========================================
+ * 🚀 模块 C：亚空间通讯协议 (实时集结接口)
+ * ==========================================
+ */
+
+// 1. 发起全舰集结 (仅舰长/管理员)
+export async function startGlobalRollCall(durationSeconds: number) {
+  const session = await auth()
+  if (!session?.user?.email) throw new Error("Unauthorized")
+  
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+  if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("Permission Denied")
+
+  // 先把之前所有活跃的会话强行关闭
+  await prisma.rollCallSession.updateMany({
+    where: { isActive: true },
+    data: { isActive: false }
+  })
+
+  // 创建新会话
+  const endTime = new Date(Date.now() + durationSeconds * 1000)
+  const newSession = await prisma.rollCallSession.create({
+    data: {
+      creatorId: user.id,
+      endTime: endTime,
+      isActive: true
+    }
+  })
+
+  revalidatePath("/dashboard/attendance")
+  return newSession
+}
+
+// 2. 船员签到动作
+export async function submitAttendance(sessionId: string) {
+  const session = await auth()
+  if (!session?.user?.email) throw new Error("Unauthorized")
+
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+  if (!user) throw new Error("User not found")
+
+  try {
+    await prisma.attendanceRecord.create({
+      data: {
+        userId: user.id,
+        sessionId: sessionId
+      }
+    })
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: "Already synced or expired" }
+  }
+}
+
+// 3. 实时信号广播 (供全体船员雷达监听)
+export async function checkLiveRollCall() {
+  const now = new Date()
+  const activeSession = await prisma.rollCallSession.findFirst({
+    where: {
+      isActive: true,
+      endTime: { gt: now } // 必须未过期
+    },
+    include: {
+      records: { include: { user: true } }
+    }
+  })
+
+  if (!activeSession) return null
+
+  return {
+    id: activeSession.id,
+    endTime: activeSession.endTime.getTime(),
+    presentNames: activeSession.records.map(r => r.user.realName).filter(Boolean) as string[]
+  }
+}

@@ -1,3 +1,5 @@
+// prisma/schema.prisma
+
 // 数据源与生成器配置
 generator client {
   provider = "prisma-client-js"
@@ -26,7 +28,7 @@ enum LeaveStatus {
 }
 
 // ==========================================
-// 🔑 NextAuth 核心验证表 (绝不能删)
+// 🔑 NextAuth 核心验证表
 // ==========================================
 model Account {
   id                 String  @id @default(cuid())
@@ -34,12 +36,12 @@ model Account {
   type               String
   provider           String
   providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
   expires_at         Int?
   token_type         String?
   scope              String?
-  id_token           String?  @db.Text
+  id_token           String? @db.Text
   session_state      String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -72,39 +74,38 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-
-  // 你原有的自定义字段 (保留！)
+  
+  // 自定义字段
   nickname      String?
   customAvatar  String?
   
-  // 《白皮书》新增的船员档案信息
+  // 船员档案信息
   githubId      String?   @unique
   githubName    String?
   realName      String?   
   studentId     String?   
-  feishuLink    String?   
+  feishuLink    String?
   
   role          Role      @default(PENDING)
   createdAt     DateTime  @default(now())
 
   // 关系映射
-  accounts      Account[]
-  sessions      Session[]
-  attendances   Attendance[]
-  leaveRequests LeaveRequest[]
-
-  // 🚀 新增：该船员发布的公告列表
-  announcements Announcement[]
+  accounts         Account[]
+  sessions         Session[]
+  attendances      Attendance[]
+  leaveRequests    LeaveRequest[]
+  announcements    Announcement[]
+  rollCallRecords  AttendanceRecord[] // 🚀 关联到跃迁集结记录
 }
 
 // ==========================================
-// 📅 会议、签到与请假 (白皮书架构)
+// 📅 会议、签到与请假 (模块D 等)
 // ==========================================
 model Meeting {
   id              String       @id @default(cuid())
   title           String?     
   date            DateTime     
-  signInDeadline  DateTime?    
+  signInDeadline  DateTime?
   content         String?      @db.Text
   createdBy       String       
   attendances     Attendance[]
@@ -127,12 +128,12 @@ model LeaveRequest {
   date      DateTime    
   reason    String      @db.Text
   status    LeaveStatus @default(PENDING)
-  handledBy String?     
+  handledBy String?
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ==========================================
-// 🔖 导航书签 (保留)
+// 🔖 导航书签 (模块A 下方等)
 // ==========================================
 model Bookmark {
   id          Int      @id @default(autoincrement())
@@ -148,13 +149,37 @@ model Bookmark {
 model Announcement {
   id        String   @id @default(cuid())
   title     String   // 广播标题
-  content   String   @db.Text // 广播内容 (支持长文本)
-  type      String   // 广播级别: "INFO"(日常) | "UPDATE"(更新) | "ALERT"(警报)
-  isPinned  Boolean  @default(false) // 🚀 新增：置顶状态
-  
+  content   String   @db.Text // 广播内容
+  type      String   // 广播级别: "INFO" | "UPDATE" | "ALERT"
+  isPinned  Boolean  @default(false) // 置顶状态
   authorId  String   // 发布者ID
   createdAt DateTime @default(now())
 
-  // 关系映射：谁发布了这条公告
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// 🚀 模块 C：跃迁集结与实时签到 (Roll Call System)
+// ==========================================
+model RollCallSession {
+  id        String   @id @default(cuid())
+  creatorId String
+  startTime DateTime @default(now())
+  endTime   DateTime
+  isActive  Boolean  @default(true)
+  
+  // 关联所有在此次集结中签到的记录
+  records   AttendanceRecord[]
+}
+
+model AttendanceRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  sessionId String
+  session   RollCallSession @relation(fields: [sessionId], references: [id])
+  timestamp DateTime @default(now())
+
+  // 复合唯一键，防止同一船员在同一次集结中重复签到
+  @@unique([userId, sessionId])
 }

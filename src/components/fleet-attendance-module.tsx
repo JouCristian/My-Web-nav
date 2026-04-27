@@ -4,6 +4,8 @@
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
+// 🚀 引入我们刚刚在 action 中写好的实时通讯接口
+import { startGlobalRollCall, submitAttendance, checkLiveRollCall } from "@/app/actions"
 
 type RollCallLog = {
   id: string;
@@ -12,7 +14,6 @@ type RollCallLog = {
   missing: string[];
 }
 
-// 🚀 核心修改：新增 crewMembers 属性接收真实的数据库船员名单
 export function FleetAttendanceModule({ 
   userRole, 
   userName = "Captain",
@@ -24,14 +25,18 @@ export function FleetAttendanceModule({
 }) {
   const [mounted, setMounted] = useState(false)
   
+  // 📅 日历状态
   const [viewDate, setViewDate] = useState(new Date())
   const [logs, setLogs] = useState<Record<string, RollCallLog[]>>({})
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null)
   const [calendarDirection, setCalendarDirection] = useState(1) 
   
+  // ⏱️ 实时亚空间同步状态机
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
   const [isRollCallActive, setIsRollCallActive] = useState(false)
   const [countdown, setCountdown] = useState(0)
+  
   const [inputMins, setInputMins] = useState("01")
   const [inputSecs, setInputSecs] = useState("00")
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false)
@@ -44,7 +49,6 @@ export function FleetAttendanceModule({
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const isManager = userRole === "OWNER" || userRole === "ADMIN"
-  // 🚀 核心修改：使用真实的船员名单进行去重整合
   const allCrew = isManager ? [...crewMembers] : Array.from(new Set([userName, ...crewMembers])).filter(Boolean)
 
   useEffect(() => { 
@@ -57,26 +61,90 @@ export function FleetAttendanceModule({
     if (mounted) localStorage.setItem("STARFLEET_ATTENDANCE_V6", JSON.stringify(logs)) 
   }, [logs, mounted])
 
+  // 🚀 核心黑魔法 1：亚空间雷达（每 2 秒扫描一次数据库信号）
+  useEffect(() => {
+    if (!mounted) return
+    let isFetching = false
+
+    const monitorSignal = async () => {
+      if (isFetching) return
+      isFetching = true
+      try {
+        const signal = await checkLiveRollCall()
+        if (signal) {
+          // 捕获到集结信号！
+          if (signal.id !== activeSessionId) {
+            setActiveSessionId(signal.id)
+            setIsRollCallActive(true)
+            const remaining = Math.max(0, Math.floor((signal.endTime - Date.now()) / 1000))
+            setCountdown(remaining)
+          }
+          setPresentCrew(signal.presentNames)
+        } else {
+          // 信号消失（集结结束）
+          if (activeSessionId) {
+             setIsRollCallActive(false)
+             setActiveSessionId(null)
+             setIsSummaryOpen(true)
+          }
+        }
+      } catch (e) {
+        console.error("Signal Monitor Error:", e)
+      } finally {
+        isFetching = false
+      }
+    }
+
+    const interval = setInterval(monitorSignal, 2000)
+    monitorSignal() // 挂载时立刻扫描一次
+    return () => clearInterval(interval)
+  }, [mounted, activeSessionId])
+
+  // 🚀 核心黑魔法 2：本地平滑倒计时（保证 UI 每秒丝滑跳动，不依赖网络延迟）
   useEffect(() => {
     let timer: NodeJS.Timeout
     if (isRollCallActive && countdown > 0) {
-      timer = setTimeout(() => {
-        setCountdown(prev => prev - 1)
-        // 🚀 核心修改：已彻底移除 Math.random() 的自动假签到引擎，现在需要真实的人工操作或真实的网络推送
-      }, 1000)
-    } else if (isRollCallActive && countdown === 0) {
+      timer = setTimeout(() => setCountdown(prev => prev - 1), 1000)
+    } else if (isRollCallActive && countdown <= 0 && activeSessionId) {
       setIsRollCallActive(false)
+      setActiveSessionId(null)
       setIsSummaryOpen(true)
     }
     return () => clearTimeout(timer)
-  }, [isRollCallActive, countdown])
+  }, [isRollCallActive, countdown, activeSessionId])
 
-  const startRollCall = () => {
+  // 🚀 真实交互：舰长发起全舰集结
+  const handleStartRollCall = async () => {
     const totalSecs = (parseInt(inputMins) || 0) * 60 + (parseInt(inputSecs) || 0)
     if (totalSecs <= 0) return
-    setCountdown(totalSecs)
-    setPresentCrew([]) 
-    setIsRollCallActive(true)
+    try {
+      // 调用 Server Action
+      await startGlobalRollCall(totalSecs)
+      // 乐观更新：立刻在本地启动 UI，轮询会自动接管
+      setCountdown(totalSecs)
+      setPresentCrew([]) 
+      setIsRollCallActive(true)
+    } catch (e) {
+      console.error("Failed to initiate roll call", e)
+    }
+  }
+
+  // 🚀 真实交互：船员长按签到
+  const startHold = () => {
+    if (presentCrew.includes(userName) || !activeSessionId) return
+    setIsHolding(true)
+    holdTimerRef.current = setTimeout(async () => {
+      // 调用 Server Action 写入数据库
+      await submitAttendance(activeSessionId)
+      // 乐观更新：立刻变绿，防止网络延迟导致的手感差
+      setPresentCrew(prev => [...prev, userName])
+      setIsHolding(false)
+    }, 1500) 
+  }
+
+  const stopHold = () => {
+    setIsHolding(false)
+    if (holdTimerRef.current) clearTimeout(holdTimerRef.current)
   }
 
   const changeMonth = (dir: number) => {
@@ -133,19 +201,6 @@ export function FleetAttendanceModule({
     }
   }
 
-  const startHold = () => {
-    if (presentCrew.includes(userName)) return
-    setIsHolding(true)
-    holdTimerRef.current = setTimeout(() => {
-      setPresentCrew(prev => [...prev, userName])
-      setIsHolding(false)
-    }, 1500) 
-  }
-  const stopHold = () => {
-    setIsHolding(false)
-    if (holdTimerRef.current) clearTimeout(holdTimerRef.current)
-  }
-
   if (!mounted) return null
   const currentDayLogs = selectedDateKey ? logs[selectedDateKey] || [] : []
   const activeDetail = currentDayLogs.find(l => l.id === selectedLogId)
@@ -195,6 +250,7 @@ export function FleetAttendanceModule({
 
       <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mt-4">
         
+        {/* ================= 左舷：打卡控制中枢 ================= */}
         <div className="lg:col-span-2 rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-2xl flex flex-col h-full relative">
           <div className="absolute inset-0 rounded-[3.5rem] overflow-hidden pointer-events-none z-0">
             <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
@@ -235,9 +291,12 @@ export function FleetAttendanceModule({
                                 className="absolute top-[120%] left-1/2 -translate-x-1/2 z-[50] w-64"
                               >
                                 <div className="w-full bg-[#060813]/95 border border-amber-500/40 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(245,158,11,0.2)] p-4 flex flex-col gap-4 backdrop-blur-xl">
-                                  <div className="flex justify-between items-center px-4 font-mono text-[10px] text-amber-500/60 tracking-widest uppercase"><span>MINUTES</span><span>SECONDS</span></div>
+                                  <div className="flex justify-between items-center px-4 font-mono text-[10px] text-amber-500/60 tracking-widest uppercase">
+                                    <span>MINUTES</span><span>SECONDS</span>
+                                  </div>
                                   <div className="flex gap-2 h-40 relative">
                                     <div className="absolute inset-0 bg-gradient-to-b from-[#060813] via-transparent to-[#060813] pointer-events-none z-10" />
+                                    
                                     <div className="flex-1 h-full overflow-y-auto overflow-x-hidden amber-scrollbar relative z-0 pr-2 pl-1 text-center space-y-1">
                                       {Array.from({length: 60}, (_, i) => String(i).padStart(2, '0')).map(m => {
                                         const isSelected = tempMins === m;
@@ -270,7 +329,8 @@ export function FleetAttendanceModule({
                         </AnimatePresence>
                       </div>
                     </div>
-                    <button onClick={startRollCall} className="relative group w-full py-5 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-amber-400 font-bold tracking-[0.3em] text-lg transition-all duration-500 ease-out hover:bg-amber-500 hover:text-black hover:scale-[1.02] shadow-[0_0_30px_rgba(245,158,11,0.2)] active:scale-95 z-10 overflow-hidden">
+                    {/* 🚀 舰长点击执行真实后端写入 */}
+                    <button onClick={handleStartRollCall} className="relative group w-full py-5 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-amber-400 font-bold tracking-[0.3em] text-lg transition-all duration-500 ease-out hover:bg-amber-500 hover:text-black hover:scale-[1.02] shadow-[0_0_30px_rgba(245,158,11,0.2)] active:scale-95 z-10 overflow-hidden">
                       <div className="absolute inset-0 rounded-2xl border-2 border-amber-400 opacity-0 group-hover:animate-ping pointer-events-none"></div>
                       <span className="relative z-10">发起全舰集结指令</span>
                     </button>
@@ -376,10 +436,12 @@ export function FleetAttendanceModule({
             <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
               <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/70 backdrop-blur-[20px]" onClick={()=>{setSelectedDateKey(null); setSelectedLogId(null)}} />
               
+              {/* 外层粒子消散 */}
               <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10">
                 <div className="flex items-center justify-center gap-6 w-full max-w-6xl pointer-events-none">
                   <AnimatePresence mode="wait">
                     
+                    {/* 内层平滑伸缩 */}
                     <motion.div 
                       layout 
                       transition={springTransition}
