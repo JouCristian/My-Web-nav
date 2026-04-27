@@ -4,7 +4,8 @@ import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { TransitionLink } from "@/components/transition-link"
 import { FleetAttendanceModule } from "@/components/fleet-attendance-module" 
-import { LeaveRequestModule } from "@/components/leave-request-module" // 🚀 引入新模块
+import { LeaveRequestModule } from "@/components/leave-request-module" 
+import { AttendanceDashboardModule } from "@/components/attendance-dashboard-module" // 🚀 引入态势感知看板
 
 export default async function AttendancePage() {
   const session = await auth()
@@ -12,6 +13,22 @@ export default async function AttendancePage() {
 
   const dbUser = await prisma.user.findUnique({ where: { email: session.user.email } })
   if (!dbUser) redirect("/")
+
+  // 🚀 核心数据预处理：分拣出指挥官和普通船员
+  const allUsers = await prisma.user.findMany({
+    where: { 
+      role: { in: ["MEMBER", "ADMIN", "OWNER"] }, 
+      realName: { not: null }
+    }
+  })
+  
+  // 传给看板左侧展示的管理层
+  const managerNames = allUsers.filter(u => u.role === "ADMIN" || u.role === "OWNER").map(u => u.realName as string)
+  // 传给右侧柱状图统计的普通船员（如果管理员也需要统计，可以取消这个 filter 限制）
+  const crewMembers = allUsers.filter(u => u.role === "MEMBER").map(u => u.realName as string)
+
+  // 用于主集结模块的总名单
+  const allRealNames = allUsers.map(u => u.realName as string)
 
   return (
     <main className="min-h-screen py-16 px-8 xl:px-24 text-white relative flex flex-col gap-12 overflow-x-hidden">
@@ -48,21 +65,20 @@ export default async function AttendancePage() {
       {/* 🚀 战术布局网格体系 */}
       <div className="relative z-10 w-full flex flex-col gap-8">
         
-        {/* 上半区：集结大盘与历史日历 (内部自带 grid-cols-3) */}
-        <FleetAttendanceModule userRole={dbUser.role || "PENDING"} userName={dbUser.realName || "Unknown"} crewMembers={[]} />
+        {/* 上半区：集结大盘与历史日历 */}
+        <FleetAttendanceModule userRole={dbUser.role || "PENDING"} userName={dbUser.realName || "Unknown"} crewMembers={allRealNames} />
         
-        {/* 下半区：请假模块 (左下角部署) */}
-        <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+        {/* 🚀 下半区：绝对对称的 1/2 空间分配 */}
+        <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
           
-          {/* 🚀 左下角占位 2/3 宽度：放置休眠申请表 */}
-          <div className="lg:col-span-2 h-full">
+          {/* 左侧 1/2：休眠申请表 */}
+          <div className="h-full">
             <LeaveRequestModule userRole={dbUser.role || "PENDING"} userName={dbUser.realName || "Unknown"} />
           </div>
 
-          {/* 右下角占位 1/3 宽度：目前留空或未来扩展（比如个人全勤数据统计） */}
-          <div className="lg:col-span-1 rounded-[3.5rem] border border-white/5 bg-[#02040a]/20 backdrop-blur-md p-8 flex flex-col items-center justify-center text-center opacity-50">
-             <div className="w-16 h-16 rounded-full border-2 border-dashed border-zinc-700 animate-[spin_20s_linear_infinite] mb-4"></div>
-             <span className="text-zinc-500 font-mono text-xs tracking-widest uppercase">Telemetry Sub-System<br/>Standby...</span>
+          {/* 右侧 1/2：全息态势感知看板 */}
+          <div className="h-full">
+            <AttendanceDashboardModule managers={managerNames} crewMembers={crewMembers} />
           </div>
 
         </div>
