@@ -14,14 +14,12 @@ export default async function AttendancePage() {
   const dbUser = await prisma.user.findUnique({ where: { email: session.user.email } })
   if (!dbUser) redirect("/")
 
-  // 🚀 防空洞级过滤：取消 realName 必须不为空的死板限制，确保所有舰长无论有没有实名都被查出来
   const allUsers = await prisma.user.findMany({
     where: { 
       role: { in: ["MEMBER", "ADMIN", "OWNER"] }
     }
   })
   
-  // 🚀 舰长专属数据流：优先用真实姓名，没有就用网名，再没有就叫 Commander
   const managersData = allUsers
     .filter(u => u.role === "ADMIN" || u.role === "OWNER")
     .map(u => ({
@@ -30,22 +28,18 @@ export default async function AttendancePage() {
       image: (u.image || u.customAvatar || null) as string | null
     }))
 
-  // 🚀 船员名单
+  // 🚀 严格过滤出的普通船员名单
   const crewMembers = allUsers
     .filter(u => u.role === "MEMBER")
     .map(u => (u.realName || u.name || u.nickname || u.githubName || "Unknown") as string)
 
-  // 主集结模块用的全员名单
-  const allRealNames = allUsers.map(u => (u.realName || u.name || u.nickname || u.githubName || "Unknown") as string)
   const currentUserName = (dbUser.realName || dbUser.name || dbUser.nickname || dbUser.githubName || "Unknown") as string
 
   return (
     <main className="min-h-screen py-16 px-8 xl:px-24 text-white relative flex flex-col gap-12 overflow-x-hidden">
       
-      {/* 背景渲染 */}
       <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-amber-500/5 blur-[150px] rounded-full pointer-events-none z-0"></div>
 
-      {/* 顶栏：标题与返回按钮 */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 relative z-10 w-full">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-3">
@@ -73,33 +67,23 @@ export default async function AttendancePage() {
 
       <div className="relative z-10 w-full flex flex-col gap-8 mb-8">
         
-        {/* 上半区：集结大盘与历史日历 */}
-        <FleetAttendanceModule userRole={dbUser.role || "PENDING"} userName={currentUserName} crewMembers={allRealNames} />
+        {/* 🚀 核心修复：只传入 crewMembers，舰长和管理员彻底跳出签到考核规则 */}
+        <FleetAttendanceModule userRole={dbUser.role || "PENDING"} userName={currentUserName} crewMembers={crewMembers} />
         
-        {/* 下半区：绝对对称的 1/2 空间分配 */}
         <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-          
           <div className="h-full">
             <LeaveRequestModule userRole={dbUser.role || "PENDING"} userName={currentUserName} />
           </div>
-
           <div className="h-full">
             <AttendanceDashboardModule managers={managersData} crewMembers={crewMembers} />
           </div>
-
         </div>
 
       </div>
 
-      {/* ========================================== */}
-      {/* 🚀 底部系统托底防空洞 (System Footer)      */}
-      {/* ========================================== */}
+      {/* 底部系统托底防空洞 */}
       <footer className="w-full mt-auto pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10 select-none">
-        
-        {/* 顶部发光能量分割线 */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-[1px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent"></div>
-        
-        {/* 左侧：连接状态参数 */}
         <div className="flex items-center gap-4 text-[10px] font-mono text-zinc-600 tracking-[0.2em] uppercase">
           <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]"></span>
@@ -110,26 +94,15 @@ export default async function AttendancePage() {
           <span className="hidden md:inline opacity-30">/</span>
           <span className="hidden md:inline">Node: Sector-7G</span>
         </div>
-
-        {/* 中间：数据流终点标识 */}
         <div className="text-[10px] font-mono text-zinc-600 tracking-[0.3em] uppercase text-center opacity-50 hover:opacity-100 hover:text-amber-500/50 transition-colors duration-500">
           END OF SECURE DATA STREAM &copy; {new Date().getFullYear()} STARFLEET.
         </div>
-
-        {/* 右侧：赛博朋克斜切装饰矩阵 */}
         <div className="flex items-center gap-1 opacity-30">
           {[...Array(6)].map((_, i) => (
-            <div 
-              key={i} 
-              className={`w-1.5 h-3 skew-x-[-20deg] ${
-                i === 5 ? 'bg-amber-500 animate-pulse shadow-[0_0_10px_#f59e0b]' : 'bg-white/40'
-              }`}
-            ></div>
+            <div key={i} className={`w-1.5 h-3 skew-x-[-20deg] ${i === 5 ? 'bg-amber-500 animate-pulse shadow-[0_0_10px_#f59e0b]' : 'bg-white/40'}`}></div>
           ))}
         </div>
-
       </footer>
-
     </main>
   )
 }
