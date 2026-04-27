@@ -18,6 +18,80 @@ type LeaveRequest = {
   createdAt: number;
 }
 
+// 🚀 纯手写的科幻级 3 栏时间滚轮下拉框 (彻底解决原生组件崩溃与丑陋问题)
+const SciFiDateTimePicker = ({ isOpen, onConfirm, onCancel }: { isOpen: boolean, onConfirm: (iso: string) => void, onCancel: () => void }) => {
+  const [dIdx, setDIdx] = useState(0)
+  const [hIdx, setHIdx] = useState(12)
+  const [mIdx, setMIdx] = useState(0)
+
+  // 预生成未来 60 天的数据矩阵
+  const days = Array.from({length: 60}).map((_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() + i)
+    return d
+  })
+  const hours = Array.from({length: 24}, (_, i) => i)
+  const mins = Array.from({length: 60}, (_, i) => i)
+
+  if (!isOpen) return null
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: -15, scale: 0.95, filter: "blur(10px)" }}
+      animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+      exit={{ opacity: 0, y: -10, scale: 0.95, filter: "blur(10px)" }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      className="absolute top-[110%] left-0 w-full bg-[#060813]/95 border border-amber-500/40 rounded-2xl p-4 z-[100] shadow-[0_30px_60px_rgba(0,0,0,0.8),0_0_20px_rgba(245,158,11,0.15)] backdrop-blur-2xl"
+      onClick={e => e.stopPropagation()} // 防止点击穿透关闭
+    >
+      <div className="flex justify-between text-[10px] font-mono text-amber-500/60 uppercase tracking-widest mb-3 px-2">
+        <span>Date</span><span>Hour</span><span>Minute</span>
+      </div>
+      <div className="flex h-40 gap-2 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#060813] via-transparent to-[#060813] pointer-events-none z-10" />
+        
+        {/* 日期滚轮 */}
+        <div className="flex-[2] h-full overflow-y-auto amber-scrollbar relative z-0 pr-1 text-center space-y-1">
+          {days.map((d, i) => (
+            <div key={i} onClick={() => setDIdx(i)} className={`relative cursor-pointer py-2 rounded-xl text-sm transition-all duration-300 ${dIdx === i ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}>
+              {dIdx === i && <motion.div layoutId="picker-d" className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 rounded-xl z-0 shadow-[0_0_10px_rgba(245,158,11,0.2)]" initial={false} transition={{ type: "spring", stiffness: 500, damping: 30 }} />}
+              <span className="relative z-10">{d.getMonth()+1}月{d.getDate()}日</span>
+            </div>
+          ))}
+        </div>
+        <div className="w-px bg-white/5 my-2" />
+        {/* 小时滚轮 */}
+        <div className="flex-1 h-full overflow-y-auto amber-scrollbar relative z-0 px-1 text-center space-y-1">
+          {hours.map((h, i) => (
+            <div key={i} onClick={() => setHIdx(i)} className={`relative cursor-pointer py-2 rounded-xl font-mono text-sm transition-all duration-300 ${hIdx === i ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}>
+              {hIdx === i && <motion.div layoutId="picker-h" className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 rounded-xl z-0 shadow-[0_0_10px_rgba(245,158,11,0.2)]" initial={false} transition={{ type: "spring", stiffness: 500, damping: 30 }} />}
+              <span className="relative z-10">{String(h).padStart(2, '0')}</span>
+            </div>
+          ))}
+        </div>
+        <div className="w-px bg-white/5 my-2" />
+        {/* 分钟滚轮 */}
+        <div className="flex-1 h-full overflow-y-auto amber-scrollbar relative z-0 pl-1 text-center space-y-1">
+          {mins.map((m, i) => (
+            <div key={i} onClick={() => setMIdx(i)} className={`relative cursor-pointer py-2 rounded-xl font-mono text-sm transition-all duration-300 ${mIdx === i ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}>
+              {mIdx === i && <motion.div layoutId="picker-m" className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 rounded-xl z-0 shadow-[0_0_10px_rgba(245,158,11,0.2)]" initial={false} transition={{ type: "spring", stiffness: 500, damping: 30 }} />}
+              <span className="relative z-10">{String(m).padStart(2, '0')}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex gap-2 mt-4 relative z-20">
+        <button type="button" onClick={onCancel} className="flex-1 py-2.5 rounded-xl bg-white/5 border border-white/10 text-zinc-400 font-bold text-xs hover:bg-white/10 transition-all active:scale-95">取消</button>
+        <button type="button" onClick={() => {
+          const finalDate = new Date(days[dIdx])
+          finalDate.setHours(hours[hIdx], mins[mIdx], 0, 0)
+          onConfirm(finalDate.toISOString())
+        }} className="flex-1 py-2.5 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 font-bold text-xs hover:bg-amber-500 hover:text-black transition-all shadow-[0_0_15px_rgba(245,158,11,0.2)] active:scale-95">确认时空坐标</button>
+      </div>
+    </motion.div>
+  )
+}
+
 export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRole: string, userName?: string }) {
   const [mounted, setMounted] = useState(false)
   const [requests, setRequests] = useState<LeaveRequest[]>([])
@@ -30,8 +104,9 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
   const [startTime, setStartTime] = useState("")
   const [endTime, setEndTime] = useState("")
 
-  // 🚀 焦点追踪引擎：用于控制发光框在表单间的 Q 弹飞行
+  // 🚀 核心焦点与拾色器控制引擎
   const [focusedInput, setFocusedInput] = useState<string | null>(null)
+  const [activePicker, setActivePicker] = useState<'start' | 'end' | null>(null)
 
   const isManager = userRole === "OWNER" || userRole === "ADMIN"
 
@@ -46,9 +121,7 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
       try {
         const res = await getLeaveRequestsAction()
         setRequests(res)
-      } catch (e) {
-        console.error("Failed to fetch leave requests", e)
-      } finally {
+      } catch (e) {} finally {
         isFetching = false
       }
     }
@@ -63,10 +136,7 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
     setIsSubmitting(true)
     
     try {
-      const startISO = new Date(startTime).toISOString()
-      const endISO = new Date(endTime).toISOString()
-      await submitLeaveRequestAction(reason, startISO, endISO)
-      
+      await submitLeaveRequestAction(reason, startTime, endTime)
       setIsModalOpen(false)
       setReason(""); setStartTime(""); setEndTime("");
       const res = await getLeaveRequestsAction()
@@ -81,29 +151,29 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
   const executeRevoke = async (id: string) => {
     setRequests(prev => prev.filter(req => req.id !== id))
     setRevokeTargetId(null) 
-    try {
-      await revokeLeaveRequestAction(id)
-    } catch (e) {
-      console.error("Action failed", e)
-    }
+    try { await revokeLeaveRequestAction(id) } catch (e) {}
   }
 
   const handleApproval = async (id: string, newStatus: RequestStatus) => {
     setRequests(prev => prev.map(req => req.id === id ? { ...req, status: newStatus } : req))
-    try {
-      await updateLeaveStatusAction(id, newStatus)
-    } catch (e) {
-      console.error("Approval failed", e)
-    }
+    try { await updateLeaveStatusAction(id, newStatus) } catch (e) {}
   }
 
   const pendingRequests = requests.filter(r => r.status === "PENDING")
   const processedRequests = requests.filter(r => r.status !== "PENDING")
   const displayList = [...pendingRequests, ...processedRequests]
 
+  // 列表里用的简易时间格式
   const formatTime = (isoString: string) => {
     const d = new Date(isoString)
     return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+  }
+  
+  // 占位符用的高精度时间格式
+  const formatDisplayTime = (isoString: string) => {
+    if (!isoString) return ""
+    const d = new Date(isoString)
+    return `${d.getFullYear()} / ${String(d.getMonth() + 1).padStart(2,'0')} / ${String(d.getDate()).padStart(2,'0')}  -  ${String(d.getHours()).padStart(2,'0')} : ${String(d.getMinutes()).padStart(2,'0')}`
   }
 
   const overlayVariants = {
@@ -117,6 +187,9 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
     exit: { opacity: 0, scale: 0.85, filter: "blur(30px) brightness(0.2)", transition: { duration: 0.3, ease: "easeOut" } }
   }
   const bouncySpring = { type: "spring", stiffness: 500, damping: 25, mass: 1 }
+
+  // 🚀 跑车级非线性悬挂：用于对焦光圈在不同输入框间丝滑飞行
+  const focusRingSpring = { type: "spring", stiffness: 500, damping: 25, mass: 0.8 }
 
   if (!mounted) return null
 
@@ -153,7 +226,7 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
           </div>
           
           {!isManager && (
-            <button onClick={() => setIsModalOpen(true)} className="px-6 py-3 bg-amber-500/10 border border-amber-500/40 text-amber-400 rounded-xl font-bold text-sm tracking-widest hover:bg-amber-500 hover:text-black transition-all active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+            <button onClick={() => { setIsModalOpen(true); setFocusedInput(null); setActivePicker(null); }} className="px-6 py-3 bg-amber-500/10 border border-amber-500/40 text-amber-400 rounded-xl font-bold text-sm tracking-widest hover:bg-amber-500 hover:text-black transition-all active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
               + 填写申请单
             </button>
           )}
@@ -187,7 +260,6 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
                     </div>
 
                     <div className="flex gap-2 shrink-0 ml-4 opacity-30 group-hover:opacity-100 transition-opacity duration-300">
-                      
                       {isManager && req.status === "PENDING" && (
                         <>
                           <button onClick={() => handleApproval(req.id, "APPROVED")} className="group/op relative w-9 h-9 rounded-xl bg-black/40 border border-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/40 hover:shadow-[0_0_10px_rgba(16,185,129,0.2)] transition-all flex items-center justify-center active:scale-90" title="批准">
@@ -213,7 +285,6 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
                           </svg>
                         </button>
                       )}
-
                     </div>
                   </div>
                 </motion.div>
@@ -234,62 +305,93 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
             {isModalOpen && (
               <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
                 <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/70 backdrop-blur-[20px]" onClick={() => setIsModalOpen(false)} />
+                
+                {/* 🚀 核心防遮罩修复：移除外层 overflow-hidden，让下拉框肆意舒展 */}
                 <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10 w-full max-w-md">
-                  <form onSubmit={handleSubmit} className="w-full bg-[#060813]/95 border-2 border-amber-500/50 rounded-[2.5rem] p-8 shadow-[0_0_80px_rgba(245,158,11,0.2)] overflow-hidden relative">
+                  <form onSubmit={handleSubmit} className="w-full bg-[#060813]/95 border-2 border-amber-500/50 rounded-[2.5rem] p-8 shadow-[0_0_80px_rgba(245,158,11,0.2)] relative">
                     <div className="flex justify-between items-center mb-6 border-b border-amber-500/20 pb-4">
                       <h2 className="text-xl font-bold text-amber-400 tracking-[0.2em]">新建离舰申请</h2>
                       <span className="text-amber-500/60 font-mono text-[10px]">Awaiting Submit</span>
                     </div>
 
-                    <div className="space-y-5 mb-8 relative z-10">
-                      {/* 🚀 独立容器与量子焦点追踪：事由 */}
+                    <div className="space-y-6 mb-8 relative z-10">
+                      
+                      {/* 事由输入框 */}
                       <div className="space-y-2">
                         <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-2">离舰事由 / Reason</label>
-                        <div className="relative">
+                        <div 
+                          className="relative cursor-text rounded-xl"
+                          onClick={() => { setFocusedInput('reason'); setActivePicker(null); }}
+                        >
                           <input 
                             type="text" required value={reason} onChange={e => setReason(e.target.value)} 
-                            onFocus={() => setFocusedInput('reason')} onBlur={() => setFocusedInput(null)}
                             placeholder="如：返回地球探亲" 
-                            className="relative z-10 w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm text-white outline-none disabled:opacity-50" disabled={isSubmitting} 
+                            className="relative z-10 w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm text-white outline-none disabled:opacity-50 transition-colors" 
+                            disabled={isSubmitting} 
                           />
+                          {/* 🚀 Q弹飞行的光环核心 */}
                           {focusedInput === 'reason' && (
-                            <motion.div layoutId="leave-focus-ring" className="absolute inset-0 rounded-xl border border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)] pointer-events-none z-20" transition={{ type: "spring", stiffness: 450, damping: 25 }} />
+                            <motion.div layoutId="leave-focus-ring" className="absolute inset-0 rounded-xl border border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)] pointer-events-none z-20" transition={focusRingSpring} />
                           )}
                         </div>
                       </div>
                       
-                      {/* 🚀 独立容器与量子焦点追踪：起始时间 */}
-                      <div className="space-y-2">
+                      {/* 起始时间下拉触发器 */}
+                      <div className="space-y-2 relative">
                         <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-2">离舰时间 / Start Time</label>
-                        <div className="relative">
-                          <input 
-                            type="datetime-local" required value={startTime} onChange={e => setStartTime(e.target.value)} 
-                            onFocus={() => setFocusedInput('startTime')} onBlur={() => setFocusedInput(null)}
-                            className="relative z-10 w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm text-white outline-none disabled:opacity-50" style={{ colorScheme: "dark" }} disabled={isSubmitting} 
-                          />
+                        <div 
+                          className="relative cursor-pointer rounded-xl"
+                          onClick={() => { setFocusedInput('startTime'); setActivePicker('start'); }}
+                        >
+                          <div className={`relative z-10 w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm outline-none transition-colors flex items-center justify-between ${startTime ? 'text-amber-300 font-mono font-bold' : 'text-zinc-600 font-mono'}`}>
+                             <span>{startTime ? formatDisplayTime(startTime) : "YYYY / MM / DD  -  -- : --"}</span>
+                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 opacity-50"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                          </div>
                           {focusedInput === 'startTime' && (
-                            <motion.div layoutId="leave-focus-ring" className="absolute inset-0 rounded-xl border border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)] pointer-events-none z-20" transition={{ type: "spring", stiffness: 450, damping: 25 }} />
+                            <motion.div layoutId="leave-focus-ring" className="absolute inset-0 rounded-xl border border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)] pointer-events-none z-20" transition={focusRingSpring} />
                           )}
                         </div>
+                        {/* 🚀 自定义时间选择下拉窗 */}
+                        <AnimatePresence>
+                           {activePicker === 'start' && (
+                             <SciFiDateTimePicker 
+                               isOpen={true} 
+                               onCancel={() => { setActivePicker(null); setFocusedInput(null); }}
+                               onConfirm={(iso) => { setStartTime(iso); setActivePicker(null); }} 
+                             />
+                           )}
+                        </AnimatePresence>
                       </div>
 
-                      {/* 🚀 独立容器与量子焦点追踪：归舰时间 */}
-                      <div className="space-y-2">
+                      {/* 归舰时间下拉触发器 */}
+                      <div className="space-y-2 relative">
                         <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-2">归舰时间 / End Time</label>
-                        <div className="relative">
-                          <input 
-                            type="datetime-local" required value={endTime} onChange={e => setEndTime(e.target.value)} 
-                            onFocus={() => setFocusedInput('endTime')} onBlur={() => setFocusedInput(null)}
-                            className="relative z-10 w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm text-white outline-none disabled:opacity-50" style={{ colorScheme: "dark" }} disabled={isSubmitting} 
-                          />
+                        <div 
+                          className="relative cursor-pointer rounded-xl"
+                          onClick={() => { setFocusedInput('endTime'); setActivePicker('end'); }}
+                        >
+                          <div className={`relative z-10 w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm outline-none transition-colors flex items-center justify-between ${endTime ? 'text-amber-300 font-mono font-bold' : 'text-zinc-600 font-mono'}`}>
+                             <span>{endTime ? formatDisplayTime(endTime) : "YYYY / MM / DD  -  -- : --"}</span>
+                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 opacity-50"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                          </div>
                           {focusedInput === 'endTime' && (
-                            <motion.div layoutId="leave-focus-ring" className="absolute inset-0 rounded-xl border border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)] pointer-events-none z-20" transition={{ type: "spring", stiffness: 450, damping: 25 }} />
+                            <motion.div layoutId="leave-focus-ring" className="absolute inset-0 rounded-xl border border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)] pointer-events-none z-20" transition={focusRingSpring} />
                           )}
                         </div>
+                        {/* 🚀 自定义时间选择下拉窗 */}
+                        <AnimatePresence>
+                           {activePicker === 'end' && (
+                             <SciFiDateTimePicker 
+                               isOpen={true} 
+                               onCancel={() => { setActivePicker(null); setFocusedInput(null); }}
+                               onConfirm={(iso) => { setEndTime(iso); setActivePicker(null); }} 
+                             />
+                           )}
+                        </AnimatePresence>
                       </div>
                     </div>
 
-                    <div className="flex gap-4">
+                    <div className="flex gap-4 relative z-10">
                       <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSubmitting} className="flex-1 py-4 rounded-xl bg-white/5 border border-white/10 text-zinc-400 font-bold tracking-widest text-xs hover:bg-white/10 hover:text-white transition-all active:scale-95 disabled:opacity-50">取消</button>
                       <button type="submit" disabled={isSubmitting} className="flex-1 py-4 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 font-bold tracking-widest text-xs hover:bg-amber-500 hover:text-black transition-all shadow-[0_0_15px_rgba(245,158,11,0.2)] active:scale-95 disabled:opacity-50">
                         {isSubmitting ? "传输中..." : "提交申请"}
