@@ -125,10 +125,12 @@ model Attendance {
 model LeaveRequest {
   id        String      @id @default(cuid())
   userId    String     
-  date      DateTime    
+  startTime DateTime    // 🚀 替换了原有的单日 date
+  endTime   DateTime    // 🚀 新增：归舰时间
   reason    String      @db.Text
   status    LeaveStatus @default(PENDING)
   handledBy String?
+  createdAt DateTime    @default(now()) // 🚀 新增：用于排序
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 

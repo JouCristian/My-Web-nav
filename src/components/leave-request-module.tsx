@@ -4,6 +4,8 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
+// 🚀 引入后端接口
+import { submitLeaveRequestAction, getLeaveRequestsAction, updateLeaveStatusAction } from "@/app/actions"
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED"
 
@@ -21,58 +23,83 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
   const [mounted, setMounted] = useState(false)
   const [requests, setRequests] = useState<LeaveRequest[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   
-  // 表单状态
   const [reason, setReason] = useState("")
   const [startTime, setStartTime] = useState("")
   const [endTime, setEndTime] = useState("")
 
   const isManager = userRole === "OWNER" || userRole === "ADMIN"
 
-  // 💾 持久化存储
-  useEffect(() => {
-    setMounted(true)
-    const saved = localStorage.getItem("STARFLEET_LEAVE_REQUESTS")
-    if (saved) try { setRequests(JSON.parse(saved)) } catch(e) { console.error(e) }
-  }, [])
+  useEffect(() => { setMounted(true) }, [])
 
+  // 🚀 实时通讯雷达：每 3 秒扫描一次数据库的请假申请变化
   useEffect(() => {
-    if (mounted) localStorage.setItem("STARFLEET_LEAVE_REQUESTS", JSON.stringify(requests))
-  }, [requests, mounted])
+    if (!mounted) return
+    let isFetching = false
 
-  // 提交申请
-  const handleSubmit = (e: React.FormEvent) => {
+    const fetchRequests = async () => {
+      if (isFetching) return
+      isFetching = true
+      try {
+        const res = await getLeaveRequestsAction()
+        setRequests(res)
+      } catch (e) {
+        console.error("Failed to fetch leave requests", e)
+      } finally {
+        isFetching = false
+      }
+    }
+
+    fetchRequests() // 挂载即拉取一次
+    const interval = setInterval(fetchRequests, 3000)
+    return () => clearInterval(interval)
+  }, [mounted])
+
+  // 提交申请（写入数据库）
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!reason || !startTime || !endTime) return
+    setIsSubmitting(true)
     
-    const newReq: LeaveRequest = {
-      id: Date.now().toString(),
-      applicant: userName,
-      reason,
-      startTime,
-      endTime,
-      status: "PENDING",
-      createdAt: Date.now()
+    try {
+      await submitLeaveRequestAction(reason, startTime, endTime)
+      // 提交成功后立刻关闭弹窗并清空表单
+      setIsModalOpen(false)
+      setReason(""); setStartTime(""); setEndTime("");
+      // 乐观更新：立刻主动拉取一次最新数据
+      const res = await getLeaveRequestsAction()
+      setRequests(res)
+    } catch (e) {
+      alert("提交申请失败，请检查通讯模块！")
+    } finally {
+      setIsSubmitting(false)
     }
-    setRequests(prev => [newReq, ...prev])
-    setIsModalOpen(false)
-    setReason(""); setStartTime(""); setEndTime("");
   }
 
-  // 舰长审批操作
-  const handleApproval = (id: string, newStatus: RequestStatus) => {
+  // 舰长审批操作（写入数据库并乐观更新UI）
+  const handleApproval = async (id: string, newStatus: RequestStatus) => {
+    // 乐观更新 UI，无需等待网络返回，手感极度丝滑
     setRequests(prev => prev.map(req => req.id === id ? { ...req, status: newStatus } : req))
+    
+    try {
+      await updateLeaveStatusAction(id, newStatus)
+    } catch (e) {
+      // 如果后端拒绝，下次轮询会把状态拨正
+      console.error("Approval failed", e)
+    }
   }
 
-  // 数据分流
-  const myRequests = requests.filter(r => r.applicant === userName)
   const pendingRequests = requests.filter(r => r.status === "PENDING")
   const processedRequests = requests.filter(r => r.status !== "PENDING")
+  const displayList = [...pendingRequests, ...processedRequests]
 
-  // 显示的数据源：舰长看所有待办和已处理，船员只看自己的
-  const displayList = isManager ? [...pendingRequests, ...processedRequests] : myRequests
+  // 时间格式化器
+  const formatTime = (isoString: string) => {
+    const d = new Date(isoString)
+    return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+  }
 
-  // 🚀 核心动画库
   const overlayVariants = {
     hidden: { opacity: 0, backdropFilter: "blur(0px)" },
     visible: { opacity: 1, backdropFilter: "blur(15px)", transition: { duration: 0.4 } },
@@ -87,7 +114,6 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
 
   if (!mounted) return null
 
-  // 状态徽章渲染器
   const StatusBadge = ({ status }: { status: RequestStatus }) => {
     switch(status) {
       case "PENDING": return <span className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/50 text-amber-400 text-[10px] font-bold tracking-widest animate-pulse">审批中</span>
@@ -123,7 +149,7 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
 
         {/* 申请列表展示区 */}
         <div className="flex-1 bg-[#02040a]/80 border border-white/5 rounded-[2rem] p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] relative z-10 h-[350px] overflow-y-auto amber-scrollbar">
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 min-h-[100px]">
             <AnimatePresence mode="popLayout">
               {displayList.length > 0 ? displayList.map(req => (
                 <motion.div 
@@ -143,9 +169,9 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
                       </div>
                       <p className="text-zinc-400 text-sm tracking-wide mb-3">{req.reason}</p>
                       <div className="flex items-center gap-4 text-[10px] font-mono text-zinc-500 bg-black/40 px-3 py-2 rounded-lg border border-white/5 inline-flex">
-                        <span>{req.startTime.replace('T', ' ')}</span>
+                        <span>{formatTime(req.startTime)}</span>
                         <span className="text-amber-500/50">➔</span>
-                        <span>{req.endTime.replace('T', ' ')}</span>
+                        <span>{formatTime(req.endTime)}</span>
                       </div>
                     </div>
 
@@ -159,7 +185,7 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
                   </div>
                 </motion.div>
               )) : (
-                <motion.div key="empty" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-16 text-zinc-600 font-mono text-xs tracking-widest gap-4">
+                <motion.div key="empty" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 flex flex-col items-center justify-center text-zinc-600 font-mono text-xs tracking-widest gap-4">
                   <span className="text-4xl opacity-30">📭</span>
                   {isManager ? "NO PENDING REQUESTS" : "NO LEAVE HISTORY"}
                 </motion.div>
@@ -186,23 +212,25 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
                   <div className="space-y-5 mb-8 relative z-10">
                     <div className="space-y-2">
                       <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-2">离舰事由 / Reason</label>
-                      <input type="text" required value={reason} onChange={e => setReason(e.target.value)} placeholder="如：返回地球探亲" className="w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm text-white outline-none focus:border-amber-400 focus:shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-all" />
+                      <input type="text" required value={reason} onChange={e => setReason(e.target.value)} placeholder="如：返回地球探亲" className="w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm text-white outline-none focus:border-amber-400 focus:shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-all" disabled={isSubmitting} />
                     </div>
                     
                     <div className="space-y-2">
                       <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-2">离舰时间 / Start Time</label>
-                      <input type="datetime-local" required value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm text-white outline-none focus:border-amber-400 focus:shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-all" style={{ colorScheme: "dark" }} />
+                      <input type="datetime-local" required value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm text-white outline-none focus:border-amber-400 focus:shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-all" style={{ colorScheme: "dark" }} disabled={isSubmitting} />
                     </div>
 
                     <div className="space-y-2">
                       <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-2">归舰时间 / End Time</label>
-                      <input type="datetime-local" required value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm text-white outline-none focus:border-amber-400 focus:shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-all" style={{ colorScheme: "dark" }} />
+                      <input type="datetime-local" required value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full bg-black/50 border border-amber-500/20 rounded-xl px-5 py-4 text-sm text-white outline-none focus:border-amber-400 focus:shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-all" style={{ colorScheme: "dark" }} disabled={isSubmitting} />
                     </div>
                   </div>
 
                   <div className="flex gap-4">
-                    <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 rounded-xl bg-white/5 border border-white/10 text-zinc-400 font-bold tracking-widest text-xs hover:bg-white/10 hover:text-white transition-all active:scale-95">取消</button>
-                    <button type="submit" className="flex-1 py-4 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 font-bold tracking-widest text-xs hover:bg-amber-500 hover:text-black transition-all shadow-[0_0_15px_rgba(245,158,11,0.2)] active:scale-95">提交申请</button>
+                    <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSubmitting} className="flex-1 py-4 rounded-xl bg-white/5 border border-white/10 text-zinc-400 font-bold tracking-widest text-xs hover:bg-white/10 hover:text-white transition-all active:scale-95 disabled:opacity-50">取消</button>
+                    <button type="submit" disabled={isSubmitting} className="flex-1 py-4 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 font-bold tracking-widest text-xs hover:bg-amber-500 hover:text-black transition-all shadow-[0_0_15px_rgba(245,158,11,0.2)] active:scale-95 disabled:opacity-50">
+                      {isSubmitting ? "传输中..." : "提交申请"}
+                    </button>
                   </div>
                 </form>
               </motion.div>

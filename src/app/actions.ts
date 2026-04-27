@@ -198,3 +198,78 @@ export async function checkLiveRollCall() {
     presentNames: activeSession.records.map(r => r.user.realName).filter(Boolean) as string[]
   }
 }
+
+/**
+ * ==========================================
+ * 🚀 模块 C-2：请假审批亚空间通讯协议
+ * ==========================================
+ */
+
+// 1. 船员提交请假申请
+export async function submitLeaveRequestAction(reason: string, startTime: string, endTime: string) {
+  const session = await auth()
+  if (!session?.user?.email) throw new Error("Unauthorized")
+  
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+  if (!user) throw new Error("User not found")
+
+  await prisma.leaveRequest.create({
+    data: {
+      userId: user.id,
+      reason,
+      startTime: new Date(startTime),
+      endTime: new Date(endTime)
+    }
+  })
+  revalidatePath("/dashboard/attendance")
+}
+
+// 2. 舰长/船员拉取实时请假列表
+export async function getLeaveRequestsAction() {
+  const session = await auth()
+  if (!session?.user?.email) return []
+  
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+  if (!user) return []
+
+  const isManager = user.role === "OWNER" || user.role === "ADMIN"
+  
+  let requests;
+  if (isManager) {
+    // 舰长能看到全舰所有的申请
+    requests = await prisma.leaveRequest.findMany({
+      include: { user: true },
+      orderBy: { createdAt: 'desc' }
+    })
+  } else {
+    // 普通船员只能看到自己的申请
+    requests = await prisma.leaveRequest.findMany({
+      where: { userId: user.id },
+      include: { user: true },
+      orderBy: { createdAt: 'desc' }
+    })
+  }
+
+  return requests.map(r => ({
+    id: r.id,
+    applicant: r.user.realName || r.user.name || "Unknown",
+    reason: r.reason,
+    startTime: r.startTime.toISOString(),
+    endTime: r.endTime.toISOString(),
+    status: r.status,
+    createdAt: r.createdAt.getTime()
+  }))
+}
+
+// 3. 舰长执行审批动作
+export async function updateLeaveStatusAction(id: string, status: "APPROVED" | "REJECTED") {
+  const session = await auth()
+  const user = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
+  if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("Permission Denied")
+
+  await prisma.leaveRequest.update({
+    where: { id },
+    data: { status, handledBy: user.id }
+  })
+  revalidatePath("/dashboard/attendance")
+}
