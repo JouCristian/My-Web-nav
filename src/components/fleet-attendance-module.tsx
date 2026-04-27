@@ -228,7 +228,6 @@ export function FleetAttendanceModule({
     return absences.sort((a, b) => b.log.timestamp - a.log.timestamp);
   }
 
-  // 🚀 核心修复：舰长补签逻辑 (删除缺勤黑历史并转为出勤)
   const handleDeleteAbsence = (dateKey: string, logId: string, crewName: string) => {
     setLogs(prev => {
       const newState = { ...prev };
@@ -237,9 +236,7 @@ export function FleetAttendanceModule({
           if (log.id === logId) {
             return { 
               ...log, 
-              // 将该名船员从缺勤红名单剔除
               missing: log.missing.filter(c => c !== crewName),
-              // 并同时将他转入出勤绿名单 (使用 Set 防止意外重复)
               present: Array.from(new Set([...log.present, crewName]))
             }
           }
@@ -342,51 +339,63 @@ export function FleetAttendanceModule({
                           <div className="w-20 bg-black/50 border border-amber-500/30 rounded-2xl p-3 text-center text-4xl font-mono text-amber-400 group-hover:border-amber-400 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">{inputSecs}</div>
                         </div>
 
+                        {/* 🚀 核心修复区：分离遮罩和弹窗，添加独立的 Key，彻底阻止 Fragment 引发的引擎崩溃 */}
                         <AnimatePresence>
                           {isTimePickerOpen && (
-                            <>
-                              <div className="fixed inset-0 z-[40]" onClick={(e) => { e.stopPropagation(); setIsTimePickerOpen(false); }} />
-                              <motion.div 
-                                initial={{ opacity: 0, scale: 0.9, y: -20, filter: "blur(10px)" }}
-                                animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-                                exit={{ opacity: 0, scale: 0.9, y: -10, filter: "blur(10px)" }}
-                                transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                                className="absolute top-[120%] left-1/2 -translate-x-1/2 z-[50] w-64"
-                              >
-                                <div className="w-full bg-[#060813]/95 border border-amber-500/40 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(245,158,11,0.2)] p-4 flex flex-col gap-4 backdrop-blur-xl">
-                                  <div className="flex justify-between items-center px-4 font-mono text-[10px] text-amber-500/60 tracking-widest uppercase"><span>MINUTES</span><span>SECONDS</span></div>
-                                  <div className="flex gap-2 h-40 relative">
-                                    <div className="absolute inset-0 bg-gradient-to-b from-[#060813] via-transparent to-[#060813] pointer-events-none z-10" />
-                                    <div className="flex-1 h-full overflow-y-auto overflow-x-hidden amber-scrollbar relative z-0 pr-2 pl-1 text-center space-y-1">
-                                      {Array.from({length: 60}, (_, i) => String(i).padStart(2, '0')).map(m => {
-                                        const isSelected = tempMins === m;
-                                        return (
-                                          <div key={`m-${m}`} onClick={() => setTempMins(m)} className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}>
-                                            {isSelected && <motion.div layoutId="activeMin" className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0" initial={false} transition={{ type: "spring", stiffness: 400, damping: 30 }} />}
-                                            <span className="relative z-10">{m}</span>
-                                          </div>
-                                        )
-                                      })}
-                                    </div>
-                                    <div className="w-px bg-amber-500/20 my-2 z-0"></div>
-                                    <div className="flex-1 h-full overflow-y-auto overflow-x-hidden amber-scrollbar relative z-0 pl-2 pr-1 text-center space-y-1">
-                                      {Array.from({length: 60}, (_, i) => String(i).padStart(2, '0')).map(s => {
-                                        const isSelected = tempSecs === s;
-                                        return (
-                                          <div key={`s-${s}`} onClick={() => setTempSecs(s)} className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}>
-                                            {isSelected && <motion.div layoutId="activeSec" className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0" initial={false} transition={{ type: "spring", stiffness: 400, damping: 30 }} />}
-                                            <span className="relative z-10">{s}</span>
-                                          </div>
-                                        )
-                                      })}
-                                    </div>
-                                  </div>
-                                  <button onClick={() => { setInputMins(tempMins); setInputSecs(tempSecs); setIsTimePickerOpen(false); }} className="w-full py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold tracking-[0.2em] text-[10px] hover:bg-amber-500 hover:text-black transition-all active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.1)]">确认时间</button>
-                                </div>
-                              </motion.div>
-                            </>
+                            <motion.div 
+                              key="time-overlay"
+                              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                              className="fixed inset-0 z-[40]" 
+                              onClick={(e) => { e.stopPropagation(); setIsTimePickerOpen(false); }} 
+                            />
                           )}
                         </AnimatePresence>
+                        
+                        <AnimatePresence>
+                          {isTimePickerOpen && (
+                            <motion.div 
+                              key="time-modal"
+                              initial={{ opacity: 0, scale: 0.9, y: -20, filter: "blur(10px)" }}
+                              animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+                              exit={{ opacity: 0, scale: 0.9, y: -10, filter: "blur(10px)" }}
+                              transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                              className="absolute top-[120%] left-1/2 -translate-x-1/2 z-[50] w-64"
+                            >
+                              <div className="w-full bg-[#060813]/95 border border-amber-500/40 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(245,158,11,0.2)] p-4 flex flex-col gap-4 backdrop-blur-xl">
+                                <div className="flex justify-between items-center px-4 font-mono text-[10px] text-amber-500/60 tracking-widest uppercase"><span>MINUTES</span><span>SECONDS</span></div>
+                                <div className="flex gap-2 h-40 relative">
+                                  <div className="absolute inset-0 bg-gradient-to-b from-[#060813] via-transparent to-[#060813] pointer-events-none z-10" />
+                                  <div className="flex-1 h-full overflow-y-auto overflow-x-hidden amber-scrollbar relative z-0 pr-2 pl-1 text-center space-y-1">
+                                    {Array.from({length: 60}, (_, i) => String(i).padStart(2, '0')).map(m => {
+                                      const isSelected = tempMins === m;
+                                      return (
+                                        <div key={`m-${m}`} onClick={() => setTempMins(m)} className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}>
+                                          {isSelected && <motion.div layoutId="activeMin" className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0" initial={false} transition={{ type: "spring", stiffness: 400, damping: 30 }} />}
+                                          <span className="relative z-10">{m}</span>
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
+                                  <div className="w-px bg-amber-500/20 my-2 z-0"></div>
+                                  <div className="flex-1 h-full overflow-y-auto overflow-x-hidden amber-scrollbar relative z-0 pl-2 pr-1 text-center space-y-1">
+                                    {Array.from({length: 60}, (_, i) => String(i).padStart(2, '0')).map(s => {
+                                      const isSelected = tempSecs === s;
+                                      return (
+                                        <div key={`s-${s}`} onClick={() => setTempSecs(s)} className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}>
+                                          {isSelected && <motion.div layoutId="activeSec" className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0" initial={false} transition={{ type: "spring", stiffness: 400, damping: 30 }} />}
+                                          <span className="relative z-10">{s}</span>
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                                <button onClick={() => { setInputMins(tempMins); setInputSecs(tempSecs); setIsTimePickerOpen(false); }} className="w-full py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold tracking-[0.2em] text-[10px] hover:bg-amber-500 hover:text-black transition-all active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.1)]">确认时间</button>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                        {/* 🚀 修复区结束 */}
+
                       </div>
                     </div>
                     <button onClick={handleStartRollCall} className="relative group w-full py-5 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-amber-400 font-bold tracking-[0.3em] text-lg transition-all duration-500 ease-out hover:bg-amber-500 hover:text-black hover:scale-[1.02] shadow-[0_0_30px_rgba(245,158,11,0.2)] active:scale-95 z-10 overflow-hidden">
@@ -492,7 +501,7 @@ export function FleetAttendanceModule({
       {mounted && isManager && createPortal(
         <AnimatePresence>
           {isAbsenceModalOpen && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            <div key="absence-modal-wrapper" className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
               <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/70 backdrop-blur-[20px]" onClick={() => { setIsAbsenceModalOpen(false); setSelectedAbsenceCrew(null); }} />
               
               <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10">
@@ -581,7 +590,7 @@ export function FleetAttendanceModule({
       {mounted && createPortal(
         <AnimatePresence>
           {selectedDateKey && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            <div key="logs-modal-wrapper" className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
               <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/70 backdrop-blur-[20px]" onClick={()=>{setSelectedDateKey(null); setSelectedLogId(null)}} />
               
               <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10">
@@ -689,7 +698,7 @@ export function FleetAttendanceModule({
       {mounted && createPortal(
         <AnimatePresence>
           {isSummaryOpen && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            <div key="summary-modal-wrapper" className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
               <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px]" />
               <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative w-full max-w-xl z-10">
                 <div className="animate-modal-heavy-breathe w-full rounded-[2.5rem] bg-[#060813]/95 border-2 border-amber-500/50 p-8 md:p-10 shadow-[0_0_80px_rgba(245,158,11,0.2)] overflow-hidden">
