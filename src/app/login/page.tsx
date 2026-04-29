@@ -1,8 +1,18 @@
 // src/app/login/page.tsx
-import { signIn } from "@/auth"
+import { auth, signIn } from "@/auth"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 
-export default function LoginPage() {
+// 🚀 注意：接收 URL 里的 searchParams 错误信号
+export default async function LoginPage({ searchParams }: { searchParams: { error?: string } }) {
+  const session = await auth()
+
+  // 🚀 核心拦截器：如果舰长处于登录状态，且遭遇了“账号被占用”的冲突
+  // 直接将其强制打回档案室，并携带冲突信号，瞬间触发【数据缝合弹窗】！
+  if (session?.user && searchParams?.error === "OAuthAccountNotLinked") {
+    redirect("/profile?error=OAuthAccountNotLinked")
+  }
+
   return (
     <main className="min-h-screen flex items-center justify-center bg-transparent p-6">
       
@@ -41,6 +51,13 @@ export default function LoginPage() {
           <p className="text-zinc-500 mt-2 text-xs tracking-widest uppercase">Identity Verification</p>
         </div>
 
+        {/* 🚀 未登录的普通船员如果遇到冲突，给出优雅的错误提示 */}
+        {searchParams?.error === "OAuthAccountNotLinked" && !session?.user && (
+          <div className="mb-6 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs tracking-widest font-mono">
+            ⚠️ 接入失败：该第三方凭证已被占用，请先登录主账号进行合并。
+          </div>
+        )}
+
         <div className="space-y-4">
           {/* 1. GitHub 授权接入 */}
           <form action={async () => { "use server"; await signIn("github", { redirectTo: "/" }); }}>
@@ -59,12 +76,10 @@ export default function LoginPage() {
             <div className="h-px w-full bg-gradient-to-l from-transparent to-zinc-500"></div>
           </div>
 
-          {/* 2. Gitee 国内直连 (完美对齐 GitHub UI，仅 Hover 变红) */}
+          {/* 2. Gitee 国内直连 */}
           <form action={async () => { "use server"; await signIn("gitee", { redirectTo: "/" }); }}>
-            <button className="group w-full flex items-center justify-center gap-4 bg-white text-black font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-white transition-all duration-300 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M11.984 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.091 7.234A3.085 3.085 0 0 1 20.16 10.32v4.846a3.084 3.084 0 0 1-3.085 3.085H6.923a3.085 3.085 0 0 1-3.085-3.085v-4.846a3.085 3.085 0 0 1 3.085-3.085h10.152zm-3.693 3.693H8.153v2.46h5.229v-2.46z"/>
-              </svg>
+            <button className="group w-full flex items-center justify-center gap-4 bg-transparent border border-red-500/50 text-red-500 font-bold py-4 rounded-2xl hover:bg-red-500/10 hover:border-red-500 transition-all duration-300 active:scale-95 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
+              <span className="text-xl font-bold font-mono">G</span>
               Gitee 国内直连
             </button>
           </form>
