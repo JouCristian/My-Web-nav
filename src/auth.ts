@@ -17,7 +17,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientId: "96896797496af99879527f0e725286efc03d879624525c08eec27002d3a728e2",
       clientSecret: "3ee1da994bc4e54fcedc0098293756e456d8b19cc3340be504422e96f394dcf2",
       checks: ["state"], 
-      authorization: "https://gitee.com/oauth/authorize?scope=user_info",
+      // 🚀 核心修改：将简单的字符串替换为对象结构，强行注入强制授权参数
+      authorization: {
+        url: "https://gitee.com/oauth/authorize",
+        params: { 
+          scope: "user_info",
+          prompt: "consent",          // OIDC 标准强制授权参数
+          approval_prompt: "force"    // 老版 OAuth2 强制授权参数
+        }
+      },
       token: "https://gitee.com/oauth/token",
       userinfo: "https://gitee.com/api/v5/user",
       profile(profile: any) {
