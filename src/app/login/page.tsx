@@ -37,23 +37,18 @@ export default async function LoginPage({ searchParams }: { searchParams: { erro
           animation-delay: 0.3s; 
         }
 
-        /* 🚀 核心修复：融合黑场物理阴影与蓝光晕，彻底消灭断层感 */
+        /* 🚀 彻底去除所有 box-shadow 阴影，仅保留纯粹的边框呼吸和放缩，实现最极简的玻璃质感 */
         @keyframes intense-breathe-glow {
           0%, 100% { 
             transform: scale(1); 
-            /* 物理投影 + 外部蓝光 + 内部蓝光 */
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 50px rgba(59,130,246,0.1), inset 0 0 20px rgba(59,130,246,0.05); 
             border-color: rgba(255,255,255,0.1); 
           }
           50% { 
             transform: scale(1.03); 
-            /* 物理投影放大 + 外部紫/蓝强光 + 内部紫光 */
-            box-shadow: 0 30px 60px rgba(0,0,0,0.8), 0 0 140px rgba(59,130,246,0.5), inset 0 0 40px rgba(168,85,247,0.3); 
-            border-color: rgba(168,85,247,0.5); 
+            border-color: rgba(168,85,247,0.6); 
           }
         }
         .animate-intense-breathe {
-          /* 🚀 核心修复：追加 both 属性，让 0% 的光影效果在 1.5s 延迟期间提前生效 */
           animation: intense-breathe-glow 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite 1.5s both;
         }
 
@@ -79,6 +74,7 @@ export default async function LoginPage({ searchParams }: { searchParams: { erro
         />
       </div>
 
+      {/* 环境光兜底 */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-blue-500/10 rounded-full blur-[150px] pointer-events-none"></div>
 
       {/* 左上角：返回主站按钮 */}
@@ -97,8 +93,8 @@ export default async function LoginPage({ searchParams }: { searchParams: { erro
       {/* 身份校验容器 */}
       <div className="relative w-full max-w-lg animate-spring-in z-10 pointer-events-none">
         
-        {/* 🚀 核心修复：移除了 Tailwind 原始的 shadow-2xl，完全交接给 CSS 动画引擎控制阴影 */}
-        <div className="animate-intense-breathe relative w-full bg-[#060813]/60 backdrop-blur-[50px] border border-white/10 rounded-[3.5rem] p-12 flex flex-col items-center overflow-hidden pointer-events-auto">
+        {/* 🚀 卡片去除了所有外部的 box-shadow，纯粹依靠 backdrop-blur 毛玻璃质感 */}
+        <div className="animate-intense-breathe relative w-full bg-[#060813]/40 backdrop-blur-[50px] border border-white/10 rounded-[3.5rem] p-12 flex flex-col items-center overflow-hidden pointer-events-auto">
           
           <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-blue-400/60 to-transparent opacity-80"></div>
           
