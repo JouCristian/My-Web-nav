@@ -5,40 +5,50 @@ import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { TransitionLink } from "@/components/transition-link"
 import { ProfileForm } from "@/components/profile-form"
+import { ProfileBindingModule } from "@/components/profile-binding-module"
 
-export default async function ProfilePage() {
+// 🚀 注意这里接收 searchParams 以获取可能存在的鉴权冲突错误
+export default async function ProfilePage({ searchParams }: { searchParams: { error?: string } }) {
   const session = await auth()
-  if (!session?.user) redirect("/login")
+  
+  // 🚀 核心修复：永远不要用可能为空的 email 查数据，必须用绝对 id
+  if (!session?.user?.id) redirect("/login")
 
   const dbUser = await prisma.user.findUnique({
-    where: { email: session.user.email! }
+    where: { id: session.user.id },
+    include: { accounts: true } // 🚀 同时查出该账号下绑定的所有第三方凭证
   })
 
   if (!dbUser) redirect("/login")
 
   const role = dbUser.role || "PENDING";
+  
+  // 检查是否已经绑定了相关账号
+  const hasGithub = dbUser.accounts.some(acc => acc.provider === "github")
+  const hasGitee = dbUser.accounts.some(acc => acc.provider === "gitee")
+  
+  // 检测是否有 Auth.js 抛出的冲突信号
+  const isConflict = searchParams?.error === "OAuthAccountNotLinked"
 
   async function updateProfile(formData: FormData) {
     "use server"
     const session = await auth()
-    if (!session?.user?.email) return
+    if (!session?.user?.id) return
 
     const nickname = formData.get("nickname") as string
     const avatar = formData.get("avatar") as string 
     const feishuLink = formData.get("feishuLink") as string
-    // 🚀 新增：抓取表单中提交的学号
     const studentId = formData.get("studentId") as string
     
-    // 构建更新数据载荷
     const updateData: any = { nickname, customAvatar: avatar, feishuLink }
     
-    // 只有非空的时候才更新学号 (防止非船员角色意外覆盖数据)
     if (studentId !== null && studentId !== undefined) {
       updateData.studentId = studentId
     }
 
     await prisma.user.update({
-      where: { email: session.user.email },
+      // 🚀 核心修复：使用 id 更新数据，避免 Gitee 无邮箱时更新失败
+      where: { id: session.user.id },
       data: updateData
     })
 
@@ -46,7 +56,7 @@ export default async function ProfilePage() {
     revalidatePath("/")
   }
 
-  // 🛡️ 军衔 UI 配置
+  // 🛡️ 军衔 UI 配置 (保持你原有的精美设计不变)
   const getRoleUI = (currentRole: string) => {
     switch (currentRole) {
       case "OWNER":
@@ -141,6 +151,13 @@ export default async function ProfilePage() {
           <div className="relative z-10">
             <ProfileForm user={dbUser} onUpdate={updateProfile} />
           </div>
+
+          {/* 🚀 在表单下方完美插入身份矩阵链路 */}
+          <ProfileBindingModule 
+            hasGithub={hasGithub} 
+            hasGitee={hasGitee} 
+            isConflict={isConflict} 
+          />
 
           <div className="mt-8 pt-6 border-t border-white/5">
             <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest font-mono">
