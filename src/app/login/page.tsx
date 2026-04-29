@@ -3,6 +3,7 @@ import { auth, signIn } from "@/auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import FloatingLines from "@/components/FloatingLines"
+import { HideSpacetime } from "@/components/hide-spacetime" // 🚀 引入光学迷彩
 
 export default async function LoginPage({ searchParams }: { searchParams: { error?: string } }) {
   const session = await auth()
@@ -15,67 +16,45 @@ export default async function LoginPage({ searchParams }: { searchParams: { erro
   return (
     <main className="min-h-screen flex items-center justify-center bg-[#020205] p-6 relative overflow-hidden perspective-[1000px]">
       
-      {/* 🚀 注入史诗级：跃迁动画、真3D轨道、顶级呼吸动效 */}
+      {/* 🚀 启动光学迷彩：在此页面彻底抹除全局时空按钮 */}
+      <HideSpacetime />
+
+      {/* 注入史诗级：跃迁动画、真3D轨道、顶级呼吸动效 */}
       <style dangerouslySetInnerHTML={{ __html: `
-        /* 1. 背景时空穿梭入场 (Hyper-Warp) */
         @keyframes bg-warp {
-          0% { 
-            opacity: 0; 
-            transform: scale(2.5) translateZ(300px); 
-            filter: blur(30px); 
-          }
-          100% { 
-            opacity: 1; 
-            transform: scale(1) translateZ(0); 
-            filter: blur(0px); 
-          }
+          0% { opacity: 0; transform: scale(2.5) translateZ(300px); filter: blur(30px); }
+          100% { opacity: 1; transform: scale(1) translateZ(0); filter: blur(0px); }
         }
         .animate-bg-warp {
           animation: bg-warp 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* 2. 卡片阻尼弹簧入场 (配合背景的节奏延迟) */
         @keyframes apple-spring-in {
           0% { opacity: 0; transform: translateY(100px) scale(0.85); filter: blur(20px); }
           100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
         }
         .animate-spring-in {
-          opacity: 0; /* 初始隐藏 */
+          opacity: 0; 
           animation: apple-spring-in 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-          animation-delay: 0.3s; /* 等背景跃迁一半时再出现 */
+          animation-delay: 0.3s; 
         }
 
-        /* 3. 狂暴级动态呼吸光晕 (配合紫蓝渐变) */
         @keyframes intense-breathe-glow {
-          0%, 100% { 
-            transform: scale(1); 
-            box-shadow: 0 0 50px rgba(59,130,246,0.1), inset 0 0 20px rgba(59,130,246,0.05); 
-            border-color: rgba(255,255,255,0.1);
-          }
-          50% { 
-            transform: scale(1.03); 
-            box-shadow: 0 0 140px rgba(59,130,246,0.5), inset 0 0 40px rgba(168,85,247,0.3); 
-            border-color: rgba(168,85,247,0.5); 
-          }
+          0%, 100% { transform: scale(1); box-shadow: 0 0 50px rgba(59,130,246,0.1), inset 0 0 20px rgba(59,130,246,0.05); border-color: rgba(255,255,255,0.1); }
+          50% { transform: scale(1.03); box-shadow: 0 0 140px rgba(59,130,246,0.5), inset 0 0 40px rgba(168,85,247,0.3); border-color: rgba(168,85,247,0.5); }
         }
         .animate-intense-breathe {
           animation: intense-breathe-glow 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite 1.5s;
         }
 
-        /* 4. 顶级非线性按钮物理引擎 */
         .spring-physics {
           transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .spring-physics:hover {
-          transform: scale(1.05) translateY(-5px);
-        }
-        .spring-physics:active {
-          transform: scale(0.95) translateY(2px);
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+        .spring-physics:hover { transform: scale(1.05) translateY(-5px); }
+        .spring-physics:active { transform: scale(0.95) translateY(2px); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
       `}} />
 
-      {/* 🚀 时空穿梭包裹层：让 FloatingLines 丝滑地从屏幕外飞入 */}
+      {/* 时空穿梭包裹层 */}
       <div className="absolute inset-0 z-0 pointer-events-auto animate-bg-warp origin-center">
         <FloatingLines
           linesGradient={['#020205', '#1e3a8a', '#3b82f6', '#8b5cf6']}
@@ -90,7 +69,6 @@ export default async function LoginPage({ searchParams }: { searchParams: { erro
         />
       </div>
 
-      {/* 环境光兜底，烘托卡片 */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-blue-500/10 rounded-full blur-[150px] pointer-events-none"></div>
 
       {/* 左上角：返回主站按钮 */}
@@ -106,37 +84,26 @@ export default async function LoginPage({ searchParams }: { searchParams: { erro
         </Link>
       </div>
 
-      {/* 🚀 身份校验容器：配合延迟的弹簧入场 */}
+      {/* 身份校验容器 */}
       <div className="relative w-full max-w-lg animate-spring-in z-10 pointer-events-none">
-        
-        {/* 动态呼吸内壳：极其通透的磨砂材质与发光边框 */}
         <div className="animate-intense-breathe relative w-full bg-[#060813]/60 backdrop-blur-[50px] border border-white/10 rounded-[3.5rem] p-12 flex flex-col items-center shadow-2xl overflow-hidden pointer-events-auto">
           
           <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-blue-400/60 to-transparent opacity-80"></div>
           
-          {/* 背景暗芒对角线 */}
           <div className="absolute -top-32 -right-32 w-72 h-72 bg-purple-500/25 blur-[90px] rounded-full pointer-events-none animate-pulse"></div>
           <div className="absolute -bottom-32 -left-32 w-72 h-72 bg-blue-500/25 blur-[90px] rounded-full pointer-events-none animate-[pulse_3s_ease-in-out_infinite_reverse]"></div>
 
-          {/* 🚀 巅峰 3D 量子星轨仪 (彻底修复连贯性，分离倾斜与旋转) */}
+          {/* 巅峰 3D 量子星轨仪 */}
           <div className="relative w-36 h-36 mb-12 flex items-center justify-center perspective-[500px]">
-            
-            {/* 轨道 1：外围深蓝轨 */}
             <div className="absolute inset-0" style={{ transform: 'rotateX(65deg) rotateY(25deg)', transformStyle: 'preserve-3d' }}>
               <div className="w-full h-full rounded-full border-[2px] border-blue-500/20 border-t-blue-400 shadow-[0_0_25px_rgba(59,130,246,0.8)] animate-[spin_4s_linear_infinite]"></div>
             </div>
-
-            {/* 轨道 2：内围幽紫轨 */}
             <div className="absolute inset-3" style={{ transform: 'rotateX(45deg) rotateY(-35deg)', transformStyle: 'preserve-3d' }}>
               <div className="w-full h-full rounded-full border-[2px] border-purple-500/20 border-b-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.8)] animate-[spin_5s_linear_infinite_reverse]"></div>
             </div>
-
-            {/* 轨道 3：核心天青轨 */}
             <div className="absolute inset-6" style={{ transform: 'rotateX(20deg) rotateY(15deg)', transformStyle: 'preserve-3d' }}>
               <div className="w-full h-full rounded-full border-[2px] border-cyan-400/20 border-r-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.8)] animate-[spin_3s_linear_infinite]"></div>
             </div>
-            
-            {/* 悬浮发光核心 */}
             <div className="relative z-10 w-16 h-16 bg-[#0a0c14]/90 rounded-full flex items-center justify-center backdrop-blur-2xl border border-white/20 shadow-[0_0_40px_rgba(59,130,246,0.8)] animate-[pulse_2s_ease-in-out_infinite]">
               <div className="absolute inset-0 rounded-full bg-blue-400/20 blur-lg"></div>
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-7 h-7 text-white drop-shadow-[0_0_12px_rgba(255,255,255,1)] relative z-20">
@@ -155,8 +122,6 @@ export default async function LoginPage({ searchParams }: { searchParams: { erro
           </div>
 
           <div className="w-full space-y-6 relative z-10">
-            
-            {/* 🚀 按钮 1：GitHub */}
             <form action={async () => { "use server"; await signIn("github", { redirectTo: "/" }); }}>
               <button className="spring-physics group w-full h-16 flex items-center justify-center gap-4 bg-white text-black font-bold rounded-2xl shadow-[0_10px_30px_rgba(255,255,255,0.15)] hover:bg-zinc-100 hover:shadow-[0_20px_50px_rgba(255,255,255,0.3),_0_0_30px_rgba(59,130,246,0.4)] overflow-hidden relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
@@ -165,18 +130,15 @@ export default async function LoginPage({ searchParams }: { searchParams: { erro
               </button>
             </form>
 
-            {/* Apple 极简分割线 */}
             <div className="flex items-center justify-center gap-4 py-3 opacity-60">
               <div className="h-px bg-gradient-to-r from-transparent to-white/30 flex-1"></div>
               <span className="text-[10px] font-mono text-zinc-400 tracking-[0.5em] uppercase">Or</span>
               <div className="h-px bg-gradient-to-l from-transparent to-white/30 flex-1"></div>
             </div>
 
-            {/* 🚀 按钮 2：Gitee */}
             <form action={async () => { "use server"; await signIn("gitee", { redirectTo: "/" }); }}>
               <button className="spring-physics group w-full h-16 flex items-center justify-center gap-4 bg-[#0a0c14]/60 backdrop-blur-md border border-white/10 text-white font-bold rounded-2xl shadow-[inset_0_2px_20px_rgba(255,255,255,0.02),_0_10px_30px_rgba(0,0,0,0.5)] hover:bg-[#111424]/80 hover:border-purple-500/50 hover:shadow-[inset_0_2px_20px_rgba(168,85,247,0.2),_0_20px_50px_rgba(168,85,247,0.3)] relative overflow-hidden">
                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
-                 
                 <span className="text-3xl font-bold font-mono transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6 drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] group-hover:drop-shadow-[0_0_15px_rgba(168,85,247,0.8)] relative z-10">G</span>
                 <span className="text-xl tracking-widest text-zinc-300 group-hover:text-white transition-colors relative z-10">Gitee 国内直连</span>
               </button>
