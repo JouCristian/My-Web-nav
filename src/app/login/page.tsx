@@ -6,13 +6,12 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-transparent p-6">
       
-      {/* 🚀 核心改进：窗口左上角固定悬浮按钮 */}
+      {/* 窗口左上角固定悬浮按钮 */}
       <div className="fixed top-10 left-10 z-[100]">
         <Link 
           href="/" 
           className="group flex items-center gap-4 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all duration-300 active:scale-[0.97]"
         >
-          {/* 动态蓝色指示灯：与首页按钮风格完全对齐 */}
           <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/10 transition-colors">
             <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_12px_rgba(96,165,250,0.9)]" />
             <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
@@ -60,10 +59,12 @@ export default function LoginPage() {
             <div className="h-px w-full bg-gradient-to-l from-transparent to-zinc-500"></div>
           </div>
 
-          {/* 2. 新增：Gitee 国内直连 */}
+          {/* 2. Gitee 国内直连 (完美对齐 GitHub UI，仅 Hover 变红) */}
           <form action={async () => { "use server"; await signIn("gitee", { redirectTo: "/" }); }}>
-            <button className="group w-full flex items-center justify-center gap-4 bg-transparent border border-red-500/50 text-red-500 font-bold py-4 rounded-2xl hover:bg-red-500/10 hover:border-red-500 transition-all duration-300 active:scale-95 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
-              <span className="text-xl font-bold font-mono">G</span>
+            <button className="group w-full flex items-center justify-center gap-4 bg-white text-black font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-white transition-all duration-300 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M11.984 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.091 7.234A3.085 3.085 0 0 1 20.16 10.32v4.846a3.084 3.084 0 0 1-3.085 3.085H6.923a3.085 3.085 0 0 1-3.085-3.085v-4.846a3.085 3.085 0 0 1 3.085-3.085h10.152zm-3.693 3.693H8.153v2.46h5.229v-2.46z"/>
+              </svg>
               Gitee 国内直连
             </button>
           </form>
