@@ -1,6 +1,7 @@
 // src/auth.ts
 import NextAuth from "next-auth"
 import GitHub from "next-auth/providers/github"
+import Gitee from "next-auth/providers/gitee" // 🚀 1. 新增：引入 Gitee 核心引擎
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/db"
 
@@ -13,16 +14,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         params: { prompt: "consent" },
       },
     }),
+    // 🚀 2. 新增：激活 Gitee 跃迁通道
+    Gitee({
+      clientId: process.env.GITEE_CLIENT_ID,
+      clientSecret: process.env.GITEE_CLIENT_SECRET,
+    }),
   ],
   pages: {
     signIn: '/login', 
   },
   callbacks: {
-    // 1. 准入拦截逻辑 [cite: 14]
+    // 1. 准入拦截逻辑
     async signIn({ user }) {
       if (!user.email) return false;
 
-      // 舰长绝对直通车：识别硬编码邮箱，无视任何拦截 [cite: 17, 18]
+      // 舰长绝对直通车：识别硬编码邮箱，无视任何拦截
       if (user.email === "zoujunyi869@gmail.com") {
         return true;
       }
@@ -31,13 +37,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return true;
     },
 
-    // 2. 身份与军衔注入 [cite: 26, 62]
+    // 2. 身份与军衔注入
     async session({ session, user }) {
       if (session.user) {
         // 注入基础 ID
         session.user.id = user.id;
 
-        // 识别是否为舰长 (Lv3 OWNER) [cite: 17, 26]
+        // 识别是否为舰长 (Lv3 OWNER)
         const isCaptain = user.email === "zoujunyi869@gmail.com";
         
         // 注入白皮书要求的核心档案字段 
