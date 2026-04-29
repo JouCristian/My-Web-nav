@@ -14,7 +14,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       id: "gitee",
       name: "Gitee",
       type: "oauth",
-      // 🚀 保持物理直连，确保线上环境 100% 成功
       clientId: "96896797496af99879527f0e725286efc03d879624525c08eec27002d3a728e2",
       clientSecret: "3ee1da994bc4e54fcedc0098293756e456d8b19cc3340be504422e96f394dcf2",
       checks: ["state"], 
@@ -25,7 +24,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return {
           id: profile.id.toString(),
           name: profile.name || profile.login,
-          email: profile.email || null,
+          email: profile.email || null, // 允许邮箱为空
           image: profile.avatar_url,
         }
       }
@@ -34,19 +33,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: { signIn: '/login' },
   callbacks: {
     async signIn({ user }) {
+      // 🚀 只要有 id 即可放行，不再强行要求 email
       if (!user.email && !user.id) return false;
       return true;
     },
     async session({ session, user }) {
       if (session.user) {
+        // 🚀 核心修复 1：将数据库的真实 CUID 强绑定到 session
         session.user.id = user.id;
-        const isCaptain = user.email === "zoujunyi869@gmail.com";
         
-        // 🚀 恢复：核心军衔与皇冠标识字段
+        // 🚀 核心修复 2：优先信任数据库记录的 role，兜底判断特定邮箱
+        // 如果此账号在数据库已经是 OWNER，就直接认定为舰长；否则看看是不是舰长邮箱
+        const isCaptainEmail = user.email === "zoujunyi869@gmail.com";
+        const finalRole = (user.role === "OWNER" || isCaptainEmail) ? "OWNER" : (user.role || "PENDING");
+        
         // @ts-ignore
-        session.user.role = isCaptain ? "OWNER" : (user.role || "PENDING");
+        session.user.role = finalRole;
         // @ts-ignore
-        session.user.isCaptain = isCaptain;
+        session.user.isCaptain = finalRole === "OWNER";
         // @ts-ignore
         session.user.realName = user.realName;
         // @ts-ignore

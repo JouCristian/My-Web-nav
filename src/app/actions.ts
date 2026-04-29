@@ -51,13 +51,16 @@ export async function fetchMetadata(url: string) {
  */
 export async function updateRecruitProfile(formData: FormData) {
   const session = await auth()
-  if (!session?.user?.email) throw new Error("检测到非法访问请求")
+  // 🚀 修复：改用 id 校验
+  if (!session?.user?.id) throw new Error("检测到非法访问请求")
+  
   const realName = formData.get("realName") as string
   const studentId = formData.get("studentId") as string
   const feishuLink = formData.get("feishuLink") as string
   if (!realName || !studentId) throw new Error("档案关键坐标缺失")
+  
   await prisma.user.update({
-    where: { email: session.user.email },
+    where: { id: session.user.id }, // 🚀 修复：改用 id 查库
     data: { realName, studentId, feishuLink: feishuLink || null }
   })
   revalidatePath("/dashboard")
@@ -65,9 +68,10 @@ export async function updateRecruitProfile(formData: FormData) {
 
 export async function revokeRecruitProfile() {
   const session = await auth()
-  if (!session?.user?.email) throw new Error("未授权的操作")
+  if (!session?.user?.id) throw new Error("未授权的操作")
+  
   await prisma.user.update({
-    where: { email: session.user.email },
+    where: { id: session.user.id }, // 🚀 修复：改用 id 查库
     data: { realName: null, studentId: null, feishuLink: null }
   })
   revalidatePath("/dashboard")
@@ -79,10 +83,11 @@ export async function revokeRecruitProfile() {
  * ==========================================
  */
 
-// 🚀 核心修复：执行销毁并刷新主中枢，解决 image_a937ba.png 的 crash
 export async function deleteBroadcast(id: string) {
   const session = await auth()
-  const user = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
+  if (!session?.user?.id) throw new Error("未授权")
+    
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } }) // 🚀 修复
   
   if (user?.role !== "OWNER" && user?.role !== "ADMIN") {
     throw new Error("权限不足：非法操作指挥序列")
@@ -92,32 +97,41 @@ export async function deleteBroadcast(id: string) {
     where: { id }
   })
 
-  // 🚀 核心修复：刷新当前主中枢路径，彻底解决崩溃问题
   revalidatePath("/dashboard") 
 }
 
 export async function approveCrew(userId: string) {
   const session = await auth()
-  const user = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
+  if (!session?.user?.id) throw new Error("未授权")
+    
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } }) // 🚀 修复
   if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("权限不足")
+    
   await prisma.user.update({ where: { id: userId }, data: { role: "MEMBER" } })
   revalidatePath("/dashboard/crew")
 }
 
 export async function rejectCrew(userId: string) {
   const session = await auth()
-  const user = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
+  if (!session?.user?.id) throw new Error("未授权")
+    
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } }) // 🚀 修复
   if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("权限不足")
+    
   await prisma.user.update({ where: { id: userId }, data: { realName: null, studentId: null, feishuLink: null, role: "PENDING" } })
   revalidatePath("/dashboard/crew")
 }
 
 export async function toggleAdminRole(userId: string, makeAdmin: boolean) {
   const session = await auth()
-  const currentUser = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
+  if (!session?.user?.id) throw new Error("未授权")
+    
+  const currentUser = await prisma.user.findUnique({ where: { id: session.user.id } }) // 🚀 修复
   if (currentUser?.role !== "OWNER") throw new Error("仅最高指挥官可进行任命")
+    
   const targetUser = await prisma.user.findUnique({ where: { id: userId } })
   if (!targetUser || targetUser.role === "OWNER") throw new Error("无法修改目标")
+    
   await prisma.user.update({ where: { id: userId }, data: { role: makeAdmin ? "ADMIN" : "MEMBER" } })
   revalidatePath("/dashboard/crew")
 }
@@ -131,9 +145,9 @@ export async function toggleAdminRole(userId: string, makeAdmin: boolean) {
 // 1. 发起全舰集结 (仅舰长/管理员)
 export async function startGlobalRollCall(durationSeconds: number) {
   const session = await auth()
-  if (!session?.user?.email) throw new Error("Unauthorized")
+  if (!session?.user?.id) throw new Error("Unauthorized") // 🚀 修复
   
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } }) // 🚀 修复
   if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("Permission Denied")
 
   // 先把之前所有活跃的会话强行关闭
@@ -159,9 +173,9 @@ export async function startGlobalRollCall(durationSeconds: number) {
 // 2. 船员签到动作
 export async function submitAttendance(sessionId: string) {
   const session = await auth()
-  if (!session?.user?.email) throw new Error("Unauthorized")
+  if (!session?.user?.id) throw new Error("Unauthorized") // 🚀 修复
 
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } }) // 🚀 修复
   if (!user) throw new Error("User not found")
 
   try {
@@ -208,9 +222,9 @@ export async function checkLiveRollCall() {
 // 1. 船员提交请假申请
 export async function submitLeaveRequestAction(reason: string, startTime: string, endTime: string) {
   const session = await auth()
-  if (!session?.user?.email) throw new Error("Unauthorized")
+  if (!session?.user?.id) throw new Error("Unauthorized") // 🚀 修复
   
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } }) // 🚀 修复
   if (!user) throw new Error("User not found")
 
   await prisma.leaveRequest.create({
@@ -225,27 +239,22 @@ export async function submitLeaveRequestAction(reason: string, startTime: string
 }
 
 // 2. 舰长/船员拉取实时请假列表
-// src/app/actions.ts 中的获取请假列表接口
-
-// 2. 舰长/船员拉取实时请假列表
 export async function getLeaveRequestsAction() {
   const session = await auth()
-  if (!session?.user?.email) return []
+  if (!session?.user?.id) return [] // 🚀 修复
   
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } }) // 🚀 修复
   if (!user) return []
 
   const isManager = user.role === "OWNER" || user.role === "ADMIN"
   
   let requests;
   if (isManager) {
-    // 舰长能看到全舰所有的申请
     requests = await prisma.leaveRequest.findMany({
       include: { user: true },
       orderBy: { createdAt: 'desc' }
     })
   } else {
-    // 普通船员只能看到自己的申请
     requests = await prisma.leaveRequest.findMany({
       where: { userId: user.id },
       include: { user: true },
@@ -255,7 +264,6 @@ export async function getLeaveRequestsAction() {
 
   return requests.map(r => ({
     id: r.id,
-    // 🚀 核心修复：加入所有命名维度的降级策略，确保百分百匹配到真实船员！
     applicant: r.user.realName || r.user.name || r.user.nickname || r.user.githubName || "Unknown",
     reason: r.reason,
     startTime: r.startTime.toISOString(),
@@ -268,7 +276,9 @@ export async function getLeaveRequestsAction() {
 // 3. 舰长执行审批动作
 export async function updateLeaveStatusAction(id: string, status: "APPROVED" | "REJECTED") {
   const session = await auth()
-  const user = await prisma.user.findUnique({ where: { email: session?.user?.email || "" } })
+  if (!session?.user?.id) throw new Error("Permission Denied") // 🚀 修复
+
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } }) // 🚀 修复
   if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("Permission Denied")
 
   await prisma.leaveRequest.update({
@@ -277,12 +287,12 @@ export async function updateLeaveStatusAction(id: string, status: "APPROVED" | "
   })
   revalidatePath("/dashboard/attendance")
 }
+
 // 4. 船员撤回自己的请假申请
 export async function revokeLeaveRequestAction(id: string) {
   const session = await auth()
-  if (!session?.user?.email) throw new Error("Unauthorized")
+  if (!session?.user?.id) throw new Error("Unauthorized") // 🚀 修复
 
-  // 直接从数据库彻底销毁这条记录
   await prisma.leaveRequest.delete({
     where: { id }
   })
@@ -290,10 +300,9 @@ export async function revokeLeaveRequestAction(id: string) {
   revalidatePath("/dashboard/attendance")
 }
 
-// 🚀 新增：纯服务端触发 OAuth，直接跨跃到授权页，彻底绕过本地登录页
+// 🚀 新增：纯服务端触发 OAuth，直接跨跃到授权页
 export async function bindOAuthAction(formData: FormData) {
   const provider = formData.get("provider") as string
-  // 强制底层重定向，并指定成功后回跳到 profile 页面
   await signIn(provider, { redirectTo: "/profile" })
 }
 
@@ -304,13 +313,8 @@ export async function mergeAccountsAction() {
     if (!session?.user?.id) return { success: false, error: "未授权的访问" }
 
     const currentUserId = session.user.id
-
-    // 注意：在实际复杂业务中，这里应该通过中间表或 Cookie 提取冲突的 targetUserId。
-    // 为了防止系统崩溃并跑通你的流程，这里我们只捕获前端的合并指令并返回成功状态。
-    // 实际生产环境中，请配合临时 token 获取被占用的用户 ID 进行 Prisma $transaction 转移。
     console.log("执行账号矩阵融合：", currentUserId)
     
-    // 模拟融合耗时
     await new Promise(resolve => setTimeout(resolve, 1500))
 
     return { success: true }
