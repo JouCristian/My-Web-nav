@@ -1,3 +1,4 @@
+// src/app/dashboard/board/page.tsx
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
@@ -7,7 +8,8 @@ import { CreateBroadcastModal } from "@/components/create-broadcast-modal"
 
 export default async function BroadcastBoardPage() {
   const session = await auth()
-  if (!session?.user) redirect("/login")
+  // 🚀 核心修复：改用 id 验证
+  if (!session?.user?.id) redirect("/login")
 
   // 🚀 排序逻辑：置顶公告在前，其次按时间倒序
   const broadcasts = await prisma.announcement.findMany({
@@ -15,7 +17,8 @@ export default async function BroadcastBoardPage() {
     orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }]
   })
 
-  const dbUser = await prisma.user.findUnique({ where: { email: session.user.email! } })
+  // 🚀 核心修复：通过物理 ID 查库
+  const dbUser = await prisma.user.findUnique({ where: { id: session.user.id } })
   const isManager = dbUser?.role === "OWNER" || dbUser?.role === "ADMIN"
 
   return (

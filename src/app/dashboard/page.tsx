@@ -27,7 +27,6 @@ const THEME_MAP = {
     subtitle: "text-purple-200/40",
     activeText: "text-purple-400"
   },
-  // 🚀 恢复金色主题配置
   yellow: {
     border: "border-amber-500/20 hover:border-amber-500/60",
     shadow: "shadow-[0_0_40px_rgba(245,158,11,0.1)] hover:shadow-[0_0_80px_rgba(245,158,11,0.2)]",
@@ -72,10 +71,11 @@ const ModuleCard = ({ moduleId, title, subtitle, icon, link, isActive, theme = "
 
 export default async function DashboardPage() {
   const session = await auth()
-  if (!session?.user?.email) redirect("/")
+  // 🚀 核心修复：彻底消灭 session?.user?.email
+  if (!session?.user?.id) redirect("/login")
 
-  const dbUser = await prisma.user.findUnique({ where: { email: session.user.email } })
-  if (!dbUser) redirect("/")
+  const dbUser = await prisma.user.findUnique({ where: { id: session.user.id } })
+  if (!dbUser) redirect("/login")
 
   // @ts-ignore
   const isCaptain = session.user.isCaptain;
@@ -277,7 +277,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ================= 🚀 核心修改：左右平分的子模块入口区域 ================= */}
       <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col gap-8 mt-12">
         <div className="flex items-center gap-4 opacity-40 mb-2">
           <div className="h-px bg-white/20 flex-1"></div>
@@ -285,7 +284,6 @@ export default async function DashboardPage() {
           <div className="h-px bg-white/20 flex-1"></div>
         </div>
 
-        {/* 🚀 左右对齐的并排容器 (md:grid-cols-2) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
           <ModuleCard 
             moduleId="Module B" 

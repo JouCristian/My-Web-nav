@@ -9,9 +9,11 @@ import { AttendanceDashboardModule } from "@/components/attendance-dashboard-mod
 
 export default async function AttendancePage() {
   const session = await auth()
-  if (!session?.user?.email) redirect("/")
+  // 🚀 核心修复：改用 id 验证
+  if (!session?.user?.id) redirect("/")
 
-  const dbUser = await prisma.user.findUnique({ where: { email: session.user.email } })
+  // 🚀 核心修复：通过物理 ID 查库，解决 Gitee 账号无邮箱导致的 dbUser 为 null
+  const dbUser = await prisma.user.findUnique({ where: { id: session.user.id } })
   if (!dbUser) redirect("/")
 
   const allUsers = await prisma.user.findMany({

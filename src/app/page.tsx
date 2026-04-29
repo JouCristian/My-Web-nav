@@ -24,9 +24,11 @@ export default async function Home() {
   const isCaptain = session?.user?.isCaptain
 
   let dbUser = null
-  if (session?.user?.email) {
+  // 🚀 核心修复：彻底废弃 email 拦截，改用 session.user.id 查询数据库
+  // 完美支持 Gitee 账号获取最新头像和昵称，且实时同步 Profile 页面的修改
+  if (session?.user?.id) {
     dbUser = await prisma.user.findUnique({
-      where: { email: session.user.email }
+      where: { id: session.user.id }
     })
   }
 

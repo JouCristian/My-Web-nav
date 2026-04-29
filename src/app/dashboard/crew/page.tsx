@@ -10,7 +10,8 @@ import { AdminAuthModal } from "@/components/admin-auth-modal"
 
 export default async function CrewArchivesPage() {
   const session = await auth()
-  if (!session?.user) redirect("/login")
+  // 🚀 核心修复：改用 id 验证
+  if (!session?.user?.id) redirect("/login")
 
   const allUsers = await prisma.user.findMany()
 
@@ -29,7 +30,8 @@ export default async function CrewArchivesPage() {
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   })
 
-  const dbUser: any = allUsers.find(u => u.email === session.user?.email)
+  // 🚀 核心修复：改用物理 ID 在内存中定位当前操作者
+  const dbUser: any = allUsers.find(u => u.id === session.user?.id)
   const isManager = dbUser?.role === "OWNER" || dbUser?.role === "ADMIN"
 
   return (
@@ -79,12 +81,9 @@ export default async function CrewArchivesPage() {
               <AdminAuthModal users={allUsers} />
             )}
 
-            {/* 🚀 升级版「返回中枢」：默认休眠，Hover 时平滑唤醒所有动效 */}
             <Link href="/dashboard" className="group hover-breathe flex items-center gap-4 bg-black/60 px-6 py-3.5 rounded-2xl border border-white/10 backdrop-blur-md transition-all duration-500 active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.3)]">
               <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-purple-500/20 transition-all duration-500 overflow-hidden">
-                {/* 能量点：休眠时静止，Hover 时产生脉冲 */}
                 <div className="w-2.5 h-2.5 rounded-full bg-purple-400 group-hover-pulse transition-all duration-500" />
-                {/* 环绕光圈：休眠时隐藏，Hover 时产生扩散波纹 */}
                 <div className="absolute inset-0 rounded-full border border-purple-500/30 opacity-0 group-hover:opacity-100 group-hover:animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite] transition-all duration-500" />
               </div>
               <div className="flex flex-col items-start text-left">
@@ -100,7 +99,8 @@ export default async function CrewArchivesPage() {
             const isOwner = user.role === "OWNER";
             const isAdmin = user.role === "ADMIN";
             const isPending = user.role === "PENDING";
-            const isSelf = session.user?.email === user.email;
+            // 🚀 核心修复：改用物理 ID 进行自识别判断
+            const isSelf = session.user?.id === user.id;
             
             const roleStyles = isOwner 
               ? "border-yellow-500/30 bg-yellow-500/5 hover:border-yellow-500/60 hover:shadow-[0_0_50px_-10px_rgba(234,179,8,0.2)]" 
@@ -137,7 +137,7 @@ export default async function CrewArchivesPage() {
                     </div>
                     <div className="flex items-center gap-2 mt-2 opacity-50">
                       <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2.5" fill="none" className="text-zinc-500"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
-                      <span className="text-[11px] text-zinc-500 font-mono tracking-tighter">{user.githubName || user.email?.split('@')[0] || "Unknown"}</span>
+                      <span className="text-[11px] text-zinc-500 font-mono tracking-tighter">{user.githubName || user.name || "Unknown"}</span>
                     </div>
                   </div>
                 </div>
