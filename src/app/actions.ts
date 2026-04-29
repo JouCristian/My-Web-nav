@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import * as cheerio from 'cheerio'
-import { auth } from "@/auth"
+import { auth, signIn} from "@/auth"
 
 /**
  * ==========================================
@@ -288,6 +288,13 @@ export async function revokeLeaveRequestAction(id: string) {
   })
   
   revalidatePath("/dashboard/attendance")
+}
+
+// 🚀 新增：纯服务端触发 OAuth，直接跨跃到授权页，彻底绕过本地登录页
+export async function bindOAuthAction(formData: FormData) {
+  const provider = formData.get("provider") as string
+  // 强制底层重定向，并指定成功后回跳到 profile 页面
+  await signIn(provider, { redirectTo: "/profile" })
 }
 
 // 🚀 终极多态合并协议：强制将重叠账号合并到当前主账号

@@ -1,11 +1,10 @@
 // src/components/profile-binding-module.tsx
 "use client"
 
-import { signIn } from "next-auth/react"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
-import { mergeAccountsAction } from "@/app/actions"
+import { mergeAccountsAction, bindOAuthAction } from "@/app/actions" // 🚀 引入新的直连法术
 
 export function ProfileBindingModule({ 
   hasGithub, 
@@ -22,23 +21,16 @@ export function ProfileBindingModule({
 
   useEffect(() => {
     setMounted(true)
-    // 🚀 当页面捕捉到账号冲突信号，自动弹出身融合确认框
     if (isConflict) {
       setIsMergeModalOpen(true)
     }
   }, [isConflict])
 
-  const handleBind = (provider: 'github' | 'gitee') => {
-    // 触发绑定，强制回跳当前页面。如果冲突，NextAuth 会在 URL 追加 ?error=OAuthAccountNotLinked
-    signIn(provider, { callbackUrl: "/profile" })
-  }
-
   const handleConfirmMerge = async () => {
     setIsMerging(true)
     const res = await mergeAccountsAction() 
-    if (res.success) {
+    if (res?.success) {
       setIsMergeModalOpen(false)
-      // 清除 URL 中的 error 参数并刷新
       window.location.href = "/profile"
     }
     setIsMerging(false)
@@ -68,9 +60,13 @@ export function ProfileBindingModule({
             </div>
           </div>
           {!hasGithub ? (
-            <button onClick={() => handleBind('github')} className="px-4 py-2 bg-white/10 text-white text-xs font-bold rounded-lg hover:bg-white/20 transition-all active:scale-95 border border-white/20">
-              授权绑定
-            </button>
+            /* 🚀 改造为 Form 提交，调用服务端 action 直飞 GitHub */
+            <form action={bindOAuthAction}>
+              <input type="hidden" name="provider" value="github" />
+              <button type="submit" className="px-4 py-2 bg-white/10 text-white text-xs font-bold rounded-lg hover:bg-white/20 transition-all active:scale-95 border border-white/20">
+                授权绑定
+              </button>
+            </form>
           ) : (
             <div className="px-3 py-1.5 rounded-md bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[10px] font-bold font-mono">已连接</div>
           )}
@@ -90,9 +86,13 @@ export function ProfileBindingModule({
             </div>
           </div>
           {!hasGitee ? (
-            <button onClick={() => handleBind('gitee')} className="px-4 py-2 bg-red-500/20 text-red-400 text-xs font-bold rounded-lg border border-red-500/30 hover:bg-red-500 hover:text-white transition-all active:scale-95">
-              授权绑定
-            </button>
+            /* 🚀 改造为 Form 提交，调用服务端 action 直飞 Gitee */
+            <form action={bindOAuthAction}>
+              <input type="hidden" name="provider" value="gitee" />
+              <button type="submit" className="px-4 py-2 bg-red-500/20 text-red-400 text-xs font-bold rounded-lg border border-red-500/30 hover:bg-red-500 hover:text-white transition-all active:scale-95">
+                授权绑定
+              </button>
+            </form>
           ) : (
              <div className="px-3 py-1.5 rounded-md bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] font-bold font-mono">已连接</div>
           )}
