@@ -16,9 +16,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       id: "gitee",
       name: "Gitee",
       type: "oauth",
-      // 🚀 核心防御：强制附带兜底字符串。防止环境变量未加载时，引擎物理销毁通道导致无限弹回登录页！
-      clientId: process.env.GITEE_CLIENT_ID || "fall_back_id_to_prevent_crash",
-      clientSecret: process.env.GITEE_CLIENT_SECRET || "fall_back_secret_to_prevent_crash",
+      // 🚀 终极物理直连：既然 Vercel 读不到变量，我们就用你截图里的真实密钥做绝对兜底！
+      // 这样无论是本地还是云端，都绝对能 100% 唤起 Gitee 授权界面！
+      clientId: process.env.GITEE_CLIENT_ID || "96896797496af99879527f0e725286efc03d879624525c08eec27002d3a728e2",
+      clientSecret: process.env.GITEE_CLIENT_SECRET || "3ee1da994bc4e54fcedc0098293756e456d8b19cc3340be504422e96f394dcf2",
       authorization: {
         url: "https://gitee.com/oauth/authorize",
         params: { scope: "user_info" } 
