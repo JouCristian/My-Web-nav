@@ -1,7 +1,6 @@
 // src/app/page.tsx
 import { NavigationCard } from "@/components/navigation-card"
 import { AddCardForm } from "@/components/add-card-form"
-import { GuestActionButton } from "@/components/guest-action-button"
 import { TransitionLink } from "@/components/transition-link"
 import { prisma } from "@/lib/db"
 import { auth, signOut } from "@/auth" 
@@ -24,8 +23,7 @@ export default async function Home() {
   const isCaptain = session?.user?.isCaptain
 
   let dbUser = null
-  // 🚀 核心修复：彻底废弃 email 拦截，改用 session.user.id 查询数据库
-  // 完美支持 Gitee 账号获取最新头像和昵称，且实时同步 Profile 页面的修改
+  // 安全的 ID 查库，完美适配所有的账号体系
   if (session?.user?.id) {
     dbUser = await prisma.user.findUnique({
       where: { id: session.user.id }
@@ -34,169 +32,175 @@ export default async function Home() {
 
   const isCommander = isCaptain || (dbUser && (dbUser.role === "ADMIN" || dbUser.role === "OWNER"));
   const isAuthorizedCrew = dbUser && dbUser.role === "MEMBER";
-  const isGuest = !session || (dbUser && dbUser.role === "PENDING");
 
-  let cardTitle = "「一生一芯」·西科星际舰队";
-  let cardSubtitle = "加入我们，在星海中探索CPU的精妙设计！仅限授权船员和管理组访问。💕";
-  let btnText = "点击加入舰队";
+  let cardTitle = "「一生一芯」· 西科星际舰队";
+  let cardSubtitle = "加入我们，在星海中探索 CPU 的精妙设计！仅限授权船员和管理组访问。";
+  let btnText = "开启星际之旅";
 
   if (isAuthorizedCrew) {
-    cardTitle = "「一生一芯」·西科星际舰队";
-    cardSubtitle = "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。\n嘿伙计！今天干的怎么样？";
-    btnText = "进入舰队";
+    cardSubtitle = "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。嘿伙计！今天干得怎么样？";
+    btnText = "进入舰队中枢";
   } else if (isCommander) {
-    cardTitle = "「一生一芯」·星际舰队指挥中枢";
-    cardSubtitle = "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。\n好好干，伙计们！🤞";
-    btnText = "进入舰队指挥大屏";
+    cardTitle = "「一生一芯」· 星际指挥中枢";
+    cardSubtitle = "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。好好干，伙计们！";
+    btnText = "登入最高指挥大屏";
   }
 
-  // 🚀 核心修复：在这里定义 Server Action，真正消费掉顶部 import 的 signOut，消除构建错误
   const handleSignOutAction = async () => {
     "use server"
     await signOut()
   }
 
   return (
-    <main className="min-h-screen bg-transparent p-10 text-white">
-      <div className="max-w-5xl mx-auto text-center">
+    <main className="min-h-screen bg-[#020205] text-white selection:bg-blue-500/30 overflow-x-hidden relative">
+      
+      {/* 🚀 注入 Apple 级物理与光效引擎 */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes central-breathe {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+          50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.9; }
+        }
+        .animate-central-breathe {
+          animation: central-breathe 8s ease-in-out infinite;
+        }
+
+        @keyframes float-up {
+          0% { opacity: 0; transform: translateY(40px) scale(0.95); filter: blur(10px); }
+          100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
+        }
+        .animate-float-up {
+          opacity: 0;
+          animation: float-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        /* 极致的非线性弹簧物理按钮 */
+        .spring-btn-hero {
+          transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .spring-btn-hero:hover {
+          transform: scale(1.05) translateY(-5px);
+          box-shadow: 0 20px 40px rgba(59,130,246,0.3), inset 0 0 20px rgba(255,255,255,0.1);
+        }
+        .spring-btn-hero:active {
+          transform: scale(0.95) translateY(2px);
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
         
-        <div className="flex justify-end mb-8 gap-4">
-          {session ? (
-            <div className="flex items-center gap-4">
-              <Link href="/profile" className="group flex items-center gap-3 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all active:scale-[0.97]">
-                <div className="relative">
-                  <div className="w-9 h-9 rounded-full overflow-hidden border border-white/20 group-hover:border-white/40 transition-colors">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={dbUser?.customAvatar || session.user?.image || ""} alt="avatar" className="w-full h-full object-cover" />
-                  </div>
-                  {isCaptain && (
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-yellow-500 rounded-full border-2 border-black flex items-center justify-center shadow-[0_0_8px_rgba(234,179,8,0.6)]">
-                      <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col items-start">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono group-hover:text-zinc-300">Profile</span>
-                    {isCaptain && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-yellow-500/10 border border-yellow-500/50 text-yellow-500 font-bold tracking-tighter uppercase leading-none shadow-[0_0_10px_rgba(234,179,8,0.2)] group-hover:bg-yellow-500 group-hover:text-black transition-all">Captain</span>
-                    )}
-                  </div>
-                  <span className="text-sm font-bold text-white tracking-tight font-[family-name:var(--font-space)] flex items-center gap-1">
-                    {dbUser?.nickname || session.user?.name || "未知宇航员"}
-                    {isCaptain && <span className="text-yellow-500 text-xs">✦🔱✦</span>}
-                  </span>
-                </div>
-              </Link>
-              
-              {/* 🚀 核心修复：将 Server Action 作为 prop 传入客户端组件 */}
-              <SignOutButton onSignOut={handleSignOutAction} />
-              
+        .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+      `}} />
+
+      {/* 🌌 深空巨幕背景光晕 */}
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] max-w-[1200px] max-h-[1200px] bg-blue-600/10 rounded-full blur-[150px] animate-central-breathe pointer-events-none z-0"></div>
+      <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+
+      {/* 🛸 悬浮中控玻璃导航栏 (Global Header) */}
+      <header className="fixed top-0 left-0 w-full z-50 bg-[#02040a]/70 backdrop-blur-2xl border-b border-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          
+          <div className="flex items-center gap-4">
+            <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center">
+              <div className="w-3 h-3 bg-blue-400 rounded-full shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse"></div>
             </div>
-          ) : (
-            <TransitionLink 
-              href="/login" 
-              className="group flex items-center gap-4 bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all duration-300 active:scale-[0.97]"
-            >
-              <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/10 transition-colors">
-                <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_12px_rgba(96,165,250,0.9)]" />
-                <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
+            <span className="font-mono font-bold tracking-[0.3em] text-white hidden md:block">X-STARFLEET</span>
+          </div>
+
+          <div className="flex items-center gap-6">
+            {!isCaptain && (
+              <TransitionLink href="/contact" className="group hidden md:flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/5 transition-all text-xs font-mono uppercase tracking-widest text-zinc-400 hover:text-white">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 group-hover:scale-110 transition-transform"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                联系舰长
+              </TransitionLink>
+            )}
+
+            {session ? (
+              <div className="flex items-center gap-4 border-l border-white/10 pl-6">
+                <Link href="/profile" className="flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2 rounded-full hover:bg-white/10 hover:border-white/20 transition-all group">
+                  <div className="w-6 h-6 rounded-full overflow-hidden border border-white/20">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={dbUser?.customAvatar || session.user?.image || ""} alt="avatar" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="text-[10px] font-bold text-white tracking-widest">{dbUser?.nickname || session.user?.name || "宇航员"}</span>
+                  </div>
+                </Link>
+                <SignOutButton onSignOut={handleSignOutAction} />
               </div>
-              <div className="flex flex-col items-start">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono group-hover:text-blue-400 transition-colors">Authorization</span>
-                <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">开启星际之旅</span>
-              </div>
-            </TransitionLink>
-          )}
+            ) : (
+              <TransitionLink href="/login" className="flex items-center gap-2 bg-blue-500/20 border border-blue-500/50 text-blue-400 px-6 py-2 rounded-full hover:bg-blue-500 hover:text-white transition-all text-xs font-bold tracking-widest shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                Authorization
+              </TransitionLink>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* 🚀 巨幕英雄区 (Absolute Focus) */}
+      <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-20">
+        
+        <div className="animate-float-up" style={{ animationDelay: '0.1s' }}>
+          <div className="inline-flex items-center gap-3 bg-blue-500/10 border border-blue-500/30 px-4 py-1.5 rounded-full mb-8 backdrop-blur-md">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)]"></span>
+            <span className="text-[10px] font-mono font-bold tracking-[0.4em] text-blue-400 uppercase">Fleet Mission Status</span>
+          </div>
         </div>
 
-        <h1 className="text-4xl font-bold mb-4 tracking-[0.2em] font-[family-name:var(--font-space)] text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-200 to-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-          我的星际导航站
+        <h1 className="animate-float-up text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter font-[family-name:var(--font-space)] text-transparent bg-clip-text bg-gradient-to-b from-white via-white/90 to-white/40 drop-shadow-[0_0_40px_rgba(255,255,255,0.2)] mb-6 max-w-5xl" style={{ animationDelay: '0.2s' }}>
+          {cardTitle}
         </h1>
         
-        <p className="text-zinc-500 mb-10">
-          {isCaptain ? `星际数据库已连通，欢迎回来，${dbUser?.nickname || "舰长"}` : "你的星际导航站！如需修改导航卡片，请联系舰长 JouCristian"}
+        <p className="animate-float-up text-sm md:text-base text-zinc-400 tracking-widest max-w-2xl mx-auto leading-relaxed mb-16" style={{ animationDelay: '0.3s' }}>
+          {cardSubtitle}
         </p>
 
-        {!isCaptain && (
-          <div className="mb-12 max-w-md mx-auto">
-            <TransitionLink 
-              href="/contact" 
-              className="group block bg-black/75 p-4 rounded-2xl border border-dashed border-white/20 animate-flame-hover hover:border-white/40 transition-all"
-            >
-              <div className="flex items-center justify-center gap-4">
-                <div className="relative">
-                  <div className="absolute inset-0 rounded-xl bg-white/10 animate-ping opacity-30" />
-                  <div className="relative bg-white/5 p-3 rounded-xl border border-white/10 text-zinc-400 group-hover:bg-white group-hover:text-black group-hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] group-hover:rotate-3 transition-all duration-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /></svg>
-                  </div>
-                </div>
-                <div className="text-left">
-                  <h4 className="text-sm font-semibold text-white group-hover:text-white">联系 JouCristian</h4>
-                  <p className="text-xs text-zinc-500 group-hover:text-zinc-300">获取舰长的星际通讯码 (WeChat)</p>
-                </div>
-              </div>
-            </TransitionLink>
+        <div className="animate-float-up" style={{ animationDelay: '0.4s' }}>
+          <TransitionLink 
+            href={session ? "/dashboard" : "/login"} 
+            className="spring-btn-hero group relative inline-flex items-center justify-center gap-4 px-12 py-5 rounded-full bg-white text-black font-bold text-lg overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+            <span className="relative z-10 tracking-[0.15em]">{btnText}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5 relative z-10 transition-transform group-hover:translate-x-1"><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </TransitionLink>
+        </div>
+
+        {/* 滚动指引 */}
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-40 animate-bounce">
+          <span className="text-[9px] font-mono tracking-[0.4em] uppercase text-zinc-400">Scroll to Explore Databanks</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-zinc-500"><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+        </div>
+      </section>
+
+      {/* 📂 隐匿式下沉导航区 (Below-the-fold) */}
+      <section className="relative z-10 max-w-7xl mx-auto px-6 pb-40">
+        
+        {/* 隔离线 */}
+        <div className="flex items-center justify-center gap-6 mb-20 opacity-30">
+          <div className="h-px bg-gradient-to-r from-transparent to-white/50 w-32 md:w-64"></div>
+          <span className="w-2 h-2 rotate-45 border border-white/50"></span>
+          <div className="h-px bg-gradient-to-l from-transparent to-white/50 w-32 md:w-64"></div>
+        </div>
+
+        {isCaptain && (
+          <div className="mb-12">
+            <AddCardForm />
           </div>
         )}
-
-        {/* 三层逻辑大卡片面板 */}
-        <div className="relative w-full rounded-[2.5rem] bg-black/40 border border-white/10 p-8 md:p-12 overflow-hidden group animate-flame-hover mb-12 text-left">
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none group-hover:bg-blue-500/20 transition-all duration-700"></div>
-
-          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-                </span>
-                <h2 className="text-sm font-bold tracking-[0.3em] font-mono text-blue-400 uppercase">
-                  {isCommander ? "Yishengyixin Command Center" : "Fleet Mission Status"}
-                </h2>
-              </div>
-              <h3 className="text-3xl md:text-4xl font-bold text-white tracking-wide font-[family-name:var(--font-space)] mt-2">{cardTitle}</h3>
-              <p className="mt-4 text-zinc-400 text-sm max-w-xl leading-relaxed whitespace-pre-line">{cardSubtitle}</p>
-            </div>
-
-            <div className="shrink-0 w-full md:w-auto mt-4 md:mt-0">
-              {!session ? (
-                <GuestActionButton btnText={btnText} targetHref="/login" />
-              ) : (
-                <TransitionLink 
-                  href="/dashboard" 
-                  className={`group/btn flex items-center justify-center gap-3 w-full px-8 py-4 rounded-2xl font-bold transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.05)] ${
-                    isGuest ? "bg-white text-black hover:bg-blue-400 hover:text-white" : "bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:bg-blue-500 hover:text-white shadow-[0_0_20px_rgba(59,130,246,0.15)]"
-                  }`}
-                >
-                  <span>{btnText}</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover/btn:translate-x-1"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                </TransitionLink>
-              )}
-            </div>
-          </div>
-        </div>
         
-        {isCaptain && <AddCardForm />}
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {links.map((link: Bookmark, index: number) => (
-            <div key={link.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 80}ms` }}>
-              <NavigationCard id={link.id} title={link.name} description={link.description || ""} url={link.url} showDelete={isCaptain} />
+            <div key={link.id} className="fade-in-nav opacity-0" style={{ animationDelay: `${(index * 100) + 200}ms` }}>
+              <NavigationCard 
+                id={link.id} 
+                title={link.name} 
+                description={link.description || ""} 
+                url={link.url} 
+                showDelete={isCaptain} 
+              />
             </div>
           ))}
         </div>
+      </section>
 
-        <div className="mt-32 h-[150vh] flex flex-col items-center justify-end pb-20 opacity-20 pointer-events-none">
-          <div className="flex flex-col items-center gap-6">
-            <p className="text-[10px] tracking-[0.8em] uppercase text-zinc-400">Deep Space Exploration</p>
-            <div className="w-[1px] h-64 bg-gradient-to-b from-white/0 via-white/50 to-white/0 animate-pulse" />
-            <p className="text-xs tracking-[0.4em] uppercase font-light text-zinc-500">End of Sector</p>
-          </div>
-        </div>
-
-      </div>
     </main>
   )
 }
