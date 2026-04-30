@@ -120,17 +120,7 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>((props, ref)
     if (nextIndex !== currentTextIndex) handleIndexChange(nextIndex);
   }, [currentTextIndex, texts.length, loop, handleIndexChange]);
 
-  const previous = useCallback(() => {
-    const prevIndex = currentTextIndex === 0 ? (loop ? texts.length - 1 : currentTextIndex) : currentTextIndex - 1;
-    if (prevIndex !== currentTextIndex) handleIndexChange(prevIndex);
-  }, [currentTextIndex, texts.length, loop, handleIndexChange]);
-
-  const jumpTo = useCallback((index: number) => {
-    const validIndex = Math.max(0, Math.min(index, texts.length - 1));
-    if (validIndex !== currentTextIndex) handleIndexChange(validIndex);
-  }, [texts.length, currentTextIndex, handleIndexChange]);
-
-  useImperativeHandle(ref, () => ({ next, previous, jumpTo, reset: () => handleIndexChange(0) }), [next, previous, jumpTo, handleIndexChange]);
+  useImperativeHandle(ref, () => ({ next, previous: () => {}, jumpTo: () => {}, reset: () => handleIndexChange(0) }), [next, handleIndexChange]);
 
   useEffect(() => {
     if (!auto) return;
@@ -139,14 +129,15 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>((props, ref)
   }, [next, rotationInterval, auto]);
 
   return (
-    <motion.div layout transition={transition} className="flex items-center justify-center gap-4 lg:gap-6">
+    // 🚀 物理修复：父容器必须强制开启 layout，并绑定全局 transition 才能让 Creating 实现弹簧平移
+    <motion.div layout transition={transition} className="flex items-center justify-center gap-3 md:gap-5">
       {prefix && (
         <motion.span layout transition={transition} className="shrink-0">
           {prefix}
         </motion.span>
       )}
       
-      <motion.span className={cn('text-rotate-container', mainClassName)} {...rest} layout transition={transition}>
+      <motion.span layout transition={transition} className={cn('text-rotate-container', mainClassName)} {...rest}>
         <span className="text-rotate-sr-only">{texts[currentTextIndex]}</span>
         <AnimatePresence mode={animatePresenceMode} initial={animatePresenceInitial}>
           <motion.span

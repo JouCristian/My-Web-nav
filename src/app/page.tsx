@@ -34,7 +34,6 @@ export default async function Home() {
   const isCommander = isCaptain || (dbUser && (dbUser.role === "ADMIN" || dbUser.role === "OWNER"));
   const isAuthorizedCrew = dbUser && dbUser.role === "MEMBER";
 
-  // 🚀 精简 Title，将其交由外层的 whitespace-nowrap 统一控制为单行
   let cardTitle = "「一生一芯」·西科星际舰队";
   let cardSubtitle = "加入我们，在星海中探索 CPU 的精妙设计！仅限授权船员和管理组访问。";
   let btnText = "开启星际之旅";
@@ -88,32 +87,31 @@ export default async function Home() {
         
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.4)_0%,transparent_60%)] z-0 pointer-events-none"></div>
 
-        {/* 🚀 巨幕升级：字号上探至 4xl-7xl，使用 wait 模式斩断重影，剥离偏移干扰 */}
-        <div className="animate-float-up pointer-events-auto relative z-10 mb-10 font-mono text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_4px_20px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
+        {/* 🚀 审美修复：字号收缩 (2xl-4xl)，回归 Apple 精致感。调快了 stagger 速度，消除重影 */}
+        <div className="animate-float-up pointer-events-auto relative z-10 mb-8 font-mono text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
           <RotatingText
             prefix="Creating"
             texts={['thinking!', 'coding!', 'components!', 'YSYX!']}
-            // 🚀 加入 flex items-center 绝对居中，去除所有单侧多余 padding
-            mainClassName="px-6 py-2 md:px-8 md:py-3 bg-cyan-400 text-black overflow-hidden rounded-[2rem] shadow-[0_0_30px_rgba(34,211,238,0.5)] flex items-center justify-center"
+            mainClassName="px-4 py-1.5 md:px-6 md:py-2 bg-cyan-400 text-black overflow-hidden rounded-[1.2rem] shadow-[0_0_20px_rgba(34,211,238,0.4)] flex items-center justify-center"
             staggerFrom={"last"}
+            // 🚀 物理修复：加速出场动画 (duration: 0.15s)，彻底解决消失不完全的问题
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "-120%", opacity: 0 }}
-            staggerDuration={0.015} // 🚀 极速进退场：单字母延迟缩短，保证行云流水
-            splitLevelClassName="" // 🚀 删除了导致重心偏上的 pb-1 边距
-            transition={{ type: "spring", damping: 22, stiffness: 280 }} // 顶级非线性回弹
-            rotationInterval={3000}
-            animatePresenceMode="wait" // 🚀 魔法核心：彻底等旧单词消失、容器收缩后，新单词再入场
+            exit={{ y: "-100%", opacity: 0, transition: { duration: 0.15 } }}
+            staggerDuration={0.01} 
+            transition={{ type: "spring", damping: 25, stiffness: 350 }} // 更具张力的弹簧
+            rotationInterval={3200}
+            animatePresenceMode="wait" 
           />
         </div>
 
-        {/* 🚀 巨幕升级：标题字号上探至 8xl (7rem) 级别，全程应用 whitespace-nowrap 防换行 */}
-        <h1 className="animate-float-up pointer-events-auto relative z-10 text-[2.5rem] sm:text-5xl md:text-7xl lg:text-[6.5rem] xl:text-[7.5rem] whitespace-nowrap font-bold tracking-tighter font-[family-name:var(--font-space)] text-transparent bg-clip-text bg-gradient-to-b from-white via-white/95 to-white/60 drop-shadow-[0_6px_40px_rgba(0,0,0,0.9)] mb-8" style={{ animationDelay: '0.2s' }}>
+        {/* 🚀 审美修复：标题字号回归常规巨幕 (4xl-7xl)，拒绝溢出感 */}
+        <h1 className="animate-float-up pointer-events-auto relative z-10 text-4xl sm:text-5xl md:text-6xl lg:text-7xl whitespace-nowrap font-bold tracking-tighter font-[family-name:var(--font-space)] text-transparent bg-clip-text bg-gradient-to-b from-white via-white/95 to-white/60 drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-6" style={{ animationDelay: '0.2s' }}>
           {cardTitle}
         </h1>
         
-        {/* 🚀 巨幕升级：副标题字号拔升，全程单行锁定 */}
-        <p className="animate-float-up pointer-events-auto relative z-10 text-xs sm:text-base md:text-xl lg:text-2xl xl:text-3xl whitespace-nowrap text-zinc-200 tracking-widest mx-auto leading-relaxed mb-16 drop-shadow-[0_4px_20px_rgba(0,0,0,1)]" style={{ animationDelay: '0.3s' }}>
+        {/* 🚀 审美修复：副标题回归 1rem 左右，保证极高的文字呼吸感 */}
+        <p className="animate-float-up pointer-events-auto relative z-10 text-sm sm:text-base md:text-lg whitespace-nowrap text-zinc-300 tracking-widest mx-auto leading-relaxed mb-16 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]" style={{ animationDelay: '0.3s' }}>
           {cardSubtitle}
         </p>
 
