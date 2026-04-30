@@ -38,9 +38,15 @@ function DockItem({ children, className = '', onClick, mouseX, spring, distance,
   const ref = useRef<HTMLDivElement>(null);
   const isHovered = useMotionValue(0);
 
+  // 🚀 核心修复：纯相对坐标计算，彻底免疫页面滚动带来的坐标系断层
   const mouseDistance = useTransform(mouseX, val => {
-    const rect = ref.current?.getBoundingClientRect() ?? { x: 0, width: baseItemSize };
-    return val - rect.x - baseItemSize / 2;
+    const rect = ref.current?.getBoundingClientRect();
+    const parentRect = ref.current?.parentElement?.getBoundingClientRect();
+    if (rect && parentRect) {
+      const itemCenterRel = (rect.left - parentRect.left) + rect.width / 2;
+      return val - itemCenterRel;
+    }
+    return val;
   });
 
   const targetSize = useTransform(mouseDistance, [-distance, 0, distance], [baseItemSize, magnification, baseItemSize]);
@@ -105,8 +111,11 @@ export default function Dock({
   return (
     <div className="dock-outer">
       <div
-        // 🚀 定点修复：将 pageX 替换为 clientX，彻底解决滚动导致的坐标系撕裂和偏移BUG
-        onMouseMove={(e) => mouseX.set(e.clientX)}
+        // 🚀 核心修复：传入相对于 Panel 左边缘的鼠标距离，免疫浏览器全局视口变化
+        onMouseMove={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          mouseX.set(e.clientX - rect.left);
+        }}
         onMouseLeave={() => mouseX.set(Infinity)}
         className={`dock-panel ${className}`}
         style={{ height: panelHeight }}

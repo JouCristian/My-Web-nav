@@ -7,7 +7,7 @@ import { auth, signOut } from "@/auth"
 import { TopNavDock } from "@/components/top-nav-dock" 
 import { HideSpacetime } from "@/components/hide-spacetime" 
 import DotField from "@/components/DotField" 
-import Prism from "@/components/Prism" // 🚀 引入神秘的量子核心
+import Prism from "@/components/Prism" 
 
 interface Bookmark {
   id: number;
@@ -75,26 +75,24 @@ export default async function Home() {
         .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
       `}} />
 
-      {/* 🚀 复合互动背景：Prism 星际核心 + DotField 量子排斥力场 */}
       <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-center">
-        {/* 量子核心 Prism */}
-        <div className="absolute inset-0 z-0 opacity-40 mix-blend-screen pointer-events-auto">
+        {/* 🚀 核心修复：下调透明度，减少泛光(bloom)和光晕(glow)，提升旋转速度 */}
+        <div className="absolute inset-0 z-0 opacity-25 mix-blend-screen pointer-events-auto">
           <Prism
-            animationType="3drotate" // 全息旋转模式
-            timeScale={0.15} // 极其缓慢的电影级旋转感
-            height={4.5}
+            animationType="3drotate" 
+            timeScale={0.4}       // 🚀 提速，流动更顺滑
+            height={5.0}
             baseWidth={6.5}
             scale={4.0}
-            hueShift={-0.3} // 微调色相，使之偏向幽紫色调
-            colorFrequency={1.2}
-            noise={0.3} 
-            glow={1.5}
-            bloom={1.2}
+            hueShift={-0.6}       // 🚀 色相向深紫/冰蓝偏移
+            colorFrequency={0.8}
+            noise={0.4} 
+            glow={0.1}            // 🚀 极大削弱强光耀斑
+            bloom={0.2}           // 🚀 极大削弱曝光溢出
             transparent={true}
           />
         </div>
         
-        {/* 外围点阵排斥场 DotField */}
         <div className="absolute inset-0 z-10 pointer-events-auto mix-blend-screen">
           <DotField
             dotRadius={1.5}
@@ -118,22 +116,26 @@ export default async function Home() {
       <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
 
       <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-10 pointer-events-none">
-        <div className="animate-float-up pointer-events-auto" style={{ animationDelay: '0.1s' }}>
+        
+        {/* 🚀 核心修复：增加一个动态的暗物质护盾遮罩，垫在文字后方，彻底保证高光下的可读性 */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,2,5,0.65)_0%,transparent_65%)] z-0 pointer-events-none"></div>
+
+        <div className="animate-float-up pointer-events-auto relative z-10" style={{ animationDelay: '0.1s' }}>
           <div className="inline-flex items-center gap-3 bg-blue-500/10 border border-blue-500/30 px-4 py-1.5 rounded-full mb-8 backdrop-blur-md">
             <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)]"></span>
             <span className="text-[10px] font-mono font-bold tracking-[0.4em] text-blue-400 uppercase">Fleet Mission Status</span>
           </div>
         </div>
 
-        <h1 className="animate-float-up pointer-events-auto text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter font-[family-name:var(--font-space)] text-transparent bg-clip-text bg-gradient-to-b from-white via-white/90 to-white/40 drop-shadow-[0_0_40px_rgba(255,255,255,0.2)] mb-6 max-w-5xl" style={{ animationDelay: '0.2s', wordBreak: 'keep-all' }}>
+        <h1 className="animate-float-up pointer-events-auto relative z-10 text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter font-[family-name:var(--font-space)] text-transparent bg-clip-text bg-gradient-to-b from-white via-white/95 to-white/60 drop-shadow-[0_0_30px_rgba(0,0,0,0.8)] mb-6 max-w-5xl" style={{ animationDelay: '0.2s', wordBreak: 'keep-all' }}>
           {cardTitle}
         </h1>
         
-        <p className="animate-float-up pointer-events-auto text-sm md:text-base text-zinc-400 tracking-widest max-w-2xl mx-auto leading-relaxed mb-16" style={{ animationDelay: '0.3s' }}>
+        <p className="animate-float-up pointer-events-auto relative z-10 text-sm md:text-base text-zinc-300 tracking-widest max-w-2xl mx-auto leading-relaxed mb-16 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style={{ animationDelay: '0.3s' }}>
           {cardSubtitle}
         </p>
 
-        <div className="animate-float-up pointer-events-auto" style={{ animationDelay: '0.4s' }}>
+        <div className="animate-float-up pointer-events-auto relative z-10" style={{ animationDelay: '0.4s' }}>
           <TransitionLink 
             href={session ? "/dashboard" : "/login"} 
             className="spring-btn-hero group relative inline-flex items-center justify-center gap-4 px-12 py-5 rounded-full bg-white text-black font-bold text-lg overflow-hidden"
@@ -144,7 +146,7 @@ export default async function Home() {
           </TransitionLink>
         </div>
 
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-40 animate-bounce pointer-events-auto">
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-40 animate-bounce pointer-events-auto z-10">
           <span className="text-[9px] font-mono tracking-[0.4em] uppercase text-zinc-400">Scroll to Explore Databanks</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-zinc-500"><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
         </div>
