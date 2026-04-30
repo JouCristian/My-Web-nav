@@ -201,12 +201,22 @@ export async function getRollCallHistoryAction() {
   }))
 }
 
-// 🚀 核心修复 3：舰长特权 - 抹除整场集结档案
+// 🚀 核心修复 3：舰长特权 - 抹除整场集结档案（级联销毁）
 export async function deleteRollCallSessionAction(sessionId: string) {
   const session = await auth()
   const user = await prisma.user.findUnique({ where: { id: session?.user?.id || "" } })
   if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("Permission Denied")
-  await prisma.rollCallSession.delete({ where: { id: sessionId } })
+  
+  // 🛡️ 核心修复：必须先清空这场集结下的所有「船员签到记录」解除外键锚点约束
+  await prisma.attendanceRecord.deleteMany({
+    where: { sessionId: sessionId }
+  })
+
+  // 💥 然后再把整个集结档案彻底摧毁
+  await prisma.rollCallSession.delete({ 
+    where: { id: sessionId } 
+  })
+  
   revalidatePath("/dashboard/attendance")
 }
 
