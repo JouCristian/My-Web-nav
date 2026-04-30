@@ -80,7 +80,7 @@ export default async function Home() {
           bulgeOnly={true}
           bulgeStrength={80}
           glowRadius={220}
-          sparkle={true}
+          sparkle={false}
           waveAmplitude={0}
           gradientFrom="rgba(168, 85, 247, 1)"  
           gradientTo="rgba(168, 85, 247, 0.3)"    
@@ -97,7 +97,7 @@ export default async function Home() {
         <div className="animate-float-up pointer-events-auto relative z-10 mb-8 font-mono text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
           <RotatingText
             prefix="Creating"
-            texts={['thinking!', 'coding!', 'components!', 'YSYX!']}
+            texts={['thinking!', 'coding!', 'components!', 'ysyxing!']}
             mainClassName="px-4 py-1.5 md:px-6 md:py-2 bg-cyan-400 text-black overflow-hidden rounded-[1.2rem] shadow-[0_0_20px_rgba(34,211,238,0.4)] flex items-center justify-center"
             staggerFrom={"last"}
             
