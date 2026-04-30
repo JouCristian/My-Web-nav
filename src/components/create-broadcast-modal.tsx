@@ -3,13 +3,12 @@
 
 import { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
-import { createBroadcast } from "@/app/dashboard/board/actions"
+import { createBroadcast } from "@/app/actions"
+import { motion, AnimatePresence } from "framer-motion"
 
 export function CreateBroadcastModal() {
   const [isOpen, setIsOpen] = useState(false)
-  const [isAnimating, setIsAnimating] = useState(false)
-  const [isClosing, setIsClosing] = useState(false) // 🚀 防闪烁状态机
-  const [isMounted, setIsMounted] = useState(false)
+  const [mounted, setMounted] = useState(false)
   
   const [selectOpen, setSelectOpen] = useState(false)
   const [selectedType, setSelectedType] = useState({ value: 'INFO', label: 'INFO - 日常简讯' })
@@ -18,107 +17,136 @@ export function CreateBroadcastModal() {
   const [focusStyle, setFocusStyle] = useState({ top: 0, height: 0, opacity: 0, width: 0, left: 0 })
   const formRef = useRef<HTMLFormElement>(null)
 
-  useEffect(() => { setIsMounted(true) }, [])
-
-  // 🚀 防闪烁生命周期管理
-  const openModal = () => { setIsClosing(false); setIsOpen(true); setTimeout(() => setIsAnimating(true), 10); }
-  const closeModal = () => { setIsClosing(true); setIsAnimating(false); setTimeout(() => setIsOpen(false), 600); }
+  useEffect(() => { setMounted(true) }, [])
 
   const handleFocus = (e: any) => {
-    if (!formRef.current || !e.target) return;
-    let top = 0, left = 0, el = e.target;
-    while (el && el !== formRef.current) {
-      top += el.offsetTop; left += el.offsetLeft; el = el.offsetParent;
+    const rect = e.target.getBoundingClientRect()
+    const parentRect = formRef.current?.getBoundingClientRect()
+    if (parentRect) {
+      setFocusStyle({ top: rect.top - parentRect.top, left: rect.left - parentRect.left, height: rect.height, width: rect.width, opacity: 1 })
     }
-    setFocusStyle({ top, left, width: e.target.offsetWidth, height: e.target.offsetHeight, opacity: 1 });
+  }
+  const handleBlur = () => setFocusStyle(prev => ({ ...prev, opacity: 0 }))
+
+  const handleSubmit = async (formData: FormData) => {
+    formData.append("type", selectedType.value)
+    formData.append("isPinned", isPinned.toString())
+    await createBroadcast(formData)
+    setIsOpen(false)
   }
 
-  const modalContent = isOpen ? (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      <div className={`absolute inset-0 bg-[#02040a]/40 backdrop-blur-[20px] transition-all duration-700 ${isAnimating ? "opacity-100" : "opacity-0"}`} onClick={closeModal}></div>
-      
-      {/* 🚀 采用弹射入场与粒子退场 */}
-      <div className={`relative w-full max-w-xl z-10 ${isClosing ? "quantum-particle-out" : isAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
-        <div className="quantum-breathe-heavy w-full rounded-[3.5rem] border border-blue-500/30 bg-[#060813]/95 p-12 shadow-[0_0_100px_rgba(59,130,246,0.3)]">
-          <h2 className="text-2xl font-bold text-white tracking-[0.3em] mb-10 text-center font-[family-name:var(--font-space)]">发布全舰广播</h2>
-          
-          <form ref={formRef} action={async (fd) => { fd.append('type', selectedType.value); fd.append('isPinned', String(isPinned)); await createBroadcast(fd); closeModal(); }} className="relative space-y-8">
-            <div className="absolute border-2 border-blue-500 shadow-[0_0_25px_rgba(59,130,246,0.5)] rounded-2xl pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] z-20" style={{ top: focusStyle.top, left: focusStyle.left, width: focusStyle.width, height: focusStyle.height, opacity: focusStyle.opacity }}></div>
-
-            <div className="flex items-center justify-between px-6 py-4 rounded-2xl bg-white/[0.03] border border-white/5 relative z-10">
-              <span className="text-[10px] font-bold text-zinc-500 tracking-[0.2em] uppercase">标记为重要置顶广播</span>
-              <button type="button" onClick={() => setIsPinned(!isPinned)} className={`relative w-12 h-6 rounded-full transition-all duration-500 ${isPinned ? "bg-purple-600 shadow-[0_0_15px_rgba(168,85,247,0.6)]" : "bg-zinc-800"}`}>
-                <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-500 ${isPinned ? "translate-x-6" : ""}`}></div>
-              </button>
-            </div>
-
-            <div className="space-y-3 relative z-[30]">
-              <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-4">广播级别</label>
-              <div className="relative">
-                <div onClick={() => setSelectOpen(!selectOpen)} className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white cursor-pointer flex justify-between items-center hover:bg-white/5 transition-all">
-                  <span>{selectedType.label}</span>
-                  <span className={`transition-transform duration-300 ${selectOpen ? 'rotate-180' : ''}`}>▼</span>
-                </div>
-                <div className={`absolute top-[120%] left-0 w-full bg-[#0d1117] border border-white/10 rounded-3xl p-2 shadow-2xl transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] ${selectOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-4 pointer-events-none'}`}>
-                  {[{v:'INFO', l:'INFO - 日常简讯'},{v:'UPDATE', l:'UPDATE - 系统更新'},{v:'ALERT', l:'ALERT - 紧急警报'}].map(o => (
-                    <div key={o.v} onClick={() => {setSelectedType({value:o.v, label:o.l}); setSelectOpen(false);}} className="px-6 py-4 rounded-2xl text-sm text-zinc-400 hover:text-white hover:bg-blue-600/30 transition-all cursor-pointer">{o.l}</div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-3 relative z-10">
-              <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-4">广播标题</label>
-              <input name="title" required placeholder="输入广播标题..." onFocus={handleFocus} onBlur={() => setFocusStyle(s => ({...s, opacity: 0}))} className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none transition-colors" />
-            </div>
-
-            <div className="space-y-3 relative z-10">
-              <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-4">详细内容</label>
-              <textarea name="content" rows={4} required placeholder="输入详细广播内容..." onFocus={handleFocus} onBlur={() => setFocusStyle(s => ({...s, opacity: 0}))} className="ios-scrollbar w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none resize-none transition-colors" />
-            </div>
-
-            <div className="flex gap-5 pt-4 relative z-10">
-              <button type="button" onClick={closeModal} className="flex-1 py-4 rounded-2xl bg-white/5 text-zinc-500 font-bold tracking-widest text-xs hover:text-white transition-all">取消</button>
-              <button type="submit" className="flex-1 py-4 rounded-2xl bg-blue-600/20 border border-blue-500/50 text-blue-400 font-bold tracking-widest text-xs hover:bg-blue-600 hover:text-white transition-all shadow-[0_0_20px_rgba(59,130,246,0.2)]">发射广播信号</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  ) : null;
+  const modalVariants = {
+    hidden: { opacity: 0, scale: 0.95, filter: "blur(10px)" },
+    visible: { opacity: 1, scale: 1, filter: "blur(0px)", transition: { type: "spring", stiffness: 300, damping: 25 } },
+    exit: { opacity: 0, scale: 0.95, filter: "blur(10px)", transition: { duration: 0.2 } }
+  }
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: `
-        /* ... 保留之前的弹窗动画 ... */
-        @keyframes slide-up-elastic { 0% { opacity: 0; transform: translateY(80px) scale(0.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
-        .animate-slide-up-elastic { animation: slide-up-elastic 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-        .quantum-particle-out { animation: dissipate 0.6s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
-        .quantum-breathe-heavy { animation: heavy-breathe 2s ease-in-out infinite; }
-        @keyframes dissipate { 0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 100% { opacity: 0; filter: blur(40px) brightness(0.5); transform: scale(0.85); } }
-        @keyframes heavy-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        /* 🚀 纯光效呼吸引擎：告别 scale 带来的文字重绘抖动 */
+        @keyframes create-glow-breathe {
+          0%, 100% { box-shadow: 0 0 40px rgba(59,130,246,0.15), inset 0 0 20px rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.3); }
+          50% { box-shadow: 0 0 100px rgba(59,130,246,0.5), inset 0 0 40px rgba(59,130,246,0.25); border-color: rgba(59,130,246,0.7); }
+        }
+        .animate-create-glow { animation: create-glow-breathe 3s ease-in-out infinite; }
+        
         .ios-scrollbar::-webkit-scrollbar { width: 5px; }
         .ios-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
 
-        /* 🚀 新增：发布按钮的专属弹性呼吸 (Hover 激活) */
         @keyframes btn-publish-breathe {
           0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(59,130,246,0.3); }
           50% { transform: scale(1.03); box-shadow: 0 0 50px rgba(59,130,246,0.6); }
         }
-        .hover-breathe-publish:hover {
-          animation: btn-publish-breathe 2.5s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
-        }
+        .hover-breathe-publish:hover { animation: btn-publish-breathe 2.5s cubic-bezier(0.34, 1.56, 0.64, 1) infinite; }
       `}} />
-      
-      {/* 🚀 默认静止状态，悬浮时激活背景色过渡与贝塞尔呼吸动效 */}
-      <button 
-        onClick={openModal} 
-        className="group hover-breathe-publish px-8 py-4 rounded-2xl bg-blue-600/10 border border-blue-500/30 text-blue-400 font-bold tracking-[0.2em] uppercase hover:bg-blue-600 hover:text-white transition-all duration-500 active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.1)]"
-      >
-        + 发布全舰广播
+
+      <button onClick={() => setIsOpen(true)} className="group relative flex items-center justify-center gap-3 bg-blue-500/20 text-blue-400 border border-blue-500/50 px-8 py-4 rounded-2xl font-bold transition-all hover:bg-blue-500 hover:text-white shadow-[0_0_20px_rgba(59,130,246,0.2)] active:scale-95 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
+        <span className="text-xl leading-none relative z-10">+</span>
+        <span className="tracking-[0.2em] relative z-10">发射新信号</span>
       </button>
 
-      {isMounted && createPortal(modalContent, document.body)}
+      {mounted && createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[#02040a]/70 backdrop-blur-md" onClick={() => setIsOpen(false)} />
+              
+              <motion.div 
+                variants={modalVariants} initial="hidden" animate="visible" exit="exit"
+                className="animate-create-glow relative z-10 w-full max-w-xl bg-[#060813]/95 border-2 rounded-[2.5rem] p-10"
+              >
+                <div className="flex items-center gap-4 mb-8 pb-6 border-b border-white/10">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.4)]">
+                    <span className="text-xl">🚀</span>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white tracking-[0.2em] font-[family-name:var(--font-space)]">全域广播序列</h2>
+                    <p className="text-[10px] text-blue-400/60 font-mono uppercase tracking-widest mt-1">Initiate Starfleet Transmission</p>
+                  </div>
+                </div>
+
+                <form action={handleSubmit} ref={formRef} className="space-y-6 relative">
+                  <div className="absolute bg-blue-500/10 border border-blue-500/30 rounded-xl transition-all duration-500 pointer-events-none z-0" style={{ ...focusStyle, top: focusStyle.top - 4, left: focusStyle.left - 4, height: focusStyle.height + 8, width: focusStyle.width + 8, opacity: focusStyle.opacity > 0 ? 1 : 0 }} />
+
+                  <div className="space-y-2 relative z-10">
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-2 flex justify-between items-center">
+                      <span>信号源标题 (Title)</span>
+                      <span className="text-blue-500/40 text-[9px] font-mono">MAX 50 CHARS</span>
+                    </label>
+                    <input type="text" name="title" required onFocus={handleFocus} onBlur={handleBlur} className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-4 text-white outline-none focus:border-transparent transition-colors font-bold tracking-wide" placeholder="输入广播标题..." />
+                  </div>
+
+                  <div className="flex gap-4 relative z-10">
+                    <div className="space-y-2 flex-1 relative">
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-2">威胁级别 (Type)</label>
+                      <div className="relative">
+                        <div onClick={() => setSelectOpen(!selectOpen)} className="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-4 text-white cursor-pointer flex justify-between items-center hover:bg-white/5 transition-colors">
+                          <span className={`font-bold tracking-widest text-sm ${selectedType.value === 'INFO' ? 'text-blue-400' : selectedType.value === 'UPDATE' ? 'text-emerald-400' : 'text-red-400'}`}>{selectedType.label}</span>
+                          <span className={`text-xs text-zinc-500 transition-transform ${selectOpen ? 'rotate-180' : ''}`}>▼</span>
+                        </div>
+                        <AnimatePresence>
+                          {selectOpen && (
+                            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute top-[110%] left-0 w-full bg-[#0a0d1a] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-50">
+                              {[ { value: 'INFO', label: 'INFO - 日常简讯', color: 'text-blue-400' }, { value: 'UPDATE', label: 'UPDATE - 舰队更新', color: 'text-emerald-400' }, { value: 'ALERT', label: 'ALERT - 红色警报', color: 'text-red-400' } ].map(opt => (
+                                <div key={opt.value} onClick={() => { setSelectedType(opt); setSelectOpen(false); }} className={`px-5 py-4 cursor-pointer hover:bg-white/5 transition-colors font-bold tracking-widest text-sm ${opt.color}`}>{opt.label}</div>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 flex flex-col items-center justify-center pt-6 px-2">
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest text-center cursor-pointer flex flex-col items-center gap-2 group">
+                        <span className="group-hover:text-yellow-500/80 transition-colors">强制置顶</span>
+                        <div className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${isPinned ? 'bg-yellow-500/20 border-yellow-500/50' : 'bg-black/50 border-white/10'} border flex items-center px-1`} onClick={() => setIsPinned(!isPinned)}>
+                          <div className={`w-4 h-4 rounded-full transition-all duration-300 shadow-md ${isPinned ? 'bg-yellow-500 translate-x-6' : 'bg-zinc-600 translate-x-0'}`} />
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 relative z-10 flex flex-col h-48">
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-2 flex justify-between items-center">
+                      <span>通讯正文 (Transmission Content)</span>
+                      <span className="text-blue-500/40 text-[9px] font-mono border border-blue-500/20 px-1.5 rounded">Markdown Supported</span>
+                    </label>
+                    <textarea name="content" required onFocus={handleFocus} onBlur={handleBlur} className="w-full flex-1 bg-black/50 border border-white/10 rounded-xl px-5 py-4 text-white outline-none focus:border-transparent transition-colors resize-none ios-scrollbar font-mono text-sm leading-relaxed" placeholder="# 星际坐标报告\n\n- 目标系统在线...\n- 跃迁引擎准备就绪..." />
+                  </div>
+
+                  <div className="flex gap-4 pt-6 mt-6 border-t border-white/10 relative z-10">
+                    <button type="button" onClick={() => setIsOpen(false)} className="flex-1 py-4 rounded-xl border border-white/10 text-zinc-400 font-bold tracking-widest hover:bg-white/5 hover:text-white transition-all active:scale-95">取 消</button>
+                    <button type="submit" className="hover-breathe-publish flex-1 py-4 rounded-xl bg-blue-500/20 border border-blue-500/50 text-blue-400 font-bold tracking-[0.2em] hover:bg-blue-500 hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2"><span>发射广播</span><span className="text-xl">📡</span></button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   )
 }
