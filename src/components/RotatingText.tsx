@@ -129,7 +129,7 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>((props, ref)
   }, [next, rotationInterval, auto]);
 
   return (
-    <motion.div layout transition={transition} className="flex items-center justify-center gap-3 md:gap-5">
+    <motion.div layout transition={transition} className="flex items-center justify-center gap-4 md:gap-6">
       {prefix && (
         <motion.span layout transition={transition} className="shrink-0">
           {prefix}
@@ -142,6 +142,7 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>((props, ref)
           <motion.span
             key={currentTextIndex}
             className="text-rotate-inner"
+            // 🚀 核心修复：内部 motion.span 必须显式携带 layout 属性，才能在宽度变化时引导父级进行弹簧过渡
             layout
             aria-hidden="true"
           >
