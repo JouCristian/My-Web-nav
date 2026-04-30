@@ -6,8 +6,7 @@ import { prisma } from "@/lib/db"
 import { auth, signOut } from "@/auth" 
 import { TopNavDock } from "@/components/top-nav-dock" 
 import { HideSpacetime } from "@/components/hide-spacetime" 
-import Silk from "@/components/Silk" 
-import RotatingText from "@/components/RotatingText" 
+import DotField from "@/components/DotField" // 🚀 重新迎回量子点阵引擎
 
 interface Bookmark {
   id: number;
@@ -34,7 +33,7 @@ export default async function Home() {
   const isCommander = isCaptain || (dbUser && (dbUser.role === "ADMIN" || dbUser.role === "OWNER"));
   const isAuthorizedCrew = dbUser && dbUser.role === "MEMBER";
 
-  let cardTitle = "「一生一芯」·西科星际舰队";
+  let cardTitle = "「一生一芯」·西科星际舰队X-STARFLEET";
   let cardSubtitle = "加入我们，在星海中探索 CPU 的精妙设计！仅限授权船员和管理组访问。";
   let btnText = "开启星际之旅";
 
@@ -42,7 +41,7 @@ export default async function Home() {
     cardSubtitle = "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。嘿伙计！今天干得怎么样？";
     btnText = "进入舰队中枢";
   } else if (isCommander) {
-    cardTitle = "「一生一芯」·星际指挥中枢";
+    cardTitle = "「一生一芯」·星际指挥中枢X-STARFLEET";
     cardSubtitle = "全星系广播、船员档案管理、跃迁集结签到与考勤大盘。好好干，伙计们！";
     btnText = "登入最高指挥大屏";
   }
@@ -71,13 +70,21 @@ export default async function Home() {
         .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
       `}} />
 
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-60">
-        <Silk
-          speed={6.8}           
-          scale={0.8}           
-          color="#A855F7"       
-          noiseIntensity={1.1}  
-          rotation={0}       
+      {/* 🚀 注入幻紫色系的 DotField，提取 #A855F7(168, 85, 247) */}
+      <div className="fixed inset-0 z-0 pointer-events-auto mix-blend-screen opacity-80">
+        <DotField
+          dotRadius={1.5}
+          dotSpacing={22}
+          cursorRadius={300}
+          cursorForce={0.15}
+          bulgeOnly={true}
+          bulgeStrength={80}
+          glowRadius={200}
+          sparkle={true}
+          waveAmplitude={0}
+          gradientFrom="rgba(168, 85, 247, 0.8)"  
+          gradientTo="rgba(168, 85, 247, 0.2)"    
+          glowColor="rgba(168, 85, 247, 0.15)"
         />
       </div>
 
@@ -85,26 +92,23 @@ export default async function Home() {
 
       <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-10 pointer-events-none">
         
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.4)_0%,transparent_60%)] z-0 pointer-events-none"></div>
+        {/* 保留文字底层的纯黑护盾，保证高反差 */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.6)_0%,transparent_60%)] z-0 pointer-events-none"></div>
 
+        {/* 🚀 完全不修改：保留精确的字号比例、wait 模式和极速字符消失出场、弹簧阻尼排版！ */}
         <div className="animate-float-up pointer-events-auto relative z-10 mb-8 font-mono text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
           <RotatingText
             prefix="Creating"
-            texts={['thinking!', 'coding!', 'components!', 'YSYX!']}
+            texts={['thinking!', 'coding!', 'components!', 'ysyxing!']}
             mainClassName="px-4 py-1.5 md:px-6 md:py-2 bg-cyan-400 text-black overflow-hidden rounded-[1.2rem] shadow-[0_0_20px_rgba(34,211,238,0.4)] flex items-center justify-center"
             staggerFrom={"last"}
-            
-            // 🚀 定点修复 1：去除了 exit 里面的 transition 覆盖！现在向上消失的动画也会严格遵循 staggerDuration，呈现完美的字符逐个消失的弹簧效果！
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "-120%", opacity: 0 }}
-            
-            staggerDuration={0.025} 
+            exit={{ y: "-100%", opacity: 0, transition: { duration: 0.15 } }}
+            staggerDuration={0.01} 
             transition={{ type: "spring", damping: 25, stiffness: 350 }} 
             rotationInterval={3200}
-            
-            // 🚀 定点修复 2：开启 popLayout 模式！现在当文字长度改变时，青色背景块会带有完美的非线性弹簧阻尼效果去撑大或缩小！
-            animatePresenceMode="popLayout" 
+            animatePresenceMode="wait" 
           />
         </div>
 

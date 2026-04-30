@@ -1,0 +1,6 @@
+/* src/components/DotField.css */
+.dot-field-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
