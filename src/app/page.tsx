@@ -7,6 +7,7 @@ import { auth, signOut } from "@/auth"
 import { TopNavDock } from "@/components/top-nav-dock" 
 import { HideSpacetime } from "@/components/hide-spacetime" 
 import DotField from "@/components/DotField" // 🚀 重新迎回量子点阵引擎
+import RotatingText from "@/components/RotatingText"
 
 interface Bookmark {
   id: number;
