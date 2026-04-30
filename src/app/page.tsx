@@ -7,6 +7,7 @@ import { auth, signOut } from "@/auth"
 import { TopNavDock } from "@/components/top-nav-dock" 
 import { HideSpacetime } from "@/components/hide-spacetime" 
 import Silk from "@/components/Silk" 
+import RotatingText from "@/components/RotatingText" // 🚀 引入高级旋转文本
 
 interface Bookmark {
   id: number;
@@ -74,7 +75,7 @@ export default async function Home() {
         .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
       `}} />
 
-      {/* 🚀 顶级审美：应用自定义面板参数与星光淡蓝 (Starlight Pale Blue) */}
+      {/* 🚀 保留你的深邃幻紫背景 */}
       <div className="fixed inset-0 z-0 pointer-events-none opacity-60">
         <Silk
           speed={6.8}           
@@ -89,13 +90,27 @@ export default async function Home() {
 
       <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-10 pointer-events-none">
         
-        {/* 🚀 极其微弱的柔和中心垫底，让文字边缘更清晰，但不影响背景丝绸的美感 */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.4)_0%,transparent_60%)] z-0 pointer-events-none"></div>
 
+        {/* 🚀 全新设计的动态状态徽章 (Rotating Text 注入) */}
         <div className="animate-float-up pointer-events-auto relative z-10" style={{ animationDelay: '0.1s' }}>
-          <div className="inline-flex items-center gap-3 bg-black/40 border border-blue-500/30 px-4 py-1.5 rounded-full mb-8 backdrop-blur-md shadow-[0_0_15px_rgba(0,0,0,0.5)]">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)]"></span>
-            <span className="text-[10px] font-mono font-bold tracking-[0.4em] text-blue-400 uppercase">Fleet Mission Status</span>
+          <div className="inline-flex items-center gap-3 bg-black/40 border border-white/10 pl-4 pr-1.5 py-1.5 rounded-full mb-8 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_rgba(34,211,238,0.8)]"></span>
+            <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-zinc-300 uppercase mt-0.5">X-STARFLEET //</span>
+            
+            {/* 这里的右侧底块采用了极具科幻感的冰川青，与你的幻紫背景产生顶级的赛博朋克对比 */}
+            <RotatingText
+              texts={['MISSION ACTIVE', 'QUANTUM SECURED', 'ALL SYSTEMS GO', 'AWAITING COMMAND']}
+              mainClassName="px-3 py-1 bg-cyan-400/10 text-cyan-300 border border-cyan-400/20 rounded-full overflow-hidden justify-center shadow-[inset_0_0_10px_rgba(34,211,238,0.1)] text-[10px] font-mono font-bold tracking-[0.2em] uppercase"
+              staggerFrom="last"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "-120%" }}
+              staggerDuration={0.025}
+              splitLevelClassName="overflow-hidden pb-0.5"
+              transition={{ type: "spring", damping: 30, stiffness: 400 }}
+              rotationInterval={3000}
+            />
           </div>
         </div>
 
