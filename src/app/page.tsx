@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db"
 import { auth, signOut } from "@/auth" 
 import { TopNavDock } from "@/components/top-nav-dock" 
 import { HideSpacetime } from "@/components/hide-spacetime" 
-import Silk from "@/components/Silk" // 🚀 只保留极其纯粹的丝绸引擎
+import Silk from "@/components/Silk" 
 
 interface Bookmark {
   id: number;
@@ -74,14 +74,14 @@ export default async function Home() {
         .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
       `}} />
 
-      {/* 🚀 完全重构的 3D 丝绸背景，赋予其明亮科技光泽 */}
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-80 mix-blend-screen">
+      {/* 🚀 顶级审美：应用自定义面板参数与星光淡蓝 (Starlight Pale Blue) */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-60">
         <Silk
-          speed={4}             
-          scale={3.0}           
-          color="#3b82f6"       // 🚀 核心修复：明亮且高贵的深空科技蓝，杜绝死黑
-          noiseIntensity={0.5}  // 🚀 核心修复：大幅降低噪点，使得丝绸柔和如液态金属
-          rotation={0.25}       
+          speed={6.8}           
+          scale={0.8}           
+          color="#8bacf4"       // 极光/星光淡蓝，充满科技与呼吸感
+          noiseIntensity={1.1}  
+          rotation={0}       
         />
       </div>
 
@@ -89,6 +89,9 @@ export default async function Home() {
 
       <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-10 pointer-events-none">
         
+        {/* 🚀 极其微弱的柔和中心垫底，让文字边缘更清晰，但不影响背景丝绸的美感 */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.4)_0%,transparent_60%)] z-0 pointer-events-none"></div>
+
         <div className="animate-float-up pointer-events-auto relative z-10" style={{ animationDelay: '0.1s' }}>
           <div className="inline-flex items-center gap-3 bg-black/40 border border-blue-500/30 px-4 py-1.5 rounded-full mb-8 backdrop-blur-md shadow-[0_0_15px_rgba(0,0,0,0.5)]">
             <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)]"></span>
