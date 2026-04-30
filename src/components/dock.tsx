@@ -3,7 +3,7 @@
 
 import { motion, MotionValue, useMotionValue, useSpring, useTransform, type SpringOptions, AnimatePresence } from 'framer-motion';
 import React, { Children, cloneElement, useEffect, useRef, useState } from 'react';
-import GlassSurface from './GlassSurface'; // 🚀 引入最新武装的光学玻璃
+import GlassSurface from './GlassSurface';
 
 import './dock.css';
 
@@ -119,21 +119,23 @@ export default function Dock({
         role="toolbar"
         aria-label="Application dock"
       >
-        {/* 🚀 物理引擎嵌入点：放置在 absolute 的负层级，为整个 Dock 提供顶级色散玻璃背景，不干扰悬浮气泡！ */}
         <div style={{ position: 'absolute', inset: 0, zIndex: -10, pointerEvents: 'none', borderRadius: 'inherit' }}>
+          {/* 🚀 严格按照截图参数复原：极高清晰度的边缘色散光学玻璃 */}
           <GlassSurface
             width="100%"
             height="100%"
-            borderRadius={32}
-            displace={8}
-            distortionScale={-150}
-            redOffset={3}
+            borderRadius={50}
+            backgroundOpacity={0.37}
+            saturation={1}
+            borderWidth={0.07}
+            brightness={50}
+            opacity={0.93}
+            blur={11}
+            displace={0.5} 
+            distortionScale={-180}
+            redOffset={0}
             greenOffset={10}
             blueOffset={20}
-            brightness={35}
-            opacity={0.8}
-            blur={15}
-            mixBlendMode="screen"
           />
         </div>
 
