@@ -142,7 +142,7 @@ export default async function Home() {
         <h1 className="animate-float-up pointer-events-auto relative z-10 text-4xl sm:text-5xl md:text-6xl lg:text-7xl whitespace-nowrap font-bold tracking-tighter font-[family-name:var(--font-space)] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-6" style={{ animationDelay: '0.2s' }}>
           <ShinyText 
             text={cardTitle} 
-            speed={10} 
+            speed={4} 
             delay={0}
             color="rgba(255, 255, 255, 0.65)" 
             shineColor="#ffffff" 
