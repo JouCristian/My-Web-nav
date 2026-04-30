@@ -3,7 +3,8 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { getLeaveRequestsAction } from "@/app/actions"
+// 🚀 核心修复：引入最新云端历史查询协议
+import { getLeaveRequestsAction, getRollCallHistoryAction } from "@/app/actions"
 
 type CrewStats = {
   name: string;
@@ -31,6 +32,7 @@ export function AttendanceDashboardModule({
 
   useEffect(() => { setMounted(true) }, [])
 
+  // 🚀 核心：彻底重构云端态势感知算法
   useEffect(() => {
     if (!mounted) return
     let isFetching = false
@@ -39,33 +41,51 @@ export function AttendanceDashboardModule({
       if (isFetching) return
       isFetching = true
       try {
-        const saved = localStorage.getItem("STARFLEET_ATTENDANCE_V6")
-        let parsedLogs: any = {}
-        if (saved) { try { parsedLogs = JSON.parse(saved) } catch(e){} }
-
-        const leaves = await getLeaveRequestsAction()
+        // 从云端交叉获取两组档案
+        const [history, leaves] = await Promise.all([
+          getRollCallHistoryAction(),
+          getLeaveRequestsAction()
+        ]);
 
         const map: Record<string, CrewStats> = {}
         crewMembers.forEach(c => map[c] = { name: c, present: 0, missing: 0, leave: 0 })
 
-        Object.values(parsedLogs).forEach((dayLogs: any) => {
-          dayLogs.forEach((log: any) => {
-            log.present?.forEach((p: string) => { if (map[p]) map[p].present++ })
-            log.missing?.forEach((m: string) => { if (map[m]) map[m].missing++ })
-          })
-        })
+        // 历史数据交叉推演
+        history.forEach(session => {
+          const sessionTime = session.timestamp;
+          
+          // 在这局集结中，有谁正好处于合法请假状态？
+          const activeLeaves = leaves.filter(req => {
+            if (req.status !== 'APPROVED') return false;
+            const start = new Date(req.startTime).getTime();
+            const end = new Date(req.endTime).getTime();
+            return sessionTime >= start && sessionTime <= end;
+          });
+          const onLeaveNames = activeLeaves.map(r => r.applicant);
 
-        leaves.forEach(req => {
-          if (req.status === 'APPROVED' && map[req.applicant]) {
-            map[req.applicant].leave++
-          }
-        })
+          // 记录本局的签到者
+          session.present.forEach(p => { if (map[p]) map[p].present++; });
+          
+          // 记录本局的缺勤者/休假者
+          crewMembers.forEach(c => {
+            if (!session.present.includes(c)) {
+              if (onLeaveNames.includes(c)) {
+                if (map[c]) map[c].leave++; 
+              } else {
+                if (map[c]) map[c].missing++;
+              }
+            }
+          });
+        });
 
+        // 大盘 UI 更新
         const arr = Object.values(map)
         const max = Math.max(...arr.map(a => Math.max(a.present, a.missing, a.leave)), 5)
         
         setMaxVal(max)
         setStats(arr)
+      } catch (e) {
+         console.error("Telemetry Sync Error:", e)
       } finally {
         isFetching = false
       }
@@ -139,16 +159,14 @@ export function AttendanceDashboardModule({
           </div>
         </div>
 
-        {/* 🚀 核心防爆层：固定高度 350px，内部元素被彻底限制在此区域内 */}
+        {/* 核心防爆层：固定高度 350px */}
         <div className="flex-1 flex gap-6 bg-[#02040a]/80 border border-white/5 rounded-[2rem] p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] relative z-10 h-[350px] min-h-[350px] max-h-[350px]">
           
-          {/* 🚀 左侧管理人员区域：强制溢出隐藏 + 纵向滚动 (overflow-y-auto) */}
           <div className="w-40 md:w-48 border-r border-white/10 flex flex-col pr-4 shrink-0 min-h-0">
             <div className="text-[10px] font-mono text-emerald-500/60 uppercase tracking-widest flex items-center gap-2 mb-4 shrink-0">
               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
               Commanders
             </div>
-            {/* 上下滚动条区域 */}
             <div className="flex-1 overflow-y-auto matrix-scrollbar space-y-3 pr-2 min-h-0 pb-4">
               {managers.length > 0 ? managers.map((m, idx) => {
                 const isObj = typeof m === 'object' && m !== null;
@@ -191,13 +209,11 @@ export function AttendanceDashboardModule({
             </div>
           </div>
 
-          {/* 🚀 右侧 3D 柱状图区域：强制溢出隐藏 + 横向滚动 (overflow-x-auto) */}
           <div className="flex-1 flex flex-col relative overflow-hidden min-w-0">
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20 py-8 z-0">
                {[...Array(5)].map((_, i) => <div key={i} className="border-b border-white/20 w-full flex-1" />)}
             </div>
             
-            {/* 左右滚动条区域 */}
             <div className="flex-1 overflow-x-auto matrix-scrollbar flex items-end gap-8 pb-2 pt-10 px-4 relative z-10 min-w-0">
               <AnimatePresence>
                 {stats.length > 0 ? stats.map(s => (

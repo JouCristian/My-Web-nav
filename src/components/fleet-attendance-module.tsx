@@ -1,10 +1,11 @@
 // src/components/fleet-attendance-module.tsx
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
-import { startGlobalRollCall, submitAttendance, checkLiveRollCall, getLeaveRequestsAction } from "@/app/actions"
+// 🚀 引入全部最新的云端核对接口
+import { startGlobalRollCall, submitAttendance, checkLiveRollCall, getLeaveRequestsAction, getRollCallHistoryAction, deleteRollCallSessionAction, markCrewPresentAction } from "@/app/actions"
 
 type RollCallLog = {
   id: string;
@@ -52,30 +53,67 @@ export function FleetAttendanceModule({
   const [leaveRequests, setLeaveRequests] = useState<any[]>([])
 
   const isManager = userRole === "OWNER" || userRole === "ADMIN"
-  const allCrew = isManager ? [...crewMembers] : Array.from(new Set([userName, ...crewMembers])).filter(Boolean)
+  // 避免过度重渲染，使用 useMemo
+  const allCrew = useMemo(() => isManager ? [...crewMembers] : Array.from(new Set([userName, ...crewMembers])).filter(Boolean), [isManager, crewMembers, userName])
 
-  useEffect(() => { 
-    setMounted(true)
-    const saved = localStorage.getItem("STARFLEET_ATTENDANCE_V6")
-    if (saved) try { setLogs(JSON.parse(saved)) } catch (e) { console.error(e) }
-  }, [])
-  
-  useEffect(() => { 
-    if (mounted) localStorage.setItem("STARFLEET_ATTENDANCE_V6", JSON.stringify(logs)) 
-  }, [logs, mounted])
+  useEffect(() => { setMounted(true) }, [])
 
+  // 🚀 核心：全云端数据拉取协议
   useEffect(() => {
     if (!mounted) return
-    const fetchLeaves = async () => {
+    let isFetching = false
+
+    const fetchAllData = async () => {
+      if (isFetching) return
+      isFetching = true
       try {
-        const res = await getLeaveRequestsAction()
-        setLeaveRequests(res)
-      } catch(e) {}
-    }
-    fetchLeaves()
-    const interval = setInterval(fetchLeaves, 3000)
+        const [history, leaves] = await Promise.all([
+          getRollCallHistoryAction(),
+          getLeaveRequestsAction()
+        ]);
+        setLeaveRequests(leaves);
+        
+        const newLogs: Record<string, RollCallLog[]> = {};
+        history.forEach(session => {
+          const d = new Date(session.timestamp);
+          const dateKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+          
+          const sessionTime = session.timestamp;
+          const activeLeaves = leaves.filter(req => {
+            if (req.status !== "APPROVED") return false;
+            const start = new Date(req.startTime).getTime();
+            const end = new Date(req.endTime).getTime();
+            return sessionTime >= start && sessionTime <= end;
+          });
+          const onLeaveNames = activeLeaves.map(r => r.applicant);
+          
+          const unresponded = allCrew.filter(c => !session.present.includes(c));
+          const trueMissing = unresponded.filter(c => !onLeaveNames.includes(c));
+          const currentlyOnLeave = unresponded.filter(c => onLeaveNames.includes(c));
+
+          const log: RollCallLog = {
+            id: session.id,
+            timestamp: session.timestamp,
+            present: session.present,
+            missing: trueMissing,
+            onLeave: currentlyOnLeave
+          };
+
+          if (!newLogs[dateKey]) newLogs[dateKey] = [];
+          newLogs[dateKey].push(log);
+        });
+        setLogs(newLogs);
+      } catch(e) {
+        console.error("Cloud Sync Error", e);
+      } finally {
+        isFetching = false;
+      }
+    };
+
+    fetchAllData()
+    const interval = setInterval(fetchAllData, 3000) // 每 3 秒同步一次云端数据
     return () => clearInterval(interval)
-  }, [mounted])
+  }, [mounted, allCrew]) // 移除了对 logs 的依赖，防止死循环
 
   useEffect(() => {
     if (!mounted) return
@@ -108,7 +146,7 @@ export function FleetAttendanceModule({
       }
     }
 
-    const interval = setInterval(monitorSignal, 2000)
+    const interval = setInterval(monitorSignal, 1500)
     monitorSignal() 
     return () => clearInterval(interval)
   }, [mounted, activeSessionId])
@@ -170,7 +208,6 @@ export function FleetAttendanceModule({
   const formatTime = (secs: number) => `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`
 
   const now = Date.now()
-  
   const activeLeaves = leaveRequests.filter(req => {
     if (req.status !== "APPROVED") return false;
     const start = new Date(req.startTime).getTime()
@@ -183,41 +220,31 @@ export function FleetAttendanceModule({
   const trueMissing = unresponded.filter(c => !onLeaveCrewNames.includes(c))
   const currentlyOnLeave = unresponded.filter(c => onLeaveCrewNames.includes(c))
 
-  const handleSaveAndClose = () => {
-    const d = new Date();
-    const todayKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
-    
-    const newLog: RollCallLog = { 
-      id: Date.now().toString(), 
-      timestamp: Date.now(), 
-      present: presentCrew, 
-      missing: trueMissing,
-      onLeave: currentlyOnLeave
-    }
-    
-    setLogs(prev => {
-      const updated = { ...prev, [todayKey]: [...(prev[todayKey] || []), newLog] }
-      localStorage.setItem("STARFLEET_ATTENDANCE_V6", JSON.stringify(updated))
-      return updated
-    })
-    setIsSummaryOpen(false)
-  }
+  // 🚀 云端闭环：由于数据库会自动记录，这里只需要关闭面板即可
+  const handleSaveAndClose = () => setIsSummaryOpen(false)
 
-  const handleDeleteLog = (e: React.MouseEvent, logId: string) => {
+  // 🚀 舰长特权：云端直连抹除档案
+  const handleDeleteLog = async (e: React.MouseEvent, logId: string) => {
     e.stopPropagation() 
     if (!selectedDateKey) return
 
+    // 乐观更新 UI
     setLogs(prev => {
       const currentLogs = prev[selectedDateKey] || []
       const updatedLogs = currentLogs.filter(log => log.id !== logId)
       const newState = { ...prev }
       if (updatedLogs.length > 0) newState[selectedDateKey] = updatedLogs
       else delete newState[selectedDateKey] 
-      
-      localStorage.setItem("STARFLEET_ATTENDANCE_V6", JSON.stringify(newState))
       return newState
     })
     if (selectedLogId === logId) setSelectedLogId(null)
+
+    // 发射摧毁指令到云端数据库
+    try {
+      await deleteRollCallSessionAction(logId)
+    } catch (error) {
+      console.error("Failed to delete from cloud", error)
+    }
   }
 
   const getAbsencesForCrew = (crewName: string) => {
@@ -230,7 +257,9 @@ export function FleetAttendanceModule({
     return absences.sort((a, b) => b.log.timestamp - a.log.timestamp);
   }
 
-  const handleDeleteAbsence = (dateKey: string, logId: string, crewName: string) => {
+  // 🚀 舰长特权：云端直连补签干预
+  const handleDeleteAbsence = async (dateKey: string, logId: string, crewName: string) => {
+    // 乐观更新 UI
     setLogs(prev => {
       const newState = { ...prev };
       if (newState[dateKey]) {
@@ -245,9 +274,15 @@ export function FleetAttendanceModule({
           return log;
         });
       }
-      localStorage.setItem("STARFLEET_ATTENDANCE_V6", JSON.stringify(newState));
       return newState;
     });
+
+    // 发送补签指令到云端数据库
+    try {
+      await markCrewPresentAction(logId, crewName)
+    } catch (error) {
+      console.error("Failed to override absence in cloud", error)
+    }
   }
 
   const selectedCrewAbsences = selectedAbsenceCrew ? getAbsencesForCrew(selectedAbsenceCrew) : [];
@@ -341,7 +376,6 @@ export function FleetAttendanceModule({
                           <div className="w-20 bg-black/50 border border-amber-500/30 rounded-2xl p-3 text-center text-4xl font-mono text-amber-400 group-hover:border-amber-400 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">{inputSecs}</div>
                         </div>
 
-                        {/* 🚀 彻底修复：拆解渲染树，移除 layoutId 测量引擎引起的引擎崩溃 */}
                         <AnimatePresence>
                           {isTimePickerOpen && (
                             <motion.div 
@@ -372,7 +406,6 @@ export function FleetAttendanceModule({
                                       const isSelected = tempMins === m;
                                       return (
                                         <div key={`m-${m}`} onClick={() => setTempMins(m)} className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}>
-                                          {/* 🚀 安全替换：使用标准的 scale+opacity 动画，绝对不会报错 */}
                                           {isSelected && <motion.div className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 400, damping: 25 }} />}
                                           <span className="relative z-10">{m}</span>
                                         </div>
@@ -385,7 +418,6 @@ export function FleetAttendanceModule({
                                       const isSelected = tempSecs === s;
                                       return (
                                         <div key={`s-${s}`} onClick={() => setTempSecs(s)} className={`relative cursor-pointer py-1.5 rounded-xl font-mono text-base transition-colors duration-300 ${isSelected ? 'text-amber-400 font-bold' : 'text-zinc-500 hover:text-amber-200'}`}>
-                                          {/* 🚀 安全替换 */}
                                           {isSelected && <motion.div className="absolute inset-0 bg-amber-500/20 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)] rounded-xl z-0" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 400, damping: 25 }} />}
                                           <span className="relative z-10">{s}</span>
                                         </div>
@@ -500,7 +532,6 @@ export function FleetAttendanceModule({
         </div>
       </div>
       
-      {/* 🚀 新增特权模块：缺勤档案管理双栏弹窗 (仅舰长可见) */}
       {mounted && isManager && createPortal(
         <AnimatePresence>
           {isAbsenceModalOpen && (

@@ -51,14 +51,13 @@ export async function fetchMetadata(url: string) {
  */
 export async function updateRecruitProfile(formData: FormData) {
   const session = await auth()
-  // 🚀 核心修复：改为 session.user.id
   if (!session?.user?.id) throw new Error("检测到非法访问请求")
   const realName = formData.get("realName") as string
   const studentId = formData.get("studentId") as string
   const feishuLink = formData.get("feishuLink") as string
   if (!realName || !studentId) throw new Error("档案关键坐标缺失")
   await prisma.user.update({
-    where: { id: session.user.id }, // 🚀 核心修复：通过 ID 更新
+    where: { id: session.user.id },
     data: { realName, studentId, feishuLink: feishuLink || null }
   })
   revalidatePath("/dashboard")
@@ -68,7 +67,7 @@ export async function revokeRecruitProfile() {
   const session = await auth()
   if (!session?.user?.id) throw new Error("未授权的操作")
   await prisma.user.update({
-    where: { id: session.user.id }, // 🚀 核心修复：通过 ID 更新
+    where: { id: session.user.id },
     data: { realName: null, studentId: null, feishuLink: null }
   })
   revalidatePath("/dashboard")
@@ -79,20 +78,11 @@ export async function revokeRecruitProfile() {
  * 👑 模块 3：指挥官行政指令 (Admin Operations)
  * ==========================================
  */
-
 export async function deleteBroadcast(id: string) {
   const session = await auth()
-  // 🚀 核心修复：通过 ID 校验指挥官身份
   const user = await prisma.user.findUnique({ where: { id: session?.user?.id || "" } })
-  
-  if (user?.role !== "OWNER" && user?.role !== "ADMIN") {
-    throw new Error("权限不足：非法操作指挥序列")
-  }
-
-  await prisma.announcement.delete({
-    where: { id }
-  })
-
+  if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("权限不足：非法操作指挥序列")
+  await prisma.announcement.delete({ where: { id } })
   revalidatePath("/dashboard") 
 }
 
@@ -142,17 +132,14 @@ export async function startGlobalRollCall(durationSeconds: number) {
 
   const endTime = new Date(Date.now() + durationSeconds * 1000)
   const newSession = await prisma.rollCallSession.create({
-    data: {
-      creatorId: user.id,
-      endTime: endTime,
-      isActive: true
-    }
+    data: { creatorId: user.id, endTime: endTime, isActive: true }
   })
 
   revalidatePath("/dashboard/attendance")
   return newSession
 }
 
+// 🚀 核心修复 1：数据库级防重锁 (Anti-Duplication Lock)
 export async function submitAttendance(sessionId: string) {
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
@@ -160,29 +147,31 @@ export async function submitAttendance(sessionId: string) {
   const user = await prisma.user.findUnique({ where: { id: session.user.id } })
   if (!user) throw new Error("User not found")
 
+  // 🛡️ 拦截重复请求，防止因为网络卡顿导致的幽灵重影记录
+  const existingRecord = await prisma.attendanceRecord.findFirst({
+    where: { userId: user.id, sessionId: sessionId }
+  })
+
+  if (existingRecord) {
+    return { success: true } 
+  }
+
   try {
     await prisma.attendanceRecord.create({
-      data: {
-        userId: user.id,
-        sessionId: sessionId
-      }
+      data: { userId: user.id, sessionId: sessionId }
     })
+    revalidatePath("/dashboard/attendance")
     return { success: true }
   } catch (e) {
-    return { success: false, error: "Already synced or expired" }
+    return { success: false, error: "Sync failed" }
   }
 }
 
 export async function checkLiveRollCall() {
   const now = new Date()
   const activeSession = await prisma.rollCallSession.findFirst({
-    where: {
-      isActive: true,
-      endTime: { gt: now } 
-    },
-    include: {
-      records: { include: { user: true } }
-    }
+    where: { isActive: true, endTime: { gt: now } },
+    include: { records: { include: { user: true } } }
   })
 
   if (!activeSession) return null
@@ -190,8 +179,58 @@ export async function checkLiveRollCall() {
   return {
     id: activeSession.id,
     endTime: activeSession.endTime.getTime(),
-    presentNames: activeSession.records.map(r => r.user.realName).filter(Boolean) as string[]
+    presentNames: activeSession.records.map(r => r.user.realName || r.user.nickname || r.user.name).filter(Boolean) as string[]
   }
+}
+
+// 🚀 核心修复 2：全云端历史记录拉取协议 (Cloud History Sync)
+export async function getRollCallHistoryAction() {
+  const session = await auth()
+  if (!session?.user?.id) return []
+
+  const sessions = await prisma.rollCallSession.findMany({
+    include: { records: { include: { user: true } } },
+    orderBy: { startTime: 'desc' }
+  })
+
+  return sessions.map(s => ({
+    id: s.id,
+    timestamp: s.startTime.getTime(),
+    present: s.records.map(r => r.user.realName || r.user.nickname || r.user.name || "Unknown").filter(Boolean) as string[],
+    isActive: s.isActive
+  }))
+}
+
+// 🚀 核心修复 3：舰长特权 - 抹除整场集结档案
+export async function deleteRollCallSessionAction(sessionId: string) {
+  const session = await auth()
+  const user = await prisma.user.findUnique({ where: { id: session?.user?.id || "" } })
+  if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("Permission Denied")
+  await prisma.rollCallSession.delete({ where: { id: sessionId } })
+  revalidatePath("/dashboard/attendance")
+}
+
+// 🚀 核心修复 4：舰长特权 - 缺勤干预（手动补签入库）
+export async function markCrewPresentAction(sessionId: string, crewName: string) {
+  const session = await auth()
+  const admin = await prisma.user.findUnique({ where: { id: session?.user?.id || "" } })
+  if (admin?.role !== "OWNER" && admin?.role !== "ADMIN") throw new Error("Permission Denied")
+  
+  const targetUser = await prisma.user.findFirst({
+    where: { OR: [{ realName: crewName }, { nickname: crewName }, { name: crewName }] }
+  })
+  if (!targetUser) throw new Error("Target crew not found")
+
+  const existing = await prisma.attendanceRecord.findFirst({
+    where: { userId: targetUser.id, sessionId: sessionId }
+  })
+
+  if (!existing) {
+    await prisma.attendanceRecord.create({
+      data: { userId: targetUser.id, sessionId: sessionId }
+    })
+  }
+  revalidatePath("/dashboard/attendance")
 }
 
 /**
@@ -199,7 +238,6 @@ export async function checkLiveRollCall() {
  * 🚀 模块 C-2：请假审批亚空间通讯协议
  * ==========================================
  */
-
 export async function submitLeaveRequestAction(reason: string, startTime: string, endTime: string) {
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
@@ -208,12 +246,7 @@ export async function submitLeaveRequestAction(reason: string, startTime: string
   if (!user) throw new Error("User not found")
 
   await prisma.leaveRequest.create({
-    data: {
-      userId: user.id,
-      reason,
-      startTime: new Date(startTime),
-      endTime: new Date(endTime)
-    }
+    data: { userId: user.id, reason, startTime: new Date(startTime), endTime: new Date(endTime) }
   })
   revalidatePath("/dashboard/attendance")
 }
@@ -267,11 +300,7 @@ export async function updateLeaveStatusAction(id: string, status: "APPROVED" | "
 export async function revokeLeaveRequestAction(id: string) {
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
-
-  await prisma.leaveRequest.delete({
-    where: { id }
-  })
-  
+  await prisma.leaveRequest.delete({ where: { id } })
   revalidatePath("/dashboard/attendance")
 }
 
@@ -284,15 +313,9 @@ export async function mergeAccountsAction() {
   try {
     const session = await auth()
     if (!session?.user?.id) return { success: false, error: "未授权的访问" }
-
-    const currentUserId = session.user.id
-    console.log("执行账号矩阵融合：", currentUserId)
-    
     await new Promise(resolve => setTimeout(resolve, 1500))
-
     return { success: true }
   } catch (error) {
-    console.error("Account Merge Failed:", error)
     return { success: false, error: "数据合并失败，存在引力波干扰" }
   }
 }
