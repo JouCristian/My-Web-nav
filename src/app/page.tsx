@@ -4,8 +4,9 @@ import { AddCardForm } from "@/components/add-card-form"
 import { TransitionLink } from "@/components/transition-link"
 import { prisma } from "@/lib/db"
 import { auth, signOut } from "@/auth" 
-import { TopNavDock } from "@/components/top-nav-dock" // 🚀 引入顶部 Dock
-import { HideSpacetime } from "@/components/hide-spacetime" // 🚀 引入隐藏时空按钮的组件
+import { TopNavDock } from "@/components/top-nav-dock" 
+import { HideSpacetime } from "@/components/hide-spacetime" 
+import DotField from "@/components/DotField" // 🚀 引入量子点阵力场
 
 interface Bookmark {
   id: number;
@@ -32,7 +33,6 @@ export default async function Home() {
   const isCommander = isCaptain || (dbUser && (dbUser.role === "ADMIN" || dbUser.role === "OWNER"));
   const isAuthorizedCrew = dbUser && dbUser.role === "MEMBER";
 
-  // 🚀 核心排版修复：缩小字号 (text-4xl -> 7xl) + 使用 whitespace-nowrap 防断字
   let cardTitle = (
     <>「一生一芯」·<span className="whitespace-nowrap">西科星际舰队</span></>
   );
@@ -58,16 +58,9 @@ export default async function Home() {
   return (
     <main className="min-h-screen bg-[#020205] text-white selection:bg-blue-500/30 overflow-x-hidden relative">
       
-      {/* 🚀 隐藏此时空的全局按钮 */}
       <HideSpacetime />
 
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes central-breathe {
-          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
-          50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.9; }
-        }
-        .animate-central-breathe { animation: central-breathe 8s ease-in-out infinite; }
-
         @keyframes float-up {
           0% { opacity: 0; transform: translateY(40px) scale(0.95); filter: blur(10px); }
           100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
@@ -81,33 +74,49 @@ export default async function Home() {
         .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
       `}} />
 
-      {/* 🌌 深空巨幕背景光晕 */}
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] max-w-[1200px] max-h-[1200px] bg-blue-600/10 rounded-full blur-[150px] animate-central-breathe pointer-events-none z-0"></div>
-      <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+      {/* 🚀 替换静态背景为互动式的 DotField 量子点阵 */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <DotField
+          dotRadius={1.5}
+          dotSpacing={22} /* 加大间距，增加通透感 */
+          cursorRadius={300}
+          cursorForce={0.15}
+          bulgeOnly={true} /* 鼠标划过产生物理排斥回弹，极其顺滑 */
+          bulgeStrength={80}
+          glowRadius={200}
+          sparkle={true} /* 激活闪烁星光效果 */
+          waveAmplitude={0}
+          gradientFrom="rgba(59, 130, 246, 0.6)" /* 幽蓝 */
+          gradientTo="rgba(168, 85, 247, 0.4)"   /* 幻紫 */
+          glowColor="rgba(59, 130, 246, 0.15)"
+        />
+      </div>
+      
+      {/* 深空暗芒：为文字提供极好的反差托底 */}
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] max-w-[1000px] max-h-[1000px] bg-blue-600/10 rounded-full blur-[180px] pointer-events-none z-0"></div>
 
-      {/* 🚀 顶配悬浮 Dock 导航栏 */}
+      {/* 🚀 悬浮 Dock 导航栏 */}
       <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
 
-      {/* 🚀 巨幕英雄区 */}
-      <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-10">
+      {/* 巨幕英雄区 */}
+      <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-10 pointer-events-none">
         
-        <div className="animate-float-up" style={{ animationDelay: '0.1s' }}>
+        <div className="animate-float-up pointer-events-auto" style={{ animationDelay: '0.1s' }}>
           <div className="inline-flex items-center gap-3 bg-blue-500/10 border border-blue-500/30 px-4 py-1.5 rounded-full mb-8 backdrop-blur-md">
             <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)]"></span>
             <span className="text-[10px] font-mono font-bold tracking-[0.4em] text-blue-400 uppercase">Fleet Mission Status</span>
           </div>
         </div>
 
-        {/* 🚀 减小字号，应用独字不成行规则 */}
-        <h1 className="animate-float-up text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter font-[family-name:var(--font-space)] text-transparent bg-clip-text bg-gradient-to-b from-white via-white/90 to-white/40 drop-shadow-[0_0_40px_rgba(255,255,255,0.2)] mb-6 max-w-5xl" style={{ animationDelay: '0.2s', wordBreak: 'keep-all' }}>
+        <h1 className="animate-float-up pointer-events-auto text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter font-[family-name:var(--font-space)] text-transparent bg-clip-text bg-gradient-to-b from-white via-white/90 to-white/40 drop-shadow-[0_0_40px_rgba(255,255,255,0.2)] mb-6 max-w-5xl" style={{ animationDelay: '0.2s', wordBreak: 'keep-all' }}>
           {cardTitle}
         </h1>
         
-        <p className="animate-float-up text-sm md:text-base text-zinc-400 tracking-widest max-w-2xl mx-auto leading-relaxed mb-16" style={{ animationDelay: '0.3s' }}>
+        <p className="animate-float-up pointer-events-auto text-sm md:text-base text-zinc-400 tracking-widest max-w-2xl mx-auto leading-relaxed mb-16" style={{ animationDelay: '0.3s' }}>
           {cardSubtitle}
         </p>
 
-        <div className="animate-float-up" style={{ animationDelay: '0.4s' }}>
+        <div className="animate-float-up pointer-events-auto" style={{ animationDelay: '0.4s' }}>
           <TransitionLink 
             href={session ? "/dashboard" : "/login"} 
             className="spring-btn-hero group relative inline-flex items-center justify-center gap-4 px-12 py-5 rounded-full bg-white text-black font-bold text-lg overflow-hidden"
@@ -118,13 +127,13 @@ export default async function Home() {
           </TransitionLink>
         </div>
 
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-40 animate-bounce">
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-40 animate-bounce pointer-events-auto">
           <span className="text-[9px] font-mono tracking-[0.4em] uppercase text-zinc-400">Scroll to Explore Databanks</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-zinc-500"><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
         </div>
       </section>
 
-      {/* 📂 隐匿式下沉导航区 */}
+      {/* 隐匿式下沉导航区 */}
       <section className="relative z-10 max-w-7xl mx-auto px-6 pb-40">
         <div className="flex items-center justify-center gap-6 mb-20 opacity-30">
           <div className="h-px bg-gradient-to-r from-transparent to-white/50 w-32 md:w-64"></div>
