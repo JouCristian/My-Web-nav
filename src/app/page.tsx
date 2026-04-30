@@ -91,21 +91,24 @@ export default async function Home() {
         
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.4)_0%,transparent_60%)] z-0 pointer-events-none"></div>
 
-        {/* 🚀 核心修复：字号加大 (text-2xl md:text-4xl)，应用 popLayout 平滑撑缩 */}
-        <div className="animate-float-up pointer-events-auto relative z-10 flex items-center justify-center gap-3 mb-10 font-mono text-2xl md:text-4xl font-bold tracking-widest text-zinc-200 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]" style={{ animationDelay: '0.1s' }}>
-          <span>Creating</span>
+        {/* 🚀 核心修复：字号加大到 3xl / 5xl，集成协同前缀，大幅减慢流速以绝重叠 */}
+        <div className="animate-float-up pointer-events-auto relative z-10 mb-12 font-mono text-3xl md:text-5xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_15px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
           <RotatingText
+            prefix="Creating" // 🚀 移入组件内部，共享弹簧物理逻辑
             texts={['thinking!', 'coding!', 'components!', 'YSYX!']}
-            mainClassName="px-4 py-1.5 md:px-5 md:py-2 bg-cyan-400 text-black overflow-hidden rounded-2xl shadow-[0_0_20px_rgba(34,211,238,0.5)]"
+            mainClassName="px-5 py-2 md:px-7 md:py-3 bg-cyan-400 text-black overflow-hidden rounded-[2rem] shadow-[0_0_30px_rgba(34,211,238,0.4)]"
             staggerFrom={"last"}
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "-120%", opacity: 0 }}
-            staggerDuration={0.025}
-            splitLevelClassName="overflow-hidden pb-0.5 md:pb-1"
-            transition={{ type: "spring", damping: 20, stiffness: 300 }} // 🚀 带有张力的物理阻尼
-            rotationInterval={2800}
-            animatePresenceMode="popLayout" // 🚀 魔法引擎：非线性平滑过渡外壳宽度！
+            // 🚀 大幅减慢节奏：单字母延迟 0.05s，让波浪更分明
+            staggerDuration={0.05} 
+            splitLevelClassName="overflow-hidden pb-1"
+            // 🚀 顶级阻尼：更柔和的 spring 曲线，解决重叠
+            transition={{ type: "spring", damping: 26, stiffness: 180 }} 
+            // 🚀 延长观赏期：3.5秒换一个词
+            rotationInterval={3500}
+            animatePresenceMode="popLayout" 
           />
         </div>
 

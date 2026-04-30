@@ -30,11 +30,12 @@ export interface RotatingTextProps
     'children' | 'transition' | 'initial' | 'animate' | 'exit'
   > {
   texts: string[];
+  prefix?: string; // 🚀 新增前缀支持，实现协同弹簧位移
   transition?: Transition;
   initial?: boolean | Target | VariantLabels;
   animate?: boolean | VariantLabels | TargetAndTransition;
   exit?: Target | VariantLabels;
-  animatePresenceMode?: 'sync' | 'wait' | 'popLayout'; // 🚀 开放 popLayout 支持
+  animatePresenceMode?: 'sync' | 'wait' | 'popLayout'; 
   animatePresenceInitial?: boolean;
   rotationInterval?: number;
   staggerDuration?: number;
@@ -51,6 +52,7 @@ export interface RotatingTextProps
 const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>((props, ref) => {
   const {
     texts,
+    prefix,
     transition = { type: 'spring', damping: 25, stiffness: 300 },
     initial = { y: '100%', opacity: 0 },
     animate = { y: 0, opacity: 1 },
@@ -89,19 +91,6 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>((props, ref)
         needsSpace: i !== words.length - 1
       }));
     }
-    if (splitBy === 'words') {
-      return currentText.split(' ').map((word, i, arr) => ({
-        characters: [word],
-        needsSpace: i !== arr.length - 1
-      }));
-    }
-    if (splitBy === 'lines') {
-      return currentText.split('\n').map((line, i, arr) => ({
-        characters: [line],
-        needsSpace: i !== arr.length - 1
-      }));
-    }
-
     return currentText.split(splitBy).map((part, i, arr) => ({
       characters: [part],
       needsSpace: i !== arr.length - 1
@@ -113,15 +102,7 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>((props, ref)
       const total = totalChars;
       if (staggerFrom === 'first') return index * staggerDuration;
       if (staggerFrom === 'last') return (total - 1 - index) * staggerDuration;
-      if (staggerFrom === 'center') {
-        const center = Math.floor(total / 2);
-        return Math.abs(center - index) * staggerDuration;
-      }
-      if (staggerFrom === 'random') {
-        const randomIndex = Math.floor(Math.random() * total);
-        return Math.abs(randomIndex - index) * staggerDuration;
-      }
-      return Math.abs((staggerFrom as number) - index) * staggerDuration;
+      return index * staggerDuration;
     },
     [staggerFrom, staggerDuration]
   );
@@ -136,44 +117,20 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>((props, ref)
 
   const next = useCallback(() => {
     const nextIndex = currentTextIndex === texts.length - 1 ? (loop ? 0 : currentTextIndex) : currentTextIndex + 1;
-    if (nextIndex !== currentTextIndex) {
-      handleIndexChange(nextIndex);
-    }
+    if (nextIndex !== currentTextIndex) handleIndexChange(nextIndex);
   }, [currentTextIndex, texts.length, loop, handleIndexChange]);
 
   const previous = useCallback(() => {
     const prevIndex = currentTextIndex === 0 ? (loop ? texts.length - 1 : currentTextIndex) : currentTextIndex - 1;
-    if (prevIndex !== currentTextIndex) {
-      handleIndexChange(prevIndex);
-    }
+    if (prevIndex !== currentTextIndex) handleIndexChange(prevIndex);
   }, [currentTextIndex, texts.length, loop, handleIndexChange]);
 
-  const jumpTo = useCallback(
-    (index: number) => {
-      const validIndex = Math.max(0, Math.min(index, texts.length - 1));
-      if (validIndex !== currentTextIndex) {
-        handleIndexChange(validIndex);
-      }
-    },
-    [texts.length, currentTextIndex, handleIndexChange]
-  );
+  const jumpTo = useCallback((index: number) => {
+    const validIndex = Math.max(0, Math.min(index, texts.length - 1));
+    if (validIndex !== currentTextIndex) handleIndexChange(validIndex);
+  }, [texts.length, currentTextIndex, handleIndexChange]);
 
-  const reset = useCallback(() => {
-    if (currentTextIndex !== 0) {
-      handleIndexChange(0);
-    }
-  }, [currentTextIndex, handleIndexChange]);
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      next,
-      previous,
-      jumpTo,
-      reset
-    }),
-    [next, previous, jumpTo, reset]
-  );
+  useImperativeHandle(ref, () => ({ next, previous, jumpTo, reset: () => handleIndexChange(0) }), [next, previous, jumpTo, handleIndexChange]);
 
   useEffect(() => {
     if (!auto) return;
@@ -182,44 +139,53 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>((props, ref)
   }, [next, rotationInterval, auto]);
 
   return (
-    <motion.span className={cn('text-rotate-container', mainClassName)} {...rest} layout transition={transition}>
-      <span className="text-rotate-sr-only">{texts[currentTextIndex]}</span>
-      <AnimatePresence mode={animatePresenceMode} initial={animatePresenceInitial}>
-        <motion.span
-          key={currentTextIndex}
-          className={cn(splitBy === 'lines' ? 'text-rotate-lines' : 'text-rotate-inner')}
-          layout
-          aria-hidden="true"
-        >
-          {elements.map((wordObj, wordIndex, array) => {
-            const previousCharsCount = array.slice(0, wordIndex).reduce((sum, word) => sum + word.characters.length, 0);
-            return (
-              <span key={wordIndex} className={cn('text-rotate-word', splitLevelClassName)}>
-                {wordObj.characters.map((char, charIndex) => (
-                  <motion.span
-                    key={charIndex}
-                    initial={initial}
-                    animate={animate}
-                    exit={exit}
-                    transition={{
-                      ...transition,
-                      delay: getStaggerDelay(
-                        previousCharsCount + charIndex,
-                        array.reduce((sum, word) => sum + word.characters.length, 0)
-                      )
-                    }}
-                    className={cn('text-rotate-element', elementLevelClassName)}
-                  >
-                    {char}
-                  </motion.span>
-                ))}
-                {wordObj.needsSpace && <span className="text-rotate-space"> </span>}
-              </span>
-            );
-          })}
+    // 🚀 这里的 motion.div layout 是魔法核心：它让 prefix 能够跟随内部组件的宽度变化同步平移
+    <motion.div layout transition={transition} className="flex items-center justify-center gap-4">
+      {prefix && (
+        <motion.span layout transition={transition} className="shrink-0">
+          {prefix}
         </motion.span>
-      </AnimatePresence>
-    </motion.span>
+      )}
+      
+      <motion.span className={cn('text-rotate-container', mainClassName)} {...rest} layout transition={transition}>
+        <span className="text-rotate-sr-only">{texts[currentTextIndex]}</span>
+        <AnimatePresence mode={animatePresenceMode} initial={animatePresenceInitial}>
+          <motion.span
+            key={currentTextIndex}
+            className="text-rotate-inner"
+            layout
+            aria-hidden="true"
+          >
+            {elements.map((wordObj, wordIndex, array) => {
+              const previousCharsCount = array.slice(0, wordIndex).reduce((sum, word) => sum + word.characters.length, 0);
+              return (
+                <span key={wordIndex} className="text-rotate-word">
+                  {wordObj.characters.map((char, charIndex) => (
+                    <motion.span
+                      key={charIndex}
+                      initial={initial}
+                      animate={animate}
+                      exit={exit}
+                      transition={{
+                        ...transition,
+                        delay: getStaggerDelay(
+                          previousCharsCount + charIndex,
+                          array.reduce((sum, word) => sum + word.characters.length, 0)
+                        )
+                      }}
+                      className={cn('text-rotate-element', elementLevelClassName)}
+                    >
+                      {char}
+                    </motion.span>
+                  ))}
+                  {wordObj.needsSpace && <span className="text-rotate-space"> </span>}
+                </span>
+              );
+            })}
+          </motion.span>
+        </AnimatePresence>
+      </motion.span>
+    </motion.div>
   );
 });
 
