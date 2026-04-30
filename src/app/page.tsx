@@ -6,8 +6,7 @@ import { prisma } from "@/lib/db"
 import { auth, signOut } from "@/auth" 
 import { TopNavDock } from "@/components/top-nav-dock" 
 import { HideSpacetime } from "@/components/hide-spacetime" 
-import DotField from "@/components/DotField" 
-import Prism from "@/components/Prism" 
+import Silk from "@/components/Silk" // 🚀 引入星际暗物质丝绸背景
 
 interface Bookmark {
   id: number;
@@ -75,51 +74,21 @@ export default async function Home() {
         .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
       `}} />
 
-      <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-center">
-        
-        {/* 🚀 核心修复：彻底移除 opacity 限制，调高 glow 和 bloom，完全释放绚丽光效！ */}
-        <div className="absolute inset-0 z-0 mix-blend-screen pointer-events-none">
-          <Prism
-            animationType="3drotate" 
-            timeScale={0.5}       
-            height={4.2}          
-            baseWidth={6.0}
-            scale={3.6}
-            hueShift={-0.65}      
-            colorFrequency={1.0}
-            noise={0.15}          
-            glow={1.2}            // 🚀 大幅提升光晕强度
-            bloom={1.0}           // 🚀 大幅提升泛光爆裂感
-            transparent={true}
-          />
-        </div>
-        
-        <div className="absolute inset-0 z-10 pointer-events-auto mix-blend-screen">
-          <DotField
-            dotRadius={1.5}
-            dotSpacing={22} 
-            cursorRadius={300}
-            cursorForce={0.15}
-            bulgeOnly={true} 
-            bulgeStrength={80}
-            glowRadius={200}
-            sparkle={true} 
-            waveAmplitude={0}
-            gradientFrom="rgba(59, 130, 246, 0.5)" 
-            gradientTo="rgba(168, 85, 247, 0.3)"   
-            glowColor="rgba(59, 130, 246, 0.15)"
-          />
-        </div>
+      {/* 🚀 替换为 Silk 星际暗物质丝绸背景 */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <Silk
+          speed={3}             // 缓慢且极具压迫感的流体速度
+          scale={2.5}           // 放大丝绸的折叠纹理
+          color="#0f172a"       // 极具科幻感的午夜深空蓝
+          noiseIntensity={1.8}  // 增强星辰噪点颗粒感
+          rotation={0.4}        // 微微倾斜，呈现星云流动的角度
+        />
       </div>
-      
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] max-w-[1000px] max-h-[1000px] bg-blue-600/10 rounded-full blur-[180px] pointer-events-none z-0"></div>
 
       <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
 
       <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-10 pointer-events-none">
         
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.85)_0%,transparent_65%)] z-0 pointer-events-none"></div>
-
         <div className="animate-float-up pointer-events-auto relative z-10" style={{ animationDelay: '0.1s' }}>
           <div className="inline-flex items-center gap-3 bg-black/40 border border-blue-500/30 px-4 py-1.5 rounded-full mb-8 backdrop-blur-md shadow-[0_0_15px_rgba(0,0,0,0.5)]">
             <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)]"></span>
@@ -131,7 +100,7 @@ export default async function Home() {
           {cardTitle}
         </h1>
         
-        <p className="animate-float-up pointer-events-auto relative z-10 text-sm md:text-base text-zinc-200 tracking-widest max-w-2xl mx-auto leading-relaxed mb-16 drop-shadow-[0_2px_15px_rgba(0,0,0,1)]" style={{ animationDelay: '0.3s' }}>
+        <p className="animate-float-up pointer-events-auto relative z-10 text-sm md:text-base text-zinc-300 tracking-widest max-w-2xl mx-auto leading-relaxed mb-16 drop-shadow-[0_2px_15px_rgba(0,0,0,1)]" style={{ animationDelay: '0.3s' }}>
           {cardSubtitle}
         </p>
 
