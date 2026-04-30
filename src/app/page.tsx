@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db"
 import { auth, signOut } from "@/auth" 
 import { TopNavDock } from "@/components/top-nav-dock" 
 import { HideSpacetime } from "@/components/hide-spacetime" 
-import Silk from "@/components/Silk" // 🚀 引入星际暗物质丝绸背景
+import Silk from "@/components/Silk" // 🚀 只保留极其纯粹的丝绸引擎
 
 interface Bookmark {
   id: number;
@@ -74,14 +74,14 @@ export default async function Home() {
         .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
       `}} />
 
-      {/* 🚀 替换为 Silk 星际暗物质丝绸背景 */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
+      {/* 🚀 完全重构的 3D 丝绸背景，赋予其明亮科技光泽 */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-80 mix-blend-screen">
         <Silk
-          speed={3}             // 缓慢且极具压迫感的流体速度
-          scale={2.5}           // 放大丝绸的折叠纹理
-          color="#0f172a"       // 极具科幻感的午夜深空蓝
-          noiseIntensity={1.8}  // 增强星辰噪点颗粒感
-          rotation={0.4}        // 微微倾斜，呈现星云流动的角度
+          speed={4}             
+          scale={3.0}           
+          color="#3b82f6"       // 🚀 核心修复：明亮且高贵的深空科技蓝，杜绝死黑
+          noiseIntensity={0.5}  // 🚀 核心修复：大幅降低噪点，使得丝绸柔和如液态金属
+          rotation={0.25}       
         />
       </div>
 
@@ -96,11 +96,11 @@ export default async function Home() {
           </div>
         </div>
 
-        <h1 className="animate-float-up pointer-events-auto relative z-10 text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter font-[family-name:var(--font-space)] text-transparent bg-clip-text bg-gradient-to-b from-white via-white/95 to-white/60 drop-shadow-[0_4px_25px_rgba(0,0,0,1)] mb-6 max-w-5xl" style={{ animationDelay: '0.2s', wordBreak: 'keep-all' }}>
+        <h1 className="animate-float-up pointer-events-auto relative z-10 text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter font-[family-name:var(--font-space)] text-transparent bg-clip-text bg-gradient-to-b from-white via-white/95 to-white/60 drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-6 max-w-5xl" style={{ animationDelay: '0.2s', wordBreak: 'keep-all' }}>
           {cardTitle}
         </h1>
         
-        <p className="animate-float-up pointer-events-auto relative z-10 text-sm md:text-base text-zinc-300 tracking-widest max-w-2xl mx-auto leading-relaxed mb-16 drop-shadow-[0_2px_15px_rgba(0,0,0,1)]" style={{ animationDelay: '0.3s' }}>
+        <p className="animate-float-up pointer-events-auto relative z-10 text-sm md:text-base text-zinc-200 tracking-widest max-w-2xl mx-auto leading-relaxed mb-16 drop-shadow-[0_2px_15px_rgba(0,0,0,0.8)]" style={{ animationDelay: '0.3s' }}>
           {cardSubtitle}
         </p>
 
