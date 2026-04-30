@@ -8,6 +8,7 @@ import { TopNavDock } from "@/components/top-nav-dock"
 import { HideSpacetime } from "@/components/hide-spacetime" 
 import DotField from "@/components/DotField" 
 import RotatingText from "@/components/RotatingText" 
+import ShinyText from "@/components/ShinyText" // 🚀 引入光泽文本组件
 
 interface Bookmark {
   id: number;
@@ -80,7 +81,7 @@ export default async function Home() {
           bulgeOnly={true}
           bulgeStrength={80}
           glowRadius={220}
-          sparkle={false}
+          sparkle={false} 
           waveAmplitude={0}
           gradientFrom="rgba(168, 85, 247, 1)"  
           gradientTo="rgba(168, 85, 247, 0.3)"    
@@ -100,22 +101,27 @@ export default async function Home() {
             texts={['thinking!', 'coding!', 'components!', 'ysyxing!']}
             mainClassName="px-4 py-1.5 md:px-6 md:py-2 bg-cyan-400 text-black overflow-hidden rounded-[1.2rem] shadow-[0_0_20px_rgba(34,211,238,0.4)] flex items-center justify-center"
             staggerFrom={"last"}
-            
-            // 🚀 终极真理修复：彻底移除 exit 里的 duration 限制！
-            // 现在出场和入场将完美共享底下的 transition 弹簧与 staggerDuration 逐字延迟！
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "-120%", opacity: 0 }} 
-            
-            staggerDuration={0.025} // 恢复标准的优雅波浪逐字延迟
-            transition={{ type: "spring", damping: 25, stiffness: 300 }} // 统一进出的物理阻尼
-            rotationInterval={3500} // 给足展示时间
-            animatePresenceMode="popLayout" // 容器顺滑伸缩！
+            staggerDuration={0.025} 
+            transition={{ type: "spring", damping: 25, stiffness: 300 }} 
+            rotationInterval={3500} 
+            animatePresenceMode="popLayout" 
           />
         </div>
 
-        <h1 className="animate-float-up pointer-events-auto relative z-10 text-4xl sm:text-5xl md:text-6xl lg:text-7xl whitespace-nowrap font-bold tracking-tighter font-[family-name:var(--font-space)] text-transparent bg-clip-text bg-gradient-to-b from-white via-white/95 to-white/60 drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-6" style={{ animationDelay: '0.2s' }}>
-          {cardTitle}
+        {/* 🚀 标题光泽化重构：删除了原有的 bg-clip-text，让 ShinyText 掌管色彩与动画 */}
+        <h1 className="animate-float-up pointer-events-auto relative z-10 text-4xl sm:text-5xl md:text-6xl lg:text-7xl whitespace-nowrap font-bold tracking-tighter font-[family-name:var(--font-space)] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-6" style={{ animationDelay: '0.2s' }}>
+          <ShinyText 
+            text={cardTitle} 
+            speed={4} 
+            delay={1}
+            color="rgba(255, 255, 255, 0.65)" 
+            shineColor="#ffffff" 
+            spread={100}
+            direction="left"
+          />
         </h1>
         
         <p className="animate-float-up pointer-events-auto relative z-10 text-sm sm:text-base md:text-lg whitespace-nowrap text-zinc-300 tracking-widest mx-auto leading-relaxed mb-16 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]" style={{ animationDelay: '0.3s' }}>
