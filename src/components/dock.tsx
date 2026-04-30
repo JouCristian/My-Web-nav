@@ -105,7 +105,8 @@ export default function Dock({
   return (
     <div className="dock-outer">
       <div
-        onMouseMove={({ pageX }) => mouseX.set(pageX)}
+        // 🚀 定点修复：将 pageX 替换为 clientX，彻底解决滚动导致的坐标系撕裂和偏移BUG
+        onMouseMove={(e) => mouseX.set(e.clientX)}
         onMouseLeave={() => mouseX.set(Infinity)}
         className={`dock-panel ${className}`}
         style={{ height: panelHeight }}

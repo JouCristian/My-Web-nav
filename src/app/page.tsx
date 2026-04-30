@@ -6,7 +6,8 @@ import { prisma } from "@/lib/db"
 import { auth, signOut } from "@/auth" 
 import { TopNavDock } from "@/components/top-nav-dock" 
 import { HideSpacetime } from "@/components/hide-spacetime" 
-import DotField from "@/components/DotField" // 🚀 引入量子点阵力场
+import DotField from "@/components/DotField" 
+import Prism from "@/components/Prism" // 🚀 引入神秘的量子核心
 
 interface Bookmark {
   id: number;
@@ -74,33 +75,49 @@ export default async function Home() {
         .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
       `}} />
 
-      {/* 🚀 替换静态背景为互动式的 DotField 量子点阵 */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <DotField
-          dotRadius={1.5}
-          dotSpacing={22} /* 加大间距，增加通透感 */
-          cursorRadius={300}
-          cursorForce={0.15}
-          bulgeOnly={true} /* 鼠标划过产生物理排斥回弹，极其顺滑 */
-          bulgeStrength={80}
-          glowRadius={200}
-          sparkle={true} /* 激活闪烁星光效果 */
-          waveAmplitude={0}
-          gradientFrom="rgba(59, 130, 246, 0.6)" /* 幽蓝 */
-          gradientTo="rgba(168, 85, 247, 0.4)"   /* 幻紫 */
-          glowColor="rgba(59, 130, 246, 0.15)"
-        />
+      {/* 🚀 复合互动背景：Prism 星际核心 + DotField 量子排斥力场 */}
+      <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-center">
+        {/* 量子核心 Prism */}
+        <div className="absolute inset-0 z-0 opacity-40 mix-blend-screen pointer-events-auto">
+          <Prism
+            animationType="3drotate" // 全息旋转模式
+            timeScale={0.15} // 极其缓慢的电影级旋转感
+            height={4.5}
+            baseWidth={6.5}
+            scale={4.0}
+            hueShift={-0.3} // 微调色相，使之偏向幽紫色调
+            colorFrequency={1.2}
+            noise={0.3} 
+            glow={1.5}
+            bloom={1.2}
+            transparent={true}
+          />
+        </div>
+        
+        {/* 外围点阵排斥场 DotField */}
+        <div className="absolute inset-0 z-10 pointer-events-auto mix-blend-screen">
+          <DotField
+            dotRadius={1.5}
+            dotSpacing={22} 
+            cursorRadius={300}
+            cursorForce={0.15}
+            bulgeOnly={true} 
+            bulgeStrength={80}
+            glowRadius={200}
+            sparkle={true} 
+            waveAmplitude={0}
+            gradientFrom="rgba(59, 130, 246, 0.5)" 
+            gradientTo="rgba(168, 85, 247, 0.3)"   
+            glowColor="rgba(59, 130, 246, 0.15)"
+          />
+        </div>
       </div>
       
-      {/* 深空暗芒：为文字提供极好的反差托底 */}
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] max-w-[1000px] max-h-[1000px] bg-blue-600/10 rounded-full blur-[180px] pointer-events-none z-0"></div>
 
-      {/* 🚀 悬浮 Dock 导航栏 */}
       <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
 
-      {/* 巨幕英雄区 */}
       <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-10 pointer-events-none">
-        
         <div className="animate-float-up pointer-events-auto" style={{ animationDelay: '0.1s' }}>
           <div className="inline-flex items-center gap-3 bg-blue-500/10 border border-blue-500/30 px-4 py-1.5 rounded-full mb-8 backdrop-blur-md">
             <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)]"></span>
@@ -133,7 +150,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 隐匿式下沉导航区 */}
       <section className="relative z-10 max-w-7xl mx-auto px-6 pb-40">
         <div className="flex items-center justify-center gap-6 mb-20 opacity-30">
           <div className="h-px bg-gradient-to-r from-transparent to-white/50 w-32 md:w-64"></div>
