@@ -87,30 +87,31 @@ export default async function Home() {
         
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.4)_0%,transparent_60%)] z-0 pointer-events-none"></div>
 
-        {/* 🚀 审美修复：字号收缩 (2xl-4xl)，回归 Apple 精致感。调快了 stagger 速度，消除重影 */}
         <div className="animate-float-up pointer-events-auto relative z-10 mb-8 font-mono text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
           <RotatingText
             prefix="Creating"
             texts={['thinking!', 'coding!', 'components!', 'YSYX!']}
             mainClassName="px-4 py-1.5 md:px-6 md:py-2 bg-cyan-400 text-black overflow-hidden rounded-[1.2rem] shadow-[0_0_20px_rgba(34,211,238,0.4)] flex items-center justify-center"
             staggerFrom={"last"}
-            // 🚀 物理修复：加速出场动画 (duration: 0.15s)，彻底解决消失不完全的问题
+            
+            // 🚀 定点修复 1：去除了 exit 里面的 transition 覆盖！现在向上消失的动画也会严格遵循 staggerDuration，呈现完美的字符逐个消失的弹簧效果！
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "-100%", opacity: 0, transition: { duration: 0.15 } }}
-            staggerDuration={0.01} 
-            transition={{ type: "spring", damping: 25, stiffness: 350 }} // 更具张力的弹簧
+            exit={{ y: "-120%", opacity: 0 }}
+            
+            staggerDuration={0.025} 
+            transition={{ type: "spring", damping: 25, stiffness: 350 }} 
             rotationInterval={3200}
-            animatePresenceMode="wait" 
+            
+            // 🚀 定点修复 2：开启 popLayout 模式！现在当文字长度改变时，青色背景块会带有完美的非线性弹簧阻尼效果去撑大或缩小！
+            animatePresenceMode="popLayout" 
           />
         </div>
 
-        {/* 🚀 审美修复：标题字号回归常规巨幕 (4xl-7xl)，拒绝溢出感 */}
         <h1 className="animate-float-up pointer-events-auto relative z-10 text-4xl sm:text-5xl md:text-6xl lg:text-7xl whitespace-nowrap font-bold tracking-tighter font-[family-name:var(--font-space)] text-transparent bg-clip-text bg-gradient-to-b from-white via-white/95 to-white/60 drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-6" style={{ animationDelay: '0.2s' }}>
           {cardTitle}
         </h1>
         
-        {/* 🚀 审美修复：副标题回归 1rem 左右，保证极高的文字呼吸感 */}
         <p className="animate-float-up pointer-events-auto relative z-10 text-sm sm:text-base md:text-lg whitespace-nowrap text-zinc-300 tracking-widest mx-auto leading-relaxed mb-16 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]" style={{ animationDelay: '0.3s' }}>
           {cardSubtitle}
         </p>

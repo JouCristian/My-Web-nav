@@ -1,14 +1,12 @@
 /* src/components/RotatingText.css */
 .text-rotate-container {
-    display: inline-grid;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     position: relative;
   }
   
   .text-rotate-inner {
-    grid-column: 1;
-    grid-row: 1;
     display: inline-flex;
     flex-wrap: wrap;
     white-space: pre-wrap;
@@ -33,8 +31,6 @@
   }
   
   .text-rotate-lines {
-    grid-column: 1;
-    grid-row: 1;
     display: flex;
     flex-direction: column;
     width: 100%;

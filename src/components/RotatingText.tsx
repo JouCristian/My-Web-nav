@@ -129,7 +129,6 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>((props, ref)
   }, [next, rotationInterval, auto]);
 
   return (
-    // 🚀 物理修复：父容器必须强制开启 layout，并绑定全局 transition 才能让 Creating 实现弹簧平移
     <motion.div layout transition={transition} className="flex items-center justify-center gap-3 md:gap-5">
       {prefix && (
         <motion.span layout transition={transition} className="shrink-0">
