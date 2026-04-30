@@ -1,3 +1,4 @@
+/* src/components/dock.css */
 .dock-outer {
     position: fixed;
     top: 2rem;
@@ -17,11 +18,10 @@
     width: fit-content;
     gap: 0.75rem;
     border-radius: 2rem;
-    background-color: rgba(6, 8, 19, 0.65);
-    backdrop-filter: blur(25px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
     padding: 0.5rem 1rem;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.05);
+    position: relative; /* 必须保留，作为隔离层容器 */
+    
+    /* 🚀 核心剥离：原本的背景、毛玻璃、边框全部删除，交由 GlassSurface 渲染！ */
   }
   
   .dock-item {

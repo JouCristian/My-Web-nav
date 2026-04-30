@@ -3,6 +3,7 @@
 
 import { motion, MotionValue, useMotionValue, useSpring, useTransform, type SpringOptions, AnimatePresence } from 'framer-motion';
 import React, { Children, cloneElement, useEffect, useRef, useState } from 'react';
+import GlassSurface from './GlassSurface'; // 🚀 引入最新武装的光学玻璃
 
 import './dock.css';
 
@@ -38,7 +39,6 @@ function DockItem({ children, className = '', onClick, mouseX, spring, distance,
   const ref = useRef<HTMLDivElement>(null);
   const isHovered = useMotionValue(0);
 
-  // 🚀 核心修复：纯视口坐标对齐，彻底阻断 pageX 带来的滚动撕裂！
   const mouseDistance = useTransform(mouseX, val => {
     const rect = ref.current?.getBoundingClientRect() ?? { x: 0, width: baseItemSize };
     return val - rect.x - baseItemSize / 2;
@@ -103,7 +103,6 @@ export default function Dock({
 }: DockProps) {
   const mouseX = useMotionValue(Infinity);
 
-  // 🚀 核心修复：滚动自动复位引擎。滚动发生时立刻解除焦点，完美模拟 MacOS 原生交互，杜绝鬼影放大
   useEffect(() => {
     const handleScroll = () => mouseX.set(Infinity);
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -113,7 +112,6 @@ export default function Dock({
   return (
     <div className="dock-outer">
       <div
-        // 🚀 核心修复：将 pageX 替换为 clientX，确保只跟屏幕视窗产生相对计算
         onMouseMove={(e) => mouseX.set(e.clientX)}
         onMouseLeave={() => mouseX.set(Infinity)}
         className={`dock-panel ${className}`}
@@ -121,6 +119,24 @@ export default function Dock({
         role="toolbar"
         aria-label="Application dock"
       >
+        {/* 🚀 物理引擎嵌入点：放置在 absolute 的负层级，为整个 Dock 提供顶级色散玻璃背景，不干扰悬浮气泡！ */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: -10, pointerEvents: 'none', borderRadius: 'inherit' }}>
+          <GlassSurface
+            width="100%"
+            height="100%"
+            borderRadius={32}
+            displace={8}
+            distortionScale={-150}
+            redOffset={3}
+            greenOffset={10}
+            blueOffset={20}
+            brightness={35}
+            opacity={0.8}
+            blur={15}
+            mixBlendMode="screen"
+          />
+        </div>
+
         {items.map((item, index) => (
           <DockItem key={index} onClick={item.onClick} className={item.className} mouseX={mouseX} spring={spring} distance={distance} magnification={magnification} baseItemSize={baseItemSize}>
             <DockIcon>{item.icon}</DockIcon>
