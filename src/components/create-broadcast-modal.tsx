@@ -8,7 +8,7 @@ import { createBroadcast } from "@/app/dashboard/board/actions"
 export function CreateBroadcastModal() {
   const [isOpen, setIsOpen] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
-  const [isClosing, setIsClosing] = useState(false) // 🚀 防闪烁状态机
+  const [isClosing, setIsClosing] = useState(false) 
   const [isMounted, setIsMounted] = useState(false)
   
   const [selectOpen, setSelectOpen] = useState(false)
@@ -20,7 +20,6 @@ export function CreateBroadcastModal() {
 
   useEffect(() => { setIsMounted(true) }, [])
 
-  // 🚀 防闪烁生命周期管理
   const openModal = () => { setIsClosing(false); setIsOpen(true); setTimeout(() => setIsAnimating(true), 10); }
   const closeModal = () => { setIsClosing(true); setIsAnimating(false); setTimeout(() => setIsOpen(false), 600); }
 
@@ -37,7 +36,6 @@ export function CreateBroadcastModal() {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className={`absolute inset-0 bg-[#02040a]/40 backdrop-blur-[20px] transition-all duration-700 ${isAnimating ? "opacity-100" : "opacity-0"}`} onClick={closeModal}></div>
       
-      {/* 🚀 采用弹射入场与粒子退场 */}
       <div className={`relative w-full max-w-xl z-10 ${isClosing ? "quantum-particle-out" : isAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
         <div className="quantum-breathe-heavy w-full rounded-[3.5rem] border border-blue-500/30 bg-[#060813]/95 p-12 shadow-[0_0_100px_rgba(59,130,246,0.3)]">
           <h2 className="text-2xl font-bold text-white tracking-[0.3em] mb-10 text-center font-[family-name:var(--font-space)]">发布全舰广播</h2>
@@ -90,17 +88,21 @@ export function CreateBroadcastModal() {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: `
-        /* ... 保留之前的弹窗动画 ... */
         @keyframes slide-up-elastic { 0% { opacity: 0; transform: translateY(80px) scale(0.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
         .animate-slide-up-elastic { animation: slide-up-elastic 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
         .quantum-particle-out { animation: dissipate 0.6s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
         .quantum-breathe-heavy { animation: heavy-breathe 2s ease-in-out infinite; }
         @keyframes dissipate { 0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 100% { opacity: 0; filter: blur(40px) brightness(0.5); transform: scale(0.85); } }
-        @keyframes heavy-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        
+        /* 🚀 定点修复：彻底移除 scale，仅利用 box-shadow 和 border-color 实现纯光效呼吸 */
+        @keyframes heavy-breathe { 
+          0%, 100% { box-shadow: 0 0 60px rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.3); } 
+          50% { box-shadow: 0 0 100px rgba(59,130,246,0.4); border-color: rgba(59,130,246,0.6); } 
+        }
+
         .ios-scrollbar::-webkit-scrollbar { width: 5px; }
         .ios-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
 
-        /* 🚀 新增：发布按钮的专属弹性呼吸 (Hover 激活) */
         @keyframes btn-publish-breathe {
           0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(59,130,246,0.3); }
           50% { transform: scale(1.03); box-shadow: 0 0 50px rgba(59,130,246,0.6); }
@@ -110,7 +112,6 @@ export function CreateBroadcastModal() {
         }
       `}} />
       
-      {/* 🚀 默认静止状态，悬浮时激活背景色过渡与贝塞尔呼吸动效 */}
       <button 
         onClick={openModal} 
         className="group hover-breathe-publish px-8 py-4 rounded-2xl bg-blue-600/10 border border-blue-500/30 text-blue-400 font-bold tracking-[0.2em] uppercase hover:bg-blue-600 hover:text-white transition-all duration-500 active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.1)]"

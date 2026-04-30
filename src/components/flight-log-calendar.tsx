@@ -10,16 +10,14 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
   const [viewDate, setViewDate] = useState(new Date())
   const [mounted, setMounted] = useState(false)
   
-  // 📝 核心状态机
   const [isFlipped, setIsFlipped] = useState(false)
-  // 🚀 核心修复：将 selectedDay 升级为唯一时空标识 selectedDateKey，防止点击崩溃
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"VIEW" | "EDIT">("VIEW")
   const [logs, setLogs] = useState<Record<string, { title: string, time: string, content: string }>>({})
 
   const [editTitle, setEditTitle] = useState("")
-  const [editTime, setEditTime] = useState("12:00") // 赋予安全默认值
+  const [editTime, setEditTime] = useState("12:00") 
   const [editContent, setEditContent] = useState("")
   
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false)
@@ -95,7 +93,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
     setModalMode("EDIT") 
   }
 
-  // 🚀 安全的时间更新逻辑，避免拆分 undefined
   const updateHour = (h: string) => { const parts = editTime.split(':'); setEditTime(`${h}:${parts[1] || '00'}`); }
   const updateMinute = (m: string) => { const parts = editTime.split(':'); setEditTime(`${parts[0] || '12'}:${m}`); }
 
@@ -111,7 +108,18 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
       {isModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px]" onClick={() => setIsModalOpen(false)} />
-          <style dangerouslySetInnerHTML={{ __html: `@keyframes modal-breathe { 0%, 100% { transform: scale(1); box-shadow: 0 0 60px rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.2); } 50% { transform: scale(1.01); box-shadow: 0 0 100px rgba(16, 185, 129, 0.35); border-color: rgba(16, 185, 129, 0.4); } } .animate-modal-breathe { animation: modal-breathe 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; } .emerald-scrollbar::-webkit-scrollbar { width: 4px; } .emerald-scrollbar::-webkit-scrollbar-track { background: transparent; } .emerald-scrollbar::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 10px; } .emerald-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(16, 185, 129, 0.5); }`}} />
+          <style dangerouslySetInnerHTML={{ __html: `
+            /* 🚀 定点修复：彻底移除 scale，完美解决字体跳动 */
+            @keyframes modal-breathe { 
+              0%, 100% { box-shadow: 0 0 60px rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.2); } 
+              50% { box-shadow: 0 0 100px rgba(16, 185, 129, 0.35); border-color: rgba(16, 185, 129, 0.4); } 
+            } 
+            .animate-modal-breathe { animation: modal-breathe 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; } 
+            .emerald-scrollbar::-webkit-scrollbar { width: 4px; } 
+            .emerald-scrollbar::-webkit-scrollbar-track { background: transparent; } 
+            .emerald-scrollbar::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 10px; } 
+            .emerald-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(16, 185, 129, 0.5); }
+          `}} />
           
           <motion.div initial={{ opacity: 0, scale: 0.8, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20, filter: "blur(10px)" }} transition={uiSpring} className="relative w-full max-w-2xl z-10" >
             <div className="animate-modal-breathe w-full rounded-[3.5rem] bg-[#060813]/95 border p-8 md:p-12 overflow-hidden relative transition-all duration-500">
@@ -217,7 +225,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                   <div className="flex gap-4 pt-8 mt-6 border-t border-emerald-500/10">
                     <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 font-bold tracking-widest text-[10px] hover:text-white hover:bg-white/10 transition-all active:scale-95">关闭档案</button>
                     
-                    {/* 🚀 一键清除按钮提权：舰长/管理员在外部即可直接销毁日志 */}
                     {isManager && activeLog && (
                       <button type="button" onClick={handleClearLog} className="flex-1 py-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 font-bold tracking-widest text-[10px] hover:bg-red-500 hover:text-white transition-all shadow-[0_0_20px_rgba(239,68,68,0.2)] active:scale-95 flex items-center justify-center gap-2">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -245,7 +252,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
     <>
       <div className="relative h-full flex flex-col" style={{ perspective: "1500px" }}>
         
-        {/* 🚀 顶栏：灵动量子岛设计 */}
         <div className="flex items-center justify-between mb-8 px-2 relative z-20">
           <div className="flex flex-col">
             <div className="flex items-center gap-3 mb-1">
@@ -257,7 +263,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
             </h2>
           </div>
 
-          {/* 🚀 极其稳定的宽度遮罩动画，抛弃危险的 layout 属性 */}
           <div className="flex items-center bg-[#02040a]/60 border border-emerald-500/20 p-1.5 rounded-2xl backdrop-blur-xl shadow-[0_0_20px_rgba(16,185,129,0.1)]">
             <AnimatePresence>
               {!isFlipped && (
@@ -276,7 +281,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
               )}
             </AnimatePresence>
 
-            {/* 3D 翻转触发器 */}
             <button 
               onClick={() => setIsFlipped(!isFlipped)}
               className={`group relative w-8 h-8 shrink-0 rounded-xl flex items-center justify-center transition-all duration-300 ${isFlipped ? 'bg-emerald-500 text-black' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'}`}
@@ -293,10 +297,8 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
           </div>
         </div>
 
-        {/* 🚀 核心 3D 翻转容器修复版 */}
         <motion.div animate={{ rotateY: isFlipped ? 180 : 0 }} transition={flipSpring} style={{ transformStyle: "preserve-3d" }} className="relative flex-1 w-full h-full">
           
-          {/* 正面：全息日历卡片 (强制硬件加速解决透视 BUG) */}
           <div className="absolute inset-0 flex flex-col" style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", zIndex: isFlipped ? 0 : 10 }}>
              <div className="flex-1 flex flex-col bg-[#02040a]/40 border border-white/5 rounded-[2rem] p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)]">
                 <div className="grid grid-cols-7 gap-2 mb-4 border-b border-white/5 pb-4">
@@ -319,7 +321,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
              </div>
           </div>
 
-          {/* 背面：档案全集列表 */}
           <div className="absolute inset-0 flex flex-col" style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", zIndex: isFlipped ? 10 : 0 }}>
              <div className="flex-1 flex flex-col bg-[#02040a]/60 border border-emerald-500/20 rounded-[2rem] p-6 shadow-[inset_0_0_50px_rgba(16,185,129,0.1)] overflow-hidden">
                 <div className="flex items-center justify-between mb-4 border-b border-emerald-500/10 pb-3">

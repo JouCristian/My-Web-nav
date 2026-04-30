@@ -4,7 +4,8 @@
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { deleteBroadcast } from "@/app/actions" 
-import ReactMarkdown from "react-markdown" // 🚀 注入 Markdown 核心引擎
+import ReactMarkdown from "react-markdown" 
+import { motion } from "framer-motion" // 🚀 引入核心动画库解决断层空白
 
 export function BroadcastCard({ announcement, isManager }: { announcement: any, isManager: boolean }) {
   const [isVanishing, setIsVanishing] = useState(false) 
@@ -55,7 +56,6 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
   }
   const style = typeStyles[announcement.type] || typeStyles.INFO
 
-  // 🚀 全息阅读弹窗 (集成 Markdown 渲染)
   const readModalContent = isReadOpen ? (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className={`absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px] transition-all duration-500 ${isReadAnimating ? "opacity-100" : "opacity-0"}`} onClick={closeReadModal}></div>
@@ -73,7 +73,6 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
 
           <div className="relative z-10 bg-black/40 border border-white/5 rounded-[2.5rem] p-6 md:p-8 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
             <div className="max-h-[45vh] overflow-y-auto ios-scrollbar pr-4">
-              {/* 🚀 核心逻辑：使用 ReactMarkdown 渲染公告正文 */}
               <ReactMarkdown 
                 className="text-zinc-300 text-sm md:text-base leading-relaxed break-words"
                 components={{
@@ -127,21 +126,30 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
   ) : null;
 
   return (
-    <div 
-      className={`relative shrink-0 transition-all duration-500 ease-in-out ${
-        isVanishing 
-          ? 'max-h-0 opacity-0 scale-95 pointer-events-none !mt-0 overflow-hidden' 
-          : 'max-h-[500px] opacity-100 overflow-visible'
-      }`}
+    <motion.div 
+      layout
+      initial={false}
+      animate={{
+        height: isVanishing ? 0 : "auto",
+        opacity: isVanishing ? 0 : 1,
+        marginBottom: isVanishing ? -20 : 0 // 🚀 抵消外层父级的 gap-5 (20px)，实现无缝闭合
+      }}
+      transition={{ duration: 0.5, ease: "easeInOut" }}
+      className="relative shrink-0 overflow-hidden"
     >
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes vanish-dissipate { 0% { opacity: 1; filter: blur(0px); } 100% { opacity: 0; filter: blur(20px); transform: scale(1.1); } }
-        .animate-vanish-dissipate { animation: vanish-dissipate 0.6s forwards; }
+        .animate-vanish-dissipate { animation: vanish-dissipate 0.5s forwards; }
         @keyframes slide-up-elastic { 0% { opacity: 0; transform: translateY(80px) scale(0.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
         .animate-slide-up-elastic { animation: slide-up-elastic 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
         .quantum-particle-out { animation: dissipate 0.6s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
         @keyframes dissipate { 0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 100% { opacity: 0; filter: blur(20px) brightness(0.5); transform: scale(0.85); } }
-        @keyframes dynamic-breathe { 0%, 100% { transform: scale(1); box-shadow: 0 0 60px var(--modal-glow), inset 0 0 20px var(--modal-glow); border: 1px solid rgba(255,255,255,0.1); } 50% { transform: scale(1.015); box-shadow: 0 0 100px var(--modal-shadow), inset 0 0 40px var(--modal-glow); border: 1px solid var(--modal-border); } }
+        
+        /* 🚀 定点修复：彻底移除 scale，完美解决字体跳动 */
+        @keyframes dynamic-breathe { 
+          0%, 100% { box-shadow: 0 0 60px var(--modal-glow), inset 0 0 20px var(--modal-glow); border: 1px solid rgba(255,255,255,0.1); } 
+          50% { box-shadow: 0 0 100px var(--modal-shadow), inset 0 0 40px var(--modal-glow); border: 1px solid var(--modal-border); } 
+        }
         .quantum-breathe-dynamic { animation: dynamic-breathe 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
       `}} />
 
@@ -174,6 +182,6 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
         </div>
       </div>
       {isMounted && createPortal(<>{readModalContent}{delModalContent}</>, document.body)}
-    </div>
+    </motion.div>
   )
 }
