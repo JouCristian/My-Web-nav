@@ -7,7 +7,7 @@ import { auth, signOut } from "@/auth"
 import { TopNavDock } from "@/components/top-nav-dock" 
 import { HideSpacetime } from "@/components/hide-spacetime" 
 import Silk from "@/components/Silk" 
-import RotatingText from "@/components/RotatingText" // 🚀 引入高级旋转文本
+import RotatingText from "@/components/RotatingText" 
 
 interface Bookmark {
   id: number;
@@ -75,7 +75,6 @@ export default async function Home() {
         .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
       `}} />
 
-      {/* 🚀 保留你的深邃幻紫背景 */}
       <div className="fixed inset-0 z-0 pointer-events-none opacity-60">
         <Silk
           speed={6.8}           
@@ -92,26 +91,21 @@ export default async function Home() {
         
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.4)_0%,transparent_60%)] z-0 pointer-events-none"></div>
 
-        {/* 🚀 全新设计的动态状态徽章 (Rotating Text 注入) */}
-        <div className="animate-float-up pointer-events-auto relative z-10" style={{ animationDelay: '0.1s' }}>
-          <div className="inline-flex items-center gap-3 bg-black/40 border border-white/10 pl-4 pr-1.5 py-1.5 rounded-full mb-8 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_rgba(34,211,238,0.8)]"></span>
-            <span className="text-[10px] font-mono font-bold tracking-[0.3em] text-zinc-300 uppercase mt-0.5">X-STARFLEET //</span>
-            
-            {/* 这里的右侧底块采用了极具科幻感的冰川青，与你的幻紫背景产生顶级的赛博朋克对比 */}
-            <RotatingText
-              texts={['MISSION ACTIVE', 'QUANTUM SECURED', 'ALL SYSTEMS GO', 'AWAITING COMMAND']}
-              mainClassName="px-3 py-1 bg-cyan-400/10 text-cyan-300 border border-cyan-400/20 rounded-full overflow-hidden justify-center shadow-[inset_0_0_10px_rgba(34,211,238,0.1)] text-[10px] font-mono font-bold tracking-[0.2em] uppercase"
-              staggerFrom="last"
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "-120%" }}
-              staggerDuration={0.025}
-              splitLevelClassName="overflow-hidden pb-0.5"
-              transition={{ type: "spring", damping: 30, stiffness: 400 }}
-              rotationInterval={3000}
-            />
-          </div>
+        {/* 🚀 文本替换为指定内容，并移除了 uppercase 强制大写以尊重你的原始排版 */}
+        <div className="animate-float-up pointer-events-auto relative z-10 flex items-center justify-center gap-2 mb-8 font-mono text-sm md:text-base font-bold tracking-widest text-zinc-300 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]" style={{ animationDelay: '0.1s' }}>
+          <span>Creating</span>
+          <RotatingText
+            texts={['thinking!', 'coding!', 'components!', 'YSYX!']}
+            mainClassName="px-2 sm:px-2 md:px-3 bg-cyan-400 text-black overflow-hidden py-0.5 sm:py-1 md:py-2 justify-center rounded-lg shadow-[0_0_15px_rgba(34,211,238,0.5)]"
+            staggerFrom={"last"}
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "-120%" }}
+            staggerDuration={0.025}
+            splitLevelClassName="overflow-hidden pb-0.5 sm:pb-1 md:pb-1"
+            transition={{ type: "spring", damping: 30, stiffness: 400 }}
+            rotationInterval={2800}
+          />
         </div>
 
         <h1 className="animate-float-up pointer-events-auto relative z-10 text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter font-[family-name:var(--font-space)] text-transparent bg-clip-text bg-gradient-to-b from-white via-white/95 to-white/60 drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-6 max-w-5xl" style={{ animationDelay: '0.2s', wordBreak: 'keep-all' }}>
