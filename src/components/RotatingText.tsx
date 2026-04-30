@@ -34,7 +34,7 @@ export interface RotatingTextProps
   initial?: boolean | Target | VariantLabels;
   animate?: boolean | VariantLabels | TargetAndTransition;
   exit?: Target | VariantLabels;
-  animatePresenceMode?: 'sync' | 'wait';
+  animatePresenceMode?: 'sync' | 'wait' | 'popLayout'; // 🚀 开放 popLayout 支持
   animatePresenceInitial?: boolean;
   rotationInterval?: number;
   staggerDuration?: number;
@@ -182,12 +182,12 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>((props, ref)
   }, [next, rotationInterval, auto]);
 
   return (
-    <motion.span className={cn('text-rotate', mainClassName)} {...rest} layout transition={transition}>
+    <motion.span className={cn('text-rotate-container', mainClassName)} {...rest} layout transition={transition}>
       <span className="text-rotate-sr-only">{texts[currentTextIndex]}</span>
       <AnimatePresence mode={animatePresenceMode} initial={animatePresenceInitial}>
         <motion.span
           key={currentTextIndex}
-          className={cn(splitBy === 'lines' ? 'text-rotate-lines' : 'text-rotate')}
+          className={cn(splitBy === 'lines' ? 'text-rotate-lines' : 'text-rotate-inner')}
           layout
           aria-hidden="true"
         >

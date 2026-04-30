@@ -91,20 +91,21 @@ export default async function Home() {
         
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.4)_0%,transparent_60%)] z-0 pointer-events-none"></div>
 
-        {/* 🚀 文本替换为指定内容，并移除了 uppercase 强制大写以尊重你的原始排版 */}
-        <div className="animate-float-up pointer-events-auto relative z-10 flex items-center justify-center gap-2 mb-8 font-mono text-sm md:text-base font-bold tracking-widest text-zinc-300 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]" style={{ animationDelay: '0.1s' }}>
+        {/* 🚀 核心修复：字号加大 (text-2xl md:text-4xl)，应用 popLayout 平滑撑缩 */}
+        <div className="animate-float-up pointer-events-auto relative z-10 flex items-center justify-center gap-3 mb-10 font-mono text-2xl md:text-4xl font-bold tracking-widest text-zinc-200 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]" style={{ animationDelay: '0.1s' }}>
           <span>Creating</span>
           <RotatingText
             texts={['thinking!', 'coding!', 'components!', 'YSYX!']}
-            mainClassName="px-2 sm:px-2 md:px-3 bg-cyan-400 text-black overflow-hidden py-0.5 sm:py-1 md:py-2 justify-center rounded-lg shadow-[0_0_15px_rgba(34,211,238,0.5)]"
+            mainClassName="px-4 py-1.5 md:px-5 md:py-2 bg-cyan-400 text-black overflow-hidden rounded-2xl shadow-[0_0_20px_rgba(34,211,238,0.5)]"
             staggerFrom={"last"}
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "-120%" }}
+            initial={{ y: "100%", opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: "-120%", opacity: 0 }}
             staggerDuration={0.025}
-            splitLevelClassName="overflow-hidden pb-0.5 sm:pb-1 md:pb-1"
-            transition={{ type: "spring", damping: 30, stiffness: 400 }}
+            splitLevelClassName="overflow-hidden pb-0.5 md:pb-1"
+            transition={{ type: "spring", damping: 20, stiffness: 300 }} // 🚀 带有张力的物理阻尼
             rotationInterval={2800}
+            animatePresenceMode="popLayout" // 🚀 魔法引擎：非线性平滑过渡外壳宽度！
           />
         </div>
 
