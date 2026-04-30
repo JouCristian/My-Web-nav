@@ -79,7 +79,7 @@ export default async function Home() {
         <Silk
           speed={6.8}           
           scale={0.8}           
-          color="#8bacf4"       // 极光/星光淡蓝，充满科技与呼吸感
+          color="#A855F7"       
           noiseIntensity={1.1}  
           rotation={0}       
         />
