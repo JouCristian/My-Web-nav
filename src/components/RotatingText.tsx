@@ -30,7 +30,7 @@ export interface RotatingTextProps
     'children' | 'transition' | 'initial' | 'animate' | 'exit'
   > {
   texts: string[];
-  prefix?: string; // 🚀 新增前缀支持，实现协同弹簧位移
+  prefix?: string;
   transition?: Transition;
   initial?: boolean | Target | VariantLabels;
   animate?: boolean | VariantLabels | TargetAndTransition;
@@ -139,8 +139,7 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>((props, ref)
   }, [next, rotationInterval, auto]);
 
   return (
-    // 🚀 这里的 motion.div layout 是魔法核心：它让 prefix 能够跟随内部组件的宽度变化同步平移
-    <motion.div layout transition={transition} className="flex items-center justify-center gap-4">
+    <motion.div layout transition={transition} className="flex items-center justify-center gap-4 lg:gap-6">
       {prefix && (
         <motion.span layout transition={transition} className="shrink-0">
           {prefix}
