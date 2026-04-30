@@ -8,7 +8,8 @@ import { TopNavDock } from "@/components/top-nav-dock"
 import { HideSpacetime } from "@/components/hide-spacetime" 
 import DotField from "@/components/DotField" 
 import RotatingText from "@/components/RotatingText" 
-import ShinyText from "@/components/ShinyText" // 🚀 引入光泽文本组件
+import ShinyText from "@/components/ShinyText" 
+import Aurora from "@/components/Aurora" // 🚀 引入极光引擎
 
 interface Bookmark {
   id: number;
@@ -72,6 +73,17 @@ export default async function Home() {
         .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
       `}} />
 
+      {/* 🚀 第1层：底层流动的星际极光 (紫 -> 蓝 -> 青) */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-60 mix-blend-screen">
+        <Aurora
+          colorStops={["#A855F7", "#3b82f6", "#22d3ee"]} 
+          blend={0.6}
+          amplitude={1.2}
+          speed={0.8}
+        />
+      </div>
+
+      {/* 🚀 第2层：中层纯色量子点阵 (无闪烁版，承接鼠标排斥互动) */}
       <div className="fixed inset-0 z-0 pointer-events-auto mix-blend-screen opacity-100">
         <DotField
           dotRadius={2.0} 
@@ -93,7 +105,7 @@ export default async function Home() {
 
       <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-10 pointer-events-none">
         
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.5)_0%,transparent_65%)] z-0 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.6)_0%,transparent_65%)] z-0 pointer-events-none"></div>
 
         <div className="animate-float-up pointer-events-auto relative z-10 mb-8 font-mono text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
           <RotatingText
@@ -111,12 +123,11 @@ export default async function Home() {
           />
         </div>
 
-        {/* 🚀 标题光泽化重构：删除了原有的 bg-clip-text，让 ShinyText 掌管色彩与动画 */}
         <h1 className="animate-float-up pointer-events-auto relative z-10 text-4xl sm:text-5xl md:text-6xl lg:text-7xl whitespace-nowrap font-bold tracking-tighter font-[family-name:var(--font-space)] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-6" style={{ animationDelay: '0.2s' }}>
           <ShinyText 
             text={cardTitle} 
-            speed={4} 
-            delay={1}
+            speed={6} 
+            delay={0.5}
             color="rgba(255, 255, 255, 0.65)" 
             shineColor="#ffffff" 
             spread={100}
