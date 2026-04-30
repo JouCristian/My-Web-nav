@@ -75,20 +75,22 @@ export default async function Home() {
         .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
       `}} />
 
+      {/* 🚀 复合互动背景：Prism 星际核心 + DotField 量子排斥力场 */}
       <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-center">
-        {/* 🚀 核心修复：下调透明度，减少泛光(bloom)和光晕(glow)，提升旋转速度 */}
-        <div className="absolute inset-0 z-0 opacity-25 mix-blend-screen pointer-events-auto">
+        
+        {/* 🚀 修复 Prism 看不到的问题：回调光效参数，移除压制透明度 */}
+        <div className="absolute inset-0 z-0 pointer-events-none mix-blend-screen opacity-90">
           <Prism
             animationType="3drotate" 
-            timeScale={0.4}       // 🚀 提速，流动更顺滑
-            height={5.0}
-            baseWidth={6.5}
-            scale={4.0}
-            hueShift={-0.6}       // 🚀 色相向深紫/冰蓝偏移
-            colorFrequency={0.8}
-            noise={0.4} 
-            glow={0.1}            // 🚀 极大削弱强光耀斑
-            bloom={0.2}           // 🚀 极大削弱曝光溢出
+            timeScale={0.35}      // 提速，流动更顺滑
+            height={4.5}
+            baseWidth={6.0}
+            scale={3.8}
+            hueShift={-0.5}       // 色相向深紫/冰蓝偏移
+            colorFrequency={1.0}
+            noise={0.3} 
+            glow={0.8}            // 🚀 恢复正确的光晕曝光
+            bloom={0.8}           // 🚀 恢复正确的泛光曝光
             transparent={true}
           />
         </div>
@@ -117,8 +119,8 @@ export default async function Home() {
 
       <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-10 pointer-events-none">
         
-        {/* 🚀 核心修复：增加一个动态的暗物质护盾遮罩，垫在文字后方，彻底保证高光下的可读性 */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,2,5,0.65)_0%,transparent_65%)] z-0 pointer-events-none"></div>
+        {/* 🚀 暗物质护盾遮罩：垫在文字后方，彻底保证高光下的可读性 */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.85)_0%,transparent_65%)] z-0 pointer-events-none"></div>
 
         <div className="animate-float-up pointer-events-auto relative z-10" style={{ animationDelay: '0.1s' }}>
           <div className="inline-flex items-center gap-3 bg-blue-500/10 border border-blue-500/30 px-4 py-1.5 rounded-full mb-8 backdrop-blur-md">
