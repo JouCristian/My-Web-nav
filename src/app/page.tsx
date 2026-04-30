@@ -9,7 +9,8 @@ import { HideSpacetime } from "@/components/hide-spacetime"
 import DotField from "@/components/DotField" 
 import RotatingText from "@/components/RotatingText" 
 import ShinyText from "@/components/ShinyText" 
-import Aurora from "@/components/Aurora" // 🚀 引入极光引擎
+import Aurora from "@/components/Aurora" 
+import LogoLoop from "@/components/LogoLoop" // 🚀 引入动态测绘的 LogoLoop
 
 interface Bookmark {
   id: number;
@@ -54,6 +55,23 @@ export default async function Home() {
     await signOut()
   }
 
+  // 🚀 核心逻辑：拦截数据库数据，实时“绘制”无延迟的纯净胶囊 Logo
+  const generatedLogos = links.map(link => ({
+    title: link.name,
+    href: link.url,
+    node: (
+      <div className="flex items-center gap-3 px-5 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-full backdrop-blur-md transition-colors hover:bg-white/[0.08]">
+        {/* 提取首字母作为图标能量核，完美呼应全局的冰川青+深紫配色 */}
+        <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-400 to-purple-500 flex items-center justify-center text-[11px] text-black font-black uppercase">
+          {link.name.substring(0, 1)}
+        </div>
+        <span className="text-sm font-bold text-zinc-300 tracking-wider whitespace-nowrap">
+          {link.name}
+        </span>
+      </div>
+    )
+  }));
+
   return (
     <main className="min-h-screen bg-[#020205] text-white selection:bg-blue-500/30 overflow-x-hidden relative">
       
@@ -73,17 +91,15 @@ export default async function Home() {
         .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
       `}} />
 
-      {/* 🚀 第1层：底层流动的星际极光 (紫 -> 蓝 -> 青) */}
       <div className="fixed inset-0 z-0 pointer-events-none opacity-60 mix-blend-screen">
         <Aurora
           colorStops={["#A855F7", "#3b82f6", "#22d3ee"]} 
-          blend={0.6}
+          blend={0.7}
           amplitude={1.2}
           speed={0.8}
         />
       </div>
 
-      {/* 🚀 第2层：中层纯色量子点阵 (无闪烁版，承接鼠标排斥互动) */}
       <div className="fixed inset-0 z-0 pointer-events-auto mix-blend-screen opacity-100">
         <DotField
           dotRadius={2.0} 
@@ -105,7 +121,7 @@ export default async function Home() {
 
       <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-10 pointer-events-none">
         
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.6)_0%,transparent_65%)] z-0 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.5)_0%,transparent_65%)] z-0 pointer-events-none"></div>
 
         <div className="animate-float-up pointer-events-auto relative z-10 mb-8 font-mono text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
           <RotatingText
@@ -126,8 +142,8 @@ export default async function Home() {
         <h1 className="animate-float-up pointer-events-auto relative z-10 text-4xl sm:text-5xl md:text-6xl lg:text-7xl whitespace-nowrap font-bold tracking-tighter font-[family-name:var(--font-space)] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-6" style={{ animationDelay: '0.2s' }}>
           <ShinyText 
             text={cardTitle} 
-            speed={6} 
-            delay={0.5}
+            speed={10} 
+            delay={0}
             color="rgba(255, 255, 255, 0.65)" 
             shineColor="#ffffff" 
             spread={100}
@@ -157,6 +173,29 @@ export default async function Home() {
       </section>
 
       <section className="relative z-10 max-w-7xl mx-auto px-6 pb-40">
+        
+        {/* 🚀 无延迟全自绘跑马灯：放置在内容分区正上方 */}
+        {generatedLogos.length > 0 && (
+          <div className="w-full mb-16 relative overflow-hidden pointer-events-auto z-10 mask-edges">
+            <style dangerouslySetInnerHTML={{ __html: `
+              .mask-edges {
+                mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+                -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+              }
+            `}} />
+            <LogoLoop
+              logos={generatedLogos}
+              speed={45}
+              direction="left"
+              logoHeight={48}
+              gap={40}
+              hoverSpeed={15}
+              scaleOnHover={true}
+              fadeOut={false} // 使用更顶级的 CSS mask-image 渐隐效果
+            />
+          </div>
+        )}
+
         <div className="flex items-center justify-center gap-6 mb-20 opacity-30">
           <div className="h-px bg-gradient-to-r from-transparent to-white/50 w-32 md:w-64"></div>
           <span className="w-2 h-2 rotate-45 border border-white/50"></span>
