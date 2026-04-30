@@ -78,30 +78,6 @@ export async function revokeRecruitProfile() {
  * 👑 模块 3：指挥官行政指令 (Admin Operations)
  * ==========================================
  */
-
-// 🚀 核心修复：补回遗失的发射信号功能！
-export async function createBroadcast(formData: FormData) {
-  const session = await auth()
-  // 安全使用 ID 校验权限，免疫 Gitee 无邮箱环境
-  const user = await prisma.user.findUnique({ where: { id: session?.user?.id || "" } })
-  
-  if (user?.role !== "OWNER" && user?.role !== "ADMIN") {
-    throw new Error("权限不足：非法操作指挥序列")
-  }
-
-  const title = formData.get("title") as string
-  const content = formData.get("content") as string
-  const type = formData.get("type") as string
-  const isPinned = formData.get("isPinned") === "true"
-
-  await prisma.announcement.create({
-    data: { title, content, type, isPinned, authorId: user.id }
-  })
-
-  // 同步刷新中枢
-  revalidatePath("/dashboard") 
-}
-
 export async function deleteBroadcast(id: string) {
   const session = await auth()
   const user = await prisma.user.findUnique({ where: { id: session?.user?.id || "" } })
@@ -163,6 +139,7 @@ export async function startGlobalRollCall(durationSeconds: number) {
   return newSession
 }
 
+// 🚀 核心修复 1：数据库级防重锁 (Anti-Duplication Lock)
 export async function submitAttendance(sessionId: string) {
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
@@ -170,6 +147,7 @@ export async function submitAttendance(sessionId: string) {
   const user = await prisma.user.findUnique({ where: { id: session.user.id } })
   if (!user) throw new Error("User not found")
 
+  // 🛡️ 拦截重复请求，防止因为网络卡顿导致的幽灵重影记录
   const existingRecord = await prisma.attendanceRecord.findFirst({
     where: { userId: user.id, sessionId: sessionId }
   })
@@ -205,6 +183,7 @@ export async function checkLiveRollCall() {
   }
 }
 
+// 🚀 核心修复 2：全云端历史记录拉取协议 (Cloud History Sync)
 export async function getRollCallHistoryAction() {
   const session = await auth()
   if (!session?.user?.id) return []
@@ -222,22 +201,16 @@ export async function getRollCallHistoryAction() {
   }))
 }
 
+// 🚀 核心修复 3：舰长特权 - 抹除整场集结档案
 export async function deleteRollCallSessionAction(sessionId: string) {
   const session = await auth()
   const user = await prisma.user.findUnique({ where: { id: session?.user?.id || "" } })
   if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("Permission Denied")
-  
-  await prisma.attendanceRecord.deleteMany({
-    where: { sessionId: sessionId }
-  })
-
-  await prisma.rollCallSession.delete({ 
-    where: { id: sessionId } 
-  })
-  
+  await prisma.rollCallSession.delete({ where: { id: sessionId } })
   revalidatePath("/dashboard/attendance")
 }
 
+// 🚀 核心修复 4：舰长特权 - 缺勤干预（手动补签入库）
 export async function markCrewPresentAction(sessionId: string, crewName: string) {
   const session = await auth()
   const admin = await prisma.user.findUnique({ where: { id: session?.user?.id || "" } })
