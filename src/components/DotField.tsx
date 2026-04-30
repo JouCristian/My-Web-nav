@@ -7,46 +7,23 @@ import './DotField.css';
 const TWO_PI = Math.PI * 2;
 
 interface Dot {
-  ax: number;
-  ay: number;
-  sx: number;
-  sy: number;
-  vx: number;
-  vy: number;
-  x: number;
-  y: number;
+  ax: number; ay: number; sx: number; sy: number;
+  vx: number; vy: number; x: number; y: number;
 }
 
 interface DotFieldProps {
-  dotRadius?: number;
-  dotSpacing?: number;
-  cursorRadius?: number;
-  cursorForce?: number;
-  bulgeOnly?: boolean;
-  bulgeStrength?: number;
-  glowRadius?: number;
-  sparkle?: boolean;
-  waveAmplitude?: number;
-  gradientFrom?: string;
-  gradientTo?: string;
-  glowColor?: string;
+  dotRadius?: number; dotSpacing?: number; cursorRadius?: number;
+  cursorForce?: number; bulgeOnly?: boolean; bulgeStrength?: number;
+  glowRadius?: number; sparkle?: boolean; waveAmplitude?: number;
+  gradientFrom?: string; gradientTo?: string; glowColor?: string;
   [key: string]: unknown;
 }
 
 const DotField = memo(({
-  dotRadius = 1.5,
-  dotSpacing = 14,
-  cursorRadius = 500,
-  cursorForce = 0.1,
-  bulgeOnly = true,
-  bulgeStrength = 67,
-  glowRadius = 160,
-  sparkle = false,
-  waveAmplitude = 0,
-  gradientFrom = 'rgba(168, 85, 247, 0.35)',
-  gradientTo = 'rgba(180, 151, 207, 0.25)',
-  glowColor = '#120F17',
-  ...rest
+  dotRadius = 1.5, dotSpacing = 14, cursorRadius = 500, cursorForce = 0.1,
+  bulgeOnly = true, bulgeStrength = 67, glowRadius = 160, sparkle = false,
+  waveAmplitude = 0, gradientFrom = 'rgba(168, 85, 247, 0.35)',
+  gradientTo = 'rgba(180, 151, 207, 0.25)', glowColor = '#120F17', ...rest
 }: DotFieldProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -54,7 +31,7 @@ const DotField = memo(({
   const dotsRef = useRef<Dot[]>([]);
   const mouseRef = useRef({ x: -9999, y: -9999, prevX: -9999, prevY: -9999, speed: 0 });
   const rafRef = useRef<number | null>(null);
-  const sizeRef = useRef({ w: 0, h: 0, offsetX: 0, offsetY: 0 });
+  const sizeRef = useRef({ w: 0, h: 0 });
   const glowOpacity = useRef(0);
   const engagement = useRef(0);
   const propsRef = useRef<Record<string, unknown>>({});
@@ -87,13 +64,7 @@ const DotField = memo(({
       canvas!.style.height = `${h}px`;
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      sizeRef.current = {
-        w,
-        h,
-        offsetX: rect.left + window.scrollX,
-        offsetY: rect.top + window.scrollY,
-      };
-
+      sizeRef.current = { w, h };
       buildDots(w, h);
     }
 
@@ -117,10 +88,12 @@ const DotField = memo(({
       dotsRef.current = dots;
     }
 
+    // 🚀 核心修复：抛弃 pageX，直接基于画布边界换算纯正的视口坐标，免疫一切滚动干扰！
     function onMouseMove(e: MouseEvent) {
-      const s = sizeRef.current;
-      mouseRef.current.x = e.pageX - s.offsetX;
-      mouseRef.current.y = e.pageY - s.offsetY;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      mouseRef.current.x = e.clientX - rect.left;
+      mouseRef.current.y = e.clientY - rect.top;
     }
 
     function updateMouseSpeed() {
@@ -259,39 +232,15 @@ const DotField = memo(({
 
   return (
     <div className="dot-field-container" {...rest}>
-      <canvas
-        ref={canvasRef}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-        }}
-      />
-      <svg
-        ref={svgRef}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          pointerEvents: 'none',
-        }}
-      >
+      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+      <svg ref={svgRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
         <defs>
           <radialGradient id={glowIdRef.current}>
             <stop offset="0%" stopColor={glowColor} />
             <stop offset="100%" stopColor="transparent" />
           </radialGradient>
         </defs>
-        <circle
-          ref={glowRef}
-          cx="-9999"
-          cy="-9999"
-          r={glowRadius}
-          fill={`url(#${glowIdRef.current})`}
-          style={{ opacity: 0, willChange: 'opacity' }}
-        />
+        <circle ref={glowRef} cx="-9999" cy="-9999" r={glowRadius} fill={`url(#${glowIdRef.current})`} style={{ opacity: 0, willChange: 'opacity' }} />
       </svg>
     </div>
   );
