@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { deleteBroadcast } from "@/app/actions" 
 import ReactMarkdown from "react-markdown" 
-import { motion } from "framer-motion" // 🚀 引入核心动画库解决断层空白
+import { motion } from "framer-motion" 
 
 export function BroadcastCard({ announcement, isManager }: { announcement: any, isManager: boolean }) {
   const [isVanishing, setIsVanishing] = useState(false) 
@@ -132,10 +132,11 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
       animate={{
         height: isVanishing ? 0 : "auto",
         opacity: isVanishing ? 0 : 1,
-        marginBottom: isVanishing ? -20 : 0 // 🚀 抵消外层父级的 gap-5 (20px)，实现无缝闭合
+        marginBottom: isVanishing ? -20 : 0 
       }}
       transition={{ duration: 0.5, ease: "easeInOut" }}
-      className="relative shrink-0 overflow-hidden"
+      // 🚀 定点修复：常规状态下 overflow-visible 放行阴影，仅在删除时应用 overflow-hidden 防止穿模
+      className={`relative shrink-0 ${isVanishing ? 'overflow-hidden' : 'overflow-visible'}`}
     >
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes vanish-dissipate { 0% { opacity: 1; filter: blur(0px); } 100% { opacity: 0; filter: blur(20px); transform: scale(1.1); } }
@@ -145,7 +146,6 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
         .quantum-particle-out { animation: dissipate 0.6s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
         @keyframes dissipate { 0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 100% { opacity: 0; filter: blur(20px) brightness(0.5); transform: scale(0.85); } }
         
-        /* 🚀 定点修复：彻底移除 scale，完美解决字体跳动 */
         @keyframes dynamic-breathe { 
           0%, 100% { box-shadow: 0 0 60px var(--modal-glow), inset 0 0 20px var(--modal-glow); border: 1px solid rgba(255,255,255,0.1); } 
           50% { box-shadow: 0 0 100px var(--modal-shadow), inset 0 0 40px var(--modal-glow); border: 1px solid var(--modal-border); } 
