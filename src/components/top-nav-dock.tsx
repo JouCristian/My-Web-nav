@@ -31,16 +31,16 @@ export function TopNavDock({ session, dbUser, isCaptain, onSignOut }: any) {
     
     // 🚀 新增：GitHub 源码仓库跃迁通道 (原生 SVG)
     {
-      label: 'GitHub 核心仓库',
+      label: 'JouCristian',
       icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.02c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>,
-      onClick: () => window.open("https://github.com/JouCristian/YSYX-Single-Cycle-CPU", "_blank", "noopener,noreferrer")
+      onClick: () => window.open("https://github.com/JouCristian", "_blank", "noopener,noreferrer")
     },
     
     // 🚀 新增：一生一芯官网档案库 (原生 SVG CPU 芯片图标)
     {
-      label: 'JouCristian',
+      label: '一生一芯',
       icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>,
-      onClick: () => window.open("https://github.com/JouCristian", "_blank", "noopener,noreferrer")
+      onClick: () => window.open("https://ysyx.oscc.cc", "_blank", "noopener,noreferrer")
     },
 
     ...(session ? [
