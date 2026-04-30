@@ -77,19 +77,19 @@ export default async function Home() {
 
       <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-center">
         
-        {/* 🚀 移除暗物质遮罩，解封量子晶体！ */}
-        <div className="absolute inset-0 z-0 opacity-80 mix-blend-screen pointer-events-none">
+        {/* 🚀 核心修复：彻底移除 opacity 限制，调高 glow 和 bloom，完全释放绚丽光效！ */}
+        <div className="absolute inset-0 z-0 mix-blend-screen pointer-events-none">
           <Prism
             animationType="3drotate" 
-            timeScale={0.5}       // 🚀 流动速度提升！
-            height={4.2}          // 体积微调，留出更多呼吸感
+            timeScale={0.5}       
+            height={4.2}          
             baseWidth={6.0}
             scale={3.6}
-            hueShift={-0.65}      // 🚀 精准调校的幽蓝+紫金星流！
+            hueShift={-0.65}      
             colorFrequency={1.0}
-            noise={0.15}          // 削弱噪点，让晶体更晶莹剔透
-            glow={0.4}            // 温和的光晕，不伤文字
-            bloom={0.3}           // 遏制光爆，保留科幻轮廓
+            noise={0.15}          
+            glow={1.2}            // 🚀 大幅提升光晕强度
+            bloom={1.0}           // 🚀 大幅提升泛光爆裂感
             transparent={true}
           />
         </div>
@@ -112,13 +112,14 @@ export default async function Home() {
         </div>
       </div>
       
-      {/* 补充光兜底 */}
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] max-w-[1000px] max-h-[1000px] bg-blue-600/10 rounded-full blur-[180px] pointer-events-none z-0"></div>
 
       <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
 
       <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-10 pointer-events-none">
         
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.85)_0%,transparent_65%)] z-0 pointer-events-none"></div>
+
         <div className="animate-float-up pointer-events-auto relative z-10" style={{ animationDelay: '0.1s' }}>
           <div className="inline-flex items-center gap-3 bg-black/40 border border-blue-500/30 px-4 py-1.5 rounded-full mb-8 backdrop-blur-md shadow-[0_0_15px_rgba(0,0,0,0.5)]">
             <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)]"></span>
@@ -126,7 +127,6 @@ export default async function Home() {
           </div>
         </div>
 
-        {/* 🚀 核心文字加护：添加巨量黑色投影视效 drop-shadow-[0_4px_25px_rgba(0,0,0,1)]，让其无惧任何背景强光！ */}
         <h1 className="animate-float-up pointer-events-auto relative z-10 text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter font-[family-name:var(--font-space)] text-transparent bg-clip-text bg-gradient-to-b from-white via-white/95 to-white/60 drop-shadow-[0_4px_25px_rgba(0,0,0,1)] mb-6 max-w-5xl" style={{ animationDelay: '0.2s', wordBreak: 'keep-all' }}>
           {cardTitle}
         </h1>
