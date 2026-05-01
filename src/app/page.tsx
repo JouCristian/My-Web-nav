@@ -10,7 +10,8 @@ import DotField from "@/components/DotField"
 import RotatingText from "@/components/RotatingText" 
 import ShinyText from "@/components/ShinyText" 
 import Aurora from "@/components/Aurora" 
-import LogoLoop from "@/components/LogoLoop" // 🚀 引入动态测绘的 LogoLoop
+import LogoLoop from "@/components/LogoLoop" 
+import GlassSurface from "@/components/GlassSurface" // 🚀 引入高级光学玻璃引擎
 
 interface Bookmark {
   id: number;
@@ -55,19 +56,43 @@ export default async function Home() {
     await signOut()
   }
 
-  // 🚀 核心逻辑：拦截数据库数据，实时“绘制”无延迟的纯净胶囊 Logo
+  // 🚀 核心重构：为跑马灯注入“液态玻璃外壳”与“黑曜石首字母图标”
   const generatedLogos = links.map(link => ({
     title: link.name,
     href: link.url,
     node: (
-      <div className="flex items-center gap-3 px-5 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-full backdrop-blur-md transition-colors hover:bg-white/[0.08]">
-        {/* 提取首字母作为图标能量核，完美呼应全局的冰川青+深紫配色 */}
-        <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-400 to-purple-500 flex items-center justify-center text-[11px] text-black font-black uppercase">
-          {link.name.substring(0, 1)}
+      // group 类名用于触发悬停时内部黑曜石图标的联动点亮
+      <div className="relative group flex items-center h-[48px] px-1.5 pr-4 min-w-[140px] justify-center">
+        
+        {/* 🚀 底层：物理级光学液态玻璃 (完美移植了你调校的色散与模糊参数) */}
+        <div className="absolute inset-0 z-0 pointer-events-none rounded-[24px]">
+          <GlassSurface
+            width="100%"
+            height="100%"
+            borderRadius={24} // 高度 48px，完美的胶囊圆角 24px
+            backgroundOpacity={0.37}
+            saturation={1}
+            borderWidth={0.07}
+            brightness={50}
+            opacity={0.93}
+            blur={11}
+            displace={0.5} 
+            distortionScale={-180}
+            redOffset={0}
+            greenOffset={10}
+            blueOffset={20}
+          />
         </div>
-        <span className="text-sm font-bold text-zinc-300 tracking-wider whitespace-nowrap">
-          {link.name}
-        </span>
+
+        {/* 🚀 顶层内容：黑曜石首字母图标 + 强对比度抗锯齿文本 */}
+        <div className="relative z-10 flex items-center gap-3 w-full">
+          <div className="obsidian-icon-loop w-[34px] h-[34px] rounded-full flex items-center justify-center text-[13px] text-white font-black uppercase shrink-0">
+            {link.name.substring(0, 1)}
+          </div>
+          <span className="text-sm font-bold text-zinc-100 tracking-wider whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,1)] group-hover:text-cyan-400 transition-colors">
+            {link.name}
+          </span>
+        </div>
       </div>
     )
   }));
@@ -89,14 +114,42 @@ export default async function Home() {
         .spring-btn-hero:active { transform: scale(0.95) translateY(2px); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
         
         .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+        /* 跑马灯渐隐遮罩 */
+        .mask-edges {
+          mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+          -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+        }
+
+        /* 🚀 为 LogoLoop 定制的黑曜石物理切边按钮样式 */
+        .obsidian-icon-loop {
+          background-color: rgba(6, 8, 15, 0.75);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-top: 1px solid rgba(255, 255, 255, 0.25);
+          border-bottom: 1px solid rgba(0, 0, 0, 0.5);
+          box-shadow: 0 5px 10px rgba(0, 0, 0, 0.8), inset 0 2px 5px rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(8px);
+          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        /* 胶囊悬停时，联动点亮黑曜石内部赛博青色光效 */
+        .group:hover .obsidian-icon-loop {
+          background-color: rgba(34, 211, 238, 0.15);
+          border-top: 1px solid rgba(34, 211, 238, 0.6);
+          color: #ffffff;
+          box-shadow: 
+            0 8px 20px rgba(0, 0, 0, 0.9), 
+            0 0 15px rgba(34, 211, 238, 0.35), 
+            inset 0 2px 5px rgba(255, 255, 255, 0.15);
+        }
       `}} />
 
       <div className="fixed inset-0 z-0 pointer-events-none opacity-60 mix-blend-screen">
         <Aurora
           colorStops={["#A855F7", "#3b82f6", "#22d3ee"]} 
-          blend={0.7}
+          blend={0.6}
           amplitude={1.2}
-          speed={0.8}
+          speed={0.5}
         />
       </div>
 
@@ -121,7 +174,7 @@ export default async function Home() {
 
       <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-10 pointer-events-none">
         
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.5)_0%,transparent_65%)] z-0 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.6)_0%,transparent_65%)] z-0 pointer-events-none"></div>
 
         <div className="animate-float-up pointer-events-auto relative z-10 mb-8 font-mono text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
           <RotatingText
@@ -142,7 +195,7 @@ export default async function Home() {
         <h1 className="animate-float-up pointer-events-auto relative z-10 text-4xl sm:text-5xl md:text-6xl lg:text-7xl whitespace-nowrap font-bold tracking-tighter font-[family-name:var(--font-space)] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-6" style={{ animationDelay: '0.2s' }}>
           <ShinyText 
             text={cardTitle} 
-            speed={4} 
+            speed={3} 
             delay={0}
             color="rgba(255, 255, 255, 0.65)" 
             shineColor="#ffffff" 
@@ -174,15 +227,8 @@ export default async function Home() {
 
       <section className="relative z-10 max-w-7xl mx-auto px-6 pb-40">
         
-        {/* 🚀 无延迟全自绘跑马灯：放置在内容分区正上方 */}
         {generatedLogos.length > 0 && (
           <div className="w-full mb-16 relative overflow-hidden pointer-events-auto z-10 mask-edges">
-            <style dangerouslySetInnerHTML={{ __html: `
-              .mask-edges {
-                mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-                -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-              }
-            `}} />
             <LogoLoop
               logos={generatedLogos}
               speed={45}
@@ -191,7 +237,7 @@ export default async function Home() {
               gap={40}
               hoverSpeed={15}
               scaleOnHover={true}
-              fadeOut={false} // 使用更顶级的 CSS mask-image 渐隐效果
+              fadeOut={false} 
             />
           </div>
         )}
