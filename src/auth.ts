@@ -6,6 +6,10 @@ import { prisma } from "@/lib/db"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
+  // 显式声明 secret + trustHost，避免依赖外部环境变量在预览环境失效。
+  // 生产环境会被 Vercel 项目环境变量 AUTH_SECRET 自动覆盖，dev/preview 走 fallback 字符串。
+  secret: process.env.AUTH_SECRET ?? "dev-preview-fallback-secret-not-for-production-use-32chars",
+  trustHost: true,
   providers: [
     GitHub({
       authorization: { params: { prompt: "consent" } },
