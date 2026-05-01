@@ -83,7 +83,9 @@ export async function POST(req: NextRequest) {
   const isSecure = proto === "https"
   const cookieName = isSecure ? "__Secure-authjs.session-token" : "authjs.session-token"
 
-  const res = NextResponse.redirect(new URL("/", req.url), { status: 303 })
+  // 支持通过表单的 redirectTo 字段自定义跳转目标，默认进入仪表盘
+  const redirectTo = String(formData?.get("redirectTo") || "/dashboard")
+  const res = NextResponse.redirect(new URL(redirectTo, req.url), { status: 303 })
   res.cookies.set(cookieName, sessionToken, {
     httpOnly: true,
     sameSite: "lax",
@@ -91,5 +93,15 @@ export async function POST(req: NextRequest) {
     expires,
     path: "/",
   })
+
+  console.log("[v0] dev-login success", {
+    role,
+    userId: user.id,
+    email: user.email,
+    cookieName,
+    isSecure,
+    redirectTo,
+  })
+
   return res
 }

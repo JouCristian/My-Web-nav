@@ -205,6 +205,7 @@ function DevLoginButton({
   return (
     <form action="/api/dev-login" method="POST">
       <input type="hidden" name="role" value={role} />
+      <input type="hidden" name="redirectTo" value="/dashboard" />
       <button
         type="submit"
         className={`group w-full h-12 flex items-center justify-center gap-2 bg-[#0a0c14]/60 backdrop-blur-md border rounded-xl text-xs font-mono tracking-widest transition-all active:scale-95 ${palette[accent]}`}
