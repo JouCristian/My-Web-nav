@@ -4,7 +4,6 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
-// 🚀 引入全部最新的云端核对接口
 import { startGlobalRollCall, submitAttendance, checkLiveRollCall, getLeaveRequestsAction, getRollCallHistoryAction, deleteRollCallSessionAction, markCrewPresentAction } from "@/app/actions"
 
 type RollCallLog = {
@@ -53,12 +52,10 @@ export function FleetAttendanceModule({
   const [leaveRequests, setLeaveRequests] = useState<any[]>([])
 
   const isManager = userRole === "OWNER" || userRole === "ADMIN"
-  // 避免过度重渲染，使用 useMemo
   const allCrew = useMemo(() => isManager ? [...crewMembers] : Array.from(new Set([userName, ...crewMembers])).filter(Boolean), [isManager, crewMembers, userName])
 
   useEffect(() => { setMounted(true) }, [])
 
-  // 🚀 核心：全云端数据拉取协议
   useEffect(() => {
     if (!mounted) return
     let isFetching = false
@@ -111,9 +108,9 @@ export function FleetAttendanceModule({
     };
 
     fetchAllData()
-    const interval = setInterval(fetchAllData, 3000) // 每 3 秒同步一次云端数据
+    const interval = setInterval(fetchAllData, 3000) 
     return () => clearInterval(interval)
-  }, [mounted, allCrew]) // 移除了对 logs 的依赖，防止死循环
+  }, [mounted, allCrew]) 
 
   useEffect(() => {
     if (!mounted) return
@@ -220,15 +217,12 @@ export function FleetAttendanceModule({
   const trueMissing = unresponded.filter(c => !onLeaveCrewNames.includes(c))
   const currentlyOnLeave = unresponded.filter(c => onLeaveCrewNames.includes(c))
 
-  // 🚀 云端闭环：由于数据库会自动记录，这里只需要关闭面板即可
   const handleSaveAndClose = () => setIsSummaryOpen(false)
 
-  // 🚀 舰长特权：云端直连抹除档案
   const handleDeleteLog = async (e: React.MouseEvent, logId: string) => {
     e.stopPropagation() 
     if (!selectedDateKey) return
 
-    // 乐观更新 UI
     setLogs(prev => {
       const currentLogs = prev[selectedDateKey] || []
       const updatedLogs = currentLogs.filter(log => log.id !== logId)
@@ -239,7 +233,6 @@ export function FleetAttendanceModule({
     })
     if (selectedLogId === logId) setSelectedLogId(null)
 
-    // 发射摧毁指令到云端数据库
     try {
       await deleteRollCallSessionAction(logId)
     } catch (error) {
@@ -257,9 +250,7 @@ export function FleetAttendanceModule({
     return absences.sort((a, b) => b.log.timestamp - a.log.timestamp);
   }
 
-  // 🚀 舰长特权：云端直连补签干预
   const handleDeleteAbsence = async (dateKey: string, logId: string, crewName: string) => {
-    // 乐观更新 UI
     setLogs(prev => {
       const newState = { ...prev };
       if (newState[dateKey]) {
@@ -277,7 +268,6 @@ export function FleetAttendanceModule({
       return newState;
     });
 
-    // 发送补签指令到云端数据库
     try {
       await markCrewPresentAction(logId, crewName)
     } catch (error) {
@@ -336,9 +326,15 @@ export function FleetAttendanceModule({
 
       <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mt-4">
         
-        <div className="lg:col-span-2 rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-2xl flex flex-col h-full relative">
+        {/* ================= 左舷：跃迁集结序列 ================= */}
+        <div className="lg:col-span-2 rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-2xl flex flex-col h-full relative overflow-hidden group">
           <div className="absolute inset-0 rounded-[3.5rem] overflow-hidden pointer-events-none z-0">
+            {/* 原始胶片噪点 */}
             <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
+            
+            {/* 🚀 补充：完全一致的量子网格和动态扫描光线 */}
+            <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(245,158,11,1) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,1) 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+            <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent,rgba(245,158,11,0.06),transparent)] bg-[length:200%_200%] animate-[shimmer-seamless_4s_linear_infinite]"></div>
           </div>
 
           <div className="flex items-center justify-between mb-8 relative z-10">
@@ -541,7 +537,6 @@ export function FleetAttendanceModule({
               <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10">
                 <div className="animate-modal-heavy-breathe w-[800px] h-[600px] bg-[#060813]/95 border-2 border-red-500/50 rounded-[2.5rem] shadow-[0_0_100px_rgba(239,68,68,0.2)] flex overflow-hidden">
                   
-                  {/* 左侧：全体船员列表 */}
                   <div className="w-1/3 border-r border-red-500/20 bg-black/40 p-6 flex flex-col shrink-0">
                     <div className="text-xl font-bold text-red-400 tracking-[0.2em] mb-2 font-[family-name:var(--font-space)]">缺勤干预</div>
                     <div className="text-[10px] font-mono text-red-500/60 uppercase tracking-widest mb-6">Select Crew to Audit</div>
@@ -558,7 +553,6 @@ export function FleetAttendanceModule({
                     </div>
                   </div>
 
-                  {/* 右侧：特定船员的缺勤记录 & Q弹删除 */}
                   <div className="w-2/3 p-8 flex flex-col relative bg-[#02040a]/40">
                     {selectedAbsenceCrew ? (
                       <>
@@ -620,7 +614,6 @@ export function FleetAttendanceModule({
         </AnimatePresence>
       , document.body)}
 
-      {/* 🚀 原有的档案历史弹窗 */}
       {mounted && createPortal(
         <AnimatePresence>
           {selectedDateKey && (
@@ -728,7 +721,6 @@ export function FleetAttendanceModule({
         </AnimatePresence>
       , document.body)}
 
-      {/* 🚀 独立结算弹窗 */}
       {mounted && createPortal(
         <AnimatePresence>
           {isSummaryOpen && (
