@@ -1,4 +1,7 @@
 // src/app/dashboard/attendance/page.tsx
+// 🛡️ 与 dashboard 主页一致，强制动态渲染避开 Next.js 16 RSC 预渲管线的 negative-time-stamp 问题
+export const dynamic = "force-dynamic"
+
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
@@ -97,7 +100,7 @@ export default async function AttendancePage() {
           <span className="hidden md:inline">Node: Sector-7G</span>
         </div>
         <div className="text-[10px] font-mono text-zinc-600 tracking-[0.3em] uppercase text-center opacity-50 hover:opacity-100 hover:text-amber-500/50 transition-colors duration-500">
-          END OF SECURE DATA STREAM &copy; {new Date().getFullYear()} STARFLEET.
+          END OF SECURE DATA STREAM &copy; 2026 STARFLEET.
         </div>
         <div className="flex items-center gap-1 opacity-30">
           {[...Array(6)].map((_, i) => (

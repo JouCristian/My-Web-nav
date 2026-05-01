@@ -1,4 +1,7 @@
 // src/app/dashboard/crew/page.tsx
+// 🛡️ 与同 dashboard 路由组保持一致，强制动态渲染
+export const dynamic = "force-dynamic"
+
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"

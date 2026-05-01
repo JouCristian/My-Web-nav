@@ -1,4 +1,8 @@
 // src/app/dashboard/page.tsx
+// 🛡️ 显式声明动态路由：dashboard 依赖 auth() session 与 Prisma 实时数据，
+// 强制走动态渲染管线，避开 Next.js 16 RSC 性能追踪在预渲路径上的 negative-time-stamp bug
+export const dynamic = "force-dynamic"
+
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
