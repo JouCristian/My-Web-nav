@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { Crown, ShieldCheck, UserRound, Hourglass } from "lucide-react"
 import Prism from "@/components/Prism" 
 import { HideSpacetime } from "@/components/hide-spacetime" 
+import { devLoginAction } from "@/app/api/dev-login/actions"
 
 const IS_DEV = process.env.NODE_ENV !== "production"
 
@@ -203,7 +204,7 @@ function DevLoginButton({
   }
 
   return (
-    <form action="/api/dev-login" method="POST">
+    <form action={devLoginAction}>
       <input type="hidden" name="role" value={role} />
       <input type="hidden" name="redirectTo" value="/dashboard" />
       <button

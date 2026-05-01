@@ -83,6 +83,14 @@ const ModuleCard = ({
 
 export default async function DashboardPage() {
   const session = await auth()
+  console.log("[v0] dashboard auth() result:", {
+    hasSession: !!session,
+    hasUser: !!session?.user,
+    userId: session?.user?.id,
+    email: session?.user?.email,
+    // @ts-ignore
+    role: session?.user?.role,
+  })
   // 🚀 核心修复：彻底消灭 session?.user?.email
   if (!session?.user?.id) redirect("/login")
 
