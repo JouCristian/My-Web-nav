@@ -59,8 +59,8 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
   const readModalContent = isReadOpen ? (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className={`absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px] transition-all duration-500 ${isReadAnimating ? "opacity-100" : "opacity-0"}`} onClick={closeReadModal}></div>
-      <div className={`relative w-full max-w-2xl z-10 max-h-[90vh] overflow-y-auto ${isReadClosing ? "quantum-particle-out" : isReadAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
-        <div className="quantum-breathe-dynamic w-full rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] bg-[#060813]/95 p-5 sm:p-8 md:p-12 flex flex-col relative overflow-hidden" style={{ '--modal-glow': style.glow, '--modal-shadow': style.shadow, '--modal-border': style.border } as React.CSSProperties}>
+      <div className={`relative w-full max-w-2xl z-10 my-auto max-h-[90vh] flex flex-col ${isReadClosing ? "quantum-particle-out" : isReadAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
+        <div className="quantum-breathe-dynamic w-full rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] bg-[#060813]/95 p-5 sm:p-8 md:p-12 flex flex-col relative overflow-hidden min-h-0 flex-1" style={{ '--modal-glow': style.glow, '--modal-shadow': style.shadow, '--modal-border': style.border } as React.CSSProperties}>
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
           
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6 relative z-10 border-b border-white/5 pb-4">
