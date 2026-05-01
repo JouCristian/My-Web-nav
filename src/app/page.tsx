@@ -155,15 +155,15 @@ export default async function Home() {
 
       <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
 
-      <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-24 sm:pt-20 md:pt-10 pb-12 pointer-events-none">
+      <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-5 sm:px-4 pt-32 sm:pt-24 md:pt-10 pb-12 pointer-events-none">
         
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.6)_0%,transparent_65%)] z-0 pointer-events-none"></div>
 
-        <div className="animate-float-up pointer-events-auto relative z-10 mb-6 sm:mb-8 font-mono text-base sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
+        <div className="animate-float-up pointer-events-auto relative z-10 mb-6 sm:mb-8 font-mono text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
           <RotatingText
             prefix="Creating"
             texts={['thinking!', 'coding!', 'components!', 'ysyxing!']}
-            mainClassName="px-3 py-1 sm:px-4 sm:py-1.5 md:px-6 md:py-2 bg-cyan-400 text-black overflow-hidden rounded-[1rem] sm:rounded-[1.2rem] shadow-[0_0_20px_rgba(34,211,238,0.4)] flex items-center justify-center"
+            mainClassName="px-4 py-1.5 sm:px-4 sm:py-1.5 md:px-6 md:py-2 bg-cyan-400 text-black overflow-hidden rounded-[1.1rem] sm:rounded-[1.2rem] shadow-[0_0_20px_rgba(34,211,238,0.4)] flex items-center justify-center"
             staggerFrom={"last"}
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -175,7 +175,7 @@ export default async function Home() {
           />
         </div>
 
-        <h1 className="animate-float-up pointer-events-auto relative z-10 text-2xl sm:text-4xl md:text-6xl lg:text-7xl md:whitespace-nowrap font-bold tracking-tight md:tracking-tighter font-[family-name:var(--font-space)] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-4 sm:mb-6 px-2 text-balance" style={{ animationDelay: '0.2s' }}>
+        <h1 className="animate-float-up pointer-events-auto relative z-10 text-3xl sm:text-4xl md:text-6xl lg:text-7xl md:whitespace-nowrap font-bold tracking-tight md:tracking-tighter font-[family-name:var(--font-space)] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-5 sm:mb-6 px-2 text-balance leading-[1.15]" style={{ animationDelay: '0.2s' }}>
           <ShinyText 
             text={cardTitle} 
             speed={2} 
@@ -187,18 +187,18 @@ export default async function Home() {
           />
         </h1>
         
-        <p className="animate-float-up pointer-events-auto relative z-10 text-xs sm:text-base md:text-lg md:whitespace-nowrap text-zinc-300 tracking-wider sm:tracking-widest mx-auto leading-relaxed mb-10 sm:mb-16 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] px-4 max-w-md sm:max-w-none text-balance" style={{ animationDelay: '0.3s' }}>
+        <p className="animate-float-up pointer-events-auto relative z-10 text-sm sm:text-base md:text-lg md:whitespace-nowrap text-zinc-300 tracking-wider sm:tracking-widest mx-auto leading-relaxed mb-12 sm:mb-16 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] px-4 max-w-md sm:max-w-none text-balance" style={{ animationDelay: '0.3s' }}>
           {cardSubtitle}
         </p>
 
         <div className="animate-float-up pointer-events-auto relative z-10" style={{ animationDelay: '0.4s' }}>
           <TransitionLink 
             href={session ? "/dashboard" : "/login"} 
-            className="spring-btn-hero group relative inline-flex items-center justify-center gap-3 sm:gap-4 px-7 py-3.5 sm:px-12 sm:py-5 rounded-full bg-white text-black font-bold text-sm sm:text-lg overflow-hidden"
+            className="spring-btn-hero group relative inline-flex items-center justify-center gap-3 sm:gap-4 px-9 py-4 sm:px-12 sm:py-5 rounded-full bg-white text-black font-bold text-base sm:text-lg overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
-            <span className="relative z-10 tracking-[0.1em] sm:tracking-[0.15em]">{btnText}</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4 sm:w-5 sm:h-5 relative z-10 transition-transform group-hover:translate-x-1"><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <span className="relative z-10 tracking-[0.12em] sm:tracking-[0.15em]">{btnText}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5 sm:w-5 sm:h-5 relative z-10 transition-transform group-hover:translate-x-1"><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
           </TransitionLink>
         </div>
 
