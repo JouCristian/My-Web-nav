@@ -63,45 +63,45 @@ export function DashboardClock() {
       {/* 背景高斯模糊 */}
       <div className={`absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px] transition-all duration-500 ${isAnimating ? "opacity-100" : "opacity-0"}`} onClick={closeModal}></div>
       
-      <div className={`relative w-full max-w-2xl z-10 my-auto ${isClosing ? "quantum-particle-out" : isAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
+      <div className={`relative w-full max-w-md sm:max-w-lg z-10 my-auto ${isClosing ? "quantum-particle-out" : isAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
         
-        {/* 🚀 动态呼吸容器，注入专属的星光蓝边界光晕；overflow-hidden 裁剪 grid 背景同时 X 轴防溢出，Y 轴 auto 仅当内容超 90vh 才滚动 */}
+        {/* 🚀 动态呼吸容器，整体瘦身：宽度 max-w-lg、内边距更紧凑、高度自适应不再触发滚动条 */}
         <div 
-          className="quantum-breathe-dynamic w-full rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] bg-[#060813]/95 p-5 sm:p-8 md:p-12 flex flex-col relative max-h-[90vh] [overflow-x:hidden] [overflow-y:auto] ios-scrollbar"
+          className="quantum-breathe-dynamic w-full rounded-[2rem] sm:rounded-[2.5rem] bg-[#060813]/95 p-4 sm:p-6 flex flex-col relative max-h-[90vh] [overflow-x:hidden] [overflow-y:auto] ios-scrollbar"
           style={{ '--modal-glow': 'rgba(59, 130, 246, 0.2)', '--modal-shadow': 'rgba(59, 130, 246, 0.6)', '--modal-border': 'rgba(59, 130, 246, 0.5)' } as React.CSSProperties}
         >
           {/* 完美的网格背景 */}
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
 
-          <div className="flex items-end justify-between border-b border-white/10 pb-4 sm:pb-6 mb-5 sm:mb-8 relative z-10 gap-3">
+          <div className="flex items-end justify-between border-b border-white/10 pb-3 sm:pb-4 mb-4 sm:mb-5 relative z-10 gap-3">
             <div className="min-w-0">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-[0.05em] sm:tracking-[0.1em] font-[family-name:var(--font-space)] drop-shadow-[0_0_15px_rgba(59,130,246,0.3)] truncate">
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-[0.05em] sm:tracking-[0.08em] font-[family-name:var(--font-space)] drop-shadow-[0_0_15px_rgba(59,130,246,0.3)] truncate">
                 {time.toLocaleDateString('zh-CN', { month: 'long' })}
               </h2>
-              <p className="text-blue-400 font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] mt-1 sm:mt-2">Starfleet Standard Calendar • {year}</p>
+              <p className="text-blue-400 font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.25em] mt-1">Starfleet Standard Calendar • {year}</p>
             </div>
             
             {/* 弹窗内的实时秒表 */}
-            <div className="flex items-center gap-2 sm:gap-3 bg-blue-500/10 border border-blue-500/20 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.15)] shrink-0">
-              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-400 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
-              <span className="text-sm sm:text-xl font-mono font-bold text-blue-400 tracking-wider sm:tracking-widest">{timeStr}</span>
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-blue-500/10 border border-blue-500/20 px-2.5 sm:px-3 py-1.5 rounded-lg shadow-[0_0_20px_rgba(59,130,246,0.15)] shrink-0">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
+              <span className="text-xs sm:text-sm font-mono font-bold text-blue-400 tracking-wider">{timeStr}</span>
             </div>
           </div>
 
-          {/* 🚀 核心内部容器：装载日历阵列 */}
-          <div className="relative z-10 bg-black/40 border border-white/5 rounded-2xl sm:rounded-[2rem] p-3 sm:p-6 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
+          {/* 🚀 核心内部容器：装载日历阵列（紧凑版） */}
+          <div className="relative z-10 bg-black/40 border border-white/5 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
             
             {/* 星期表头 */}
-            <div className="grid grid-cols-7 gap-y-2 sm:gap-y-4 gap-x-1 sm:gap-x-2 text-center mb-3 sm:mb-6">
+            <div className="grid grid-cols-7 gap-y-1.5 sm:gap-y-2 gap-x-1 text-center mb-2 sm:mb-3">
               {weekDays.map((day, idx) => (
-                <div key={`header-${idx}`} className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-b border-white/10 pb-2 sm:pb-4">
+                <div key={`header-${idx}`} className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-b border-white/10 pb-1.5 sm:pb-2">
                   {day}
                 </div>
               ))}
               
               {/* 渲染占位空天数 */}
               {emptyDays.map(empty => (
-                <div key={`empty-${empty}`} className="h-10 sm:h-14"></div>
+                <div key={`empty-${empty}`} className="h-9 sm:h-11"></div>
               ))}
               
               {/* 渲染实际天数 */}
@@ -111,22 +111,22 @@ export function DashboardClock() {
                 const phase = STARFLEET_PHASES[phaseIndex];
 
                 return (
-                  <div key={`day-${day}`} className="relative h-10 sm:h-14 flex flex-col items-center justify-center group/day">
+                  <div key={`day-${day}`} className="relative h-9 sm:h-11 flex flex-col items-center justify-center group/day">
                     {/* 🚀 当日高亮锁定圈 */}
                     {isToday ? (
                       <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-                        <div className="w-7 h-7 sm:w-10 sm:h-10 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.8)] font-bold text-sm sm:text-lg relative">
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.8)] font-bold text-xs sm:text-sm relative">
                            {/* 当日的光晕扩散圈 */}
                            <div className="absolute inset-0 rounded-full border border-blue-400 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
                            {day}
                         </div>
-                        <span className="text-[8px] sm:text-[9px] text-blue-300 font-mono mt-0.5 sm:mt-1 font-bold tracking-wider sm:tracking-widest">{phase}</span>
+                        <span className="text-[8px] sm:text-[9px] text-blue-300 font-mono mt-0.5 font-bold tracking-wider">{phase}</span>
                       </div>
                     ) : (
                       <>
-                        <div className="absolute inset-0 bg-white/5 opacity-0 group-hover/day:opacity-100 rounded-xl transition-opacity duration-300"></div>
-                        <span className="text-sm sm:text-lg font-bold text-zinc-300 group-hover/day:text-white transition-colors relative z-10">{day}</span>
-                        <span className="text-[8px] sm:text-[9px] text-zinc-600 font-mono group-hover/day:text-zinc-400 transition-colors relative z-10 tracking-wider sm:tracking-widest">{phase}</span>
+                        <div className="absolute inset-0 bg-white/5 opacity-0 group-hover/day:opacity-100 rounded-lg transition-opacity duration-300"></div>
+                        <span className="text-xs sm:text-sm font-bold text-zinc-300 group-hover/day:text-white transition-colors relative z-10">{day}</span>
+                        <span className="text-[8px] sm:text-[9px] text-zinc-600 font-mono group-hover/day:text-zinc-400 transition-colors relative z-10 tracking-wider">{phase}</span>
                       </>
                     )}
                   </div>
@@ -135,12 +135,12 @@ export function DashboardClock() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mt-5 sm:mt-8 relative z-10 gap-3">
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mt-4 sm:mt-5 relative z-10 gap-3">
             <div className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] shrink-0"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] shrink-0"></span>
               Current Temporal Coordinates
             </div>
-            <button onClick={closeModal} className="px-5 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 text-white font-bold tracking-[0.15em] sm:tracking-[0.2em] uppercase text-[10px] hover:bg-white/10 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.02)] hover:shadow-[0_0_30px_rgba(255,255,255,0.05)]">
+            <button onClick={closeModal} className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold tracking-[0.15em] uppercase text-[10px] hover:bg-white/10 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.02)] hover:shadow-[0_0_30px_rgba(255,255,255,0.05)]">
               关闭时间中枢
             </button>
           </div>
