@@ -59,20 +59,20 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
   const readModalContent = isReadOpen ? (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className={`absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px] transition-all duration-500 ${isReadAnimating ? "opacity-100" : "opacity-0"}`} onClick={closeReadModal}></div>
-      <div className={`relative w-full max-w-2xl z-10 ${isReadClosing ? "quantum-particle-out" : isReadAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
-        <div className="quantum-breathe-dynamic w-full rounded-[3.5rem] bg-[#060813]/95 p-8 md:p-12 flex flex-col relative overflow-hidden" style={{ '--modal-glow': style.glow, '--modal-shadow': style.shadow, '--modal-border': style.border } as React.CSSProperties}>
+      <div className={`relative w-full max-w-2xl z-10 max-h-[90vh] overflow-y-auto ${isReadClosing ? "quantum-particle-out" : isReadAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
+        <div className="quantum-breathe-dynamic w-full rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] bg-[#060813]/95 p-5 sm:p-8 md:p-12 flex flex-col relative overflow-hidden" style={{ '--modal-glow': style.glow, '--modal-shadow': style.shadow, '--modal-border': style.border } as React.CSSProperties}>
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
           
-          <div className="flex items-center justify-between mb-6 relative z-10 border-b border-white/5 pb-4">
-            <h2 className="text-2xl md:text-3xl font-bold text-white tracking-[0.1em] font-[family-name:var(--font-space)] leading-tight">{announcement.title}</h2>
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${style.bg} border-white/10`}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6 relative z-10 border-b border-white/5 pb-4">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-[0.05em] sm:tracking-[0.1em] font-[family-name:var(--font-space)] leading-tight break-words">{announcement.title}</h2>
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${style.bg} border-white/10 self-start sm:self-auto shrink-0`}>
               <div className={`w-1.5 h-1.5 rounded-full animate-pulse`} style={{ backgroundColor: style.shadow }}></div>
               <span className={`text-[10px] font-mono font-bold tracking-widest ${style.text}`}>{style.label}</span>
             </div>
           </div>
 
-          <div className="relative z-10 bg-black/40 border border-white/5 rounded-[2.5rem] p-6 md:p-8 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
-            <div className="max-h-[45vh] overflow-y-auto ios-scrollbar pr-4">
+          <div className="relative z-10 bg-black/40 border border-white/5 rounded-2xl sm:rounded-[2rem] md:rounded-[2.5rem] p-4 sm:p-6 md:p-8 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
+            <div className="max-h-[45vh] overflow-y-auto ios-scrollbar pr-2 sm:pr-4">
               <ReactMarkdown 
                 className="text-zinc-300 text-sm md:text-base leading-relaxed break-words"
                 components={{
@@ -92,12 +92,12 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
             </div>
           </div>
 
-          <div className="flex justify-between items-center mt-8 relative z-10">
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mt-5 sm:mt-8 gap-3 relative z-10">
             <div className="flex flex-col opacity-40 text-[9px] font-mono tracking-widest uppercase">
-              <span className="text-zinc-400">Archived By {announcement.author?.realName || "HQ"}</span>
-              <span>Coordinates: {new Date(announcement.createdAt).toLocaleString()}</span>
+              <span className="text-zinc-400 truncate">Archived By {announcement.author?.realName || "HQ"}</span>
+              <span className="truncate">Coordinates: {new Date(announcement.createdAt).toLocaleString()}</span>
             </div>
-            <button onClick={closeReadModal} className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.05)]">关闭加密档案</button>
+            <button onClick={closeReadModal} className="px-5 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.05)] shrink-0">关闭加密档案</button>
           </div>
         </div>
       </div>
@@ -155,7 +155,7 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
 
       <div 
         onClick={openReadModal}
-        className={`cursor-pointer group relative w-full flex items-center gap-8 p-6 rounded-2xl border transition-all duration-500 hover:scale-[1.015] hover:z-20 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${
+        className={`cursor-pointer group relative w-full flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-6 md:gap-8 p-4 sm:p-6 rounded-2xl border transition-all duration-500 hover:scale-[1.015] hover:z-20 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${
           isVanishing ? 'animate-vanish-dissipate' : 
           announcement.isPinned 
             ? "border-purple-500/40 bg-purple-500/10 shadow-[0_0_30px_rgba(168,85,247,0.15)]" 
@@ -166,19 +166,19 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
         <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"></div>
         {announcement.isPinned && <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1.5 h-10 bg-purple-500 rounded-full shadow-[0_0_20px_rgba(168,85,247,1)] animate-pulse z-20"></div>}
 
-        <div className="flex flex-col items-center justify-center min-w-[90px] border-r border-white/10 pr-8 relative z-10">
-          <div className={`text-[10px] font-mono font-bold tracking-widest mb-1 ${style.text}`}>{style.label}</div>
+        <div className="flex sm:flex-col items-center justify-start sm:justify-center gap-2 sm:gap-1 sm:min-w-[90px] sm:border-r border-white/10 sm:pr-6 md:pr-8 relative z-10 shrink-0">
+          <div className={`text-[10px] font-mono font-bold tracking-widest ${style.text}`}>{style.label}</div>
           <div className={`w-1.5 h-1.5 rounded-full animate-pulse`} style={{ backgroundColor: style.shadow, boxShadow: `0 0 10px ${style.shadow}` }}></div>
         </div>
 
-        <div className="flex-1 flex flex-col md:flex-row md:items-center gap-6 overflow-hidden relative z-10">
-          <h3 className={`text-lg font-bold text-white tracking-wide shrink-0 font-[family-name:var(--font-space)] transition-colors ${style.text}`}>{announcement.title}</h3>
-          <p className="text-zinc-400 text-sm font-light truncate max-w-xl">{announcement.content}</p>
+        <div className="flex-1 flex flex-col md:flex-row md:items-center gap-2 md:gap-6 overflow-hidden relative z-10 min-w-0">
+          <h3 className={`text-base sm:text-lg font-bold text-white tracking-wide shrink-0 font-[family-name:var(--font-space)] transition-colors ${style.text} truncate`}>{announcement.title}</h3>
+          <p className="text-zinc-400 text-xs sm:text-sm font-light truncate sm:max-w-xl">{announcement.content}</p>
         </div>
 
-        <div className="flex items-center gap-8 shrink-0 relative z-10">
-          <div className="flex flex-col items-end opacity-60 text-[9px] font-mono tracking-widest uppercase"><span className="text-zinc-300">By {announcement.author?.realName || "HQ"}</span><span>{new Date(announcement.createdAt).toLocaleDateString()}</span></div>
-          {isManager && (<button onClick={(e) => { e.stopPropagation(); openDelModal(); }} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-500 transition-all text-xl active:scale-90">✕</button>)}
+        <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-8 shrink-0 relative z-10 sm:border-l-0 border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0">
+          <div className="flex flex-col items-start sm:items-end opacity-60 text-[9px] font-mono tracking-widest uppercase"><span className="text-zinc-300">By {announcement.author?.realName || "HQ"}</span><span>{new Date(announcement.createdAt).toLocaleDateString()}</span></div>
+          {isManager && (<button onClick={(e) => { e.stopPropagation(); openDelModal(); }} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-500/20 text-zinc-500 hover:text-red-500 transition-all text-xl active:scale-90 shrink-0">✕</button>)}
         </div>
       </div>
       {isMounted && createPortal(<>{readModalContent}{delModalContent}</>, document.body)}

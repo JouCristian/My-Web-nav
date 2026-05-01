@@ -1,5 +1,5 @@
 // src/app/layout.tsx
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
@@ -26,6 +26,16 @@ export const metadata: Metadata = {
   description: "跨星际管理你的书签",
 };
 
+// 🚀 移动端关键：必须的视口配置，确保所有手机屏幕正确缩放和适配
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: "#020205",
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -35,10 +45,10 @@ export default function RootLayout({
     <html
       lang="zh-CN"
       // 🚀 将新的字体变量注入到全局
-      className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} h-full antialiased bg-[#020205]`}
     >
-      {/* 添加极暗底色兜底，防止跃迁瞬间白屏 */}
-      <body className="min-h-full flex flex-col text-white bg-[#020205]">
+      {/* 添加极暗底色兜底，防止跃迁瞬间白屏；移动端禁用横向滚动 */}
+      <body className="min-h-full flex flex-col text-white bg-[#020205] overflow-x-hidden">
         
         {/* 🚀 无论路由如何切换，ScrollBackground 永远不会被销毁，完美保存航线状态 */}
         <ScrollBackground />
