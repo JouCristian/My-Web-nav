@@ -1,12 +1,12 @@
 "use server"
 
-// ⚠️ 开发环境快速登录 Server Action
-// 用 Next.js 官方 cookies() API 写入 cookie，比 NextResponse.redirect + 手动 set-cookie 更可靠，
-// 尤其在 v0 沙箱预览环境（多层代理）下。生产环境立即抛错保护安全。
+// 开发环境快速登录 Server Action
+// 不再走 NextAuth 的 sessionToken / database session 路径（在 v0 沙箱代理下 cookie 不稳）
+// 改为：upsert dev 测试用户 + 设置一个简单的 v0-dev-role cookie，
+// 所有页面通过 src/lib/get-session.ts 的 getSession() 来识别 dev 角色
 
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { randomUUID } from "crypto"
 import { prisma } from "@/lib/db"
 import type { Role } from "@prisma/client"
 
@@ -50,8 +50,8 @@ export async function devLoginAction(formData: FormData) {
   const preset = ROLE_PRESETS[role]
   if (!preset) throw new Error(`invalid role: ${role}`)
 
-  // upsert 测试用户（同角色复用）
-  const user = await prisma.user.upsert({
+  // 确保 dev 测试用户在数据库中存在且角色正确
+  await prisma.user.upsert({
     where: { email: preset.email },
     update: {
       role: role as Role,
@@ -68,32 +68,21 @@ export async function devLoginAction(formData: FormData) {
     },
   })
 
-  // 在 DB 写入 NextAuth Session 行（与 PrismaAdapter database session 策略对齐）
-  const sessionToken = randomUUID()
-  const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 天
-  await prisma.session.create({
-    data: { sessionToken, userId: user.id, expires },
-  })
-
-  // 同时下发两个可能的 cookie 名（NextAuth v5 在 HTTPS 用 __Secure- 前缀，HTTP 不带）
-  // 双写消除协议判断歧义，auth() 读哪个都能命中
+  // 设置非 httpOnly 业务 cookie，所有页面通过 getSession() 识别
   const cookieStore = await cookies()
-  const baseOptions = {
-    httpOnly: true,
-    sameSite: "lax" as const,
-    expires,
+  cookieStore.set("v0-dev-role", role, {
+    httpOnly: false, // 非 httpOnly，方便在 DevTools 验证
+    sameSite: "lax",
+    secure: false,
     path: "/",
-  }
-  cookieStore.set("authjs.session-token", sessionToken, { ...baseOptions, secure: false })
-  cookieStore.set("__Secure-authjs.session-token", sessionToken, { ...baseOptions, secure: true })
-
-  console.log("[v0] dev-login Server Action success", {
-    role,
-    userId: user.id,
-    email: user.email,
-    sessionToken: sessionToken.slice(0, 8) + "...",
-    redirectTo,
+    maxAge: 30 * 24 * 60 * 60, // 30 天
   })
 
   redirect(redirectTo)
+}
+
+export async function devLogoutAction() {
+  const cookieStore = await cookies()
+  cookieStore.delete("v0-dev-role")
+  redirect("/login")
 }

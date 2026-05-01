@@ -12,7 +12,6 @@ import { AttendanceDashboardModule } from "@/components/attendance-dashboard-mod
 
 export default async function AttendancePage() {
   const session = await auth()
-  // 🚀 核心修复：改用 id 验证
   if (!session?.user?.id) redirect("/")
 
   // 🚀 核心修复：通过物理 ID 查库，解决 Gitee 账号无邮箱导致的 dbUser 为 null

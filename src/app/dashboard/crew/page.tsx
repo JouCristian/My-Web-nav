@@ -14,7 +14,6 @@ import { AdminAuthModal } from "@/components/admin-auth-modal"
 
 export default async function CrewArchivesPage() {
   const session = await auth()
-  // 🚀 核心修复：改用 id 验证
   if (!session?.user?.id) redirect("/login")
 
   const allUsers = await prisma.user.findMany()

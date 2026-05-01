@@ -1,4 +1,7 @@
 // src/app/dashboard/board/page.tsx
+// 🛡️ 强制动态渲染，避开 Next.js 16 RSC 性能追踪在预渲管线的 negative-time-stamp 问题
+export const dynamic = "force-dynamic"
+
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
@@ -8,7 +11,6 @@ import { CreateBroadcastModal } from "@/components/create-broadcast-modal"
 
 export default async function BroadcastBoardPage() {
   const session = await auth()
-  // 🚀 核心修复：改用 id 验证
   if (!session?.user?.id) redirect("/login")
 
   // 🚀 排序逻辑：置顶公告在前，其次按时间倒序
