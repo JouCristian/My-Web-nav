@@ -205,30 +205,30 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
         .amber-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 0.6); }
       `}} />
 
-      <div className="w-full rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-[0_0_100px_rgba(245,158,11,0.05)] flex flex-col h-full relative overflow-hidden group">
+      <div className="w-full rounded-[2rem] sm:rounded-[3rem] lg:rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-5 sm:p-8 lg:p-10 shadow-[0_0_100px_rgba(245,158,11,0.05)] flex flex-col h-full relative overflow-hidden group">
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(245,158,11,1) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,1) 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
         <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent,rgba(245,158,11,0.05),transparent)] bg-[length:200%_200%] animate-[shimmer-seamless_4s_linear_infinite] pointer-events-none"></div>
 
-        <div className="flex items-center justify-between mb-8 relative z-20">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-              <span className="text-2xl">📝</span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5 sm:mb-8 relative z-20">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.2)] shrink-0">
+              <span className="text-xl sm:text-2xl">📝</span>
             </div>
-            <div>
-              <h2 className="text-2xl font-bold tracking-[0.2em] text-white font-[family-name:var(--font-space)]">休眠/离舰申请</h2>
-              <p className="text-amber-400/60 font-mono text-[10px] uppercase tracking-widest mt-1">Leave Request & Approval</p>
+            <div className="min-w-0">
+              <h2 className="text-lg sm:text-2xl font-bold tracking-[0.15em] sm:tracking-[0.2em] text-white font-[family-name:var(--font-space)]">休眠/离舰申请</h2>
+              <p className="text-amber-400/60 font-mono text-[9px] sm:text-[10px] uppercase tracking-widest mt-1 truncate">Leave Request & Approval</p>
             </div>
           </div>
           
           {!isManager && (
-            <button onClick={() => { setIsModalOpen(true); setFocusedInput(null); setActivePicker(null); }} className="px-6 py-3 bg-amber-500/10 border border-amber-500/40 text-amber-400 rounded-xl font-bold text-sm tracking-widest hover:bg-amber-500 hover:text-black transition-all active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+            <button onClick={() => { setIsModalOpen(true); setFocusedInput(null); setActivePicker(null); }} className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 bg-amber-500/10 border border-amber-500/40 text-amber-400 rounded-xl font-bold text-xs sm:text-sm tracking-widest hover:bg-amber-500 hover:text-black transition-all active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
               + 填写申请单
             </button>
           )}
         </div>
 
-        <div className="bg-[#02040a]/80 border border-white/5 rounded-[2rem] p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] relative z-10">
-          <div className="h-[320px] overflow-y-auto amber-scrollbar pr-2 flex flex-col gap-4 relative">
+        <div className="bg-[#02040a]/80 border border-white/5 rounded-2xl sm:rounded-[2rem] p-3 sm:p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] relative z-10">
+          <div className="h-[320px] overflow-y-auto amber-scrollbar pr-2 flex flex-col gap-3 sm:gap-4 relative">
             <AnimatePresence mode="popLayout">
               {displayList.length > 0 ? displayList.map(req => (
                 <motion.div 

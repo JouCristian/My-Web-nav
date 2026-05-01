@@ -38,40 +38,40 @@ export function AdminAuthModal({ users }: { users: any[] }) {
       {/* 背景高斯模糊 */}
       <div className={`absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px] transition-all duration-500 ${isAnimating ? "opacity-100" : "opacity-0"}`} onClick={closeModal}></div>
       
-      <div className={`relative w-full max-w-2xl z-10 ${isClosing ? "quantum-particle-out" : isAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
+      <div className={`relative w-full max-w-2xl z-10 max-h-[90vh] overflow-y-auto ${isClosing ? "quantum-particle-out" : isAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
         
         {/* 🚀 动态呼吸灯核心：注入舰长专属的 日冕金 (Yellow/Gold) 光晕 */}
         <div 
-          className="quantum-breathe-dynamic w-full rounded-[3.5rem] bg-[#060813]/95 p-8 md:p-12 flex flex-col relative overflow-hidden"
+          className="quantum-breathe-dynamic w-full rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] bg-[#060813]/95 p-5 sm:p-8 md:p-12 flex flex-col relative overflow-hidden"
           style={{ '--modal-glow': 'rgba(234, 179, 8, 0.2)', '--modal-shadow': 'rgba(234, 179, 8, 0.4)', '--modal-border': 'rgba(234, 179, 8, 0.5)' } as React.CSSProperties}
         >
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
 
-          <div className="flex items-center justify-between border-b border-white/10 pb-6 mb-8 relative z-10">
-            <div className="flex items-center gap-4">
-              <div className="w-3 h-3 rounded-full bg-yellow-500 animate-pulse shadow-[0_0_15px_rgba(234,179,8,0.8)]"></div>
-              <span className="text-sm font-mono font-bold tracking-[0.3em] uppercase text-yellow-500">Commander Override</span>
+          <div className="flex items-center justify-between border-b border-white/10 pb-4 sm:pb-6 mb-5 sm:mb-8 relative z-10">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500 animate-pulse shadow-[0_0_15px_rgba(234,179,8,0.8)] shrink-0"></div>
+              <span className="text-xs sm:text-sm font-mono font-bold tracking-[0.2em] sm:tracking-[0.3em] uppercase text-yellow-500">Commander Override</span>
             </div>
           </div>
 
-          <h2 className="text-2xl md:text-4xl font-bold text-white tracking-[0.1em] font-[family-name:var(--font-space)] mb-8 leading-tight relative z-10 drop-shadow-[0_0_15px_rgba(234,179,8,0.3)]">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-[0.05em] sm:tracking-[0.1em] font-[family-name:var(--font-space)] mb-5 sm:mb-8 leading-tight relative z-10 drop-shadow-[0_0_15px_rgba(234,179,8,0.3)]">
             舰队权限中枢
           </h2>
 
           {/* 🚀 深渊容器：高度锁死 + 幽灵滚动条 */}
-          <div className="relative z-10 bg-black/40 border border-white/5 rounded-[2rem] p-4 md:p-6 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
-            <div className="flex flex-col gap-3 max-h-[40vh] overflow-y-auto ios-scrollbar pr-2 md:pr-4">
+          <div className="relative z-10 bg-black/40 border border-white/5 rounded-2xl sm:rounded-[2rem] p-3 sm:p-4 md:p-6 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
+            <div className="flex flex-col gap-3 max-h-[45vh] sm:max-h-[40vh] overflow-y-auto ios-scrollbar pr-1 sm:pr-2 md:pr-4">
               
               {eligibleUsers.map(user => {
                 const isAdmin = user.role === "ADMIN"
                 const avatar = user.customAvatar || user.image || user.avatarUrl || "https://github.com/ghost.png"
                 
                 return (
-                  <div key={user.id} className="group relative flex items-center justify-between p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-colors duration-500 overflow-hidden">
-                    <div className="flex items-center gap-4 relative z-10">
-                      <img src={avatar} alt="avatar" className={`w-10 h-10 rounded-full border-2 transition-all duration-500 ${isAdmin ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'border-zinc-700'}`} />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-white tracking-wider font-[family-name:var(--font-space)]">{user.realName || user.nickname || "未知"}</span>
+                  <div key={user.id} className="group relative flex items-center justify-between gap-3 p-3 sm:p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-colors duration-500 overflow-hidden">
+                    <div className="flex items-center gap-3 sm:gap-4 relative z-10 min-w-0">
+                      <img src={avatar} alt="avatar" className={`w-10 h-10 rounded-full border-2 transition-all duration-500 shrink-0 ${isAdmin ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'border-zinc-700'}`} />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-bold text-white tracking-wider font-[family-name:var(--font-space)] truncate">{user.realName || user.nickname || "未知"}</span>
                         <div className="flex gap-2 items-center mt-1">
                           <span className={`text-[9px] font-mono tracking-widest px-2 py-0.5 rounded-md border ${isAdmin ? 'bg-purple-500/10 border-purple-500/30 text-purple-400' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}`}>
                             {user.role}
@@ -81,14 +81,14 @@ export function AdminAuthModal({ users }: { users: any[] }) {
                     </div>
 
                     {/* 🚀 Apple HIG 极简顺滑 Switch */}
-                    <div className="flex items-center gap-4 relative z-10">
-                      <span className="text-[10px] uppercase tracking-widest font-mono text-zinc-500">
+                    <div className="flex items-center gap-2 sm:gap-4 relative z-10 shrink-0">
+                      <span className="hidden sm:inline text-[10px] uppercase tracking-widest font-mono text-zinc-500">
                         {loadingId === user.id ? 'Processing...' : (isAdmin ? 'Admin' : 'Member')}
                       </span>
                       <button 
                         onClick={() => handleToggle(user.id, user.role)}
                         disabled={loadingId === user.id}
-                        className={`relative w-12 h-6 rounded-full transition-all duration-500 ${isAdmin ? "bg-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.6)]" : "bg-zinc-800"}`}
+                        className={`relative w-12 h-6 rounded-full transition-all duration-500 shrink-0 ${isAdmin ? "bg-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.6)]" : "bg-zinc-800"}`}
                       >
                         <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-500 ${isAdmin ? "translate-x-6" : ""} ${loadingId === user.id ? "animate-pulse" : ""}`}></div>
                       </button>
@@ -101,8 +101,8 @@ export function AdminAuthModal({ users }: { users: any[] }) {
             <div className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-[#060813] to-transparent pointer-events-none rounded-b-[2rem]"></div>
           </div>
 
-          <div className="flex justify-end items-center mt-10 relative z-10">
-            <button onClick={closeModal} className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold tracking-[0.2em] uppercase text-[10px] hover:bg-white/10 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.02)] hover:shadow-[0_0_30px_rgba(255,255,255,0.05)]">
+          <div className="flex justify-end items-center mt-6 sm:mt-10 relative z-10">
+            <button onClick={closeModal} className="px-5 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 text-white font-bold tracking-[0.15em] sm:tracking-[0.2em] uppercase text-[10px] hover:bg-white/10 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.02)] hover:shadow-[0_0_30px_rgba(255,255,255,0.05)]">
               关闭加密通道
             </button>
           </div>
@@ -134,15 +134,15 @@ export function AdminAuthModal({ users }: { users: any[] }) {
       {/* 🚀 触发入口：舰长专属金色 Card 按钮 */}
       <div 
         onClick={openModal}
-        className="cursor-pointer group hover-breathe flex items-center gap-4 bg-black/60 px-6 py-3.5 rounded-2xl border border-white/10 backdrop-blur-md transition-all duration-500 active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.3)] shrink-0"
+        className="cursor-pointer group hover-breathe flex items-center gap-3 sm:gap-4 bg-black/60 px-4 sm:px-6 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border border-white/10 backdrop-blur-md transition-all duration-500 active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.3)] shrink-0"
       >
-        <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-yellow-500/20 transition-colors duration-500 overflow-hidden">
-          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500 group-hover-pulse transition-all duration-500" />
+        <div className="relative flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-yellow-500/20 transition-colors duration-500 overflow-hidden shrink-0">
+          <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-yellow-500 group-hover-pulse transition-all duration-500" />
           <div className="absolute inset-0 rounded-full border border-yellow-500/30 opacity-0 group-hover:opacity-100 group-hover:animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite] transition-all duration-500" />
         </div>
         <div className="flex flex-col items-start text-left">
-          <span className="text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-mono group-hover:text-yellow-500 transition-colors duration-500">Override</span>
-          <span className="text-base font-bold text-white tracking-[0.15em] font-[family-name:var(--font-space)]">权限任命</span>
+          <span className="text-[9px] sm:text-[10px] text-zinc-500 uppercase tracking-[0.2em] sm:tracking-[0.3em] font-mono group-hover:text-yellow-500 transition-colors duration-500">Override</span>
+          <span className="text-sm sm:text-base font-bold text-white tracking-[0.1em] sm:tracking-[0.15em] font-[family-name:var(--font-space)]">权限任命</span>
         </div>
       </div>
 

@@ -53,7 +53,8 @@ export function NavigationCard({ id, title, description, url, showDelete }: Navi
               // 🚀 核心修改：不再调用 confirm，而是打开我们的自定义弹窗
               setShowModal(true);
             }}
-            className="absolute -top-1 -right-1 z-50 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.5)] cursor-pointer flex items-center justify-center hover:scale-110 active:scale-95"
+            // 🚀 移动端：常显删除按钮（无 hover 概念）；桌面端：hover 才显示
+            className="absolute -top-1 -right-1 z-50 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 bg-red-500 hover:bg-red-600 text-white p-1.5 sm:p-2 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.5)] cursor-pointer flex items-center justify-center hover:scale-110 active:scale-95"
             title="删除书签"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
@@ -98,7 +99,7 @@ export function NavigationCard({ id, title, description, url, showDelete }: Navi
           
           {/* 这里的 animate-flame-active 调用了你之前加的自动呼吸动画 */}
           {/* 这里的 bg-[#0a0a0c]/90 降低了透明度，背景更深，确保文字绝佳清晰 */}
-          <div className="relative bg-[#0a0a0c]/95 border border-red-500/20 p-8 rounded-[2rem] max-w-sm w-full shadow-[0_0_50px_rgba(239,68,68,0.15)] flex flex-col items-center text-center animate-flame-active">
+          <div className="relative bg-[#0a0a0c]/95 border border-red-500/20 p-6 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] max-w-sm w-full shadow-[0_0_50px_rgba(239,68,68,0.15)] flex flex-col items-center text-center animate-flame-active">
             
             {/* 警告图标 */}
             <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
