@@ -15,15 +15,8 @@ export function GuestActionButton({ btnText, targetHref }: { btnText: string, ta
     setMounted(true)
   }, [])
 
-  const triggerSpacetimeShift = () => {
-    const buttons = Array.from(document.querySelectorAll('button'));
-    const shiftBtn = buttons.find(btn => {
-      const text = btn.textContent || "";
-      return text.includes('SPACETIME') || text.includes('时空') || text.includes('航线') || 
-             text.includes('星际') || text.includes('轨道') || text.includes('深空') || text.includes('默认');
-    });
-    if (shiftBtn) shiftBtn.click();
-  };
+  // 历史上这里会触发隐藏的"切换时空"按钮以同步背景。
+  // 现在背景已统一为全局 DotField + Aurora，不再需要这个副作用。
 
   return (
     <>
@@ -103,10 +96,8 @@ export function GuestActionButton({ btnText, targetHref }: { btnText: string, ta
                     </button>
                     <button 
                       onClick={() => {
-                        triggerSpacetimeShift();
                         setIsOpen(false);
-                        // 轻微延迟跳转，确保时空指令被准确捕捉
-                        setTimeout(() => router.push(targetHref), 50); 
+                        router.push(targetHref);
                       }}
                       className="flex-1 py-4 rounded-xl bg-blue-500/20 border border-blue-500/40 text-blue-400 font-bold tracking-widest hover:bg-blue-500 hover:text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.2)]"
                     >

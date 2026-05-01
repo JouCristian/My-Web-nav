@@ -3,7 +3,6 @@ import { auth, signIn } from "@/auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import Prism from "@/components/Prism" 
-import { HideSpacetime } from "@/components/hide-spacetime" 
 
 export default async function LoginPage({ searchParams }: { searchParams: { error?: string } }) {
   const session = await auth()
@@ -14,8 +13,6 @@ export default async function LoginPage({ searchParams }: { searchParams: { erro
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-[#020205] p-6 relative overflow-hidden perspective-[1000px]">
-      
-      <HideSpacetime />
 
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes bg-warp {

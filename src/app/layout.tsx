@@ -3,8 +3,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-// 🚀 引入“曲率引擎”动态背景，它将在此处获得超越所有页面的永久生命周期
-import { ScrollBackground } from "@/components/scroll-background";
+// 🚀 全局静态背景：DotField + Aurora，零滚动绑定、零脚本切换，性能与 UI 一致性最优
+import GlobalBackground from "@/components/global-background";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,8 +50,8 @@ export default function RootLayout({
       {/* 添加极暗底色兜底，防止跃迁瞬间白屏；移动端禁用横向滚动 */}
       <body className="min-h-full flex flex-col text-white bg-[#020205] overflow-x-hidden">
         
-        {/* 🚀 无论路由如何切换，ScrollBackground 永远不会被销毁，完美保存航线状态 */}
-        <ScrollBackground />
+        {/* 🚀 全局背景：跨路由持久化，/login 路径自动让位给 Prism */}
+        <GlobalBackground />
         
         {/* 🚀 主内容区，提升 z-index 至 10 确保永远浮在星空之上 */}
         <div className="relative z-10 flex-1 flex flex-col">

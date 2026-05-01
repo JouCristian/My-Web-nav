@@ -8,28 +8,14 @@ interface TransitionLinkProps {
   className?: string
 }
 
+/**
+ * 简洁的导航链接。
+ * 历史上这里会反向触发隐藏的"切换时空"按钮以实现背景同步切换。
+ * 现在背景已统一为全局 DotField + Aurora，不再需要这个副作用，恢复为纯链接。
+ */
 export function TransitionLink({ href, children, className }: TransitionLinkProps) {
-  const handleClick = () => {
-    // 🚀 核心：寻找并触发隐藏的时空切换按钮
-    const buttons = Array.from(document.querySelectorAll('button'));
-    const shiftBtn = buttons.find(btn => {
-      const text = btn.textContent || "";
-      return text.includes('SPACETIME') || 
-             text.includes('时空') || 
-             text.includes('航线') || 
-             text.includes('星际') || 
-             text.includes('轨道') || 
-             text.includes('深空') || 
-             text.includes('默认');
-    });
-    
-    if (shiftBtn) {
-      shiftBtn.click();
-    }
-  }
-
   return (
-    <Link href={href} className={className} onClick={handleClick}>
+    <Link href={href} className={className}>
       {children}
     </Link>
   )

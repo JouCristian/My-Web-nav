@@ -5,11 +5,8 @@ import { TransitionLink } from "@/components/transition-link"
 import { prisma } from "@/lib/db"
 import { auth, signOut } from "@/auth" 
 import { TopNavDock } from "@/components/top-nav-dock" 
-import { HideSpacetime } from "@/components/hide-spacetime" 
-import DotField from "@/components/DotField" 
 import RotatingText from "@/components/RotatingText" 
 import ShinyText from "@/components/ShinyText" 
-import Aurora from "@/components/Aurora" 
 import LogoLoop from "@/components/LogoLoop" 
 
 interface Bookmark {
@@ -71,9 +68,7 @@ export default async function Home() {
   }));
 
   return (
-    <main className="min-h-screen bg-[#020205] text-white selection:bg-blue-500/30 overflow-x-hidden relative">
-      
-      <HideSpacetime />
+    <main className="min-h-screen text-white selection:bg-blue-500/30 overflow-x-hidden relative">
 
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes float-up {
@@ -87,17 +82,6 @@ export default async function Home() {
         .spring-btn-hero:active { transform: scale(0.95) translateY(2px); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
         
         .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-
-        /* 🚀 新增：深空背景点亮动画。包含渐显、降模糊、微缩放的 Apple 级质感 */
-        @keyframes fade-in-bg {
-          0% { opacity: 0; filter: blur(20px); transform: scale(1.05); }
-          100% { opacity: 1; filter: blur(0px); transform: scale(1); }
-        }
-        .animate-bg-fade {
-          opacity: 0;
-          /* 1秒时长，顶级非线性 UI 阻尼曲线 */
-          animation: fade-in-bg 1s cubic-bezier(0.22, 1, 0.36, 1) forwards; 
-        }
 
         .mask-edges {
           mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
@@ -125,33 +109,7 @@ export default async function Home() {
         }
       `}} />
 
-      {/* 🚀 核心更新：使用一个统一的容器包裹 Aurora 和 DotField，施加 1 秒渐显动画 */}
-      <div className="fixed inset-0 z-0 animate-bg-fade">
-        <div className="absolute inset-0 pointer-events-none opacity-60 mix-blend-screen">
-          <Aurora
-            colorStops={["#A855F7", "#3b82f6", "#22d3ee"]} 
-            blend={0.6}
-            amplitude={1.2}
-            speed={0.5}
-          />
-        </div>
-        <div className="absolute inset-0 pointer-events-auto mix-blend-screen opacity-100">
-          <DotField
-            dotRadius={2.0} 
-            dotSpacing={22}
-            cursorRadius={300}
-            cursorForce={0.15}
-            bulgeOnly={true}
-            bulgeStrength={80}
-            glowRadius={220}
-            sparkle={false} 
-            waveAmplitude={0}
-            gradientFrom="rgba(168, 85, 247, 1)"  
-            gradientTo="rgba(168, 85, 247, 0.3)"    
-            glowColor="rgba(168, 85, 247, 0.2)"
-          />
-        </div>
-      </div>
+      {/* 🚀 背景已交由 layout.tsx 中的 GlobalBackground（DotField + Aurora）统一渲染 */}
 
       <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
 
