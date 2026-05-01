@@ -4,65 +4,73 @@ import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { updateRecruitProfile, revokeRecruitProfile } from "@/app/actions"
 import Link from "next/link"
+import {
+  ShieldAlert,
+  Megaphone,
+  RadioTower,
+  Users,
+  Hourglass,
+  ArrowRight,
+  CircleCheck,
+  Undo2,
+  Loader2,
+} from "lucide-react"
 import { TransitionLink } from "@/components/transition-link"
 import { BroadcastCard } from "@/components/broadcast-card"
 import { CreateBroadcastModal } from "@/components/create-broadcast-modal"
 import { DashboardClock } from "@/components/dashboard-clock"
 import { FlightLogCalendar } from "@/components/flight-log-calendar"
 
-const THEME_MAP = {
-  blue: {
-    border: "border-blue-500/20 hover:border-blue-500/60",
-    shadow: "shadow-[0_0_40px_rgba(59,130,246,0.1)] hover:shadow-[0_0_80px_rgba(59,130,246,0.2)]",
-    blob: "bg-blue-500/10 group-hover:bg-blue-500/25",
-    iconBox: "bg-blue-500/10 border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.15)] group-hover:bg-blue-500/20 text-blue-400",
-    subtitle: "text-blue-200/40",
-    activeText: "text-blue-400"
-  },
-  purple: {
-    border: "border-purple-500/20 hover:border-purple-500/60",
-    shadow: "shadow-[0_0_40px_rgba(168,85,247,0.1)] hover:shadow-[0_0_80px_rgba(168,85,247,0.2)]",
-    blob: "bg-purple-500/10 group-hover:bg-purple-500/25",
-    iconBox: "bg-purple-500/10 border-purple-500/20 shadow-[0_0_20px_rgba(168,85,247,0.15)] group-hover:bg-purple-500/20 text-purple-400",
-    subtitle: "text-purple-200/40",
-    activeText: "text-purple-400"
-  },
-  yellow: {
-    border: "border-amber-500/20 hover:border-amber-500/60",
-    shadow: "shadow-[0_0_40px_rgba(245,158,11,0.1)] hover:shadow-[0_0_80px_rgba(245,158,11,0.2)]",
-    blob: "bg-amber-500/10 group-hover:bg-amber-500/25",
-    iconBox: "bg-amber-500/10 border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.15)] group-hover:bg-amber-500/20 text-amber-400",
-    subtitle: "text-amber-200/40",
-    activeText: "text-amber-400"
-  }
-}
-
-const ModuleCard = ({ moduleId, title, subtitle, icon, link, isActive, theme = "purple" }: {
-  moduleId: string; title: string; subtitle: string; icon: string; link: string; isActive: boolean; theme?: "blue" | "purple" | "yellow"
+// 🎯 统一品牌色：所有模块卡片使用同一套青蓝主色，靠图标 + 文案区分功能
+const ModuleCard = ({
+  moduleId,
+  title,
+  subtitle,
+  Icon,
+  link,
+  isActive,
+}: {
+  moduleId: string
+  title: string
+  subtitle: string
+  Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>
+  link: string
+  isActive: boolean
 }) => {
-  const styles = THEME_MAP[theme];
-
   return (
-    <Link 
-      href={isActive ? link : "#"} 
-      className={`group relative w-full h-[360px] rounded-[3.5rem] border ${styles.border} bg-[#06060a]/95 p-10 lg:p-12 flex flex-col justify-between overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-[0.98] ${isActive ? `hover:-translate-y-2 ${styles.shadow}` : 'opacity-60 grayscale'}`}
+    <Link
+      href={isActive ? link : "#"}
+      className={`group relative w-full h-[360px] rounded-[3.5rem] border border-cyan-500/20 hover:border-cyan-500/60 bg-[#06060a]/95 p-10 lg:p-12 flex flex-col justify-between overflow-hidden transition-all duration-700 active:scale-[0.98] ${
+        isActive
+          ? "hover:-translate-y-2 shadow-[0_0_40px_rgba(34,211,238,0.08)] hover:shadow-[0_0_80px_rgba(34,211,238,0.18)]"
+          : "opacity-60 grayscale"
+      }`}
+      style={{ transitionTimingFunction: "var(--ease-spring)" }}
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-40 group-hover:opacity-100 transition-opacity duration-700"></div>
-      <div className={`absolute -top-20 -right-20 w-64 h-64 blur-[80px] rounded-full transition-all duration-1000 ${styles.blob}`}></div>
-      
+      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-40 group-hover:opacity-100 transition-opacity duration-700" />
+      <div className="absolute -top-20 -right-20 w-64 h-64 blur-[80px] rounded-full bg-cyan-500/10 group-hover:bg-cyan-500/25 transition-all duration-1000" />
+
       <div className="relative z-10">
-        <div className={`w-20 h-20 rounded-[2rem] border flex items-center justify-center mb-8 text-4xl group-hover:scale-110 transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${styles.iconBox}`}>
-          {icon}
+        <div className="icon-tile w-20 h-20 rounded-[2rem] flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-700">
+          <Icon size={36} strokeWidth={1.6} />
         </div>
-        <h3 className="text-3xl lg:text-4xl font-bold text-white tracking-[0.15em] font-[family-name:var(--font-space)] mb-4">{title}</h3>
-        <p className={`text-sm lg:text-base font-mono tracking-widest leading-relaxed ${styles.subtitle}`}>{subtitle}</p>
+        <h3 className="text-3xl lg:text-4xl font-bold text-white tracking-[0.15em] font-[family-name:var(--font-space)] mb-4">
+          {title}
+        </h3>
+        <p className="text-sm lg:text-base font-mono tracking-widest leading-relaxed text-cyan-200/40">
+          {subtitle}
+        </p>
       </div>
-      
+
       <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-[11px] lg:text-[12px] font-mono text-zinc-500 uppercase tracking-[0.4em] border-t border-white/5 pt-8">
         <span className="bg-white/5 px-4 py-2 rounded-lg shrink-0">{moduleId}</span>
-        <span className={`flex items-center gap-3 transition-all duration-500 ${isActive ? `${styles.activeText} group-hover:gap-6` : 'text-zinc-700'}`}>
-          {isActive ? 'Authorize Access' : 'System Locked'}
-          <span className="text-xl">➔</span>
+        <span
+          className={`flex items-center gap-3 transition-all duration-500 ${
+            isActive ? "text-cyan-400 group-hover:gap-5" : "text-zinc-700"
+          }`}
+        >
+          {isActive ? "Authorize Access" : "System Locked"}
+          <ArrowRight size={16} strokeWidth={2.5} />
         </span>
       </div>
     </Link>
@@ -108,7 +116,9 @@ export default async function DashboardPage() {
 
           <div className="bg-[#06060a]/90 border border-red-500/30 p-10 rounded-[2.5rem] backdrop-blur-2xl shadow-[0_0_80px_rgba(239,68,68,0.1)]">
             <div className="flex items-center gap-4 mb-8 border-b border-red-500/20 pb-6">
-              <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">🛡️</div>
+              <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400">
+                <ShieldAlert size={22} strokeWidth={1.8} />
+              </div>
               <div>
                 <h1 className="text-2xl font-bold text-white tracking-widest font-[family-name:var(--font-space)]">身份权限识别</h1>
                 <p className="text-red-400/80 text-xs font-mono mt-1 uppercase tracking-widest">Entry Protocol Required</p>
@@ -138,12 +148,10 @@ export default async function DashboardPage() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[400px] bg-blue-500/5 -rotate-12 blur-[120px] pointer-events-none"></div>
         <div className="relative z-10 w-full max-w-2xl bg-[#06060a]/90 border border-blue-500/20 p-10 md:p-16 rounded-[3.5rem] backdrop-blur-2xl shadow-[0_0_80px_rgba(59,130,246,0.1)] text-center">
           <div className="relative w-24 h-24 mx-auto mb-10">
-            <div className="absolute inset-0 rounded-full border-2 border-blue-500/20"></div>
-            <div className="absolute inset-0 rounded-full border-t-2 border-blue-400 animate-spin"></div>
-            <div className="absolute inset-4 rounded-full bg-blue-500/10 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400 animate-pulse">
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-              </svg>
+            <div className="absolute inset-0 rounded-full border-2 border-cyan-500/20"></div>
+            <div className="absolute inset-0 rounded-full border-t-2 border-cyan-400 animate-spin"></div>
+            <div className="absolute inset-4 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-400">
+              <Loader2 size={28} strokeWidth={1.8} className="animate-pulse" />
             </div>
           </div>
           <h2 className="text-3xl font-bold text-white tracking-[0.2em] font-[family-name:var(--font-space)] mb-4">档案同步审核中</h2>
@@ -161,12 +169,14 @@ export default async function DashboardPage() {
             </TransitionLink>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-white/5 pt-10">
-            <Link href="/contact" className="flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold hover:bg-emerald-500 hover:text-white transition-all text-sm tracking-widest">
-              <span>联系舰长加速审核 ✅</span>
+            <Link href="/contact" className="flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold hover:bg-emerald-500 hover:text-white transition-all text-sm tracking-widest">
+              <span>联系舰长加速审核</span>
+              <CircleCheck size={16} strokeWidth={2} />
             </Link>
             <form action={revokeRecruitProfile}>
-              <button type="submit" className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 font-bold hover:bg-red-500 hover:text-white transition-all text-sm tracking-widest">
-                <span>撤销并重新填写档案 ↩</span>
+              <button type="submit" className="w-full flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 font-bold hover:bg-red-500 hover:text-white transition-all text-sm tracking-widest">
+                <span>撤销并重新填写档案</span>
+                <Undo2 size={16} strokeWidth={2} />
               </button>
             </form>
           </div>
@@ -238,12 +248,12 @@ export default async function DashboardPage() {
             <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(59,130,246,0.15),transparent)] bg-[length:200%_100%] animate-[shimmer-seamless_4s_linear_infinite] pointer-events-none"></div>
             
             <div className="flex items-center gap-5 relative z-10">
-              <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.2)]">
-                <span className="text-2xl animate-[pulse-slow_3s_infinite]">📢</span>
+              <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.2)] text-cyan-300 animate-[pulse-slow_3s_infinite]">
+                <Megaphone size={26} strokeWidth={1.8} />
               </div>
               <div>
-                <h2 className="text-2xl lg:text-3xl font-bold tracking-[0.2em] text-white font-[family-name:var(--font-space)] drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">全舰公告大屏</h2>
-                <p className="text-blue-400/60 font-mono text-[10px] uppercase tracking-widest mt-1">Live Fleet-wide Broadcast</p>
+                <h2 className="text-2xl lg:text-3xl font-bold tracking-[0.2em] text-white font-[family-name:var(--font-space)] drop-shadow-[0_0_15px_rgba(34,211,238,0.4)]">全舰公告大屏</h2>
+                <p className="text-cyan-400/60 font-mono text-[10px] uppercase tracking-widest mt-1">Live Fleet-wide Broadcast</p>
               </div>
             </div>
 
@@ -257,8 +267,8 @@ export default async function DashboardPage() {
               {broadcasts.length > 0 ? (
                 broadcasts.map(item => <BroadcastCard key={item.id} announcement={item} isManager={isManager} />)
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600 font-mono tracking-widest italic">
-                  <span className="text-4xl mb-4 opacity-20">📡</span>
+                <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600 font-mono tracking-widest italic gap-3">
+                  <RadioTower size={36} strokeWidth={1.4} className="opacity-20" />
                   <span>暂未接收到任何深空广播信号...</span>
                 </div>
               )}
@@ -289,19 +299,17 @@ export default async function DashboardPage() {
             moduleId="Module B" 
             title="船员档案室" 
             subtitle="Starship Crew Database & Authorization" 
-            icon="👥" 
+            Icon={Users}
             link="/dashboard/crew" 
             isActive={true} 
-            theme="purple" 
           />
           <ModuleCard 
             moduleId="Module C" 
             title="跃迁集结" 
             subtitle="Fleet Attendance & Leave Requests" 
-            icon="⏳" 
+            Icon={Hourglass}
             link="/dashboard/attendance" 
             isActive={true} 
-            theme="yellow" 
           />
         </div>
       </div>

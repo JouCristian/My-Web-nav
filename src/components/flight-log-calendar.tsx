@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
+import { RadioTower } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 
 export function FlightLogCalendar({ userRole }: { userRole: string }) {
@@ -342,8 +343,8 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
                       )
                     })
                   ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-zinc-600 italic text-xs">
-                      <span className="text-2xl mb-2 opacity-20">📡</span>
+                    <div className="h-full flex flex-col items-center justify-center text-zinc-600 italic text-xs gap-2">
+                      <RadioTower size={24} strokeWidth={1.4} className="opacity-25" />
                       <span>航线库空空如也...</span>
                     </div>
                   )}

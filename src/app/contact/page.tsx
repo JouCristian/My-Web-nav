@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Sparkles } from "lucide-react";
 // eslint-disable-next-line @next/next/no-img-element
 
 export default function ContactPage() {
@@ -45,7 +46,7 @@ export default function ContactPage() {
                 <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
                 <span className="text-[10px] md:text-xs text-zinc-400 font-mono tracking-[0.3em] uppercase">Secure Communication Encrypted</span>
               </div>
-              <span className="text-white/20 text-lg">✦</span>
+              <Sparkles size={16} strokeWidth={1.6} className="text-white/30" />
             </div>
 
             {/* 🚀 图片区域优化：移除了 bg-white 和 p-4，去除了白边 */}

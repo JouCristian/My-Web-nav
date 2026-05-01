@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { Wand2, Loader2 } from "lucide-react"
 import { addBookmark, fetchMetadata } from "@/app/actions"
 
 export function AddCardForm() {
@@ -58,9 +59,19 @@ export function AddCardForm() {
         />
         <button 
           type="button" onClick={handleAutoFill} disabled={isFetching}
-          className="bg-zinc-800 text-white px-6 py-2 rounded-xl transition-all hover:bg-zinc-700 active:scale-95"
+          className="bg-zinc-800 text-white px-6 py-2 rounded-xl transition-all hover:bg-zinc-700 hover:text-cyan-300 active:scale-95 inline-flex items-center justify-center gap-2 shrink-0"
         >
-          {isFetching ? "抓取中..." : "🪄 智能提取"}
+          {isFetching ? (
+            <>
+              <Loader2 size={14} className="animate-spin" />
+              抓取中
+            </>
+          ) : (
+            <>
+              <Wand2 size={14} strokeWidth={2} />
+              智能提取
+            </>
+          )}
         </button>
       </div>
 

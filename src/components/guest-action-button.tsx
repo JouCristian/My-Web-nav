@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
+import { Lock } from "lucide-react"
 
 export function GuestActionButton({ btnText, targetHref }: { btnText: string, targetHref: string }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -81,8 +82,8 @@ export function GuestActionButton({ btnText, targetHref }: { btnText: string, ta
                   <div className="relative w-24 h-24 mx-auto mb-6">
                     <div className="absolute inset-0 rounded-full border-2 border-blue-500/20"></div>
                     <div className="absolute inset-0 rounded-full border-t-2 border-blue-400 animate-spin" style={{ animationDuration: '3s' }}></div>
-                    <div className="absolute inset-4 rounded-full bg-blue-500/10 flex items-center justify-center">
-                       <span className="text-3xl animate-pulse drop-shadow-[0_0_15px_rgba(96,165,250,0.8)]">🔒</span>
+                    <div className="absolute inset-4 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-300 animate-pulse drop-shadow-[0_0_15px_rgba(34,211,238,0.7)]">
+                       <Lock size={26} strokeWidth={1.8} />
                     </div>
                   </div>
 

@@ -8,6 +8,17 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* 🎯 统一缓动曲线 —— 全站只允许使用这 3 套，告别曲线碎片化 */
+:root {
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);   /* 弹簧回弹（卡片/按钮 hover） */
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);      /* 苹果级顺滑（页面进出） */
+  --ease-snappy: cubic-bezier(0.4, 0, 0.2, 1);        /* 快速干脆（点击/状态切换） */
+
+  /* 🎨 主色锚点：青蓝（cyan-400），全站唯一品牌色 */
+  --brand: 34 211 238;          /* rgb(34,211,238) */
+  --brand-glow: 34 211 238;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -109,34 +120,48 @@ body {
 
 
   /* ==========================================
-     🚀 指挥中枢专属：模块卡片高级动画
+     🎯 统一品牌色（青蓝）模块卡片动画
      ========================================== */
-     
-  /* 1. 悬浮跳动 + 呼吸灯 (Bounce & Glow) */
+
+  /* 1. 悬浮跳动 + 呼吸灯 —— 改用统一的青蓝主色 */
   @keyframes module-bounce-glow {
-    0%, 100% { 
-      box-shadow: 0 0 15px rgba(168, 85, 247, 0.1); 
-      transform: translateY(0); 
+    0%, 100% {
+      box-shadow: 0 0 15px rgba(34, 211, 238, 0.1);
+      transform: translateY(0);
     }
-    50% { 
-      box-shadow: 0 0 35px rgba(168, 85, 247, 0.35); 
-      transform: translateY(-8px); /* 缓慢向上漂浮跳动 */
+    50% {
+      box-shadow: 0 0 35px rgba(34, 211, 238, 0.3);
+      transform: translateY(-6px);
     }
   }
   .animate-module-card {
-    animation: module-bounce-glow 2s ease-in-out infinite;
+    animation: module-bounce-glow 2.4s ease-in-out infinite;
   }
 
-  /* 2. 动态紫色流动效果 (Subtle Purple Flow) */
-  @keyframes purple-flow {
+  /* 2. 微光流动 —— 改用品牌青蓝 */
+  @keyframes brand-flow {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
   }
-  .animate-purple-flow {
+  .animate-brand-flow {
     background-size: 200% 200%;
-    /* 极度克制的透明紫色渐变，绝不抢占视觉中心 */
-    background-image: linear-gradient(120deg, transparent 0%, rgba(168, 85, 247, 0.08) 50%, transparent 100%);
-    animation: purple-flow 2s ease-in-out infinite;
+    background-image: linear-gradient(120deg, transparent 0%, rgba(34, 211, 238, 0.08) 50%, transparent 100%);
+    animation: brand-flow 3s ease-in-out infinite;
+  }
+
+  /* 3. 图标盒：通用品牌色光晕容器（替代多色 iconBox 重复定义） */
+  .icon-tile {
+    background-color: rgba(34, 211, 238, 0.08);
+    border: 1px solid rgba(34, 211, 238, 0.25);
+    color: rgb(103, 232, 249); /* cyan-300 */
+    box-shadow: 0 0 18px rgba(34, 211, 238, 0.15);
+    transition: all 0.5s var(--ease-spring);
+  }
+  .group:hover .icon-tile {
+    background-color: rgba(34, 211, 238, 0.16);
+    border-color: rgba(34, 211, 238, 0.5);
+    color: #ffffff;
+    box-shadow: 0 0 28px rgba(34, 211, 238, 0.35);
   }
 }

@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
+import { FileText } from "lucide-react"
 import { submitLeaveRequestAction, getLeaveRequestsAction, updateLeaveStatusAction, revokeLeaveRequestAction } from "@/app/actions"
 
 type RequestStatus = "PENDING" | "APPROVED" | "REJECTED"
@@ -211,8 +212,8 @@ export function LeaveRequestModule({ userRole, userName = "Unknown" }: { userRol
 
         <div className="flex items-center justify-between mb-8 relative z-20">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-              <span className="text-2xl">📝</span>
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.2)] text-amber-300">
+              <FileText size={26} strokeWidth={1.8} />
             </div>
             <div>
               <h2 className="text-2xl font-bold tracking-[0.2em] text-white font-[family-name:var(--font-space)]">休眠/离舰申请</h2>

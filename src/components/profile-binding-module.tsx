@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
+import { AlertTriangle } from "lucide-react"
 import { mergeAccountsAction, bindOAuthAction } from "@/app/actions" // 🚀 引入新的直连法术
 
 export function ProfileBindingModule({ 
@@ -105,8 +106,8 @@ export function ProfileBindingModule({
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[#02040a]/80 backdrop-blur-xl" onClick={() => setIsMergeModalOpen(false)} />
             <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} className="relative bg-[#060813] border-2 border-amber-500/50 rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-[0_0_80px_rgba(245,158,11,0.2)]">
-              <div className="w-20 h-20 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-6 border border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.3)]">
-                <span className="text-3xl animate-pulse">⚠️</span>
+              <div className="w-20 h-20 bg-amber-500/10 text-amber-400 rounded-full flex items-center justify-center mx-auto mb-6 border border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.3)] animate-pulse">
+                <AlertTriangle size={32} strokeWidth={1.8} />
               </div>
               <h2 className="text-xl font-bold text-amber-400 tracking-widest mb-3 font-[family-name:var(--font-space)]">检测到身份重叠</h2>
               <p className="text-xs text-zinc-400 mb-10 leading-relaxed tracking-wider">

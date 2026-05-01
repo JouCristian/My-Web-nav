@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { BarChart3, Crown, ShieldCheck } from "lucide-react"
 // 🚀 核心修复：引入最新云端历史查询协议
 import { getLeaveRequestsAction, getRollCallHistoryAction } from "@/app/actions"
 
@@ -144,8 +145,8 @@ export function AttendanceDashboardModule({
 
         <div className="flex items-center justify-between mb-8 relative z-20 shrink-0">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-              <span className="text-2xl">📊</span>
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.2)] text-emerald-300">
+              <BarChart3 size={26} strokeWidth={1.8} />
             </div>
             <div>
               <h2 className="text-xl lg:text-2xl font-bold tracking-[0.2em] text-white font-[family-name:var(--font-space)] drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">全舰态势感知看板</h2>
@@ -191,12 +192,12 @@ export function AttendanceDashboardModule({
                       <span className="text-sm font-bold text-white tracking-wider truncate w-full text-left">{name}</span>
                       <div className="flex items-center mt-1">
                         {role === 'OWNER' ? (
-                          <span className="text-[9px] text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md font-mono flex items-center gap-1 shadow-[0_0_5px_rgba(245,158,11,0.2)]">
-                            👑 CAPTAIN
+                          <span className="text-[9px] text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md font-mono inline-flex items-center gap-1 shadow-[0_0_5px_rgba(245,158,11,0.2)]">
+                            <Crown size={10} strokeWidth={2.2} /> CAPTAIN
                           </span>
                         ) : (
-                          <span className="text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-md font-mono flex items-center gap-1 shadow-[0_0_5px_rgba(16,185,129,0.2)]">
-                            🛡️ ADMIN
+                          <span className="text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-md font-mono inline-flex items-center gap-1 shadow-[0_0_5px_rgba(16,185,129,0.2)]">
+                            <ShieldCheck size={10} strokeWidth={2.2} /> ADMIN
                           </span>
                         )}
                       </div>

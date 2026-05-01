@@ -3,6 +3,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
+import { Crown, ShieldCheck, UserRound } from "lucide-react"
 import { TransitionLink } from "@/components/transition-link"
 import { ProfileForm } from "@/components/profile-form"
 
@@ -44,36 +45,38 @@ export default async function ProfilePage() {
     switch (currentRole) {
       case "OWNER":
         return {
-          wrapper: "border-2 border-yellow-500/30 shadow-[0_0_60px_rgba(234,179,8,0.2)]",
+          wrapper: "border-2 border-amber-500/30 shadow-[0_0_60px_rgba(245,158,11,0.18)]",
           icon: (
-            <div className="w-16 h-16 rounded-full bg-yellow-500/10 border-2 border-yellow-500/40 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(234,179,8,0.4)] relative">
-              <div className="absolute inset-0 rounded-full border border-yellow-500/50 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
-              <span className="text-2xl relative z-10">👑</span>
+            <div className="w-16 h-16 rounded-full bg-amber-500/10 border-2 border-amber-500/40 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(245,158,11,0.35)] relative text-amber-300">
+              <div className="absolute inset-0 rounded-full border border-amber-500/50 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+              <Crown size={26} strokeWidth={2} className="relative z-10" />
             </div>
           ),
           title: "舰长专属舱室",
           subtitle: "Supreme Commander / 最高裁决者",
-          titleStyle: "text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-500 to-yellow-200",
-          subtitleStyle: "text-yellow-500/90",
+          titleStyle: "text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200",
+          subtitleStyle: "text-amber-400/90",
         };
       case "MEMBER":
         return {
-          wrapper: "border border-blue-500/30 shadow-[0_0_40px_rgba(59,130,246,0.15)]",
+          wrapper: "border border-cyan-500/30 shadow-[0_0_40px_rgba(34,211,238,0.12)]",
           icon: (
-            <div className="w-14 h-14 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center mb-4 relative">
-              <span className="text-xl relative z-10">🛡️</span>
+            <div className="w-14 h-14 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mb-4 relative text-cyan-300">
+              <ShieldCheck size={22} strokeWidth={1.8} className="relative z-10" />
             </div>
           ),
           title: "标准船员舱",
           subtitle: "Verified Crew Member",
-          titleStyle: "text-blue-100",
-          subtitleStyle: "text-blue-400/60",
+          titleStyle: "text-cyan-50",
+          subtitleStyle: "text-cyan-400/60",
         };
       default:
         return {
           wrapper: "border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.05)]",
           icon: (
-             <div className="w-12 h-12 rounded-full bg-zinc-800/50 flex items-center justify-center mb-4 opacity-50">👤</div>
+             <div className="w-12 h-12 rounded-full bg-zinc-800/50 flex items-center justify-center mb-4 opacity-50 text-zinc-300">
+                <UserRound size={20} strokeWidth={1.8} />
+             </div>
           ),
           title: "临时访客舱",
           subtitle: "Awaiting Clearance",

@@ -3,6 +3,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import Link from "next/link"
+import { Crown, Star } from "lucide-react"
 import { CrewActionButtons } from "@/components/crew-action-buttons"
 import { RemoveCrewButton } from "@/components/remove-crew-button"
 // 🚀 引入舰长专属授权组件
@@ -120,8 +121,16 @@ export default async function CrewArchivesPage() {
                     <div className={`w-16 h-16 rounded-full border-2 overflow-hidden transition-transform duration-700 group-hover:rotate-[360deg] ${isOwner ? 'border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.4)]' : isAdmin ? 'border-purple-500' : 'border-zinc-700'}`}>
                       <img src={avatarFallback} alt="avatar" className="w-full h-full object-cover" />
                     </div>
-                    {isOwner && <div className="absolute -top-3 -right-3 text-2xl drop-shadow-[0_0_10px_rgba(234,179,8,1)] animate-bounce">👑</div>}
-                    {isAdmin && <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-purple-600 rounded-full border-2 border-black flex items-center justify-center text-[10px]">⭐</div>}
+                    {isOwner && (
+                      <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-amber-500 border-2 border-black flex items-center justify-center drop-shadow-[0_0_10px_rgba(234,179,8,0.9)] animate-bounce text-black">
+                        <Crown size={16} strokeWidth={2.5} />
+                      </div>
+                    )}
+                    {isAdmin && (
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-purple-600 rounded-full border-2 border-black flex items-center justify-center text-white">
+                        <Star size={11} strokeWidth={2.5} fill="currentColor" />
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex flex-col">
@@ -170,7 +179,7 @@ export default async function CrewArchivesPage() {
                               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/10 to-transparent -translate-x-full group-hover/fs:animate-[shimmer_2s_infinite]"></div>
                               <div className="relative flex items-center gap-3">
                                 <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-ping"></div>
-                                <span className="text-[10px] text-red-400 font-mono uppercase tracking-[0.2em] font-bold">缺失飞书链接 前往补全</span>
+                                <span className="text-[10px] text-red-400 font-mono uppercase tracking-[0.2em] font-bold">缺失飞书链接 前往���全</span>
                               </div>
                             </Link>
                           ) : (

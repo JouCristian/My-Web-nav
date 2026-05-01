@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
+import { Hourglass } from "lucide-react"
 // 🚀 引入全部最新的云端核对接口
 import { startGlobalRollCall, submitAttendance, checkLiveRollCall, getLeaveRequestsAction, getRollCallHistoryAction, deleteRollCallSessionAction, markCrewPresentAction } from "@/app/actions"
 
@@ -343,7 +344,7 @@ export function FleetAttendanceModule({
 
           <div className="flex items-center justify-between mb-8 relative z-10">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.2)]"><span className="text-2xl">⏳</span></div>
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.2)] text-amber-300"><Hourglass size={26} strokeWidth={1.8} /></div>
               <div><h2 className="text-2xl lg:text-3xl font-bold tracking-[0.2em] text-white font-[family-name:var(--font-space)] drop-shadow-[0_0_15px_rgba(245,158,11,0.3)]">跃迁集结序列</h2><p className="text-amber-400/60 font-mono text-[10px] uppercase tracking-widest mt-1">Fleet Synchronization Protocol</p></div>
             </div>
             

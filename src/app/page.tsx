@@ -6,7 +6,6 @@ import { prisma } from "@/lib/db"
 import { auth, signOut } from "@/auth" 
 import { TopNavDock } from "@/components/top-nav-dock" 
 import { HideSpacetime } from "@/components/hide-spacetime" 
-import DotField from "@/components/DotField" 
 import RotatingText from "@/components/RotatingText" 
 import ShinyText from "@/components/ShinyText" 
 import Aurora from "@/components/Aurora" 
@@ -125,30 +124,22 @@ export default async function Home() {
         }
       `}} />
 
-      {/* 🚀 核心更新：使用一个统一的容器包裹 Aurora 和 DotField，施加 1 秒渐显动画 */}
-      <div className="fixed inset-0 z-0 animate-bg-fade">
-        <div className="absolute inset-0 pointer-events-none opacity-60 mix-blend-screen">
+      {/* 🎯 简化背景：仅在首屏 90vh 范围内浮一层青蓝 Aurora，
+          配合底部 mask 渐隐与 ScrollBackground（layout 全局）形成 2 层（ScrollBackground 的星空 + Aurora），
+          移除原本的 DotField，杜绝紫色撞色与 GPU 过载 */}
+      <div
+        className="absolute top-0 left-0 right-0 h-[90vh] z-0 pointer-events-none animate-bg-fade overflow-hidden"
+        style={{
+          maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+        }}
+      >
+        <div className="absolute inset-0 opacity-50 mix-blend-screen">
           <Aurora
-            colorStops={["#A855F7", "#3b82f6", "#22d3ee"]} 
-            blend={0.6}
-            amplitude={1.2}
-            speed={0.5}
-          />
-        </div>
-        <div className="absolute inset-0 pointer-events-auto mix-blend-screen opacity-100">
-          <DotField
-            dotRadius={2.0} 
-            dotSpacing={22}
-            cursorRadius={300}
-            cursorForce={0.15}
-            bulgeOnly={true}
-            bulgeStrength={80}
-            glowRadius={220}
-            sparkle={false} 
-            waveAmplitude={0}
-            gradientFrom="rgba(168, 85, 247, 1)"  
-            gradientTo="rgba(168, 85, 247, 0.3)"    
-            glowColor="rgba(168, 85, 247, 0.2)"
+            colorStops={["#22d3ee", "#0891b2", "#22d3ee"]}
+            blend={0.55}
+            amplitude={1.0}
+            speed={0.4}
           />
         </div>
       </div>
@@ -246,6 +237,7 @@ export default async function Home() {
                 description={link.description || ""} 
                 url={link.url} 
                 showDelete={isCaptain} 
+                createdAt={link.createdAt}
               />
             </div>
           ))}
