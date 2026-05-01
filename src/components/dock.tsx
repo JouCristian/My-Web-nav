@@ -103,18 +103,21 @@ export default function Dock({
 }: DockProps) {
   const mouseX = useMotionValue(Infinity);
 
-  // 🚀 移动端响应式：监听屏幕尺寸，自动收缩按键体积，避免溢出
+  // 🚀 移动端响应式：监听屏幕尺寸，自动调整按键体积。在保证 8 图标不溢出前提下尽量放大，提升手机端可点性
   const [responsive, setResponsive] = useState({ size: baseItemSize, mag: magnification, height: panelHeight });
   useEffect(() => {
     const compute = () => {
       const w = window.innerWidth;
-      if (w < 480) {
-        // 极窄屏：32px 图标，弱化放大效果，避免遮挡
-        setResponsive({ size: 32, mag: 42, height: 46 });
+      if (w < 360) {
+        // 超窄屏（小型设备）：保守尺寸防溢出
+        setResponsive({ size: 36, mag: 50, height: 54 });
+      } else if (w < 480) {
+        // 主流手机（375-430px）：放大到 44px，更厚重
+        setResponsive({ size: 44, mag: 60, height: 64 });
       } else if (w < 640) {
-        setResponsive({ size: 36, mag: 48, height: 50 });
+        setResponsive({ size: 46, mag: 62, height: 66 });
       } else if (w < 1024) {
-        setResponsive({ size: 38, mag: 56, height: 54 });
+        setResponsive({ size: 48, mag: 64, height: 68 });
       } else {
         setResponsive({ size: baseItemSize, mag: magnification, height: panelHeight });
       }
