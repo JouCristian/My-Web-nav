@@ -327,7 +327,8 @@ export function FleetAttendanceModule({
       <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch mt-4">
         
         {/* ================= 左舷：跃迁集结序列 ================= */}
-        <div className="lg:col-span-2 rounded-[2rem] sm:rounded-[3rem] lg:rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-5 sm:p-8 lg:p-10 shadow-2xl flex flex-col h-full relative overflow-hidden group">
+        {/* 🚀 定点修复：移除外层 overflow-hidden，让时间下拉等浮层不被裁剪。背景层已用单独 absolute child + overflow-hidden 处理 */}
+        <div className="lg:col-span-2 rounded-[2rem] sm:rounded-[3rem] lg:rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-5 sm:p-8 lg:p-10 shadow-2xl flex flex-col h-full relative group">
           <div className="absolute inset-0 rounded-[2rem] sm:rounded-[3rem] lg:rounded-[3.5rem] overflow-hidden pointer-events-none z-0">
             {/* 原始胶片噪点 */}
             <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />

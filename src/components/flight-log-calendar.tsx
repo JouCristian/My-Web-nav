@@ -121,8 +121,8 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
             .emerald-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(16, 185, 129, 0.5); }
           `}} />
           
-          <motion.div initial={{ opacity: 0, scale: 0.8, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20, filter: "blur(10px)" }} transition={uiSpring} className="relative w-full max-w-2xl z-10 max-h-[90vh] overflow-y-auto" >
-            <div className="animate-modal-breathe w-full rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] bg-[#060813]/95 border p-5 sm:p-8 md:p-12 overflow-hidden relative transition-all duration-500">
+          <motion.div initial={{ opacity: 0, scale: 0.8, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20, filter: "blur(10px)" }} transition={uiSpring} className="relative w-full max-w-2xl z-10 my-auto max-h-[90vh] flex flex-col" >
+            <div className="animate-modal-breathe w-full rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] bg-[#060813]/95 border p-5 sm:p-8 md:p-12 overflow-hidden relative transition-all duration-500 min-h-0 flex-1">
               <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
               <div className="absolute -top-32 -right-32 w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none animate-pulse"></div>
 

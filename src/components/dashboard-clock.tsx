@@ -63,11 +63,11 @@ export function DashboardClock() {
       {/* 背景高斯模糊 */}
       <div className={`absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px] transition-all duration-500 ${isAnimating ? "opacity-100" : "opacity-0"}`} onClick={closeModal}></div>
       
-      <div className={`relative w-full max-w-2xl z-10 ${isClosing ? "quantum-particle-out" : isAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
+      <div className={`relative w-full max-w-2xl z-10 my-auto ${isClosing ? "quantum-particle-out" : isAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
         
-        {/* 🚀 动态呼吸容器，注入专属的星光蓝边界光晕 */}
+        {/* 🚀 动态呼吸容器，注入专属的星光蓝边界光晕；overflow-hidden 裁剪 grid 背景同时 X 轴防溢出，Y 轴 auto 仅当内容超 90vh 才滚动 */}
         <div 
-          className="quantum-breathe-dynamic w-full rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] bg-[#060813]/95 p-5 sm:p-8 md:p-12 flex flex-col relative overflow-hidden max-h-[90vh] overflow-y-auto"
+          className="quantum-breathe-dynamic w-full rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] bg-[#060813]/95 p-5 sm:p-8 md:p-12 flex flex-col relative max-h-[90vh] [overflow-x:hidden] [overflow-y:auto] ios-scrollbar"
           style={{ '--modal-glow': 'rgba(59, 130, 246, 0.2)', '--modal-shadow': 'rgba(59, 130, 246, 0.6)', '--modal-border': 'rgba(59, 130, 246, 0.5)' } as React.CSSProperties}
         >
           {/* 完美的网格背景 */}
@@ -157,11 +157,16 @@ export function DashboardClock() {
         .quantum-particle-out { animation: dissipate 0.6s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
         @keyframes dissipate { 0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 100% { opacity: 0; filter: blur(20px) brightness(0.5); transform: scale(0.85); } }
 
+        /* 🚀 定点修复：移除 scale，仅保留 box-shadow + border 实现纯光呼吸，避免触发滚动条 */
         @keyframes dynamic-breathe { 
-          0%, 100% { transform: scale(1); box-shadow: 0 0 60px var(--modal-glow), inset 0 0 20px var(--modal-glow); border: 1px solid rgba(255,255,255,0.1); } 
-          50% { transform: scale(1.03); box-shadow: 0 0 100px var(--modal-shadow), inset 0 0 40px var(--modal-glow); border: 1px solid var(--modal-border); } 
+          0%, 100% { box-shadow: 0 0 60px var(--modal-glow), inset 0 0 20px var(--modal-glow); border-color: rgba(255,255,255,0.1); } 
+          50% { box-shadow: 0 0 100px var(--modal-shadow), inset 0 0 40px var(--modal-glow); border-color: var(--modal-border); } 
         }
-        .quantum-breathe-dynamic { animation: dynamic-breathe 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+        .quantum-breathe-dynamic { border: 1px solid rgba(255,255,255,0.1); animation: dynamic-breathe 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+        .ios-scrollbar::-webkit-scrollbar { width: 6px; }
+        .ios-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .ios-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; background-clip: padding-box; }
+        .ios-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.5); }
       `}} />
 
       {/* 🚀 卡片升级为可点击区域；移动端也保留以便能查看完整日历 */}

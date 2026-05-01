@@ -36,8 +36,8 @@ export function CreateBroadcastModal() {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className={`absolute inset-0 bg-[#02040a]/40 backdrop-blur-[20px] transition-all duration-700 ${isAnimating ? "opacity-100" : "opacity-0"}`} onClick={closeModal}></div>
       
-      <div className={`relative w-full max-w-xl z-10 max-h-[90vh] overflow-y-auto ${isClosing ? "quantum-particle-out" : isAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
-        <div className="quantum-breathe-heavy w-full rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] border border-blue-500/30 bg-[#060813]/95 p-6 sm:p-8 md:p-12 shadow-[0_0_100px_rgba(59,130,246,0.3)]">
+      <div className={`relative w-full max-w-xl z-10 my-auto max-h-[90vh] flex flex-col ${isClosing ? "quantum-particle-out" : isAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
+        <div className="quantum-breathe-heavy w-full rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] border border-blue-500/30 bg-[#060813]/95 p-6 sm:p-8 md:p-12 shadow-[0_0_100px_rgba(59,130,246,0.3)] min-h-0 flex-1 overflow-y-auto ios-scrollbar">
           <h2 className="text-xl sm:text-2xl font-bold text-white tracking-[0.2em] sm:tracking-[0.3em] mb-6 sm:mb-10 text-center font-[family-name:var(--font-space)]">发布全舰广播</h2>
           
           <form ref={formRef} action={async (fd) => { fd.append('type', selectedType.value); fd.append('isPinned', String(isPinned)); await createBroadcast(fd); closeModal(); }} className="relative space-y-5 sm:space-y-8">

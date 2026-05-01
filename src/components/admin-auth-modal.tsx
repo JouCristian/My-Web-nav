@@ -38,11 +38,11 @@ export function AdminAuthModal({ users }: { users: any[] }) {
       {/* 背景高斯模糊 */}
       <div className={`absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px] transition-all duration-500 ${isAnimating ? "opacity-100" : "opacity-0"}`} onClick={closeModal}></div>
       
-      <div className={`relative w-full max-w-2xl z-10 max-h-[90vh] overflow-y-auto ${isClosing ? "quantum-particle-out" : isAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
+      <div className={`relative w-full max-w-2xl z-10 my-auto max-h-[90vh] flex flex-col ${isClosing ? "quantum-particle-out" : isAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
         
         {/* 🚀 动态呼吸灯核心：注入舰长专属的 日冕金 (Yellow/Gold) 光晕 */}
         <div 
-          className="quantum-breathe-dynamic w-full rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] bg-[#060813]/95 p-5 sm:p-8 md:p-12 flex flex-col relative overflow-hidden"
+          className="quantum-breathe-dynamic w-full rounded-[2rem] sm:rounded-[3rem] md:rounded-[3.5rem] bg-[#060813]/95 p-5 sm:p-8 md:p-12 flex flex-col relative overflow-hidden min-h-0 flex-1"
           style={{ '--modal-glow': 'rgba(234, 179, 8, 0.2)', '--modal-shadow': 'rgba(234, 179, 8, 0.4)', '--modal-border': 'rgba(234, 179, 8, 0.5)' } as React.CSSProperties}
         >
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
@@ -119,11 +119,12 @@ export function AdminAuthModal({ users }: { users: any[] }) {
         .quantum-particle-out { animation: dissipate 0.6s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
         @keyframes dissipate { 0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 100% { opacity: 0; filter: blur(20px) brightness(0.5); transform: scale(0.85); } }
 
+        /* 🚀 定点修复：移除 scale，仅保留 box-shadow + border 实现纯光呼吸，避免触发横向/纵向滚动条 */
         @keyframes dynamic-breathe { 
-          0%, 100% { transform: scale(1); box-shadow: 0 0 60px var(--modal-glow), inset 0 0 20px var(--modal-glow); border: 1px solid rgba(255,255,255,0.1); } 
-          50% { transform: scale(1.02); box-shadow: 0 0 100px var(--modal-shadow), inset 0 0 40px var(--modal-glow); border: 1px solid var(--modal-border); } 
+          0%, 100% { box-shadow: 0 0 60px var(--modal-glow), inset 0 0 20px var(--modal-glow); border-color: rgba(255,255,255,0.1); } 
+          50% { box-shadow: 0 0 100px var(--modal-shadow), inset 0 0 40px var(--modal-glow); border-color: var(--modal-border); } 
         }
-        .quantum-breathe-dynamic { animation: dynamic-breathe 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+        .quantum-breathe-dynamic { border: 1px solid rgba(255,255,255,0.1); animation: dynamic-breathe 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
 
         .ios-scrollbar::-webkit-scrollbar { width: 6px; }
         .ios-scrollbar::-webkit-scrollbar-track { background: transparent; }
