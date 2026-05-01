@@ -11,7 +11,6 @@ import RotatingText from "@/components/RotatingText"
 import ShinyText from "@/components/ShinyText" 
 import Aurora from "@/components/Aurora" 
 import LogoLoop from "@/components/LogoLoop" 
-import GlassSurface from "@/components/GlassSurface" // 🚀 引入高级光学玻璃引擎
 
 interface Bookmark {
   id: number;
@@ -56,43 +55,22 @@ export default async function Home() {
     await signOut()
   }
 
-  // 🚀 核心重构：为跑马灯注入“液态玻璃外壳”与“黑曜石首字母图标”
+  // 🚀 核心更新：底部回归轻盈的磨砂玻璃，保留黑曜石核心图标
   const generatedLogos = links.map(link => ({
     title: link.name,
     href: link.url,
     node: (
-      // group 类名用于触发悬停时内部黑曜石图标的联动点亮
-      <div className="relative group flex items-center h-[48px] px-1.5 pr-4 min-w-[140px] justify-center">
+      // group 类名用于触发悬停联动，底座回归 bg-white/[0.03] 加 backdrop-blur-md 磨砂质感
+      <div className="group flex items-center gap-3 px-2 py-1.5 pr-5 bg-white/[0.03] border border-white/[0.08] rounded-full backdrop-blur-md transition-all duration-300 hover:bg-white/[0.08] hover:border-white/[0.15]">
         
-        {/* 🚀 底层：物理级光学液态玻璃 (完美移植了你调校的色散与模糊参数) */}
-        <div className="absolute inset-0 z-0 pointer-events-none rounded-[24px]">
-          <GlassSurface
-            width="100%"
-            height="100%"
-            borderRadius={24} // 高度 48px，完美的胶囊圆角 24px
-            backgroundOpacity={0.37}
-            saturation={1}
-            borderWidth={0.07}
-            brightness={50}
-            opacity={0.93}
-            blur={11}
-            displace={0.5} 
-            distortionScale={-180}
-            redOffset={0}
-            greenOffset={10}
-            blueOffset={20}
-          />
+        {/* 保留黑曜石物理图标 */}
+        <div className="obsidian-icon-loop w-[34px] h-[34px] rounded-full flex items-center justify-center text-[13px] text-white font-black uppercase shrink-0">
+          {link.name.substring(0, 1)}
         </div>
-
-        {/* 🚀 顶层内容：黑曜石首字母图标 + 强对比度抗锯齿文本 */}
-        <div className="relative z-10 flex items-center gap-3 w-full">
-          <div className="obsidian-icon-loop w-[34px] h-[34px] rounded-full flex items-center justify-center text-[13px] text-white font-black uppercase shrink-0">
-            {link.name.substring(0, 1)}
-          </div>
-          <span className="text-sm font-bold text-zinc-100 tracking-wider whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,1)] group-hover:text-cyan-400 transition-colors">
-            {link.name}
-          </span>
-        </div>
+        
+        <span className="text-sm font-bold text-zinc-300 tracking-wider whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,1)] group-hover:text-cyan-400 transition-colors duration-300">
+          {link.name}
+        </span>
       </div>
     )
   }));
@@ -121,7 +99,7 @@ export default async function Home() {
           -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
         }
 
-        /* 🚀 为 LogoLoop 定制的黑曜石物理切边按钮样式 */
+        /* 保留：黑曜石物理切边按钮样式 */
         .obsidian-icon-loop {
           background-color: rgba(6, 8, 15, 0.75);
           border: 1px solid rgba(255, 255, 255, 0.08);
@@ -132,7 +110,7 @@ export default async function Home() {
           transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         
-        /* 胶囊悬停时，联动点亮黑曜石内部赛博青色光效 */
+        /* 胶囊悬停联动点亮 */
         .group:hover .obsidian-icon-loop {
           background-color: rgba(34, 211, 238, 0.15);
           border-top: 1px solid rgba(34, 211, 238, 0.6);
@@ -195,7 +173,7 @@ export default async function Home() {
         <h1 className="animate-float-up pointer-events-auto relative z-10 text-4xl sm:text-5xl md:text-6xl lg:text-7xl whitespace-nowrap font-bold tracking-tighter font-[family-name:var(--font-space)] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-6" style={{ animationDelay: '0.2s' }}>
           <ShinyText 
             text={cardTitle} 
-            speed={3} 
+            speed={2} 
             delay={0}
             color="rgba(255, 255, 255, 0.65)" 
             shineColor="#ffffff" 
@@ -236,7 +214,7 @@ export default async function Home() {
               logoHeight={48}
               gap={40}
               hoverSpeed={15}
-              scaleOnHover={true}
+              scaleOnHover={true} /* 因为恢复了标准CSS玻璃，可以把放大互动开回来了！ */
               fadeOut={false} 
             />
           </div>
