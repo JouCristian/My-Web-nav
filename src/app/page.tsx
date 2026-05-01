@@ -55,19 +55,14 @@ export default async function Home() {
     await signOut()
   }
 
-  // 🚀 核心更新：底部回归轻盈的磨砂玻璃，保留黑曜石核心图标
   const generatedLogos = links.map(link => ({
     title: link.name,
     href: link.url,
     node: (
-      // group 类名用于触发悬停联动，底座回归 bg-white/[0.03] 加 backdrop-blur-md 磨砂质感
       <div className="group flex items-center gap-3 px-2 py-1.5 pr-5 bg-white/[0.03] border border-white/[0.08] rounded-full backdrop-blur-md transition-all duration-300 hover:bg-white/[0.08] hover:border-white/[0.15]">
-        
-        {/* 保留黑曜石物理图标 */}
         <div className="obsidian-icon-loop w-[34px] h-[34px] rounded-full flex items-center justify-center text-[13px] text-white font-black uppercase shrink-0">
           {link.name.substring(0, 1)}
         </div>
-        
         <span className="text-sm font-bold text-zinc-300 tracking-wider whitespace-nowrap drop-shadow-[0_2px_4px_rgba(0,0,0,1)] group-hover:text-cyan-400 transition-colors duration-300">
           {link.name}
         </span>
@@ -93,13 +88,22 @@ export default async function Home() {
         
         .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
-        /* 跑马灯渐隐遮罩 */
+        /* 🚀 新增：深空背景点亮动画。包含渐显、降模糊、微缩放的 Apple 级质感 */
+        @keyframes fade-in-bg {
+          0% { opacity: 0; filter: blur(20px); transform: scale(1.05); }
+          100% { opacity: 1; filter: blur(0px); transform: scale(1); }
+        }
+        .animate-bg-fade {
+          opacity: 0;
+          /* 1秒时长，顶级非线性 UI 阻尼曲线 */
+          animation: fade-in-bg 1s cubic-bezier(0.22, 1, 0.36, 1) forwards; 
+        }
+
         .mask-edges {
           mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
           -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
         }
 
-        /* 保留：黑曜石物理切边按钮样式 */
         .obsidian-icon-loop {
           background-color: rgba(6, 8, 15, 0.75);
           border: 1px solid rgba(255, 255, 255, 0.08);
@@ -110,7 +114,6 @@ export default async function Home() {
           transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         
-        /* 胶囊悬停联动点亮 */
         .group:hover .obsidian-icon-loop {
           background-color: rgba(34, 211, 238, 0.15);
           border-top: 1px solid rgba(34, 211, 238, 0.6);
@@ -122,30 +125,32 @@ export default async function Home() {
         }
       `}} />
 
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-60 mix-blend-screen">
-        <Aurora
-          colorStops={["#A855F7", "#3b82f6", "#22d3ee"]} 
-          blend={0.6}
-          amplitude={1.2}
-          speed={0.5}
-        />
-      </div>
-
-      <div className="fixed inset-0 z-0 pointer-events-auto mix-blend-screen opacity-100">
-        <DotField
-          dotRadius={2.0} 
-          dotSpacing={22}
-          cursorRadius={300}
-          cursorForce={0.15}
-          bulgeOnly={true}
-          bulgeStrength={80}
-          glowRadius={220}
-          sparkle={false} 
-          waveAmplitude={0}
-          gradientFrom="rgba(168, 85, 247, 1)"  
-          gradientTo="rgba(168, 85, 247, 0.3)"    
-          glowColor="rgba(168, 85, 247, 0.2)"
-        />
+      {/* 🚀 核心更新：使用一个统一的容器包裹 Aurora 和 DotField，施加 1 秒渐显动画 */}
+      <div className="fixed inset-0 z-0 animate-bg-fade">
+        <div className="absolute inset-0 pointer-events-none opacity-60 mix-blend-screen">
+          <Aurora
+            colorStops={["#A855F7", "#3b82f6", "#22d3ee"]} 
+            blend={0.6}
+            amplitude={1.2}
+            speed={0.5}
+          />
+        </div>
+        <div className="absolute inset-0 pointer-events-auto mix-blend-screen opacity-100">
+          <DotField
+            dotRadius={2.0} 
+            dotSpacing={22}
+            cursorRadius={300}
+            cursorForce={0.15}
+            bulgeOnly={true}
+            bulgeStrength={80}
+            glowRadius={220}
+            sparkle={false} 
+            waveAmplitude={0}
+            gradientFrom="rgba(168, 85, 247, 1)"  
+            gradientTo="rgba(168, 85, 247, 0.3)"    
+            glowColor="rgba(168, 85, 247, 0.2)"
+          />
+        </div>
       </div>
 
       <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
@@ -214,7 +219,7 @@ export default async function Home() {
               logoHeight={48}
               gap={40}
               hoverSpeed={15}
-              scaleOnHover={true} /* 因为恢复了标准CSS玻璃，可以把放大互动开回来了！ */
+              scaleOnHover={true} 
               fadeOut={false} 
             />
           </div>
