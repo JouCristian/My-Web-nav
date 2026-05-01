@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
+import { motion, AnimatePresence } from "framer-motion"
 
 // 🚀 轻量级视觉模拟：用于在不引入庞大库的情况下，复刻截图中的上下双层日期视觉
 const STARFLEET_PHASES = [
@@ -11,13 +12,14 @@ const STARFLEET_PHASES = [
   "廿一", "廿二", "廿三", "廿四", "廿五", "廿六", "廿七", "廿八", "廿九", "三十", "卅一"
 ];
 
+// 🚀 与 flight-log-calendar 完全一致的 spring 配置，保证全站弹窗动画一致性
+const uiSpring = { type: "spring" as const, stiffness: 350, damping: 25 }
+
 export function DashboardClock() {
   const [time, setTime] = useState<Date | null>(null)
   
-  // 🚀 日历弹窗状态机
+  // 🚀 简化的弹窗状态：仅用 isOpen，进出场全交给 AnimatePresence + motion 处理
   const [isOpen, setIsOpen] = useState(false)
-  const [isAnimating, setIsAnimating] = useState(false)
-  const [isClosing, setIsClosing] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
@@ -27,9 +29,8 @@ export function DashboardClock() {
     return () => clearInterval(timer)
   }, [])
 
-  // 🚀 弹窗生命周期控制 (防闪烁 + 非线性动画)
-  const openModal = () => { setIsClosing(false); setIsOpen(true); setTimeout(() => setIsAnimating(true), 10); }
-  const closeModal = () => { setIsClosing(true); setIsAnimating(false); setTimeout(() => setIsOpen(false), 600); }
+  const openModal = () => setIsOpen(true)
+  const closeModal = () => setIsOpen(false)
 
   if (!time) {
     return <div className="w-full lg:w-[260px] h-[68px] sm:h-[76px] bg-white/5 animate-pulse rounded-2xl border border-white/10"></div>
@@ -56,108 +57,118 @@ export function DashboardClock() {
   const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 
   // ==========================================
-  // 📅 星际日历弹窗
+  // 📅 星际日历弹窗（与航行日志弹窗使用完全相同的 framer-motion 进出场）
   // ==========================================
-  const modalContent = isOpen ? (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      {/* 背景高斯模糊 */}
-      <div className={`absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px] transition-all duration-500 ${isAnimating ? "opacity-100" : "opacity-0"}`} onClick={closeModal}></div>
-      
-      <div className={`relative w-full max-w-md sm:max-w-lg z-10 my-auto ${isClosing ? "quantum-particle-out" : isAnimating ? "animate-slide-up-elastic" : "opacity-0"}`}>
-        
-        {/* 🚀 动态呼吸容器，整体瘦身：宽度 max-w-lg、内边距更紧凑、高度自适应不再触发滚动条 */}
-        <div 
-          className="quantum-breathe-dynamic w-full rounded-[2rem] sm:rounded-[2.5rem] bg-[#060813]/95 p-4 sm:p-6 flex flex-col relative max-h-[90vh] [overflow-x:hidden] [overflow-y:auto] ios-scrollbar"
-          style={{ '--modal-glow': 'rgba(59, 130, 246, 0.2)', '--modal-shadow': 'rgba(59, 130, 246, 0.6)', '--modal-border': 'rgba(59, 130, 246, 0.5)' } as React.CSSProperties}
-        >
-          {/* 完美的网格背景 */}
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+  const modalContent = (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          {/* 背景高斯模糊 */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px]"
+            onClick={closeModal}
+          />
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 40 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20, filter: "blur(10px)" }}
+            transition={uiSpring}
+            className="relative w-full max-w-md sm:max-w-lg z-10 my-auto"
+          >
+            {/* 🚀 动态呼吸容器，整体瘦身：宽度 max-w-lg、内边距更紧凑、高度自适应不再触发滚动条 */}
+            <div 
+              className="quantum-breathe-dynamic w-full rounded-[2rem] sm:rounded-[2.5rem] bg-[#060813]/95 p-4 sm:p-6 flex flex-col relative max-h-[90vh] [overflow-x:hidden] [overflow-y:auto] ios-scrollbar"
+              style={{ '--modal-glow': 'rgba(59, 130, 246, 0.2)', '--modal-shadow': 'rgba(59, 130, 246, 0.6)', '--modal-border': 'rgba(59, 130, 246, 0.5)' } as React.CSSProperties}
+            >
+              {/* 完美的网格背景 */}
+              <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
 
-          <div className="flex items-end justify-between border-b border-white/10 pb-3 sm:pb-4 mb-4 sm:mb-5 relative z-10 gap-3">
-            <div className="min-w-0">
-              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-[0.05em] sm:tracking-[0.08em] font-[family-name:var(--font-space)] drop-shadow-[0_0_15px_rgba(59,130,246,0.3)] truncate">
-                {time.toLocaleDateString('zh-CN', { month: 'long' })}
-              </h2>
-              <p className="text-blue-400 font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.25em] mt-1">Starfleet Standard Calendar • {year}</p>
-            </div>
-            
-            {/* 弹窗内的实时秒表 */}
-            <div className="flex items-center gap-1.5 sm:gap-2 bg-blue-500/10 border border-blue-500/20 px-2.5 sm:px-3 py-1.5 rounded-lg shadow-[0_0_20px_rgba(59,130,246,0.15)] shrink-0">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
-              <span className="text-xs sm:text-sm font-mono font-bold text-blue-400 tracking-wider">{timeStr}</span>
-            </div>
-          </div>
-
-          {/* 🚀 核心内部容器：装载日历阵列（紧凑版） */}
-          <div className="relative z-10 bg-black/40 border border-white/5 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
-            
-            {/* 星期表头 */}
-            <div className="grid grid-cols-7 gap-y-1.5 sm:gap-y-2 gap-x-1 text-center mb-2 sm:mb-3">
-              {weekDays.map((day, idx) => (
-                <div key={`header-${idx}`} className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-b border-white/10 pb-1.5 sm:pb-2">
-                  {day}
+              <div className="flex items-end justify-between border-b border-white/10 pb-3 sm:pb-4 mb-4 sm:mb-5 relative z-10 gap-3">
+                <div className="min-w-0">
+                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-[0.05em] sm:tracking-[0.08em] font-[family-name:var(--font-space)] drop-shadow-[0_0_15px_rgba(59,130,246,0.3)] truncate">
+                    {time.toLocaleDateString('zh-CN', { month: 'long' })}
+                  </h2>
+                  <p className="text-blue-400 font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.25em] mt-1">Starfleet Standard Calendar • {year}</p>
                 </div>
-              ))}
-              
-              {/* 渲染占位空天数 */}
-              {emptyDays.map(empty => (
-                <div key={`empty-${empty}`} className="h-9 sm:h-11"></div>
-              ))}
-              
-              {/* 渲染实际天数 */}
-              {monthDays.map(day => {
-                const isToday = day === date;
-                const phaseIndex = (day + 5) % 30; // 模拟一个错位的伪农历索引，制造视觉效果
-                const phase = STARFLEET_PHASES[phaseIndex];
+                
+                {/* 弹窗内的实时秒表 */}
+                <div className="flex items-center gap-1.5 sm:gap-2 bg-blue-500/10 border border-blue-500/20 px-2.5 sm:px-3 py-1.5 rounded-lg shadow-[0_0_20px_rgba(59,130,246,0.15)] shrink-0">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
+                  <span className="text-xs sm:text-sm font-mono font-bold text-blue-400 tracking-wider">{timeStr}</span>
+                </div>
+              </div>
 
-                return (
-                  <div key={`day-${day}`} className="relative h-9 sm:h-11 flex flex-col items-center justify-center group/day">
-                    {/* 🚀 当日高亮锁定圈 */}
-                    {isToday ? (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.8)] font-bold text-xs sm:text-sm relative">
-                           {/* 当日的光晕扩散圈 */}
-                           <div className="absolute inset-0 rounded-full border border-blue-400 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
-                           {day}
-                        </div>
-                        <span className="text-[8px] sm:text-[9px] text-blue-300 font-mono mt-0.5 font-bold tracking-wider">{phase}</span>
+              {/* 🚀 核心内部容器：装载日历阵列（紧凑版） */}
+              <div className="relative z-10 bg-black/40 border border-white/5 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
+                
+                {/* 星期表头 */}
+                <div className="grid grid-cols-7 gap-y-1.5 sm:gap-y-2 gap-x-1 text-center mb-2 sm:mb-3">
+                  {weekDays.map((day, idx) => (
+                    <div key={`header-${idx}`} className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-b border-white/10 pb-1.5 sm:pb-2">
+                      {day}
+                    </div>
+                  ))}
+                  
+                  {/* 渲染占位空天数 */}
+                  {emptyDays.map(empty => (
+                    <div key={`empty-${empty}`} className="h-9 sm:h-11"></div>
+                  ))}
+                  
+                  {/* 渲染实际天数 */}
+                  {monthDays.map(day => {
+                    const isToday = day === date;
+                    const phaseIndex = (day + 5) % 30; // 模拟一个错位的伪农历索引，制造视觉效果
+                    const phase = STARFLEET_PHASES[phaseIndex];
+
+                    return (
+                      <div key={`day-${day}`} className="relative h-9 sm:h-11 flex flex-col items-center justify-center group/day">
+                        {/* 🚀 当日高亮锁定圈 */}
+                        {isToday ? (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.8)] font-bold text-xs sm:text-sm relative">
+                               {/* 当日的光晕扩散圈 */}
+                               <div className="absolute inset-0 rounded-full border border-blue-400 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+                               {day}
+                            </div>
+                            <span className="text-[8px] sm:text-[9px] text-blue-300 font-mono mt-0.5 font-bold tracking-wider">{phase}</span>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover/day:opacity-100 rounded-lg transition-opacity duration-300"></div>
+                            <span className="text-xs sm:text-sm font-bold text-zinc-300 group-hover/day:text-white transition-colors relative z-10">{day}</span>
+                            <span className="text-[8px] sm:text-[9px] text-zinc-600 font-mono group-hover/day:text-zinc-400 transition-colors relative z-10 tracking-wider">{phase}</span>
+                          </>
+                        )}
                       </div>
-                    ) : (
-                      <>
-                        <div className="absolute inset-0 bg-white/5 opacity-0 group-hover/day:opacity-100 rounded-lg transition-opacity duration-300"></div>
-                        <span className="text-xs sm:text-sm font-bold text-zinc-300 group-hover/day:text-white transition-colors relative z-10">{day}</span>
-                        <span className="text-[8px] sm:text-[9px] text-zinc-600 font-mono group-hover/day:text-zinc-400 transition-colors relative z-10 tracking-wider">{phase}</span>
-                      </>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+                    )
+                  })}
+                </div>
+              </div>
 
-          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mt-4 sm:mt-5 relative z-10 gap-3">
-            <div className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] shrink-0"></span>
-              Current Temporal Coordinates
+              <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mt-4 sm:mt-5 relative z-10 gap-3">
+                <div className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] shrink-0"></span>
+                  Current Temporal Coordinates
+                </div>
+                <button onClick={closeModal} className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold tracking-[0.15em] uppercase text-[10px] hover:bg-white/10 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.02)] hover:shadow-[0_0_30px_rgba(255,255,255,0.05)]">
+                  关闭时间中枢
+                </button>
+              </div>
             </div>
-            <button onClick={closeModal} className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold tracking-[0.15em] uppercase text-[10px] hover:bg-white/10 transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.02)] hover:shadow-[0_0_30px_rgba(255,255,255,0.05)]">
-              关闭时间中枢
-            </button>
-          </div>
+          </motion.div>
         </div>
-      </div>
-    </div>
-  ) : null;
+      )}
+    </AnimatePresence>
+  )
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes slide-up-elastic { 0% { opacity: 0; transform: translateY(80px) scale(0.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
-        .animate-slide-up-elastic { animation: slide-up-elastic 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-        .quantum-particle-out { animation: dissipate 0.6s cubic-bezier(0.7, 0, 0.84, 0) forwards; }
-        @keyframes dissipate { 0% { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); } 100% { opacity: 0; filter: blur(20px) brightness(0.5); transform: scale(0.85); } }
-
-        /* 🚀 定点修复：移除 scale，仅保留 box-shadow + border 实现纯光呼吸，避免触发滚动条 */
+        /* 🚀 仅保留呼吸光晕（box-shadow + border-color），进出场动画交给 framer-motion */
         @keyframes dynamic-breathe { 
           0%, 100% { box-shadow: 0 0 60px var(--modal-glow), inset 0 0 20px var(--modal-glow); border-color: rgba(255,255,255,0.1); } 
           50% { box-shadow: 0 0 100px var(--modal-shadow), inset 0 0 40px var(--modal-glow); border-color: var(--modal-border); } 
