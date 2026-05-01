@@ -8,7 +8,7 @@ import ReactMarkdown from "react-markdown"
 import { motion, AnimatePresence } from "framer-motion" 
 
 // 🚀 与 flight-log-calendar 完全一致的 spring 配置
-const uiSpring = { type: "spring", stiffness: 350, damping: 25 }
+const uiSpring = { type: "spring" as const, stiffness: 350, damping: 25 }
 
 export function BroadcastCard({ announcement, isManager }: { announcement: any, isManager: boolean }) {
   const [isVanishing, setIsVanishing] = useState(false) 
@@ -83,9 +83,8 @@ export function BroadcastCard({ announcement, isManager }: { announcement: any, 
               </div>
 
               <div className="relative z-10 bg-black/40 border border-white/5 rounded-2xl sm:rounded-[2rem] md:rounded-[2.5rem] p-4 sm:p-6 md:p-8 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
-                <div className="max-h-[45vh] overflow-y-auto ios-scrollbar pr-2 sm:pr-4">
+                <div className="max-h-[45vh] overflow-y-auto ios-scrollbar pr-2 sm:pr-4 text-zinc-300 text-sm md:text-base leading-relaxed break-words">
                   <ReactMarkdown 
-                    className="text-zinc-300 text-sm md:text-base leading-relaxed break-words"
                     components={{
                       h1: ({node, ...props}) => <h1 className={`text-xl font-bold ${style.text} mb-4 pb-2 border-b border-white/10`} {...props} />,
                       h2: ({node, ...props}) => <h2 className="text-lg font-bold text-white/90 mt-6 mb-3" {...props} />,

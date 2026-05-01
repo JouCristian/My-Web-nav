@@ -13,7 +13,7 @@ const STARFLEET_PHASES = [
 ];
 
 // 🚀 与 flight-log-calendar 完全一致的 spring 配置，保证全站弹窗动画一致性
-const uiSpring = { type: "spring", stiffness: 350, damping: 25 }
+const uiSpring = { type: "spring" as const, stiffness: 350, damping: 25 }
 
 export function DashboardClock() {
   const [time, setTime] = useState<Date | null>(null)

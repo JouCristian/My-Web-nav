@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { toggleAdminRole } from "@/app/dashboard/crew/actions"
 
 // 🚀 与 flight-log-calendar 完全一致的 spring 配置
-const uiSpring = { type: "spring", stiffness: 350, damping: 25 }
+const uiSpring = { type: "spring" as const, stiffness: 350, damping: 25 }
 
 export function AdminAuthModal({ users }: { users: any[] }) {
   const [isOpen, setIsOpen] = useState(false)
