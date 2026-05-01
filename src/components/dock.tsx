@@ -103,6 +103,27 @@ export default function Dock({
 }: DockProps) {
   const mouseX = useMotionValue(Infinity);
 
+  // 🚀 移动端响应式：监听屏幕尺寸，自动收缩按键体积，避免溢出
+  const [responsive, setResponsive] = useState({ size: baseItemSize, mag: magnification, height: panelHeight });
+  useEffect(() => {
+    const compute = () => {
+      const w = window.innerWidth;
+      if (w < 480) {
+        // 极窄屏：32px 图标，弱化放大效果，避免遮挡
+        setResponsive({ size: 32, mag: 42, height: 46 });
+      } else if (w < 640) {
+        setResponsive({ size: 36, mag: 48, height: 50 });
+      } else if (w < 1024) {
+        setResponsive({ size: 38, mag: 56, height: 54 });
+      } else {
+        setResponsive({ size: baseItemSize, mag: magnification, height: panelHeight });
+      }
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, [baseItemSize, magnification, panelHeight]);
+
   useEffect(() => {
     const handleScroll = () => mouseX.set(Infinity);
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -115,7 +136,7 @@ export default function Dock({
         onMouseMove={(e) => mouseX.set(e.clientX)}
         onMouseLeave={() => mouseX.set(Infinity)}
         className={`dock-panel ${className}`}
-        style={{ height: panelHeight }}
+        style={{ height: responsive.height }}
         role="toolbar"
         aria-label="Application dock"
       >
@@ -140,7 +161,7 @@ export default function Dock({
         </div>
 
         {items.map((item, index) => (
-          <DockItem key={index} onClick={item.onClick} className={item.className} mouseX={mouseX} spring={spring} distance={distance} magnification={magnification} baseItemSize={baseItemSize}>
+          <DockItem key={index} onClick={item.onClick} className={item.className} mouseX={mouseX} spring={spring} distance={distance} magnification={responsive.mag} baseItemSize={responsive.size}>
             <DockIcon>{item.icon}</DockIcon>
             <DockLabel>{item.label}</DockLabel>
           </DockItem>

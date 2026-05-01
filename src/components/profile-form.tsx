@@ -97,8 +97,8 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
 
   return (
     <>
-      <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-[100] transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${toast.visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-10 scale-95 pointer-events-none'}`}>
-        <div className={`flex items-center gap-4 px-6 py-4 rounded-2xl backdrop-blur-xl border ${toast.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_40px_rgba(16,185,129,0.25)]' : toast.type === 'error' ? 'bg-red-500/10 border-red-500/40 shadow-[0_0_40px_rgba(239,68,68,0.25)]' : 'bg-blue-500/10 border-blue-500/40 shadow-[0_0_40px_rgba(59,130,246,0.25)]'}`}>
+      <div className={`fixed top-20 sm:top-24 md:top-10 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] sm:w-auto max-w-md transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${toast.visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-10 scale-95 pointer-events-none'}`}>
+        <div className={`flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl backdrop-blur-xl border ${toast.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_40px_rgba(16,185,129,0.25)]' : toast.type === 'error' ? 'bg-red-500/10 border-red-500/40 shadow-[0_0_40px_rgba(239,68,68,0.25)]' : 'bg-blue-500/10 border-blue-500/40 shadow-[0_0_40px_rgba(59,130,246,0.25)]'}`}>
           <div className={`relative flex items-center justify-center w-10 h-10 rounded-full border ${toast.type === 'success' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : toast.type === 'error' ? 'bg-red-500/20 border-red-500/50 text-red-500' : 'bg-blue-500/20 border-blue-500/50 text-blue-500'}`}>
             <div className={`absolute inset-0 rounded-full animate-ping opacity-30 ${toast.type === 'success' ? 'bg-emerald-500' : toast.type === 'error' ? 'bg-red-500' : 'bg-blue-500'}`}></div>
             <span className="relative z-10 text-lg">{toast.type === 'success' ? '✔' : toast.type === 'error' ? '✖' : 'ℹ'}</span>
@@ -114,9 +114,9 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="flex flex-col items-center mb-8">
-          <div className="relative w-28 h-28 rounded-full border-2 border-white/20 p-1 mb-4 group cursor-pointer overflow-hidden bg-zinc-900 shadow-[0_0_30px_rgba(255,255,255,0.05)]" onClick={() => !isUploading && fileInputRef.current?.click()}>
+      <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
+        <div className="flex flex-col items-center mb-6 sm:mb-8">
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-white/20 p-1 mb-4 group cursor-pointer overflow-hidden bg-zinc-900 shadow-[0_0_30px_rgba(255,255,255,0.05)]" onClick={() => !isUploading && fileInputRef.current?.click()}>
             {isUploading && <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-10"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div></div>}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={preview} alt="Avatar" className="w-full h-full rounded-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:opacity-40" />
@@ -133,7 +133,7 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
           <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">识别昵称 / Nickname</label>
           <input 
             name="nickname" value={nickname} onChange={(e) => setNickname(e.target.value)} required
-            className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-white/30 transition-all text-white font-[family-name:var(--font-space)]"
+            className="w-full bg-black/50 border border-white/10 rounded-xl sm:rounded-2xl px-4 sm:px-5 py-3 sm:py-4 outline-none focus:border-white/30 transition-all text-white font-[family-name:var(--font-space)] text-base"
           />
         </div>
 
@@ -144,7 +144,7 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
             <input 
               name="feishuLink" value={feishu} onChange={(e) => setFeishu(e.target.value)}
               placeholder="https://www.feishu.cn/invitation/..."
-              className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-white/30 transition-all text-white font-mono text-sm"
+              className="w-full bg-black/50 border border-white/10 rounded-xl sm:rounded-2xl px-4 sm:px-5 py-3 sm:py-4 outline-none focus:border-white/30 transition-all text-white font-mono text-sm"
             />
             <p className="text-[9px] text-zinc-500 ml-2 italic opacity-80">* 缺失此通讯链接将无法接收舰队跃迁集结通知</p>
           </div>
@@ -159,14 +159,14 @@ export function ProfileForm({ user, onUpdate }: ProfileFormProps) {
               // 🚀 细节：普通人员必填，管理层可选填（无视 required 拦截）
               required={user.role === "MEMBER"} 
               placeholder={user.role === "MEMBER" ? "请输入您的学号" : "指挥组可选填"}
-              className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-blue-500/30 transition-all text-white font-mono text-sm"
+              className="w-full bg-black/50 border border-white/10 rounded-xl sm:rounded-2xl px-4 sm:px-5 py-3 sm:py-4 outline-none focus:border-blue-500/30 transition-all text-white font-mono text-sm"
             />
           </div>
         )}
 
         <button 
           type="submit" disabled={!hasChanged || isUploading}
-          className={`w-full py-4 rounded-2xl font-bold tracking-[0.2em] transition-all duration-500 mt-4 flex items-center justify-center gap-3 ${!hasChanged ? "bg-zinc-900 border border-zinc-800 text-zinc-600 cursor-not-allowed opacity-80" : "bg-white text-black hover:bg-emerald-500 hover:text-white active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.05)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)]" }`}
+          className={`w-full py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold tracking-[0.15em] sm:tracking-[0.2em] text-sm sm:text-base transition-all duration-500 mt-4 flex items-center justify-center gap-3 ${!hasChanged ? "bg-zinc-900 border border-zinc-800 text-zinc-600 cursor-not-allowed opacity-80" : "bg-white text-black hover:bg-emerald-500 hover:text-white active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.05)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)]" }`}
         >
           {isUploading ? (
             <><div className="w-4 h-4 border-2 border-zinc-500 border-t-white rounded-full animate-spin"></div><span>正在写入数据库...</span></>

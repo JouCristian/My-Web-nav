@@ -45,24 +45,24 @@ const ModuleCard = ({ moduleId, title, subtitle, icon, link, isActive, theme = "
   return (
     <Link 
       href={isActive ? link : "#"} 
-      className={`group relative w-full h-[360px] rounded-[3.5rem] border ${styles.border} bg-[#06060a]/95 p-10 lg:p-12 flex flex-col justify-between overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-[0.98] ${isActive ? `hover:-translate-y-2 ${styles.shadow}` : 'opacity-60 grayscale'}`}
+      className={`group relative w-full h-[300px] sm:h-[340px] lg:h-[360px] rounded-[2rem] sm:rounded-[3rem] lg:rounded-[3.5rem] border ${styles.border} bg-[#06060a]/95 p-6 sm:p-8 lg:p-12 flex flex-col justify-between overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-[0.98] ${isActive ? `hover:-translate-y-2 ${styles.shadow}` : 'opacity-60 grayscale'}`}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-40 group-hover:opacity-100 transition-opacity duration-700"></div>
       <div className={`absolute -top-20 -right-20 w-64 h-64 blur-[80px] rounded-full transition-all duration-1000 ${styles.blob}`}></div>
       
       <div className="relative z-10">
-        <div className={`w-20 h-20 rounded-[2rem] border flex items-center justify-center mb-8 text-4xl group-hover:scale-110 transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${styles.iconBox}`}>
+        <div className={`w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-2xl lg:rounded-[2rem] border flex items-center justify-center mb-5 sm:mb-6 lg:mb-8 text-3xl sm:text-4xl group-hover:scale-110 transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${styles.iconBox}`}>
           {icon}
         </div>
-        <h3 className="text-3xl lg:text-4xl font-bold text-white tracking-[0.15em] font-[family-name:var(--font-space)] mb-4">{title}</h3>
-        <p className={`text-sm lg:text-base font-mono tracking-widest leading-relaxed ${styles.subtitle}`}>{subtitle}</p>
+        <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-[0.1em] sm:tracking-[0.15em] font-[family-name:var(--font-space)] mb-3 sm:mb-4">{title}</h3>
+        <p className={`text-xs sm:text-sm lg:text-base font-mono tracking-wider sm:tracking-widest leading-relaxed ${styles.subtitle}`}>{subtitle}</p>
       </div>
       
-      <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-[11px] lg:text-[12px] font-mono text-zinc-500 uppercase tracking-[0.4em] border-t border-white/5 pt-8">
-        <span className="bg-white/5 px-4 py-2 rounded-lg shrink-0">{moduleId}</span>
-        <span className={`flex items-center gap-3 transition-all duration-500 ${isActive ? `${styles.activeText} group-hover:gap-6` : 'text-zinc-700'}`}>
+      <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 text-[10px] lg:text-[12px] font-mono text-zinc-500 uppercase tracking-[0.3em] sm:tracking-[0.4em] border-t border-white/5 pt-5 sm:pt-8">
+        <span className="bg-white/5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shrink-0">{moduleId}</span>
+        <span className={`flex items-center gap-2 sm:gap-3 transition-all duration-500 ${isActive ? `${styles.activeText} group-hover:gap-6` : 'text-zinc-700'}`}>
           {isActive ? 'Authorize Access' : 'System Locked'}
-          <span className="text-xl">➔</span>
+          <span className="text-lg sm:text-xl">➔</span>
         </span>
       </div>
     </Link>
@@ -177,7 +177,7 @@ export default async function DashboardPage() {
 
   // ✅ 状态 3：正式指挥大屏
   return (
-    <main className="min-h-screen py-16 px-8 xl:px-24 text-white relative flex flex-col gap-12">
+    <main className="min-h-screen pt-24 pb-12 sm:pt-20 sm:pb-16 md:py-16 px-4 sm:px-6 md:px-8 xl:px-24 text-white relative flex flex-col gap-8 sm:gap-12 overflow-x-hidden">
       
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes shimmer-seamless { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
@@ -202,21 +202,21 @@ export default async function DashboardPage() {
 
       <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-blue-500/5 blur-[150px] rounded-full pointer-events-none"></div>
 
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 relative z-10 w-full">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></span>
-            <span className="text-xs font-mono text-blue-400 uppercase tracking-[0.5em]">Sector: Command Center</span>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 sm:gap-8 relative z-10 w-full">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3 flex-wrap">
+            <span className="w-2 h-2 bg-blue-500 rounded-full animate-ping shrink-0"></span>
+            <span className="text-[10px] sm:text-xs font-mono text-blue-400 uppercase tracking-[0.3em] sm:tracking-[0.5em]">Sector: Command Center</span>
           </div>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-[0.08em] font-[family-name:var(--font-space)] bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-zinc-500">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-[0.05em] sm:tracking-[0.08em] font-[family-name:var(--font-space)] bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-zinc-500 text-balance">
             「一生一芯」·西科星际舰队
           </h1>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center gap-6 shrink-0 w-full lg:w-auto justify-between lg:justify-end">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 sm:gap-6 shrink-0 w-full lg:w-auto justify-between lg:justify-end">
           <DashboardClock />
 
-          <TransitionLink href="/" className="group hover-breathe flex items-center gap-4 bg-black/40 px-6 py-4 rounded-2xl border border-white/10 backdrop-blur-md transition-all duration-500 active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)] shrink-0">
+          <TransitionLink href="/" className="group hover-breathe flex items-center gap-3 sm:gap-4 bg-black/40 px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl border border-white/10 backdrop-blur-md transition-all duration-500 active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)] shrink-0">
             <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/20 transition-colors duration-500">
               <div className="w-3 h-3 rounded-full bg-blue-400 group-hover-pulse transition-all duration-500" />
               <div className="absolute inset-0 rounded-full border border-blue-500/30 opacity-0 group-hover:opacity-100 group-hover:animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite] transition-all duration-500" />
@@ -230,30 +230,30 @@ export default async function DashboardPage() {
       </div>
 
       {/* ================= 模块 D & B：公告与日志 ================= */}
-      <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mt-4">
+      <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch mt-4">
         
         {/* 左侧：全舰公告大屏 */}
-        <div className="lg:col-span-2 rounded-[3.5rem] border border-blue-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-[0_0_100px_rgba(59,130,246,0.1)] flex flex-col h-full">
-          <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-[#0a0d1a]/80 border border-blue-500/30 rounded-3xl p-6 lg:px-10 lg:py-6 mb-8 overflow-hidden shadow-[inset_0_0_30px_rgba(59,130,246,0.1)]">
+        <div className="lg:col-span-2 rounded-[2rem] sm:rounded-[3rem] lg:rounded-[3.5rem] border border-blue-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-5 sm:p-8 lg:p-10 shadow-[0_0_100px_rgba(59,130,246,0.1)] flex flex-col h-full">
+          <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 bg-[#0a0d1a]/80 border border-blue-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:px-10 lg:py-6 mb-6 sm:mb-8 overflow-hidden shadow-[inset_0_0_30px_rgba(59,130,246,0.1)]">
             <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(59,130,246,0.15),transparent)] bg-[length:200%_100%] animate-[shimmer-seamless_4s_linear_infinite] pointer-events-none"></div>
             
-            <div className="flex items-center gap-5 relative z-10">
-              <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.2)]">
-                <span className="text-2xl animate-[pulse-slow_3s_infinite]">📢</span>
+            <div className="flex items-center gap-3 sm:gap-5 relative z-10">
+              <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.2)] shrink-0">
+                <span className="text-xl sm:text-2xl animate-[pulse-slow_3s_infinite]">📢</span>
               </div>
-              <div>
-                <h2 className="text-2xl lg:text-3xl font-bold tracking-[0.2em] text-white font-[family-name:var(--font-space)] drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">全舰公告大屏</h2>
-                <p className="text-blue-400/60 font-mono text-[10px] uppercase tracking-widest mt-1">Live Fleet-wide Broadcast</p>
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-[0.15em] sm:tracking-[0.2em] text-white font-[family-name:var(--font-space)] drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">全舰公告大屏</h2>
+                <p className="text-blue-400/60 font-mono text-[9px] sm:text-[10px] uppercase tracking-widest mt-1">Live Fleet-wide Broadcast</p>
               </div>
             </div>
 
-            <div className="relative z-10">
+            <div className="relative z-10 w-full md:w-auto">
               {isManager && <CreateBroadcastModal />}
             </div>
           </div>
 
-          <div className="relative bg-[#02040a]/40 border border-white/5 rounded-[2rem] shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] overflow-hidden">
-            <div className="flex flex-col gap-4 h-[420px] overflow-y-auto ios-scrollbar px-4 lg:px-8 pt-6 pb-24 relative z-10">
+          <div className="relative bg-[#02040a]/40 border border-white/5 rounded-[1.5rem] sm:rounded-[2rem] shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] overflow-hidden">
+            <div className="flex flex-col gap-4 h-[360px] sm:h-[420px] overflow-y-auto ios-scrollbar px-3 sm:px-4 lg:px-8 pt-4 sm:pt-6 pb-20 sm:pb-24 relative z-10">
               {broadcasts.length > 0 ? (
                 broadcasts.map(item => <BroadcastCard key={item.id} announcement={item} isManager={isManager} />)
               ) : (
@@ -271,7 +271,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* 右侧：航行日志 */}
-        <div className="lg:col-span-1 rounded-[3.5rem] border border-emerald-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-[0_0_100px_rgba(16,185,129,0.15)] flex flex-col h-full relative overflow-hidden group">
+        <div className="lg:col-span-1 rounded-[2rem] sm:rounded-[3rem] lg:rounded-[3.5rem] border border-emerald-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-5 sm:p-8 lg:p-10 shadow-[0_0_100px_rgba(16,185,129,0.15)] flex flex-col h-full relative overflow-hidden group">
           <div className="absolute inset-0 bg-emerald-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
           <FlightLogCalendar userRole={dbUser.role || "PENDING"} />
         </div>

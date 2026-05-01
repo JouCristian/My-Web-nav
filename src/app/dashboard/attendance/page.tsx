@@ -38,23 +38,23 @@ export default async function AttendancePage() {
   const currentUserName = (dbUser.realName || dbUser.name || dbUser.nickname || dbUser.githubName || "Unknown") as string
 
   return (
-    <main className="min-h-screen py-16 px-8 xl:px-24 text-white relative flex flex-col gap-12 overflow-x-hidden">
+    <main className="min-h-screen pt-24 pb-12 sm:pt-20 sm:pb-16 md:py-16 px-4 sm:px-6 md:px-8 xl:px-24 text-white relative flex flex-col gap-8 sm:gap-12 overflow-x-hidden">
       
       <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-amber-500/5 blur-[150px] rounded-full pointer-events-none z-0"></div>
 
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 relative z-10 w-full">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="w-2 h-2 bg-amber-500 rounded-full animate-ping"></span>
-            <span className="text-xs font-mono text-amber-400 uppercase tracking-[0.5em]">Module C: Attendance</span>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 sm:gap-8 relative z-10 w-full">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3 flex-wrap">
+            <span className="w-2 h-2 bg-amber-500 rounded-full animate-ping shrink-0"></span>
+            <span className="text-[10px] sm:text-xs font-mono text-amber-400 uppercase tracking-[0.3em] sm:tracking-[0.5em]">Module C: Attendance</span>
           </div>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-[0.08em] font-[family-name:var(--font-space)] bg-clip-text text-transparent bg-gradient-to-r from-amber-200 via-amber-100 to-amber-500/50">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-[0.05em] sm:tracking-[0.08em] font-[family-name:var(--font-space)] bg-clip-text text-transparent bg-gradient-to-r from-amber-200 via-amber-100 to-amber-500/50">
             跃迁集结中心
           </h1>
         </div>
 
         <div className="shrink-0 w-full lg:w-auto flex justify-start lg:justify-end">
-          <TransitionLink href="/dashboard" className="group flex items-center gap-4 bg-black/40 px-6 py-4 rounded-2xl border border-white/10 backdrop-blur-md transition-all duration-500 hover:border-amber-500/40 active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+          <TransitionLink href="/dashboard" className="group flex items-center gap-3 sm:gap-4 bg-black/40 px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl border border-white/10 backdrop-blur-md transition-all duration-500 hover:border-amber-500/40 active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
             <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-amber-500/20 transition-colors duration-500">
               <div className="w-3 h-3 rounded-full bg-amber-400 transition-all duration-500 shadow-[0_0_10px_rgba(245,158,11,0.8)] group-hover:scale-125" />
               <div className="absolute inset-0 rounded-full border border-amber-500/30 opacity-0 group-hover:opacity-100 group-hover:animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite] transition-all duration-500" />

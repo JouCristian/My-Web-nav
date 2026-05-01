@@ -324,11 +324,11 @@ export function FleetAttendanceModule({
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
       `}} />
 
-      <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mt-4">
+      <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch mt-4">
         
         {/* ================= 左舷：跃迁集结序列 ================= */}
-        <div className="lg:col-span-2 rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 lg:p-10 shadow-2xl flex flex-col h-full relative overflow-hidden group">
-          <div className="absolute inset-0 rounded-[3.5rem] overflow-hidden pointer-events-none z-0">
+        <div className="lg:col-span-2 rounded-[2rem] sm:rounded-[3rem] lg:rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-5 sm:p-8 lg:p-10 shadow-2xl flex flex-col h-full relative overflow-hidden group">
+          <div className="absolute inset-0 rounded-[2rem] sm:rounded-[3rem] lg:rounded-[3.5rem] overflow-hidden pointer-events-none z-0">
             {/* 原始胶片噪点 */}
             <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
             
@@ -337,27 +337,27 @@ export function FleetAttendanceModule({
             <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent,rgba(245,158,11,0.06),transparent)] bg-[length:200%_200%] animate-[shimmer-seamless_4s_linear_infinite]"></div>
           </div>
 
-          <div className="flex items-center justify-between mb-8 relative z-10">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.2)]"><span className="text-2xl">⏳</span></div>
-              <div><h2 className="text-2xl lg:text-3xl font-bold tracking-[0.2em] text-white font-[family-name:var(--font-space)] drop-shadow-[0_0_15px_rgba(245,158,11,0.3)]">跃迁集结序列</h2><p className="text-amber-400/60 font-mono text-[10px] uppercase tracking-widest mt-1">Fleet Synchronization Protocol</p></div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5 sm:mb-8 relative z-10">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+              <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.2)] shrink-0"><span className="text-xl sm:text-2xl">⏳</span></div>
+              <div className="min-w-0"><h2 className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-[0.15em] sm:tracking-[0.2em] text-white font-[family-name:var(--font-space)] drop-shadow-[0_0_15px_rgba(245,158,11,0.3)]">跃迁集结序列</h2><p className="text-amber-400/60 font-mono text-[9px] sm:text-[10px] uppercase tracking-widest mt-1 truncate">Fleet Synchronization Protocol</p></div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full sm:w-auto">
               {isManager && (
                 <button 
                   onClick={() => setIsAbsenceModalOpen(true)} 
-                  className="px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl font-bold text-xs tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)] active:scale-95 flex items-center gap-2"
+                  className="px-3 sm:px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl font-bold text-[10px] sm:text-xs tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)] active:scale-95 flex items-center gap-2"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                   缺勤干预
                 </button>
               )}
-              {isRollCallActive && <div className="px-4 py-2 bg-amber-500/20 border border-amber-500/50 rounded-full text-amber-400 font-mono text-xs font-bold animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.4)]">SYNC IN PROGRESS</div>}
+              {isRollCallActive && <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-amber-500/20 border border-amber-500/50 rounded-full text-amber-400 font-mono text-[10px] sm:text-xs font-bold animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.4)]">SYNC IN PROGRESS</div>}
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center bg-[#02040a]/60 border border-white/5 rounded-[2rem] p-8 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] relative z-10">
+          <div className="flex-1 flex flex-col items-center justify-center bg-[#02040a]/60 border border-white/5 rounded-2xl sm:rounded-[2rem] p-4 sm:p-8 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] relative z-10">
             {!isRollCallActive && (
               <div className="w-full max-w-md flex flex-col items-center gap-8 relative">
                 {isManager ? (
@@ -446,21 +446,21 @@ export function FleetAttendanceModule({
 
             {isRollCallActive && (
               <div className="w-full flex flex-col items-center">
-                <div className={`text-7xl md:text-9xl font-bold font-mono tracking-tighter mb-12 transition-colors duration-500 ${countdown <= 10 ? 'text-red-500 drop-shadow-[0_0_40px_rgba(239,68,68,0.8)] animate-pulse' : 'text-amber-400 drop-shadow-[0_0_40px_rgba(245,158,11,0.6)]'}`}>{formatTime(countdown)}</div>
-                <div className="w-full max-w-2xl grid grid-cols-2 md:grid-cols-3 gap-3 mb-10">
+                <div className={`text-6xl sm:text-7xl md:text-9xl font-bold font-mono tracking-tighter mb-8 sm:mb-12 transition-colors duration-500 ${countdown <= 10 ? 'text-red-500 drop-shadow-[0_0_40px_rgba(239,68,68,0.8)] animate-pulse' : 'text-amber-400 drop-shadow-[0_0_40px_rgba(245,158,11,0.6)]'}`}>{formatTime(countdown)}</div>
+                <div className="w-full max-w-2xl grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3 mb-6 sm:mb-10">
                   {allCrew.map(crew => {
                     const isSynced = presentCrew.includes(crew)
                     return (
-                      <div key={crew} className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-500 ${isSynced ? 'bg-amber-500/10 border-amber-500/30' : 'bg-black/40 border-white/5 opacity-50'}`}>
-                        <div className={`w-2 h-2 rounded-full ${isSynced ? 'bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.8)]' : 'bg-zinc-600'}`}></div>
-                        <span className={`text-xs font-bold font-mono truncate ${isSynced ? 'text-amber-300' : 'text-zinc-500'}`}>{crew}</span>
+                      <div key={crew} className={`flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-xl border transition-all duration-500 ${isSynced ? 'bg-amber-500/10 border-amber-500/30' : 'bg-black/40 border-white/5 opacity-50'}`}>
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${isSynced ? 'bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.8)]' : 'bg-zinc-600'}`}></div>
+                        <span className={`text-[11px] sm:text-xs font-bold font-mono truncate ${isSynced ? 'text-amber-300' : 'text-zinc-500'}`}>{crew}</span>
                       </div>
                     )
                   })}
                 </div>
 
                 {!isManager && (
-                  <button onPointerDown={startHold} onPointerUp={stopHold} onPointerLeave={stopHold} disabled={presentCrew.includes(userName)} className="relative overflow-hidden w-full max-w-md h-16 rounded-2xl bg-white/5 border border-white/10 group active:scale-[0.98] transition-transform select-none">
+                  <button onPointerDown={startHold} onPointerUp={stopHold} onPointerLeave={stopHold} disabled={presentCrew.includes(userName)} className="relative overflow-hidden w-full max-w-md h-14 sm:h-16 rounded-2xl bg-white/5 border border-white/10 group active:scale-[0.98] transition-transform select-none">
                     <div className={`absolute left-0 top-0 bottom-0 bg-gradient-to-r from-amber-600 to-amber-400 transition-all ${isHolding ? 'w-full duration-[1500ms] ease-linear' : 'w-0 duration-300 ease-out'}`} />
                     <div className="absolute inset-0 flex items-center justify-center mix-blend-difference pointer-events-none z-10"><span className="text-white font-bold tracking-[0.4em] font-mono drop-shadow-md">{presentCrew.includes(userName) ? '✓ 已成功连接' : '长按完成签到'}</span></div>
                     {!presentCrew.includes(userName) && !isHolding && (<div className="absolute inset-0 flex items-center justify-center pointer-events-none"><span className="text-zinc-500 font-bold tracking-[0.4em] font-mono transition-opacity duration-300 group-hover:text-amber-500/50">长按完成签到</span></div>)}
@@ -472,7 +472,7 @@ export function FleetAttendanceModule({
         </div>
 
         {/* ================= 右舷：时空日历矩阵 ================= */}
-        <div className="lg:col-span-1 rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-8 shadow-[0_0_100px_rgba(245,158,11,0.1)] flex flex-col h-full relative overflow-hidden group">
+        <div className="lg:col-span-1 rounded-[2rem] sm:rounded-[3rem] lg:rounded-[3.5rem] border border-amber-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-5 sm:p-8 shadow-[0_0_100px_rgba(245,158,11,0.1)] flex flex-col h-full relative overflow-hidden group">
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(245,158,11,1) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,1) 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
           <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent,rgba(245,158,11,0.08),transparent)] bg-[length:200%_200%] animate-[shimmer-seamless_4s_linear_infinite] pointer-events-none"></div>
 
@@ -534,31 +534,31 @@ export function FleetAttendanceModule({
             <div key="absence-modal-wrapper" className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
               <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/70 backdrop-blur-[20px]" onClick={() => { setIsAbsenceModalOpen(false); setSelectedAbsenceCrew(null); }} />
               
-              <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10">
-                <div className="animate-modal-heavy-breathe w-[800px] h-[600px] bg-[#060813]/95 border-2 border-red-500/50 rounded-[2.5rem] shadow-[0_0_100px_rgba(239,68,68,0.2)] flex overflow-hidden">
+              <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10 w-full max-w-[800px] max-h-[90vh]">
+                <div className="animate-modal-heavy-breathe w-full h-[85vh] sm:h-[600px] sm:max-h-[85vh] bg-[#060813]/95 border-2 border-red-500/50 rounded-2xl sm:rounded-[2.5rem] shadow-[0_0_100px_rgba(239,68,68,0.2)] flex flex-col sm:flex-row overflow-hidden">
                   
-                  <div className="w-1/3 border-r border-red-500/20 bg-black/40 p-6 flex flex-col shrink-0">
-                    <div className="text-xl font-bold text-red-400 tracking-[0.2em] mb-2 font-[family-name:var(--font-space)]">缺勤干预</div>
-                    <div className="text-[10px] font-mono text-red-500/60 uppercase tracking-widest mb-6">Select Crew to Audit</div>
-                    <div className="flex-1 overflow-y-auto emerald-scrollbar space-y-2 pr-2">
+                  <div className="w-full sm:w-1/3 border-b sm:border-b-0 sm:border-r border-red-500/20 bg-black/40 p-4 sm:p-6 flex flex-col shrink-0 max-h-[40%] sm:max-h-none">
+                    <div className="text-lg sm:text-xl font-bold text-red-400 tracking-[0.15em] sm:tracking-[0.2em] mb-1 sm:mb-2 font-[family-name:var(--font-space)]">缺勤干预</div>
+                    <div className="text-[10px] font-mono text-red-500/60 uppercase tracking-widest mb-3 sm:mb-6">Select Crew to Audit</div>
+                    <div className="flex-1 overflow-y-auto emerald-scrollbar space-y-2 pr-1 sm:pr-2">
                       {crewMembers.map(crew => (
                         <button 
                           key={crew} 
                           onClick={() => setSelectedAbsenceCrew(crew)}
-                          className={`w-full text-left p-4 rounded-xl border transition-all duration-300 ${selectedAbsenceCrew === crew ? 'bg-red-500/20 border-red-500/50 text-red-400 shadow-[inset_0_0_15px_rgba(239,68,68,0.3)]' : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10 hover:text-white'}`}
+                          className={`w-full text-left p-3 sm:p-4 rounded-xl border transition-all duration-300 ${selectedAbsenceCrew === crew ? 'bg-red-500/20 border-red-500/50 text-red-400 shadow-[inset_0_0_15px_rgba(239,68,68,0.3)]' : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10 hover:text-white'}`}
                         >
-                          <span className="text-sm font-bold tracking-widest truncate block">{crew}</span>
+                          <span className="text-xs sm:text-sm font-bold tracking-widest truncate block">{crew}</span>
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  <div className="w-2/3 p-8 flex flex-col relative bg-[#02040a]/40">
+                  <div className="flex-1 sm:w-2/3 p-4 sm:p-8 flex flex-col relative bg-[#02040a]/40 min-h-0">
                     {selectedAbsenceCrew ? (
                       <>
-                        <div className="flex items-center gap-3 mb-8 border-b border-white/10 pb-4">
-                          <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
-                          <h3 className="text-lg font-bold text-white tracking-widest">{selectedAbsenceCrew} <span className="text-zinc-500 font-mono text-xs ml-2">的违纪记录</span></h3>
+                        <div className="flex items-center gap-3 mb-4 sm:mb-8 border-b border-white/10 pb-3 sm:pb-4">
+                          <span className="w-2 h-2 rounded-full bg-red-500 animate-ping shrink-0"></span>
+                          <h3 className="text-base sm:text-lg font-bold text-white tracking-widest truncate">{selectedAbsenceCrew} <span className="text-zinc-500 font-mono text-[10px] sm:text-xs ml-2">的违纪记录</span></h3>
                         </div>
                         
                         <div className="flex-1 overflow-y-auto red-scrollbar pr-2 flex flex-col gap-3 relative min-h-[100px]">
@@ -605,7 +605,7 @@ export function FleetAttendanceModule({
                       </div>
                     )}
 
-                    <button onClick={() => { setIsAbsenceModalOpen(false); setSelectedAbsenceCrew(null); }} className="w-full mt-6 py-4 rounded-xl bg-white/5 border border-white/10 text-zinc-400 font-bold tracking-[0.2em] hover:bg-white/10 hover:text-white transition-all active:scale-95">关闭控制台</button>
+                    <button onClick={() => { setIsAbsenceModalOpen(false); setSelectedAbsenceCrew(null); }} className="w-full mt-4 sm:mt-6 py-3 sm:py-4 rounded-xl bg-white/5 border border-white/10 text-zinc-400 text-xs sm:text-base font-bold tracking-[0.15em] sm:tracking-[0.2em] hover:bg-white/10 hover:text-white transition-all active:scale-95">关闭控制台</button>
                   </div>
                 </div>
               </motion.div>
@@ -620,21 +620,21 @@ export function FleetAttendanceModule({
             <div key="logs-modal-wrapper" className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
               <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/70 backdrop-blur-[20px]" onClick={()=>{setSelectedDateKey(null); setSelectedLogId(null)}} />
               
-              <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10">
+              <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative z-10 w-full max-w-[500px] max-h-[90vh]">
                 <div className="flex items-center justify-center gap-6 w-full max-w-6xl pointer-events-none">
                   <AnimatePresence mode="wait">
                     
                     <motion.div 
                       layout 
                       transition={springTransition}
-                      className="animate-modal-heavy-breathe pointer-events-auto shrink-0 min-w-[420px] w-[500px] h-[540px] bg-[#060813]/95 border-2 border-amber-500/50 rounded-[2.5rem] shadow-2xl flex flex-col p-8 overflow-hidden relative"
+                      className="animate-modal-heavy-breathe pointer-events-auto shrink-0 w-full min-w-0 sm:min-w-[420px] sm:w-[500px] h-[85vh] sm:h-[540px] sm:max-h-[85vh] bg-[#060813]/95 border-2 border-amber-500/50 rounded-2xl sm:rounded-[2.5rem] shadow-2xl flex flex-col p-5 sm:p-8 overflow-hidden relative"
                     >
                       <AnimatePresence mode="wait">
                         {!selectedLogId ? (
-                          <motion.div key="list" variants={{in:{x:0, opacity:1}, out:{x:-50, opacity:0}}} initial="out" animate="in" exit="out" transition={{type:"spring", stiffness:300, damping:30}} className="flex flex-col h-full">
-                            <div className="flex justify-between items-center mb-6 border-b border-amber-500/20 pb-4">
-                              <h2 className="text-xl font-bold text-amber-400 tracking-[0.2em]">历史集结档案</h2>
-                              <span className="text-amber-500/60 font-mono text-sm">{selectedDateKey}</span>
+                          <motion.div key="list" variants={{in:{x:0, opacity:1}, out:{x:-50, opacity:0}}} initial="out" animate="in" exit="out" transition={{type:"spring", stiffness:300, damping:30}} className="flex flex-col h-full min-h-0">
+                            <div className="flex justify-between items-center mb-4 sm:mb-6 border-b border-amber-500/20 pb-3 sm:pb-4 gap-3">
+                              <h2 className="text-base sm:text-xl font-bold text-amber-400 tracking-[0.15em] sm:tracking-[0.2em]">历史集结档案</h2>
+                              <span className="text-amber-500/60 font-mono text-xs sm:text-sm">{selectedDateKey}</span>
                             </div>
                             
                             <div className="flex-1 overflow-y-auto amber-scrollbar pr-2 flex flex-col gap-3 mb-6 relative min-h-[100px]">
@@ -648,18 +648,18 @@ export function FleetAttendanceModule({
                                     exit={{ opacity: 0, scale: 0.5, filter: "blur(10px) brightness(2)", transition: { duration: 0.25 } }}
                                     transition={bouncySpring}
                                     onClick={() => setSelectedLogId(log.id)} 
-                                    className={`group relative flex justify-between items-center border hover:border-amber-500/40 p-5 rounded-2xl cursor-pointer transition-colors active:scale-[0.98] overflow-hidden ${selectedLogId === log.id ? 'bg-amber-500/20 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'bg-white/5 border-white/10'}`}
+                                    className={`group relative flex justify-between items-center border hover:border-amber-500/40 p-3 sm:p-5 rounded-xl sm:rounded-2xl cursor-pointer transition-colors active:scale-[0.98] overflow-hidden gap-3 ${selectedLogId === log.id ? 'bg-amber-500/20 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'bg-white/5 border-white/10'}`}
                                   >
                                     <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(245,158,11,0.05),transparent)] -translate-x-full group-hover:animate-[shimmer-seamless_2s_infinite] pointer-events-none" />
                                     
-                                    <div className="z-10">
-                                      <div className={`text-sm font-bold mb-1 transition-colors ${selectedLogId === log.id ? 'text-amber-400' : 'text-white group-hover:text-amber-300'}`}>
+                                    <div className="z-10 min-w-0">
+                                      <div className={`text-xs sm:text-sm font-bold mb-1 transition-colors truncate ${selectedLogId === log.id ? 'text-amber-400' : 'text-white group-hover:text-amber-300'}`}>
                                         签到记录 / {new Date(log.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}
                                       </div>
-                                      <div className="text-[10px] font-mono text-zinc-500 uppercase mt-1">Status: SYNCED - {log.present.length} Crew</div>
+                                      <div className="text-[10px] font-mono text-zinc-500 uppercase mt-1 truncate">Status: SYNCED - {log.present.length} Crew</div>
                                     </div>
                                     
-                                    <div className="flex items-center gap-4 z-10">
+                                    <div className="flex items-center gap-3 sm:gap-4 z-10 shrink-0">
                                       {isManager && (
                                         <div onClick={(e) => handleDeleteLog(e, log.id)} className="w-8 h-8 rounded-lg flex items-center justify-center bg-red-500/10 text-red-500/50 hover:bg-red-500 hover:text-white transition-all hover:scale-110 active:scale-90" title="删除该记录">
                                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -675,15 +675,15 @@ export function FleetAttendanceModule({
                                 )}
                               </AnimatePresence>
                             </div>
-                            <button onClick={()=>setSelectedDateKey(null)} className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-zinc-400 font-bold hover:text-white transition-all active:scale-95 mt-auto">关闭档案室</button>
+                            <button onClick={()=>setSelectedDateKey(null)} className="w-full py-3 sm:py-4 bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl text-zinc-400 text-xs sm:text-base font-bold hover:text-white transition-all active:scale-95 mt-auto">关闭档案室</button>
                           </motion.div>
                         ) : (
-                          <motion.div key="detail" variants={{in:{x:0, opacity:1}, out:{x:50, opacity:0}}} initial="out" animate="in" exit="out" transition={{type:"spring", stiffness:300, damping:30}} className="flex flex-col h-full">
-                            <div className="flex items-center gap-4 mb-6 border-b border-amber-500/20 pb-4">
-                              <button onClick={()=>setSelectedLogId(null)} className="w-10 h-10 rounded-xl bg-white/5 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-400 transition-all flex items-center justify-center active:scale-90">◀</button>
-                              <div><h2 className="text-xl font-bold text-amber-400 tracking-[0.2em]">档案详情</h2>{activeDetail && <span className="text-[10px] font-mono text-zinc-500 uppercase">Ref: {new Date(activeDetail.timestamp).toLocaleString()}</span>}</div>
+                          <motion.div key="detail" variants={{in:{x:0, opacity:1}, out:{x:50, opacity:0}}} initial="out" animate="in" exit="out" transition={{type:"spring", stiffness:300, damping:30}} className="flex flex-col h-full min-h-0">
+                            <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 border-b border-amber-500/20 pb-3 sm:pb-4">
+                              <button onClick={()=>setSelectedLogId(null)} className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/5 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-400 transition-all flex items-center justify-center active:scale-90 shrink-0">◀</button>
+                              <div className="min-w-0"><h2 className="text-base sm:text-xl font-bold text-amber-400 tracking-[0.15em] sm:tracking-[0.2em]">档案详情</h2>{activeDetail && <span className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase truncate block">Ref: {new Date(activeDetail.timestamp).toLocaleString()}</span>}</div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4 flex-1 overflow-hidden">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 flex-1 overflow-hidden min-h-0">
                                <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 flex flex-col h-full shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
                                  <div className="text-[10px] text-emerald-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between"><span>已就位</span><span>{activeDetail?.present.length}</span></div>
                                  <div className="flex-1 overflow-y-auto emerald-scrollbar space-y-2 pr-1 min-h-0">
@@ -726,43 +726,43 @@ export function FleetAttendanceModule({
           {isSummaryOpen && (
             <div key="summary-modal-wrapper" className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
               <motion.div variants={overlayVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px]" />
-              <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative w-full max-w-xl z-10">
-                <div className="animate-modal-heavy-breathe w-full rounded-[2.5rem] bg-[#060813]/95 border-2 border-amber-500/50 p-8 md:p-10 shadow-[0_0_80px_rgba(245,158,11,0.2)] overflow-hidden">
-                  <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 mb-4 shadow-[0_0_20px_rgba(245,158,11,0.2)]"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
-                    <h2 className="text-2xl font-bold text-amber-400 tracking-[0.2em] font-[family-name:var(--font-space)]">集结通道已关闭</h2>
-                    <p className="text-zinc-500 font-mono text-xs mt-2 uppercase tracking-widest">Synchronization Complete</p>
+              <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="relative w-full max-w-xl z-10 max-h-[90vh] overflow-y-auto">
+                <div className="animate-modal-heavy-breathe w-full rounded-2xl sm:rounded-[2.5rem] bg-[#060813]/95 border-2 border-amber-500/50 p-5 sm:p-8 md:p-10 shadow-[0_0_80px_rgba(245,158,11,0.2)] overflow-hidden">
+                  <div className="text-center mb-5 sm:mb-8">
+                    <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 mb-3 sm:mb-4 shadow-[0_0_20px_rgba(245,158,11,0.2)]"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-6 h-6 sm:w-8 sm:h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
+                    <h2 className="text-xl sm:text-2xl font-bold text-amber-400 tracking-[0.15em] sm:tracking-[0.2em] font-[family-name:var(--font-space)]">集结通道已关闭</h2>
+                    <p className="text-zinc-500 font-mono text-[10px] sm:text-xs mt-2 uppercase tracking-widest">Synchronization Complete</p>
                   </div>
     
-                  <div className="grid grid-cols-2 gap-6 mb-8">
-                    <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] flex flex-col h-full">
-                      <div className="text-[10px] text-emerald-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between shrink-0"><span>已就位 (Synced)</span><span>{presentCrew.length}</span></div>
-                      <div className="flex-1 overflow-y-auto emerald-scrollbar pr-1 space-y-2 min-h-0 h-[250px]">
-                        {presentCrew.map(c => <div key={c} className="text-sm font-bold text-emerald-400 bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/20">{c}</div>)}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 mb-5 sm:mb-8">
+                    <div className="bg-black/40 border border-emerald-500/20 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] flex flex-col h-full">
+                      <div className="text-[10px] text-emerald-500/60 font-mono uppercase tracking-widest mb-2 sm:mb-3 flex justify-between shrink-0"><span>已就位 (Synced)</span><span>{presentCrew.length}</span></div>
+                      <div className="flex-1 overflow-y-auto emerald-scrollbar pr-1 space-y-2 min-h-0 h-[180px] sm:h-[250px]">
+                        {presentCrew.map(c => <div key={c} className="text-xs sm:text-sm font-bold text-emerald-400 bg-emerald-500/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-emerald-500/20 truncate">{c}</div>)}
                         {presentCrew.length === 0 && <div className="text-xs text-zinc-600 italic">无人响应...</div>}
                       </div>
                     </div>
                     
-                    <div className="bg-black/40 border border-red-500/20 rounded-2xl p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] flex flex-col h-full">
-                      <div className="text-[10px] text-red-500/60 font-mono uppercase tracking-widest mb-3 flex justify-between shrink-0">
+                    <div className="bg-black/40 border border-red-500/20 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] flex flex-col h-full">
+                      <div className="text-[10px] text-red-500/60 font-mono uppercase tracking-widest mb-2 sm:mb-3 flex justify-between shrink-0">
                         <span>未响应 (Missing/Leave)</span>
                         <span>{trueMissing.length + currentlyOnLeave.length}</span>
                       </div>
-                      <div className="flex-1 overflow-y-auto red-scrollbar pr-1 space-y-2 min-h-0 h-[250px]">
+                      <div className="flex-1 overflow-y-auto red-scrollbar pr-1 space-y-2 min-h-0 h-[180px] sm:h-[250px]">
                         {trueMissing.map(c => (
-                          <div key={c} className="text-xs font-bold text-red-400 bg-red-500/10 px-3 py-2 rounded-lg border border-red-500/20">{c}</div>
+                          <div key={c} className="text-xs font-bold text-red-400 bg-red-500/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-red-500/20 truncate">{c}</div>
                         ))}
                         {currentlyOnLeave.map(c => (
-                          <div key={c} className="text-xs font-bold text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20 flex justify-between items-center">
-                            {c}
-                            <span className="text-[9px] bg-amber-500/20 px-1.5 py-0.5 rounded text-amber-400 border border-amber-500/30">休假中</span>
+                          <div key={c} className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-amber-500/20 flex justify-between items-center gap-2">
+                            <span className="truncate min-w-0">{c}</span>
+                            <span className="text-[9px] bg-amber-500/20 px-1.5 py-0.5 rounded text-amber-400 border border-amber-500/30 shrink-0">休假中</span>
                           </div>
                         ))}
                         {(trueMissing.length + currentlyOnLeave.length) === 0 && <div className="text-xs text-emerald-500/50 italic">全员集结完毕！</div>}
                       </div>
                     </div>
                   </div>
-                  <button onClick={handleSaveAndClose} className="w-full py-4 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 font-bold tracking-[0.2em] hover:bg-amber-500 hover:text-black transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] active:scale-95">刻录入舰队档案</button>
+                  <button onClick={handleSaveAndClose} className="w-full py-3 sm:py-4 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 text-xs sm:text-base font-bold tracking-[0.15em] sm:tracking-[0.2em] hover:bg-amber-500 hover:text-black transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] active:scale-95">刻录入舰队档案</button>
                 </div>
               </motion.div>
             </div>

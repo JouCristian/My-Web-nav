@@ -155,15 +155,15 @@ export default async function Home() {
 
       <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
 
-      <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-10 pointer-events-none">
+      <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 pt-24 sm:pt-20 md:pt-10 pb-12 pointer-events-none">
         
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.6)_0%,transparent_65%)] z-0 pointer-events-none"></div>
 
-        <div className="animate-float-up pointer-events-auto relative z-10 mb-8 font-mono text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
+        <div className="animate-float-up pointer-events-auto relative z-10 mb-6 sm:mb-8 font-mono text-base sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
           <RotatingText
             prefix="Creating"
             texts={['thinking!', 'coding!', 'components!', 'ysyxing!']}
-            mainClassName="px-4 py-1.5 md:px-6 md:py-2 bg-cyan-400 text-black overflow-hidden rounded-[1.2rem] shadow-[0_0_20px_rgba(34,211,238,0.4)] flex items-center justify-center"
+            mainClassName="px-3 py-1 sm:px-4 sm:py-1.5 md:px-6 md:py-2 bg-cyan-400 text-black overflow-hidden rounded-[1rem] sm:rounded-[1.2rem] shadow-[0_0_20px_rgba(34,211,238,0.4)] flex items-center justify-center"
             staggerFrom={"last"}
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -175,7 +175,7 @@ export default async function Home() {
           />
         </div>
 
-        <h1 className="animate-float-up pointer-events-auto relative z-10 text-4xl sm:text-5xl md:text-6xl lg:text-7xl whitespace-nowrap font-bold tracking-tighter font-[family-name:var(--font-space)] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-6" style={{ animationDelay: '0.2s' }}>
+        <h1 className="animate-float-up pointer-events-auto relative z-10 text-2xl sm:text-4xl md:text-6xl lg:text-7xl md:whitespace-nowrap font-bold tracking-tight md:tracking-tighter font-[family-name:var(--font-space)] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-4 sm:mb-6 px-2 text-balance" style={{ animationDelay: '0.2s' }}>
           <ShinyText 
             text={cardTitle} 
             speed={2} 
@@ -187,28 +187,28 @@ export default async function Home() {
           />
         </h1>
         
-        <p className="animate-float-up pointer-events-auto relative z-10 text-sm sm:text-base md:text-lg whitespace-nowrap text-zinc-300 tracking-widest mx-auto leading-relaxed mb-16 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]" style={{ animationDelay: '0.3s' }}>
+        <p className="animate-float-up pointer-events-auto relative z-10 text-xs sm:text-base md:text-lg md:whitespace-nowrap text-zinc-300 tracking-wider sm:tracking-widest mx-auto leading-relaxed mb-10 sm:mb-16 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] px-4 max-w-md sm:max-w-none text-balance" style={{ animationDelay: '0.3s' }}>
           {cardSubtitle}
         </p>
 
         <div className="animate-float-up pointer-events-auto relative z-10" style={{ animationDelay: '0.4s' }}>
           <TransitionLink 
             href={session ? "/dashboard" : "/login"} 
-            className="spring-btn-hero group relative inline-flex items-center justify-center gap-4 px-12 py-5 rounded-full bg-white text-black font-bold text-lg overflow-hidden"
+            className="spring-btn-hero group relative inline-flex items-center justify-center gap-3 sm:gap-4 px-7 py-3.5 sm:px-12 sm:py-5 rounded-full bg-white text-black font-bold text-sm sm:text-lg overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
-            <span className="relative z-10 tracking-[0.15em]">{btnText}</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5 relative z-10 transition-transform group-hover:translate-x-1"><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <span className="relative z-10 tracking-[0.1em] sm:tracking-[0.15em]">{btnText}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4 sm:w-5 sm:h-5 relative z-10 transition-transform group-hover:translate-x-1"><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
           </TransitionLink>
         </div>
 
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-40 animate-bounce pointer-events-auto z-10">
+        <div className="hidden sm:flex absolute bottom-10 left-1/2 -translate-x-1/2 flex-col items-center gap-3 opacity-40 animate-bounce pointer-events-auto z-10">
           <span className="text-[9px] font-mono tracking-[0.4em] uppercase text-zinc-400">Scroll to Explore Databanks</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-zinc-500"><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
         </div>
       </section>
 
-      <section className="relative z-10 max-w-7xl mx-auto px-6 pb-40">
+      <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-24 sm:pb-40">
         
         {generatedLogos.length > 0 && (
           <div className="w-full mb-16 relative overflow-hidden pointer-events-auto z-10 mask-edges">
@@ -225,19 +225,19 @@ export default async function Home() {
           </div>
         )}
 
-        <div className="flex items-center justify-center gap-6 mb-20 opacity-30">
-          <div className="h-px bg-gradient-to-r from-transparent to-white/50 w-32 md:w-64"></div>
+        <div className="flex items-center justify-center gap-4 sm:gap-6 mb-12 sm:mb-20 opacity-30">
+          <div className="h-px bg-gradient-to-r from-transparent to-white/50 w-20 sm:w-32 md:w-64"></div>
           <span className="w-2 h-2 rotate-45 border border-white/50"></span>
-          <div className="h-px bg-gradient-to-l from-transparent to-white/50 w-32 md:w-64"></div>
+          <div className="h-px bg-gradient-to-l from-transparent to-white/50 w-20 sm:w-32 md:w-64"></div>
         </div>
 
         {isCaptain && (
-          <div className="mb-12">
+          <div className="mb-8 sm:mb-12">
             <AddCardForm />
           </div>
         )}
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {links.map((link: Bookmark, index: number) => (
             <div key={link.id} className="fade-in-nav opacity-0" style={{ animationDelay: `${(index * 100) + 200}ms` }}>
               <NavigationCard 

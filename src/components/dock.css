@@ -9,6 +9,8 @@
     justify-content: center;
     z-index: 100;
     pointer-events: none; 
+    /* 🚀 移动端避免溢出屏幕 */
+    max-width: calc(100vw - 1rem);
   }
   
   .dock-panel {
@@ -16,11 +18,36 @@
     display: flex;
     align-items: center;
     width: fit-content;
+    max-width: 100%;
     /* 🚀 稍微拉开间距和内边距，让光学玻璃边缘的透气感更强 */
     gap: 0.85rem;
     border-radius: 2.5rem;
     padding: 0.6rem 1.2rem;
     position: relative; 
+  }
+
+  /* 🚀 移动端深度优化：极限缩小到能完整容纳 8 个图标，绝不溢出屏幕 */
+  @media (max-width: 640px) {
+    .dock-outer {
+      top: 0.75rem;
+      max-width: calc(100vw - 0.5rem);
+    }
+    .dock-panel {
+      gap: 0.3rem;
+      padding: 0.35rem 0.55rem;
+      border-radius: 1.8rem;
+    }
+  }
+
+  /* 🚀 平板/中屏适度收紧 */
+  @media (min-width: 641px) and (max-width: 1024px) {
+    .dock-outer {
+      top: 1.25rem;
+    }
+    .dock-panel {
+      gap: 0.55rem;
+      padding: 0.5rem 0.9rem;
+    }
   }
   
   .dock-item {
