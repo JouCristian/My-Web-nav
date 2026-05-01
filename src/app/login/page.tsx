@@ -2,8 +2,11 @@
 import { auth, signIn } from "@/auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
+import { Crown, ShieldCheck, UserRound, Hourglass } from "lucide-react"
 import Prism from "@/components/Prism" 
 import { HideSpacetime } from "@/components/hide-spacetime" 
+
+const IS_DEV = process.env.NODE_ENV !== "production"
 
 export default async function LoginPage({ searchParams }: { searchParams: { error?: string } }) {
   const session = await auth()
@@ -140,16 +143,76 @@ export default async function LoginPage({ searchParams }: { searchParams: { erro
             </div>
 
             <form action={async () => { "use server"; await signIn("gitee", { redirectTo: "/" }); }}>
-              <button className="spring-physics group w-full h-14 flex items-center justify-center gap-3 bg-[#0a0c14]/60 backdrop-blur-md border border-white/10 text-white font-bold rounded-2xl shadow-[inset_0_2px_20px_rgba(255,255,255,0.02),_0_10px_30px_rgba(0,0,0,0.5)] hover:bg-[#111424]/80 hover:border-purple-500/50 hover:shadow-[inset_0_2px_20px_rgba(168,85,247,0.2),_0_20px_50px_rgba(168,85,247,0.3)] relative overflow-hidden">
-                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
-                <span className="text-2xl font-bold font-mono transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6 drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] group-hover:drop-shadow-[0_0_15px_rgba(168,85,247,0.8)] relative z-10">G</span>
+              <button className="spring-physics group w-full h-14 flex items-center justify-center gap-3 bg-[#0a0c14]/60 backdrop-blur-md border border-white/10 text-white font-bold rounded-2xl shadow-[inset_0_2px_20px_rgba(255,255,255,0.02),_0_10px_30px_rgba(0,0,0,0.5)] hover:bg-[#111424]/80 hover:border-cyan-500/50 hover:shadow-[inset_0_2px_20px_rgba(34,211,238,0.18),_0_20px_50px_rgba(34,211,238,0.25)] relative overflow-hidden">
+                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                <span className="text-2xl font-bold font-mono transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6 drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] group-hover:drop-shadow-[0_0_15px_rgba(34,211,238,0.8)] relative z-10">G</span>
                 <span className="text-[15px] tracking-widest text-zinc-300 group-hover:text-white transition-colors relative z-10">Gitee 国内直连</span>
               </button>
             </form>
+
+            {IS_DEV && (
+              <div className="pt-4 border-t border-dashed border-amber-500/20">
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <div className="h-px bg-gradient-to-r from-transparent to-amber-500/40 flex-1" />
+                  <span className="text-[9px] font-mono text-amber-400/80 tracking-[0.4em] uppercase whitespace-nowrap">
+                    Dev · Quick Login
+                  </span>
+                  <div className="h-px bg-gradient-to-l from-transparent to-amber-500/40 flex-1" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <DevLoginButton role="OWNER" label="舰长" Icon={Crown} accent="amber" />
+                  <DevLoginButton role="ADMIN" label="管理员" Icon={ShieldCheck} accent="emerald" />
+                  <DevLoginButton role="MEMBER" label="船员" Icon={UserRound} accent="cyan" />
+                  <DevLoginButton role="PENDING" label="待审核" Icon={Hourglass} accent="zinc" />
+                </div>
+
+                <p className="text-[9px] font-mono text-amber-500/50 text-center mt-3 tracking-wider">
+                  仅开发环境可见 · 生产构建自动消失
+                </p>
+              </div>
+            )}
 
           </div>
         </div>
       </div>
     </main>
+  )
+}
+
+function DevLoginButton({
+  role,
+  label,
+  Icon,
+  accent,
+}: {
+  role: "OWNER" | "ADMIN" | "MEMBER" | "PENDING"
+  label: string
+  Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>
+  accent: "amber" | "emerald" | "cyan" | "zinc"
+}) {
+  const palette: Record<typeof accent, string> = {
+    amber:
+      "border-amber-500/25 hover:border-amber-400/70 text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 hover:shadow-[0_0_20px_rgba(245,158,11,0.25)]",
+    emerald:
+      "border-emerald-500/25 hover:border-emerald-400/70 text-emerald-300 hover:text-emerald-200 hover:bg-emerald-500/10 hover:shadow-[0_0_20px_rgba(16,185,129,0.25)]",
+    cyan:
+      "border-cyan-500/25 hover:border-cyan-400/70 text-cyan-300 hover:text-cyan-200 hover:bg-cyan-500/10 hover:shadow-[0_0_20px_rgba(34,211,238,0.25)]",
+    zinc:
+      "border-zinc-500/25 hover:border-zinc-300/60 text-zinc-300 hover:text-white hover:bg-zinc-500/10",
+  }
+
+  return (
+    <form action="/api/dev-login" method="POST">
+      <input type="hidden" name="role" value={role} />
+      <button
+        type="submit"
+        className={`group w-full h-12 flex items-center justify-center gap-2 bg-[#0a0c14]/60 backdrop-blur-md border rounded-xl text-xs font-mono tracking-widest transition-all active:scale-95 ${palette[accent]}`}
+        style={{ transitionDuration: "400ms", transitionTimingFunction: "var(--ease-spring)" }}
+      >
+        <Icon size={14} strokeWidth={2} className="transition-transform group-hover:scale-110" />
+        <span>{label}</span>
+      </button>
+    </form>
   )
 }
