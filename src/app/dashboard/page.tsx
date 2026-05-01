@@ -270,8 +270,8 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* 右侧：航行日志 */}
-        <div className="lg:col-span-1 rounded-[2rem] sm:rounded-[3rem] lg:rounded-[3.5rem] border border-emerald-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-5 sm:p-8 lg:p-10 shadow-[0_0_100px_rgba(16,185,129,0.15)] flex flex-col h-full relative overflow-hidden group">
+        {/* 右侧：航行日志（移动端：grid 变单列后失去兄弟列撑高，给一个最小高度让 flex-1 的日历主体能完整显示；桌面端 lg 之上由 grid items-stretch 接管） */}
+        <div className="lg:col-span-1 min-h-[560px] sm:min-h-[640px] lg:min-h-0 rounded-[2rem] sm:rounded-[3rem] lg:rounded-[3.5rem] border border-emerald-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-5 sm:p-8 lg:p-10 shadow-[0_0_100px_rgba(16,185,129,0.15)] flex flex-col h-full relative overflow-hidden group">
           <div className="absolute inset-0 bg-emerald-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
           <FlightLogCalendar userRole={dbUser.role || "PENDING"} />
         </div>
