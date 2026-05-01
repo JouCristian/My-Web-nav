@@ -177,9 +177,11 @@ model RollCallSession {
 model AttendanceRecord {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  // 🚀 核心修复 1：加上 onDelete: Cascade，当船员被开除时，自动销毁他的签到记录
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade) 
   sessionId String
-  session   RollCallSession @relation(fields: [sessionId], references: [id])
+  // 🚀 核心修复 2：加上 onDelete: Cascade，当签到场次被删除时，自动清空该场次下的所有打卡数据
+  session   RollCallSession @relation(fields: [sessionId], references: [id], onDelete: Cascade) 
   timestamp DateTime @default(now())
 
   // 复合唯一键，防止同一船员在同一次集结中重复签到

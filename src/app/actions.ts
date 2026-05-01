@@ -319,3 +319,28 @@ export async function mergeAccountsAction() {
     return { success: false, error: "数据合并失败，存在引力波干扰" }
   }
 }
+
+/**
+ * ==========================================
+ * 🚀 核心修复：舰长特权 - 开除船员 (彻底抹除档案)
+ * ==========================================
+ */
+export async function removeCrewAction(userId: string) {
+  const session = await auth()
+  
+  // 校验当前操作者的权限
+  const admin = await prisma.user.findUnique({ where: { id: session?.user?.id || "" } })
+  if (admin?.role !== "OWNER" && admin?.role !== "ADMIN") {
+    throw new Error("权限不足：非法操作指挥序列")
+  }
+  
+  // 保护最高指挥官免受误删
+  const targetUser = await prisma.user.findUnique({ where: { id: userId } })
+  if (targetUser?.role === "OWNER") {
+    throw new Error("指令驳回：无法对最高指挥官执行抹除操作")
+  }
+
+  // 执行彻底删除（由于在 schema 里加了 Cascade，Ta的发帖、请假、签到全都会被干净地级联抹除）
+  await prisma.user.delete({ where: { id: userId } })
+  revalidatePath("/dashboard/crew")
+}
