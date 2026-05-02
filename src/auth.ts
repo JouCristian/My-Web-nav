@@ -4,13 +4,20 @@ import GitHub from "next-auth/providers/github"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/db"
 
-// 🚀 启动时校验 Gitee 凭据，缺失时给出清晰错误（避免 NextAuth 抛模糊的 "Configuration" 错误）
-const GITEE_CLIENT_ID = process.env.GITEE_CLIENT_ID
-const GITEE_CLIENT_SECRET = process.env.GITEE_CLIENT_SECRET
+// 🚀 兼容两套环境变量命名：优先使用 GITEE_CLIENT_*（新），回退到 AUTH_GITEE_*（项目里 3 天前就有的）
+// 这样无论这次部署是否包含新加的 env 都不会挂
+const GITEE_CLIENT_ID = process.env.GITEE_CLIENT_ID || process.env.AUTH_GITEE_ID
+const GITEE_CLIENT_SECRET = process.env.GITEE_CLIENT_SECRET || process.env.AUTH_GITEE_SECRET
 
 if (!GITEE_CLIENT_ID || !GITEE_CLIENT_SECRET) {
   console.error(
-    "[v0][auth] Gitee OAuth 凭据缺失：请在 Vercel 项目环境变量里配置 GITEE_CLIENT_ID 和 GITEE_CLIENT_SECRET",
+    "[v0][auth] Gitee OAuth 凭据缺失：未读到 GITEE_CLIENT_ID/SECRET 也未读到 AUTH_GITEE_ID/SECRET。",
+    {
+      hasGiteeClientId: !!process.env.GITEE_CLIENT_ID,
+      hasGiteeClientSecret: !!process.env.GITEE_CLIENT_SECRET,
+      hasAuthGiteeId: !!process.env.AUTH_GITEE_ID,
+      hasAuthGiteeSecret: !!process.env.AUTH_GITEE_SECRET,
+    },
   )
 }
 
