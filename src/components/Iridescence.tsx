@@ -120,7 +120,7 @@ export default function Iridescence({
       animateId = requestAnimationFrame(update);
       
       // 平滑因子：数值越小，过渡越丝滑（0.05 约等于 Apple 的 easeOut 感觉）
-      const ease = 0.05; 
+      const ease = 0.015;
       
       // 帧级平滑插值 (Lerp)
       currentProps.current.speed = lerp(currentProps.current.speed, targetProps.current.speed, ease);
