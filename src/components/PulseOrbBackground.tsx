@@ -1,14 +1,14 @@
 "use client"
 
 import React, { useEffect, useState, useCallback } from "react"
-import dynamic from "next/dynamic"
 
-// 动态导入组件，避免 SSR 报错
-const Orb = dynamic(() => import("./Orb"), { ssr: false })
-const Galaxy = dynamic(() => import("./Galaxy"), { ssr: false })
+// 【关键修复】直接引入，取消内部的 dynamic 套娃！
+// 因为外层的 background-wrapper 已经关闭了 SSR，这里完全可以安全地静态导入
+import Orb from "./Orb"
+import Galaxy from "./Galaxy"
 
 export function PulseOrbBackground() {
-  const [mounted, setMounted] = useState(false)
+  // 移除了 mounted 状态，组件直接秒级挂载
   const [fixedHeight, setFixedHeight] = useState("100vh")
   const [isRound, setIsRound] = useState(false)
   
@@ -27,10 +27,10 @@ export function PulseOrbBackground() {
   }, [triggerPulse])
 
   useEffect(() => {
-    setMounted(true)
     let lastWidth = window.innerWidth
     const lockHeight = () => setFixedHeight(`${window.innerHeight}px`)
-    lockHeight()
+    lockHeight() // 初始锁定高度
+    
     const handleResize = () => {
       if (window.innerWidth !== lastWidth) {
         lastWidth = window.innerWidth
@@ -41,10 +41,6 @@ export function PulseOrbBackground() {
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  if (!mounted) {
-    return <div className="fixed inset-0 z-[-1]" style={{ backgroundColor: "#020205" }} aria-hidden="true" />
-  }
-
   return (
     <div
       className="fixed z-[-1] overflow-hidden"
@@ -53,32 +49,29 @@ export function PulseOrbBackground() {
         left: 0,
         width: "100vw",
         height: fixedHeight,
-        backgroundColor: "#020205", // 宇宙黑底色
+        backgroundColor: "#020205", // 宇宙黑底色，确保没有白底漏出
       }}
     >
-      {/* 第一层：Galaxy (放在最底层，使用截图参数) */}
+      {/* 第一层：Galaxy 星空 */}
       <div className="absolute inset-0 z-0 opacity-80">
         <Galaxy
           mouseInteraction={true}
           mouseRepulsion={true}
           density={2.8}
           glowIntensity={0.2}
-          saturation={0}         // 零饱和度，打造高级黑白星空
+          saturation={0}         
           hueShift={120}
           twinkleIntensity={0.2}
-          rotationSpeed={0.05}   // 缓慢旋转的史诗感
+          rotationSpeed={0.05}   
           repulsionStrength={0.5}
           autoCenterRepulsion={0}
           starSpeed={0.2}
           speed={0.5}
-          transparent={true}     // 保证底色透传
+          transparent={true}     
         />
       </div>
 
-      {/* 第二层：Orb (放在上层)
-        加上 pointer-events-none 让鼠标事件穿透到下层的 Galaxy，
-        这样你滑动鼠标时，底层星系会被推开，上层能量团也会扭曲，两层联动！
-      */}
+      {/* 第二层：Orb 能量核心 */}
       <div className="absolute inset-0 z-10 pointer-events-none">
         <Orb
           hue={102}                 
