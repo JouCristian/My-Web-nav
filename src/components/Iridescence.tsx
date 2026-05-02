@@ -13,7 +13,7 @@ void main() {
 }
 `;
 
-// 着色器彻底移除了 uSpeed 计算，改为接受 JavaScript 算好的绝对相位 uTime
+// 着色器已更新：加入了灰度/亮度计算，强制剔除所有色彩，只保留纯白光影
 const fragmentShader = `
 precision highp float;
 uniform float uTime;
@@ -35,9 +35,18 @@ void main() {
     d += sin(uv.y * i + a);
   }
   d += uTime;
+  
+  // 计算原始的波纹矢量
   vec3 col = vec3(cos(uv * vec2(d, a)) * 0.6 + 0.4, cos(a + d) * 0.5 + 0.5);
-  col = cos(col * cos(vec3(d, a, 2.5)) * 0.5 + 0.5) * uColor;
-  gl_FragColor = vec4(col, 1.0);
+  col = cos(col * cos(vec3(d, a, 2.5)) * 0.5 + 0.5);
+  
+  // 核心：将其转换为纯粹的亮度 (Luminance)，制造纯白光效果
+  float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));
+  
+  // 增加平滑阶跃，提升白色光影的对比度，让其更具锐利感
+  luma = smoothstep(0.15, 0.85, luma);
+  
+  gl_FragColor = vec4(vec3(luma) * uColor, 1.0);
 }
 `;
 
@@ -52,9 +61,9 @@ interface IridescenceProps {
 }
 
 export default function Iridescence({
-  color = [0.125, 0.145, 0.165],
-  speed = 0.3,
-  amplitude = 0.1,
+  color = [1.0, 1.0, 1.0], // 默认锁定为纯白
+  speed = 0.5,
+  amplitude = 0.05,
   mouseReact = false,
 }: IridescenceProps) {
   const ctnDom = useRef<HTMLDivElement>(null);
@@ -112,7 +121,7 @@ export default function Iridescence({
     
     let animateId: number;
     let lastTime = performance.now();
-    let accumulatedPhase = 0; // 核心：使用增量累加的方式计算时间相位
+    let accumulatedPhase = 0; 
 
     function update() {
       animateId = requestAnimationFrame(update);
@@ -121,7 +130,7 @@ export default function Iridescence({
       const dt = t - lastTime;
       lastTime = t;
 
-      const ease = 0.03; // 丝滑过渡因子
+      const ease = 0.03; 
       
       currentProps.current.speed = lerp(currentProps.current.speed, targetProps.current.speed, ease);
       currentProps.current.amplitude = lerp(currentProps.current.amplitude, targetProps.current.amplitude, ease);
@@ -129,7 +138,6 @@ export default function Iridescence({
       currentProps.current.color[1] = lerp(currentProps.current.color[1], targetProps.current.color[1], ease);
       currentProps.current.color[2] = lerp(currentProps.current.color[2], targetProps.current.color[2], ease);
 
-      // 无论运行多久、怎么变速，都使用当前速度乘以增量时间累加，彻底根除暴跳断层Bug
       accumulatedPhase += dt * currentProps.current.speed * 0.0005;
 
       program.uniforms.uTime.value = accumulatedPhase;
