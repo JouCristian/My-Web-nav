@@ -10,12 +10,16 @@ const Aurora = dynamic(() => import("./Aurora"), { ssr: false })
 
 // Apple 风格的非线性缓动曲线
 const EASING = {
-  // 快出慢入（主要用于爆发效果）
+  // 快出慢入（主要用于爆发效果）- iOS 风格
   easeOutExpo: "cubic-bezier(0.16, 1, 0.3, 1)",
-  // 弹性回弹（用于恢复效果）
+  // 弹性回弹（用于恢复效果）- 柔和弹性
   easeOutBack: "cubic-bezier(0.34, 1.56, 0.64, 1)",
-  // 平滑过渡
+  // 平滑过渡 - Apple 标准曲线
   easeInOutQuart: "cubic-bezier(0.76, 0, 0.24, 1)",
+  // 柔和启动快速结束 - 用于蓄力阶段
+  easeInQuad: "cubic-bezier(0.55, 0.085, 0.68, 0.53)",
+  // 超平滑曲线 - 用于颜色过渡
+  easeInOutSine: "cubic-bezier(0.37, 0, 0.63, 1)",
 }
 
 // 剧本配置：不同的极光状态
@@ -92,6 +96,7 @@ export function PulseAuroraBackground() {
   const [isMobile, setIsMobile] = useState(false)
   const [scriptIndex, setScriptIndex] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [transitionPhase, setTransitionPhase] = useState<"idle" | "charge" | "burst" | "settle">("idle")
   
   // Aurora 动态参数
   const [auroraParams, setAuroraParams] = useState(AURORA_SCRIPTS[0])
@@ -100,43 +105,66 @@ export function PulseAuroraBackground() {
   const bgLayerRef = useRef<HTMLDivElement>(null)
   const auroraContainerRef = useRef<HTMLDivElement>(null)
 
-  // 切换剧本的核心逻辑 - 夸张的视觉冲击动效
+  // 切换剧本的核心逻辑 - 丝滑非线性动效
+  // 三阶段过渡：蓄力收缩 → 爆发扩张 → 柔和回落
   const switchScript = useCallback(() => {
     if (isTransitioning) return // 防止重复触发
     
     const nextIndex = (scriptIndex + 1) % AURORA_SCRIPTS.length
     const nextScript = AURORA_SCRIPTS[nextIndex]
+    const currentAmplitude = auroraParams.amplitude
     
     setIsTransitioning(true)
+    setTransitionPhase("charge")
     setScriptIndex(nextIndex)
     
-    // 阶段1: 爆发冲击 - 振幅和速度瞬间拉到极限
+    // 阶段1: 蓄力收缩 (0-150ms) - 先收后放，制造弹性感
     setAuroraParams((prev) => ({
       ...prev,
-      amplitude: 6.0, // 爆发峰值（更夸张）
-      speed: 6.0,
-      blend: 0.2, // 更高对比度
+      amplitude: currentAmplitude * 0.6, // 先收缩
+      speed: prev.speed * 0.5,
+      blend: prev.blend * 1.2,
     }))
     
-    // 阶段2: 400ms 后颜色开始切换，振幅回落
+    // 阶段2: 爆发扩张 (150-450ms) - 快速冲击
+    setTimeout(() => {
+      setTransitionPhase("burst")
+      setAuroraParams((prev) => ({
+        ...prev,
+        amplitude: 3.2, // 爆发但更柔和
+        speed: 3.5,
+        blend: 0.4,
+        colorStops: nextScript.colorStops, // 开始颜色切换
+      }))
+    }, 150)
+    
+    // 阶段3: 回落过渡 (450-800ms) - 振幅开始回落但仍高于目标
+    setTimeout(() => {
+      setTransitionPhase("settle")
+      setAuroraParams({
+        ...nextScript,
+        amplitude: nextScript.amplitude * 1.5,
+        speed: nextScript.speed * 1.3,
+        blend: nextScript.blend * 0.9,
+      })
+    }, 450)
+    
+    // 阶段4: 柔和着陆 (800-1200ms) - 平滑过渡到目标状态
     setTimeout(() => {
       setAuroraParams({
         ...nextScript,
-        amplitude: nextScript.amplitude * 1.8, // 仍保持较高振幅
-        speed: nextScript.speed * 1.5,
+        amplitude: nextScript.amplitude * 1.15,
+        speed: nextScript.speed * 1.1,
       })
-    }, 400)
+    }, 800)
     
-    // 阶段3: 1000ms 后完全恢复到目标状态
+    // 阶段5: 完全恢复 (1200ms+)
     setTimeout(() => {
       setAuroraParams(nextScript)
-    }, 1000)
-    
-    // 1200ms 后结束过渡状态
-    setTimeout(() => {
       setIsTransitioning(false)
+      setTransitionPhase("idle")
     }, 1200)
-  }, [scriptIndex, isTransitioning])
+  }, [scriptIndex, isTransitioning, auroraParams.amplitude])
   
   // 监听全局 aurora-shift 事件（loading 触发用）
   useEffect(() => {
@@ -274,7 +302,10 @@ export function PulseAuroraBackground() {
           className="absolute inset-0"
           style={{
             background: currentScript.bgGradient,
-            transition: `background 1.2s ${EASING.easeInOutQuart}`,
+            opacity: transitionPhase === "burst" ? 0.85 : 1,
+            transition: transitionPhase === "burst"
+              ? `background 0.4s ${EASING.easeOutExpo}, opacity 0.3s ${EASING.easeOutExpo}`
+              : `background 1s ${EASING.easeInOutSine}, opacity 0.5s ${EASING.easeInOutSine}`,
           }}
         />
 
@@ -302,18 +333,31 @@ export function PulseAuroraBackground() {
           ref={auroraContainerRef}
           className="absolute bottom-0 left-0 right-0 overflow-hidden"
           style={{
-            height: isTransitioning ? "85%" : "65%",
-            transform: isTransitioning 
-              ? "scaleY(1.4) scaleX(1.1) translateY(-8%)" 
+            height: transitionPhase === "charge" ? "60%" 
+                  : transitionPhase === "burst" ? "80%" 
+                  : transitionPhase === "settle" ? "72%" 
+                  : "65%",
+            transform: transitionPhase === "charge" 
+              ? "scaleY(0.92) scaleX(0.98) translateY(2%)" 
+              : transitionPhase === "burst"
+              ? "scaleY(1.25) scaleX(1.05) translateY(-5%)" 
+              : transitionPhase === "settle"
+              ? "scaleY(1.08) scaleX(1.02) translateY(-1%)"
               : "scaleY(1) scaleX(1) translateY(0)",
-            opacity: isTransitioning ? 1 : 0.95,
-            transition: `all 0.6s ${EASING.easeOutExpo}`,
+            opacity: transitionPhase === "burst" ? 1 : 0.95,
+            transition: transitionPhase === "charge"
+              ? `all 0.15s ${EASING.easeInQuad}`
+              : transitionPhase === "burst"
+              ? `all 0.3s ${EASING.easeOutExpo}`
+              : transitionPhase === "settle"
+              ? `all 0.35s ${EASING.easeOutBack}`
+              : `all 0.4s ${EASING.easeInOutSine}`,
             transformOrigin: "bottom center",
-            maskImage: isTransitioning 
-              ? "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 50%, rgba(0,0,0,0.5) 80%, rgba(0,0,0,0) 100%)"
+            maskImage: transitionPhase === "burst" 
+              ? "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.95) 45%, rgba(0,0,0,0.6) 75%, rgba(0,0,0,0) 100%)"
               : "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 40%, rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)",
-            WebkitMaskImage: isTransitioning 
-              ? "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 50%, rgba(0,0,0,0.5) 80%, rgba(0,0,0,0) 100%)"
+            WebkitMaskImage: transitionPhase === "burst" 
+              ? "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.95) 45%, rgba(0,0,0,0.6) 75%, rgba(0,0,0,0) 100%)"
               : "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 40%, rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)",
           }}
         >
@@ -330,12 +374,20 @@ export function PulseAuroraBackground() {
           className="absolute inset-0 pointer-events-none"
           style={{
             background: `
-              radial-gradient(ellipse 120% 100% at 50% 100%, ${currentScript.colorStops[1]}40 0%, transparent 50%),
-              radial-gradient(ellipse 80% 60% at 50% 80%, ${currentScript.colorStops[0]}30 0%, transparent 40%)
+              radial-gradient(ellipse 120% 100% at 50% 100%, ${currentScript.colorStops[1]}35 0%, transparent 50%),
+              radial-gradient(ellipse 80% 60% at 50% 85%, ${currentScript.colorStops[0]}25 0%, transparent 40%)
             `,
-            opacity: isTransitioning ? 1 : 0,
-            transform: isTransitioning ? "scale(1.2)" : "scale(0.8)",
-            transition: `all 0.4s ${EASING.easeOutExpo}`,
+            opacity: transitionPhase === "charge" ? 0.3 
+                   : transitionPhase === "burst" ? 0.9 
+                   : transitionPhase === "settle" ? 0.4 
+                   : 0,
+            transform: transitionPhase === "charge" ? "scale(0.9)" 
+                     : transitionPhase === "burst" ? "scale(1.15)" 
+                     : transitionPhase === "settle" ? "scale(1.05)"
+                     : "scale(0.85)",
+            transition: transitionPhase === "burst" 
+              ? `all 0.3s ${EASING.easeOutExpo}`
+              : `all 0.4s ${EASING.easeInOutSine}`,
           }}
         />
 
@@ -343,10 +395,14 @@ export function PulseAuroraBackground() {
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            boxShadow: isTransitioning 
-              ? `inset 0 -200px 200px -100px ${currentScript.colorStops[1]}30`
+            boxShadow: transitionPhase === "burst" 
+              ? `inset 0 -180px 180px -80px ${currentScript.colorStops[1]}25`
+              : transitionPhase === "settle"
+              ? `inset 0 -120px 120px -60px ${currentScript.colorStops[1]}15`
               : "none",
-            transition: `box-shadow 0.5s ${EASING.easeOutExpo}`,
+            transition: transitionPhase === "burst"
+              ? `box-shadow 0.3s ${EASING.easeOutExpo}`
+              : `box-shadow 0.5s ${EASING.easeInOutSine}`,
           }}
         />
 
