@@ -13,7 +13,7 @@ void main() {
 }
 `;
 
-// 核心修改：反转亮暗关系，让背景纯黑，波纹纯白
+// 核心着色器：反转亮度，提取高对比度的锋利白线，输出不透明的黑白画面
 const fragmentShader = `
 precision highp float;
 uniform float uTime;
@@ -36,25 +36,19 @@ void main() {
   }
   d += uTime;
   
-  // 计算原始波纹
   vec3 col = vec3(cos(uv * vec2(d, a)) * 0.6 + 0.4, cos(a + d) * 0.5 + 0.5);
   col = cos(col * cos(vec3(d, a, 2.5)) * 0.5 + 0.5);
   
-  // 提取原始亮度
   float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));
   
-  // 核心：反转亮度！让原本暗的地方亮，亮的地方暗
-  // 然后通过 pow() 函数极大地压暗背景，只保留最亮的光晕线条
-  float invertedLuma = 1.0 - luma;
-  float sharpLuma = pow(invertedLuma, 3.0); // 3.0 是对比度系数，越大线条越细越暗
+  // 反转亮度并强化对比度：原本暗的地方变成犀利的白光，原本亮的地方被压成死黑
+  float glow = smoothstep(0.1, 0.4, 1.0 - luma);
   
-  // 最终输出：纯白色，并用 sharpLuma 作为 Alpha 透明度
-  // 这样在 mix-blend-mode: screen 下，黑色的地方就完全透明，只有白光透出来
-  gl_FragColor = vec4(uColor, sharpLuma);
+  // 输出 Alpha 为 1.0 的画面，交由外层 CSS 的 screen 模式去过滤黑色
+  gl_FragColor = vec4(vec3(glow) * uColor, 1.0);
 }
 `;
 
-// 极其丝滑的数学线性插值
 const lerp = (start: number, end: number, amt: number) => (1 - amt) * start + amt * end;
 
 interface IridescenceProps {
@@ -65,9 +59,9 @@ interface IridescenceProps {
 }
 
 export default function Iridescence({
-  color = [1.0, 1.0, 1.0], // 保持纯白
+  color = [1.0, 1.0, 1.0], // 锁定纯白
   speed = 0.5,
-  amplitude = 0.035, // 保持较低的振幅，让光晕更紧致
+  amplitude = 0.035,
   mouseReact = false,
 }: IridescenceProps) {
   const ctnDom = useRef<HTMLDivElement>(null);
@@ -87,9 +81,11 @@ export default function Iridescence({
   useEffect(() => {
     if (!ctnDom.current) return;
     const ctn = ctnDom.current;
-    const renderer = new Renderer({ alpha: true }); // 确保开启透明度支持
+    
+    // 取消了 alpha: true，渲染纯黑底色
+    const renderer = new Renderer(); 
     const gl = renderer.gl;
-    gl.clearColor(0, 0, 0, 0);
+    gl.clearColor(0, 0, 0, 1); // 黑色清屏
 
     let program: Program;
 
@@ -109,7 +105,7 @@ export default function Iridescence({
     program = new Program(gl, {
       vertex: vertexShader,
       fragment: fragmentShader,
-      transparent: true, // 告知 OGL 这个材质是透明的
+      // 取消了 transparent: true
       uniforms: {
         uTime: { value: 0 },
         uColor: { value: new Color(...currentProps.current.color) },
