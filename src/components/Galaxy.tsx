@@ -170,6 +170,10 @@ void main() {
 }
 `;
 
+// 提取静态默认值，防止 React 每次渲染生成新数组触发销毁
+const DEFAULT_FOCAL: [number, number] = [0.5, 0.5];
+const DEFAULT_ROTATION: [number, number] = [1.0, 0.0];
+
 interface GalaxyProps {
   focal?: [number, number];
   rotation?: [number, number];
@@ -190,8 +194,8 @@ interface GalaxyProps {
 }
 
 export default function Galaxy({
-  focal = [0.5, 0.5],
-  rotation = [1.0, 0.0],
+  focal = DEFAULT_FOCAL,
+  rotation = DEFAULT_ROTATION,
   starSpeed = 0.5,
   density = 1,
   hueShift = 140,
@@ -213,6 +217,13 @@ export default function Galaxy({
   const smoothMousePos = useRef({ x: 0.5, y: 0.5 });
   const targetMouseActive = useRef(0.0);
   const smoothMouseActive = useRef(0.0);
+
+  // 🚀 核心修复：将所有依赖移入 Ref 缓冲池，让它们在 Update 循环中自行拉取
+  const propsRef = useRef({ focal, rotation, starSpeed, density, hueShift, disableAnimation, speed, glowIntensity, saturation, mouseRepulsion, twinkleIntensity, rotationSpeed, repulsionStrength, autoCenterRepulsion, mouseInteraction });
+
+  useEffect(() => {
+    propsRef.current = { focal, rotation, starSpeed, density, hueShift, disableAnimation, speed, glowIntensity, saturation, mouseRepulsion, twinkleIntensity, rotationSpeed, repulsionStrength, autoCenterRepulsion, mouseInteraction };
+  }, [focal, rotation, starSpeed, density, hueShift, disableAnimation, speed, glowIntensity, saturation, mouseRepulsion, twinkleIntensity, rotationSpeed, repulsionStrength, autoCenterRepulsion, mouseInteraction]);
 
   useEffect(() => {
     if (!ctnDom.current) return;
@@ -256,23 +267,23 @@ export default function Galaxy({
         uResolution: {
           value: new Color(gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height)
         },
-        uFocal: { value: new Float32Array(focal) },
-        uRotation: { value: new Float32Array(rotation) },
-        uStarSpeed: { value: starSpeed },
-        uDensity: { value: density },
-        uHueShift: { value: hueShift },
-        uSpeed: { value: speed },
+        uFocal: { value: new Float32Array(propsRef.current.focal) },
+        uRotation: { value: new Float32Array(propsRef.current.rotation) },
+        uStarSpeed: { value: propsRef.current.starSpeed },
+        uDensity: { value: propsRef.current.density },
+        uHueShift: { value: propsRef.current.hueShift },
+        uSpeed: { value: propsRef.current.speed },
         uMouse: {
           value: new Float32Array([smoothMousePos.current.x, smoothMousePos.current.y])
         },
-        uGlowIntensity: { value: glowIntensity },
-        uSaturation: { value: saturation },
-        uMouseRepulsion: { value: mouseRepulsion },
-        uTwinkleIntensity: { value: twinkleIntensity },
-        uRotationSpeed: { value: rotationSpeed },
-        uRepulsionStrength: { value: repulsionStrength },
+        uGlowIntensity: { value: propsRef.current.glowIntensity },
+        uSaturation: { value: propsRef.current.saturation },
+        uMouseRepulsion: { value: propsRef.current.mouseRepulsion },
+        uTwinkleIntensity: { value: propsRef.current.twinkleIntensity },
+        uRotationSpeed: { value: propsRef.current.rotationSpeed },
+        uRepulsionStrength: { value: propsRef.current.repulsionStrength },
         uMouseActiveFactor: { value: 0.0 },
-        uAutoCenterRepulsion: { value: autoCenterRepulsion },
+        uAutoCenterRepulsion: { value: propsRef.current.autoCenterRepulsion },
         uTransparent: { value: transparent }
       }
     });
@@ -282,10 +293,28 @@ export default function Galaxy({
 
     function update(t: number) {
       animateId = requestAnimationFrame(update);
-      if (!disableAnimation) {
+      const p = propsRef.current;
+
+      if (!p.disableAnimation) {
         program.uniforms.uTime.value = t * 0.001;
-        program.uniforms.uStarSpeed.value = (t * 0.001 * starSpeed) / 10.0;
+        program.uniforms.uStarSpeed.value = (t * 0.001 * p.starSpeed) / 10.0;
       }
+
+      // 🚀 动态投递 Uniform 参数，不再重建 WebGL 上下文
+      program.uniforms.uFocal.value[0] = p.focal[0];
+      program.uniforms.uFocal.value[1] = p.focal[1];
+      program.uniforms.uRotation.value[0] = p.rotation[0];
+      program.uniforms.uRotation.value[1] = p.rotation[1];
+      program.uniforms.uDensity.value = p.density;
+      program.uniforms.uHueShift.value = p.hueShift;
+      program.uniforms.uSpeed.value = p.speed;
+      program.uniforms.uGlowIntensity.value = p.glowIntensity;
+      program.uniforms.uSaturation.value = p.saturation;
+      program.uniforms.uMouseRepulsion.value = p.mouseRepulsion;
+      program.uniforms.uTwinkleIntensity.value = p.twinkleIntensity;
+      program.uniforms.uRotationSpeed.value = p.rotationSpeed;
+      program.uniforms.uRepulsionStrength.value = p.repulsionStrength;
+      program.uniforms.uAutoCenterRepulsion.value = p.autoCenterRepulsion;
 
       const lerpFactor = 0.05;
       smoothMousePos.current.x += (targetMousePos.current.x - smoothMousePos.current.x) * lerpFactor;
@@ -314,7 +343,7 @@ export default function Galaxy({
       targetMouseActive.current = 0.0;
     }
 
-    if (mouseInteraction) {
+    if (propsRef.current.mouseInteraction) {
       ctn.addEventListener('mousemove', handleMouseMove);
       ctn.addEventListener('mouseleave', handleMouseLeave);
     }
@@ -322,31 +351,15 @@ export default function Galaxy({
     return () => {
       cancelAnimationFrame(animateId);
       window.removeEventListener('resize', resize);
-      if (mouseInteraction) {
+      if (propsRef.current.mouseInteraction) {
         ctn.removeEventListener('mousemove', handleMouseMove);
         ctn.removeEventListener('mouseleave', handleMouseLeave);
       }
       ctn.removeChild(gl.canvas);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
-  }, [
-    focal,
-    rotation,
-    starSpeed,
-    density,
-    hueShift,
-    disableAnimation,
-    speed,
-    mouseInteraction,
-    glowIntensity,
-    saturation,
-    mouseRepulsion,
-    twinkleIntensity,
-    rotationSpeed,
-    repulsionStrength,
-    autoCenterRepulsion,
-    transparent
-  ]);
+  // 🚀 依赖项被精简到了仅仅只有 transparent。页面不论怎么切，画布永远驻留。
+  }, [transparent]); 
 
   return <div ref={ctnDom} className="galaxy-container" {...rest} />;
 }
