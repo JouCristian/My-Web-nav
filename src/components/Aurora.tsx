@@ -209,5 +209,5 @@ export default function Aurora(props: AuroraProps) {
     };
   }, [amplitude]);
 
-  return <div ref={ctnDom} className="aurora-container" />;
+  return <div ref={ctnDom} className="aurora-container" style={{ backgroundColor: "transparent" }} />;
 }

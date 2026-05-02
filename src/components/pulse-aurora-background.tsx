@@ -5,8 +5,11 @@ import { createPortal } from "react-dom"
 import { usePathname } from "next/navigation"
 import dynamic from "next/dynamic"
 
-// 动态导入 Aurora 组件
-const Aurora = dynamic(() => import("./Aurora"), { ssr: false })
+// 动态导入 Aurora 组件（带占位符防止闪烁）
+const Aurora = dynamic(() => import("./Aurora"), { 
+  ssr: false,
+  loading: () => <div className="w-full h-full" style={{ backgroundColor: "transparent" }} />
+})
 
 // Apple 风格的非线性缓动曲线
 const EASING = {
@@ -203,7 +206,16 @@ export function PulseAuroraBackground() {
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  if (!mounted) return <div className="fixed inset-0 bg-[#020205] z-[-1]" />
+  // 未挂载时返回静态深色占位符（与 body 背景一致，防止闪白）
+  if (!mounted) {
+    return (
+      <div 
+        className="fixed inset-0 z-[-1]" 
+        style={{ backgroundColor: "#020205" }}
+        aria-hidden="true"
+      />
+    )
+  }
 
   // 移动端：纯 CSS 渐变��景
   if (isMobile) {

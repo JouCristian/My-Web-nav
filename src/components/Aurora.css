@@ -1,5 +1,11 @@
 /* src/components/Aurora.css */
 .aurora-container {
-    width: 100%;
-    height: 100%;
-  }
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+}
+
+.aurora-container canvas {
+  background-color: transparent !important;
+  display: block;
+}
