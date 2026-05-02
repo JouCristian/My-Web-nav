@@ -126,6 +126,63 @@ body {
     animation: loading-dot 1.2s ease-in-out infinite;
   }
 
+  /* ==========================================
+     🚀 PageLoading 体系（Apple 级 ripple + 心跳）
+     ========================================== */
+
+  /* 整体进入：去模糊、降饱和、轻微缩放，cubic-bezier(0.22, 1, 0.36, 1) 是经典 easeOutQuint */
+  @keyframes loader-mount {
+    0%   { opacity: 0; filter: blur(20px) saturate(0.4); transform: scale(0.94); }
+    100% { opacity: 1; filter: blur(0)    saturate(1);   transform: scale(1); }
+  }
+  .animate-loader-mount {
+    animation: loader-mount 0.95s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* 同心涟漪：从 20% 起步、放大到 6 倍体积，
+     0.16, 1, 0.3, 1 是经典 easeOutExpo——前快后慢，模拟能量衰减 */
+  @keyframes loader-ripple {
+    0%   { transform: scale(0.2); opacity: 0; }
+    8%   { opacity: 0.85; }
+    100% { transform: scale(6);   opacity: 0; }
+  }
+  .animate-loader-ripple {
+    animation: loader-ripple 3.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+
+  /* 中心光核：呼吸 + 周期性"心跳"亮闪
+     - 0~40%：缓慢扩张并增亮
+     - 50~55%：第一次心跳收缩-爆发（亮度峰值）
+     - 70~100%：回归基线 */
+  @keyframes loader-core {
+    0%, 100% { transform: scale(1);    opacity: 0.55; filter: blur(10px) brightness(1); }
+    35%      { transform: scale(1.08); opacity: 0.78; filter: blur(11px) brightness(1.25); }
+    50%      { transform: scale(0.94); opacity: 0.95; filter: blur(7px)  brightness(1.7); }
+    56%      { transform: scale(1.18); opacity: 1;    filter: blur(13px) brightness(2.1); }
+    72%      { transform: scale(1.02); opacity: 0.7;  filter: blur(10px) brightness(1.15); }
+  }
+  .animate-loader-core {
+    animation: loader-core 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+
+  /* 焦点光点：与心跳同节拍的高光脉冲 */
+  @keyframes loader-pulse {
+    0%, 100% { transform: scale(1);    opacity: 0.55; box-shadow: 0 0 18px 4px rgba(255,255,255,0.35); }
+    55%      { transform: scale(1.45); opacity: 1;    box-shadow: 0 0 36px 14px rgba(255,255,255,0.85); }
+  }
+  .animate-loader-pulse {
+    animation: loader-pulse 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+
+  /* 字签：字距、位移、透明度三轴协同进入 */
+  @keyframes loader-label {
+    0%   { opacity: 0; transform: translateY(8px); letter-spacing: 0.2em; }
+    100% { opacity: 1; transform: translateY(0);   letter-spacing: 0.4em; }
+  }
+  .animate-loader-label {
+    animation: loader-label 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+  }
+
 
   /* ==========================================
      🚀 指挥中枢专属：模块卡片高级动画

@@ -1,83 +1,134 @@
 "use client"
 
+import { useEffect, useRef } from "react"
+
 /**
- * 全局加载占位符 —— Apple 风格：
- * - 玻璃形态药丸卡片，背后透出真实的 GlobalBackground（DotField + Aurora）
- * - 中心：双层 conic 旋转环（外慢内快）+ 中央呼吸光点
- * - 下方：单行说明文案 + 三连点呼吸动画
+ * 全局加载界面（Apple 级动效）
  *
- * 不再绑定任何"切换时空"逻辑，纯视觉。
+ * 设计原则：
+ * - 不再渲染任何卡片/玻璃容器；让 layout 中常驻的 GlobalBackground (DotField + Aurora) 自然透出，
+ *   保证视觉的"减法美学"——只剩星海与一束安静的能量。
+ * - 通过 requestAnimationFrame 程序化派发 MouseEvent，让 DotField 的光斑沿
+ *   屏幕中心做圆周巡航，与之前用户 hover 触发的 bulge pipeline 完全一致。
+ * - 五层同心涟漪 + 中心心跳光核 + 焦点光点 + 远端字签，全部用 cubic-bezier(0.22, 1, 0.36, 1)
+ *   等 Apple 风非线性曲线进入。
+ * - 心跳节拍：核心每 ~3.6s 完成一次"舒张-收缩-亮闪"循环，作为加载持续进行的隐性进度提示。
  */
-export default function PageLoading({ label = "正在跃迁" }: { label?: string }) {
+export default function PageLoading({ label = "Loading" }: { label?: string }) {
+  const startedAtRef = useRef<number>(0)
+  if (!startedAtRef.current) {
+    startedAtRef.current = typeof performance !== "undefined" ? performance.now() : Date.now()
+  }
+
+  /* ---------------------------------------------------------------------------
+   * 程序化"鼠标"巡航：让 DotField 的光斑沿圆周自动旋转，
+   * 复用与真实 hover 完全相同的事件 pipeline，避免引入新的渲染分支。
+   * ------------------------------------------------------------------------- */
+  useEffect(() => {
+    let raf = 0
+    let lastDispatch = 0
+    const FRAME_THROTTLE = 16 // ~60fps 上限，移动端也不过载
+
+    const tick = (now: number) => {
+      if (now - lastDispatch >= FRAME_THROTTLE) {
+        lastDispatch = now
+        const cx = window.innerWidth / 2
+        const cy = window.innerHeight / 2
+        const elapsed = now - startedAtRef.current
+
+        // 主旋转：每 5s 一圈，慢节奏体现 Apple 级克制
+        const baseAngle = (elapsed / 5000) * Math.PI * 2
+        // 半径呼吸：在 140 ~ 220 之间用低频正弦缓动，让轨迹更"有机"
+        const radius = 180 + Math.sin(elapsed / 1800) * 40
+        const x = cx + Math.cos(baseAngle) * radius
+        const y = cy + Math.sin(baseAngle) * radius
+
+        // 与 DotField 的 onMouseMove 监听器使用同一接口
+        window.dispatchEvent(
+          new MouseEvent("mousemove", {
+            clientX: x,
+            clientY: y,
+            bubbles: true,
+          }),
+        )
+      }
+      raf = requestAnimationFrame(tick)
+    }
+
+    raf = requestAnimationFrame(tick)
+
+    return () => {
+      cancelAnimationFrame(raf)
+      // 卸载时把"鼠标"推到远处，让 DotField 的 bulge 平滑回归静态
+      try {
+        window.dispatchEvent(new MouseEvent("mousemove", { clientX: -9999, clientY: -9999 }))
+      } catch {
+        /* SSR safety */
+      }
+    }
+  }, [])
+
   return (
-    <div className="relative z-10 min-h-[100vh] w-full flex items-center justify-center px-6">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none animate-loader-mount"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      {/* ── 中心光核：持续柔和呼吸 + 周期性"心跳"亮闪 ─────────────────── */}
       <div
-        className="group relative flex flex-col items-center gap-7 rounded-[2.5rem] px-10 sm:px-14 py-12 sm:py-14 border border-white/10 bg-white/[0.04] backdrop-blur-2xl shadow-[0_30px_120px_-20px_rgba(34,211,238,0.18),0_0_0_1px_rgba(255,255,255,0.04)_inset] will-change-transform"
-        role="status"
-        aria-live="polite"
-      >
-        {/* 顶部高光 */}
-        <div
-          className="pointer-events-none absolute inset-0 rounded-[2.5rem] opacity-60"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 22%, rgba(0,0,0,0) 60%)",
-            mask: "linear-gradient(180deg, #000 0%, transparent 50%)",
-            WebkitMask: "linear-gradient(180deg, #000 0%, transparent 50%)",
-          }}
-          aria-hidden="true"
-        />
+        className="absolute w-44 h-44 rounded-full animate-loader-core"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(168,85,247,0.55) 0%, rgba(59,130,246,0.18) 45%, rgba(168,85,247,0) 70%)",
+          filter: "blur(10px)",
+          willChange: "transform, opacity, filter",
+        }}
+        aria-hidden="true"
+      />
 
-        {/* 旋转双环 */}
-        <div className="relative w-20 h-20 sm:w-24 sm:h-24" aria-hidden="true">
-          {/* 外环：渐隐 conic + 慢转 */}
-          <div
-            className="absolute inset-0 rounded-full animate-[spin_2.6s_linear_infinite]"
-            style={{
-              background:
-                "conic-gradient(from 0deg, rgba(255,255,255,0) 0%, rgba(34,211,238,0.55) 35%, rgba(255,255,255,0.95) 60%, rgba(34,211,238,0.55) 80%, rgba(255,255,255,0) 100%)",
-              mask: "radial-gradient(circle at center, transparent 60%, #000 62%)",
-              WebkitMask: "radial-gradient(circle at center, transparent 60%, #000 62%)",
-            }}
-          />
+      {/* ── 五层同心涟漪：错相位向外扩散，cubic-bezier(0.16, 1, 0.3, 1) easeOutExpo ── */}
+      <div
+        className="absolute w-28 h-28 rounded-full border border-white/40 animate-loader-ripple"
+        style={{ animationDelay: "0s" }}
+        aria-hidden="true"
+      />
+      <div
+        className="absolute w-28 h-28 rounded-full border border-cyan-300/35 animate-loader-ripple"
+        style={{ animationDelay: "0.6s" }}
+        aria-hidden="true"
+      />
+      <div
+        className="absolute w-28 h-28 rounded-full border border-purple-300/35 animate-loader-ripple"
+        style={{ animationDelay: "1.2s" }}
+        aria-hidden="true"
+      />
+      <div
+        className="absolute w-28 h-28 rounded-full border border-white/25 animate-loader-ripple"
+        style={{ animationDelay: "1.8s" }}
+        aria-hidden="true"
+      />
+      <div
+        className="absolute w-28 h-28 rounded-full border border-white/15 animate-loader-ripple"
+        style={{ animationDelay: "2.4s" }}
+        aria-hidden="true"
+      />
 
-          {/* 内环：反向更快 + 紫色调，制造层次 */}
-          <div
-            className="absolute inset-3 rounded-full animate-[spin_1.4s_linear_infinite_reverse]"
-            style={{
-              background:
-                "conic-gradient(from 180deg, rgba(255,255,255,0) 0%, rgba(124,255,103,0.6) 50%, rgba(255,255,255,0) 100%)",
-              mask: "radial-gradient(circle at center, transparent 55%, #000 57%)",
-              WebkitMask: "radial-gradient(circle at center, transparent 55%, #000 57%)",
-            }}
-          />
+      {/* ── 焦点光点：视觉锚点，呼吸式高光 ──────────────────────────── */}
+      <div
+        className="absolute w-2 h-2 rounded-full bg-white shadow-[0_0_24px_8px_rgba(255,255,255,0.45)] animate-loader-pulse"
+        aria-hidden="true"
+      />
 
-          {/* 中央呼吸光点 */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="block w-2.5 h-2.5 rounded-full bg-white shadow-[0_0_24px_rgba(34,211,238,0.9)] animate-[pulse_1.6s_ease-in-out_infinite]" />
-          </div>
+      {/* ── 远端字签：底部柔和淡入，字距 + 位移协同进入 ─────────────── */}
+      <div className="absolute bottom-[16%] sm:bottom-[18%] flex flex-col items-center gap-3 animate-loader-label">
+        <div className="font-mono text-[10px] tracking-[0.4em] uppercase text-zinc-300/75 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+          {label}
         </div>
-
-        {/* 标签 + 三连点 */}
-        <div className="flex items-center gap-1.5 select-none">
-          <span className="text-[13px] sm:text-sm font-mono uppercase tracking-[0.3em] text-zinc-200">
-            {label}
-          </span>
-          <span className="flex gap-1 ml-1" aria-hidden="true">
-            <span className="w-1 h-1 rounded-full bg-zinc-300 animate-loading-dot" />
-            <span
-              className="w-1 h-1 rounded-full bg-zinc-300 animate-loading-dot"
-              style={{ animationDelay: "0.15s" }}
-            />
-            <span
-              className="w-1 h-1 rounded-full bg-zinc-300 animate-loading-dot"
-              style={{ animationDelay: "0.3s" }}
-            />
-          </span>
-        </div>
-
-        <span className="sr-only">{label}</span>
+        <div className="h-px w-12 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
       </div>
+
+      <span className="sr-only">{label}</span>
     </div>
   )
 }
