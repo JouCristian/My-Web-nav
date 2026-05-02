@@ -4,6 +4,16 @@ import GitHub from "next-auth/providers/github"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/db"
 
+// 🚀 启动时校验 Gitee 凭据，缺失时给出清晰错误（避免 NextAuth 抛模糊的 "Configuration" 错误）
+const GITEE_CLIENT_ID = process.env.GITEE_CLIENT_ID
+const GITEE_CLIENT_SECRET = process.env.GITEE_CLIENT_SECRET
+
+if (!GITEE_CLIENT_ID || !GITEE_CLIENT_SECRET) {
+  console.error(
+    "[v0][auth] Gitee OAuth 凭据缺失：请在 Vercel 项目环境变量里配置 GITEE_CLIENT_ID 和 GITEE_CLIENT_SECRET",
+  )
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   // 🚀 开启 debug：错误会在 Vercel Runtime Logs 里打出来真实原因
@@ -17,8 +27,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       name: "Gitee",
       type: "oauth",
       // 🚀 安全修复：从环境变量读取，不再硬编码（原硬编码密钥已泄露，必须在 Gitee 控制台重置）
-      clientId: process.env.GITEE_CLIENT_ID,
-      clientSecret: process.env.GITEE_CLIENT_SECRET,
+      clientId: GITEE_CLIENT_ID!,
+      clientSecret: GITEE_CLIENT_SECRET!,
       checks: ["state"], 
       // 🚀 核心修改：将简单的字符串替换为对象结构，强行注入强制授权参数
       authorization: {
