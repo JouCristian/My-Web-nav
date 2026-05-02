@@ -6,6 +6,8 @@ import { prisma } from "@/lib/db"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
+  // 🚀 开启 debug：错误会在 Vercel Runtime Logs 里打出来真实原因
+  debug: true,
   providers: [
     GitHub({
       authorization: { params: { prompt: "consent" } },
@@ -14,8 +16,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       id: "gitee",
       name: "Gitee",
       type: "oauth",
-      clientId: "96896797496af99879527f0e725286efc03d879624525c08eec27002d3a728e2",
-      clientSecret: "3ee1da994bc4e54fcedc0098293756e456d8b19cc3340be504422e96f394dcf2",
+      // 🚀 安全修复：从环境变量读取，不再硬编码（原硬编码密钥已泄露，必须在 Gitee 控制台重置）
+      clientId: process.env.GITEE_CLIENT_ID,
+      clientSecret: process.env.GITEE_CLIENT_SECRET,
       checks: ["state"], 
       // 🚀 核心修改：将简单的字符串替换为对象结构，强行注入强制授权参数
       authorization: {
