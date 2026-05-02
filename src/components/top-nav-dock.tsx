@@ -1,11 +1,119 @@
 // src/components/top-nav-dock.tsx
 "use client"
 
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { createRoot } from "react-dom/client"
+import { motion, AnimatePresence } from "framer-motion"
 import Dock, { DockItemData } from "./dock"
+
+// 🚀 脱离态独立渲染层 (从 sign-out-button.tsx 提取)
+const StandaloneOverlay = ({ onSignOut, onComplete }: { onSignOut: () => Promise<void>, onComplete: () => void }) => {
+  const [phase, setPhase] = useState<'BLUR' | 'SHRINK' | 'MORPH' | 'EXPAND' | 'DONE'>('BLUR')
+
+  useEffect(() => {
+    const runSequence = async () => {
+      await new Promise(r => setTimeout(r, 50)); 
+      setPhase('SHRINK');
+      await new Promise(r => setTimeout(r, 1600)); 
+      setPhase('MORPH');
+      await new Promise(r => setTimeout(r, 800)); 
+      try {
+        await onSignOut();
+      } catch(e) {
+        console.error("Sign out sequence error:", e)
+      }
+      await new Promise(r => setTimeout(r, 1200)); 
+      setPhase('EXPAND');
+      await new Promise(r => setTimeout(r, 1800)); 
+      setPhase('DONE');
+      setTimeout(onComplete, 300);
+    }
+    runSequence();
+  }, [])
+
+  return (
+    <div className="fixed inset-0 z-[99999] overflow-hidden pointer-events-none flex items-center justify-center">
+      <AnimatePresence>
+        {['BLUR', 'SHRINK', 'MORPH'].includes(phase) && (
+          <motion.div 
+            key="noise-layer"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.12 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="absolute inset-0 mix-blend-overlay z-[100000] pointer-events-none" 
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {['BLUR', 'SHRINK', 'MORPH'].includes(phase) && (
+          <motion.div
+            key="glass-layer"
+            initial={{ opacity: 0, backdropFilter: "blur(0px)", WebkitBackdropFilter: "blur(0px)" }}
+            animate={{ opacity: 1, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
+            exit={{ opacity: 0, backdropFilter: "blur(0px)", WebkitBackdropFilter: "blur(0px)" }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="absolute inset-0 bg-[#02040a]/40 z-[99998] pointer-events-none"
+          />
+        )}
+      </AnimatePresence>
+      <motion.div
+        initial="BLUR"
+        animate={phase}
+        variants={{
+          BLUR: { width: "300vmax", height: "300vmax", borderWidth: "2px", borderColor: "rgba(239, 68, 68, 0)", backgroundColor: "rgba(239, 68, 68, 0)", boxShadow: "0 0 0 0vmax black, 0 0 0px 0px rgba(239, 68, 68, 0)", borderRadius: "50%", scale: 1 },
+          SHRINK: { width: "36px", height: "36px", borderWidth: "2px", borderColor: "rgba(239, 68, 68, 0.7)", backgroundColor: "rgba(239, 68, 68, 0.05)", boxShadow: "0 0 0 200vmax black, 0 0 25px 4px rgba(239, 68, 68, 0.6), inset 0 0 12px 2px rgba(239, 68, 68, 0.4)", borderRadius: "50%", scale: 1, transition: { type: "spring", stiffness: 40, damping: 12, mass: 1.2 } },
+          MORPH: { width: "36px", height: "36px", borderWidth: "2px", borderColor: "rgba(16, 185, 129, 0.7)", backgroundColor: "rgba(16, 185, 129, 0.05)", boxShadow: "0 0 0 200vmax black, 0 0 25px 4px rgba(16, 185, 129, 0.6), inset 0 0 12px 2px rgba(16, 185, 129, 0.4)", borderRadius: ["50%", "30% 70% 70% 30% / 30% 30% 70% 70%", "70% 30% 30% 70% / 70% 70% 30% 30%", "50%"], scale: [1, 1.25, 0.85, 1.15, 1], transition: { backgroundColor: { duration: 1 }, borderColor: { duration: 1 }, boxShadow: { duration: 1 }, borderRadius: { duration: 2.5, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }, scale: { duration: 2.5, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" } } },
+          EXPAND: { width: "300vmax", height: "300vmax", borderWidth: "4px", borderColor: "rgba(16, 185, 129, 0)", backgroundColor: "rgba(16, 185, 129, 0)", boxShadow: "0 0 0 200vmax black, 0 0 0px 0px rgba(16, 185, 129, 0)", borderRadius: "50%", scale: 1, transition: { type: "spring", stiffness: 45, damping: 14, mass: 1 } },
+          DONE: { opacity: 0, transition: { duration: 0.2 } }
+        }}
+        style={{ position: "absolute", top: "50%", left: "50%", x: "-50%", y: "-50%", zIndex: 100001 }}
+      />
+      <div className="absolute inset-0 flex flex-col items-center justify-center z-[100002]">
+        <AnimatePresence mode="wait">
+          {phase === 'SHRINK' && (
+            <motion.div key="shrink" initial={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }} animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }} exit={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }} transition={{ duration: 0.8 }} className="text-center mt-36">
+              <div className="text-red-500 font-mono text-xs tracking-[0.5em] animate-pulse drop-shadow-[0_0_10px_rgba(239,68,68,0.6)]">CRITICAL: SYSTEM LOCKDOWN</div>
+              <div className="text-white font-bold text-3xl tracking-[0.2em] font-[family-name:var(--font-space)] mt-4 drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">&gt; PURGING DATA</div>
+            </motion.div>
+          )}
+          {phase === 'MORPH' && (
+            <motion.div key="morph" initial={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }} animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }} exit={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }} transition={{ duration: 0.8 }} className="text-center mt-36">
+              <div className="text-emerald-500 font-mono text-xs tracking-[0.5em] animate-pulse drop-shadow-[0_0_10px_rgba(16,185,129,0.6)]">ESTABLISHING SECURE LINK</div>
+              <div className="text-white font-bold text-3xl tracking-[0.2em] font-[family-name:var(--font-space)] mt-4 drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">&gt; SAFE MODE READY</div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}
 
 export function TopNavDock({ session, dbUser, isCaptain, onSignOut }: any) {
   const router = useRouter();
+  const [isExiting, setIsExiting] = useState(false);
+
+  const handleSignOutWithAnimation = () => {
+    if (isExiting) return;
+    setIsExiting(true);
+
+    const overlayDiv = document.createElement('div');
+    document.body.appendChild(overlayDiv);
+    const root = createRoot(overlayDiv);
+
+    root.render(
+      <StandaloneOverlay 
+        onSignOut={onSignOut} 
+        onComplete={() => {
+          root.unmount();
+          overlayDiv.remove();
+          setIsExiting(false);
+        }} 
+      />
+    );
+  };
 
   const isAuthorized = isCaptain || (dbUser && (dbUser.role === "ADMIN" || dbUser.role === "OWNER" || dbUser.role === "MEMBER"));
 
@@ -52,9 +160,9 @@ export function TopNavDock({ session, dbUser, isCaptain, onSignOut }: any) {
         onClick: () => router.push('/profile')
       },
       {
-        label: '退出登入',
+        label: '脱离指挥舱',
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>,
-        onClick: onSignOut,
+        onClick: handleSignOutWithAnimation,
         className: 'hover:!bg-red-500/20 hover:!border-red-500/50 hover:!text-red-400 hover:!shadow-[0_0_15px_rgba(239,68,68,0.5)]'
       }
     ] : [
