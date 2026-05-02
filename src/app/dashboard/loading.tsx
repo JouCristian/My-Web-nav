@@ -4,34 +4,8 @@ import { useEffect } from "react"
 
 export default function Loading() {
   useEffect(() => {
-    // 🚀 雷达轮询扫描机制：确保每次局部路由切换也能精准捕捉并按下跃迁按钮
-    let attempts = 0;
-    
-    const radarScan = setInterval(() => {
-      const buttons = Array.from(document.querySelectorAll('button'));
-      const shiftBtn = buttons.find(btn => {
-        const text = btn.textContent || "";
-        // 匹配新的 Aurora 剧本名称或旧的时空剧本名称
-        return text.includes('Aurora') || text.includes('SPACETIME') || 
-               text.includes('静谧') || text.includes('极光') || 
-               text.includes('星云') || text.includes('深渊') ||
-               text.includes('时空') || text.includes('航线') || 
-               text.includes('星际') || text.includes('轨道') || 
-               text.includes('深空') || text.includes('默认');
-      });
-
-      if (shiftBtn) {
-        shiftBtn.click();
-        clearInterval(radarScan);
-      }
-
-      attempts++;
-      if (attempts >= 10) {
-        clearInterval(radarScan);
-      }
-    }, 50);
-
-    return () => clearInterval(radarScan);
+    // 触发 Aurora 极光切换效果 - 使用全局事件
+    window.dispatchEvent(new CustomEvent("aurora-shift"))
   }, []);
 
   return (

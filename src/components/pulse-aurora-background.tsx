@@ -100,31 +100,53 @@ export function PulseAuroraBackground() {
   const bgLayerRef = useRef<HTMLDivElement>(null)
   const auroraContainerRef = useRef<HTMLDivElement>(null)
 
-  // 切换剧本的核心逻辑
+  // 切换剧本的核心逻辑 - 夸张的视觉冲击动效
   const switchScript = useCallback(() => {
+    if (isTransitioning) return // 防止重复触发
+    
     const nextIndex = (scriptIndex + 1) % AURORA_SCRIPTS.length
     const nextScript = AURORA_SCRIPTS[nextIndex]
     
     setIsTransitioning(true)
     setScriptIndex(nextIndex)
     
-    // 立即触发爆发效果：振幅瞬间拉满
+    // 阶段1: 爆发冲击 - 振幅和速度瞬间拉到极限
     setAuroraParams((prev) => ({
       ...prev,
-      amplitude: 4.0, // 爆发峰值
-      speed: 4.0,
+      amplitude: 6.0, // 爆发峰值（更夸张）
+      speed: 6.0,
+      blend: 0.2, // 更高对比度
     }))
     
-    // 300ms 后开始过渡到目标状态
+    // 阶段2: 400ms 后颜色开始切换，振幅回落
+    setTimeout(() => {
+      setAuroraParams({
+        ...nextScript,
+        amplitude: nextScript.amplitude * 1.8, // 仍保持较高振幅
+        speed: nextScript.speed * 1.5,
+      })
+    }, 400)
+    
+    // 阶段3: 1000ms 后完全恢复到目标状态
     setTimeout(() => {
       setAuroraParams(nextScript)
-    }, 300)
+    }, 1000)
     
-    // 800ms 后结束过渡状态
+    // 1200ms 后结束过渡状态
     setTimeout(() => {
       setIsTransitioning(false)
-    }, 800)
-  }, [scriptIndex])
+    }, 1200)
+  }, [scriptIndex, isTransitioning])
+  
+  // 监听全局 aurora-shift 事件（loading 触发用）
+  useEffect(() => {
+    const handleAuroraShift = () => {
+      switchScript()
+    }
+    
+    window.addEventListener("aurora-shift", handleAuroraShift)
+    return () => window.removeEventListener("aurora-shift", handleAuroraShift)
+  }, [switchScript])
 
   useEffect(() => {
     setMounted(true)
@@ -275,17 +297,24 @@ export function PulseAuroraBackground() {
           }}
         />
 
-        {/* 第三层：Aurora WebGL 极光效果（底部 55%，向上渐隐） */}
+        {/* 第三层：Aurora WebGL 极光效果（底部 65%，向上渐隐） */}
         <div
           ref={auroraContainerRef}
           className="absolute bottom-0 left-0 right-0 overflow-hidden"
           style={{
-            height: "55%",
-            transform: isTransitioning ? "scaleY(1.2) translateY(-3%)" : "scaleY(1) translateY(0)",
-            transition: `transform 0.8s ${EASING.easeOutExpo}`,
+            height: isTransitioning ? "85%" : "65%",
+            transform: isTransitioning 
+              ? "scaleY(1.4) scaleX(1.1) translateY(-8%)" 
+              : "scaleY(1) scaleX(1) translateY(0)",
+            opacity: isTransitioning ? 1 : 0.95,
+            transition: `all 0.6s ${EASING.easeOutExpo}`,
             transformOrigin: "bottom center",
-            maskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 40%, rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)",
-            WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 40%, rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)",
+            maskImage: isTransitioning 
+              ? "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 50%, rgba(0,0,0,0.5) 80%, rgba(0,0,0,0) 100%)"
+              : "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 40%, rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)",
+            WebkitMaskImage: isTransitioning 
+              ? "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 50%, rgba(0,0,0,0.5) 80%, rgba(0,0,0,0) 100%)"
+              : "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 40%, rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)",
           }}
         >
           <Aurora
@@ -296,13 +325,28 @@ export function PulseAuroraBackground() {
           />
         </div>
 
-        {/* 第五层：过渡时的光爆效果 */}
+        {/* 第四层：过渡时的中心光爆冲击波 */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: `radial-gradient(ellipse 100% 80% at 50% 100%, ${currentScript.colorStops[1]}20 0%, transparent 60%)`,
-            opacity: isTransitioning ? 0.8 : 0,
-            transition: `opacity 0.3s ${EASING.easeOutExpo}`,
+            background: `
+              radial-gradient(ellipse 120% 100% at 50% 100%, ${currentScript.colorStops[1]}40 0%, transparent 50%),
+              radial-gradient(ellipse 80% 60% at 50% 80%, ${currentScript.colorStops[0]}30 0%, transparent 40%)
+            `,
+            opacity: isTransitioning ? 1 : 0,
+            transform: isTransitioning ? "scale(1.2)" : "scale(0.8)",
+            transition: `all 0.4s ${EASING.easeOutExpo}`,
+          }}
+        />
+
+        {/* 第五层：过渡时的边缘光晕 */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            boxShadow: isTransitioning 
+              ? `inset 0 -200px 200px -100px ${currentScript.colorStops[1]}30`
+              : "none",
+            transition: `box-shadow 0.5s ${EASING.easeOutExpo}`,
           }}
         />
 
