@@ -71,13 +71,13 @@ export default function PageLoading({ label = "正在跃迁" }: { label?: string
             {label}
           </span>
           <span className="flex gap-1 ml-1" aria-hidden="true">
-            <span className="w-1 h-1 rounded-full bg-zinc-300 animate-[loadingDot_1.2s_ease-in-out_infinite]" />
+            <span className="w-1 h-1 rounded-full bg-zinc-300 animate-loading-dot" />
             <span
-              className="w-1 h-1 rounded-full bg-zinc-300 animate-[loadingDot_1.2s_ease-in-out_infinite]"
+              className="w-1 h-1 rounded-full bg-zinc-300 animate-loading-dot"
               style={{ animationDelay: "0.15s" }}
             />
             <span
-              className="w-1 h-1 rounded-full bg-zinc-300 animate-[loadingDot_1.2s_ease-in-out_infinite]"
+              className="w-1 h-1 rounded-full bg-zinc-300 animate-loading-dot"
               style={{ animationDelay: "0.3s" }}
             />
           </span>
@@ -85,13 +85,6 @@ export default function PageLoading({ label = "正在跃迁" }: { label?: string
 
         <span className="sr-only">{label}</span>
       </div>
-
-      <style jsx>{`
-        @keyframes loadingDot {
-          0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
-          40% { opacity: 1; transform: translateY(-2px); }
-        }
-      `}</style>
     </div>
   )
 }

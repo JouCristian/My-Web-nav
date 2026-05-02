@@ -50,17 +50,6 @@ export default function GlobalBackground() {
         </div>
       </div>
 
-      {/* 1s 渐显动画样式 */}
-      <style>{`
-        @keyframes fade-in-bg {
-          0% { opacity: 0; filter: blur(20px); transform: scale(1.05); }
-          100% { opacity: 1; filter: blur(0px); transform: scale(1); }
-        }
-        .animate-bg-fade {
-          opacity: 0;
-          animation: fade-in-bg 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        }
-      `}</style>
     </>
   )
 }
