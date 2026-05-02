@@ -5,8 +5,8 @@ import { createPortal } from "react-dom"
 import { usePathname } from "next/navigation"
 import dynamic from "next/dynamic"
 
-// 动态导入 AuroraRing 组件（带占位符防止闪烁）
-const AuroraRing = dynamic(() => import("./AuroraRing"), { 
+// 动态导入 GlowRing 组件（纯 CSS 实现的流动光环）
+const GlowRing = dynamic(() => import("./GlowRing"), { 
   ssr: false,
   loading: () => <div className="w-full h-full" style={{ backgroundColor: "transparent" }} />
 })
@@ -25,17 +25,14 @@ const EASING = {
   easeInOutSine: "cubic-bezier(0.37, 0, 0.63, 1)",
 }
 
-// 剧本配置：环形极光的不同状态
+// 剧本配置：光环的不同状态
 const AURORA_SCRIPTS = [
   {
     name: "静谧深空",
-    amplitude: 0.8,
-    blend: 0.6,
-    speed: 0.3,
     scale: 1.0,
-    ringRadius: 0.32,
-    ringWidth: 0.06,
-    colorStops: ["#0ea5e9", "#38bdf8", "#0ea5e9"],
+    speed: 0.8,
+    intensity: 1.0,
+    colors: ["#0ea5e9", "#38bdf8", "#0ea5e9"],
     bgGradient: `
       radial-gradient(ellipse 120% 80% at 50% 100%, rgba(14, 165, 233, 0.15) 0%, transparent 55%),
       radial-gradient(ellipse 80% 60% at 30% 90%, rgba(56, 189, 248, 0.08) 0%, transparent 50%),
@@ -45,13 +42,10 @@ const AURORA_SCRIPTS = [
   },
   {
     name: "极光风暴",
-    amplitude: 1.8,
-    blend: 0.45,
-    speed: 0.6,
     scale: 1.0,
-    ringRadius: 0.38,
-    ringWidth: 0.09,
-    colorStops: ["#7c3aed", "#22d3ee", "#10b981"],
+    speed: 1.2,
+    intensity: 1.1,
+    colors: ["#7c3aed", "#22d3ee", "#10b981"],
     bgGradient: `
       radial-gradient(ellipse 140% 100% at 50% 100%, rgba(124, 58, 237, 0.2) 0%, transparent 60%),
       radial-gradient(ellipse 100% 70% at 25% 85%, rgba(34, 211, 238, 0.12) 0%, transparent 55%),
@@ -61,13 +55,10 @@ const AURORA_SCRIPTS = [
   },
   {
     name: "星云漫游",
-    amplitude: 1.2,
-    blend: 0.55,
-    speed: 0.4,
     scale: 1.0,
-    ringRadius: 0.35,
-    ringWidth: 0.07,
-    colorStops: ["#a855f7", "#ec4899", "#6366f1"],
+    speed: 1.0,
+    intensity: 1.0,
+    colors: ["#a855f7", "#ec4899", "#6366f1"],
     bgGradient: `
       radial-gradient(ellipse 130% 90% at 50% 100%, rgba(168, 85, 247, 0.18) 0%, transparent 58%),
       radial-gradient(ellipse 90% 65% at 20% 88%, rgba(236, 72, 153, 0.1) 0%, transparent 52%),
@@ -77,13 +68,10 @@ const AURORA_SCRIPTS = [
   },
   {
     name: "深渊脉动",
-    amplitude: 1.5,
-    blend: 0.5,
-    speed: 0.5,
     scale: 1.0,
-    ringRadius: 0.36,
-    ringWidth: 0.08,
-    colorStops: ["#3b82f6", "#8b5cf6", "#0891b2"],
+    speed: 0.9,
+    intensity: 1.05,
+    colors: ["#3b82f6", "#8b5cf6", "#0891b2"],
     bgGradient: `
       radial-gradient(ellipse 135% 95% at 50% 100%, rgba(59, 130, 246, 0.18) 0%, transparent 58%),
       radial-gradient(ellipse 95% 68% at 15% 90%, rgba(139, 92, 246, 0.12) 0%, transparent 52%),
@@ -113,15 +101,15 @@ export function PulseAuroraBackground() {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [transitionPhase, setTransitionPhase] = useState<"idle" | "charge" | "burst" | "settle">("idle")
   
-  // Aurora 动态参数
-  const [auroraParams, setAuroraParams] = useState(AURORA_SCRIPTS[0])
+  // 光环动态参数
+  const [glowParams, setGlowParams] = useState(AURORA_SCRIPTS[0])
   
   // 背景层引用（用于 CSS 过渡）
   const bgLayerRef = useRef<HTMLDivElement>(null)
   const auroraContainerRef = useRef<HTMLDivElement>(null)
 
   // 切换剧本的核心逻辑 - 呼吸式缩放 + 颜色切换
-  // 五阶段过渡：收缩吸气 → 扩张爆发 → 回弹 → 稳定 → 恢复
+  // 三阶段过渡：收缩吸气 → 扩张爆发 → 回弹恢复
   const switchScript = useCallback(() => {
     if (isTransitioning) return // 防止重复触发
     
@@ -132,59 +120,38 @@ export function PulseAuroraBackground() {
     setTransitionPhase("charge")
     setScriptIndex(nextIndex)
     
-    // 阶段1: 收缩吸气 (0-300ms) - 环收缩，呼吸感
-    setAuroraParams((prev) => ({
+    // 阶段1: 收缩吸气 (0-400ms) - 光环收缩
+    setGlowParams((prev) => ({
       ...prev,
-      scale: 0.85,  // 收缩
-      amplitude: prev.amplitude * 0.5,
-      speed: prev.speed * 0.4,
-      ringWidth: prev.ringWidth * 0.8,
+      scale: 0.8,
+      intensity: prev.intensity * 0.6,
     }))
     
-    // 阶段2: 扩张爆发 (300-800ms) - 环扩大，颜色切换开始
+    // 阶段2: 扩张爆发 (400-1000ms) - 光环扩大，颜色切换
     setTimeout(() => {
       setTransitionPhase("burst")
-      setAuroraParams((prev) => ({
-        ...prev,
-        scale: 1.25,  // 扩张超过目标
-        amplitude: nextScript.amplitude * 2.0,
-        speed: nextScript.speed * 1.8,
-        blend: 0.4,
-        ringRadius: nextScript.ringRadius * 1.1,
-        ringWidth: nextScript.ringWidth * 1.3,
-        colorStops: nextScript.colorStops, // 颜色切换
-      }))
-    }, 300)
+      setGlowParams({
+        ...nextScript,
+        scale: 1.2,  // 扩张超过目标
+        intensity: nextScript.intensity * 1.3,
+      })
+    }, 400)
     
-    // 阶段3: 回弹 (800-1400ms) - 环略微收缩回弹
+    // 阶段3: 回弹恢复 (1000-1600ms) - 回归目标状态
     setTimeout(() => {
       setTransitionPhase("settle")
-      setAuroraParams({
+      setGlowParams({
         ...nextScript,
-        scale: 0.95,  // 回弹收缩
-        amplitude: nextScript.amplitude * 1.4,
-        speed: nextScript.speed * 1.2,
-        ringRadius: nextScript.ringRadius * 0.98,
-        ringWidth: nextScript.ringWidth * 1.1,
+        scale: 0.97,
       })
-    }, 800)
+    }, 1000)
     
-    // 阶段4: 稳定 (1400-2000ms) - 接近目标状态
+    // 阶段4: 完全恢复 (1600ms+)
     setTimeout(() => {
-      setAuroraParams({
-        ...nextScript,
-        scale: 1.03,  // 轻微超调
-        amplitude: nextScript.amplitude * 1.15,
-        speed: nextScript.speed * 1.05,
-      })
-    }, 1400)
-    
-    // 阶段5: 完全恢复 (2000ms+) - 回归平衡
-    setTimeout(() => {
-      setAuroraParams(nextScript)
+      setGlowParams(nextScript)
       setIsTransitioning(false)
       setTransitionPhase("idle")
-    }, 2000)
+    }, 1600)
   }, [scriptIndex, isTransitioning])
   
   // 监听全局 aurora-shift 事件（loading 触发用）
@@ -287,8 +254,8 @@ export function PulseAuroraBackground() {
               <div
                 className="w-2.5 h-2.5 rounded-full animate-pulse shadow-[0_0_12px_rgba(96,165,250,0.9)]"
                 style={{
-                  backgroundColor: currentScript.colorStops[1],
-                  boxShadow: `0 0 12px ${currentScript.colorStops[1]}`,
+                  backgroundColor: currentScript.colors[1],
+                  boxShadow: `0 0 12px ${currentScript.colors[1]}`,
                   transition: `all 0.6s ${EASING.easeOutExpo}`,
                 }}
               />
@@ -297,7 +264,7 @@ export function PulseAuroraBackground() {
                 style={{
                   borderWidth: 1,
                   borderStyle: "solid",
-                  borderColor: `${currentScript.colorStops[1]}50`,
+                  borderColor: `${currentScript.colors[1]}50`,
                 }}
               />
             </div>
@@ -389,14 +356,11 @@ export function PulseAuroraBackground() {
               : "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.45) 55%, rgba(0,0,0,0.15) 75%, rgba(0,0,0,0) 100%)",
           }}
         >
-          <AuroraRing
-            colorStops={auroraParams.colorStops}
-            amplitude={auroraParams.amplitude}
-            blend={auroraParams.blend}
-            speed={auroraParams.speed}
-            scale={auroraParams.scale}
-            ringRadius={auroraParams.ringRadius}
-            ringWidth={auroraParams.ringWidth}
+          <GlowRing
+            colors={glowParams.colors}
+            scale={glowParams.scale}
+            intensity={glowParams.intensity}
+            speed={glowParams.speed}
           />
         </div>
 
@@ -405,8 +369,8 @@ export function PulseAuroraBackground() {
           className="absolute inset-0 pointer-events-none"
           style={{
             background: `
-              radial-gradient(ellipse 150% 120% at 50% 100%, ${currentScript.colorStops[1]}20 0%, transparent 60%),
-              radial-gradient(ellipse 100% 80% at 50% 90%, ${currentScript.colorStops[0]}15 0%, transparent 50%)
+              radial-gradient(ellipse 150% 120% at 50% 100%, ${currentScript.colors[1]}20 0%, transparent 60%),
+              radial-gradient(ellipse 100% 80% at 50% 90%, ${currentScript.colors[0]}15 0%, transparent 50%)
             `,
             opacity: transitionPhase === "charge" ? 0.25 
                    : transitionPhase === "burst" ? 0.7 
@@ -427,10 +391,10 @@ export function PulseAuroraBackground() {
           className="absolute inset-0 pointer-events-none"
           style={{
             boxShadow: transitionPhase === "burst" 
-              ? `inset 0 -220px 250px -100px ${currentScript.colorStops[1]}18`
+              ? `inset 0 -220px 250px -100px ${currentScript.colors[1]}18`
               : transitionPhase === "settle"
-              ? `inset 0 -180px 200px -90px ${currentScript.colorStops[1]}12`
-              : `inset 0 -150px 180px -80px ${currentScript.colorStops[1]}08`,
+              ? `inset 0 -180px 200px -90px ${currentScript.colors[1]}12`
+              : `inset 0 -150px 180px -80px ${currentScript.colors[1]}08`,
             transition: `box-shadow 1.5s ${EASING.easeInOutSine}`,
           }}
         />
