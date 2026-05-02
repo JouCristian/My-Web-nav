@@ -12,14 +12,7 @@ export default function PageLoading({ label = "正在跃迁" }: { label?: string
   return (
     <div className="relative z-10 min-h-[100vh] w-full flex items-center justify-center px-6">
       <div
-        className="
-          group relative flex flex-col items-center gap-7
-          rounded-[2.5rem] px-10 sm:px-14 py-12 sm:py-14
-          border border-white/10
-          bg-white/[0.04] backdrop-blur-2xl
-          shadow-[0_30px_120px_-20px_rgba(34,211,238,0.18),0_0_0_1px_rgba(255,255,255,0.04)_inset]
-          will-change-transform
-        "
+        className="group relative flex flex-col items-center gap-7 rounded-[2.5rem] px-10 sm:px-14 py-12 sm:py-14 border border-white/10 bg-white/[0.04] backdrop-blur-2xl shadow-[0_30px_120px_-20px_rgba(34,211,238,0.18),0_0_0_1px_rgba(255,255,255,0.04)_inset] will-change-transform"
         role="status"
         aria-live="polite"
       >
