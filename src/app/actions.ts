@@ -1,3 +1,4 @@
+// src/app/actions.ts
 'use server'
 
 import { prisma } from "@/lib/db"
@@ -139,7 +140,6 @@ export async function startGlobalRollCall(durationSeconds: number) {
   return newSession
 }
 
-// 🚀 核心修复 1：数据库级防重锁 (Anti-Duplication Lock)
 export async function submitAttendance(sessionId: string) {
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
@@ -147,7 +147,6 @@ export async function submitAttendance(sessionId: string) {
   const user = await prisma.user.findUnique({ where: { id: session.user.id } })
   if (!user) throw new Error("User not found")
 
-  // 🛡️ 拦截重复请求，防止因为网络卡顿导致的幽灵重影记录
   const existingRecord = await prisma.attendanceRecord.findFirst({
     where: { userId: user.id, sessionId: sessionId }
   })
@@ -183,7 +182,6 @@ export async function checkLiveRollCall() {
   }
 }
 
-// 🚀 核心修复 2：全云端历史记录拉取协议 (Cloud History Sync)
 export async function getRollCallHistoryAction() {
   const session = await auth()
   if (!session?.user?.id) return []
@@ -201,7 +199,6 @@ export async function getRollCallHistoryAction() {
   }))
 }
 
-// 🚀 核心修复 3：舰长特权 - 抹除整场集结档案
 export async function deleteRollCallSessionAction(sessionId: string) {
   const session = await auth()
   const user = await prisma.user.findUnique({ where: { id: session?.user?.id || "" } })
@@ -210,7 +207,6 @@ export async function deleteRollCallSessionAction(sessionId: string) {
   revalidatePath("/dashboard/attendance")
 }
 
-// 🚀 核心修复 4：舰长特权 - 缺勤干预（手动补签入库）
 export async function markCrewPresentAction(sessionId: string, crewName: string) {
   const session = await auth()
   const admin = await prisma.user.findUnique({ where: { id: session?.user?.id || "" } })
@@ -320,27 +316,94 @@ export async function mergeAccountsAction() {
   }
 }
 
-/**
- * ==========================================
- * 🚀 核心修复：舰长特权 - 开除船员 (彻底抹除档案)
- * ==========================================
- */
 export async function removeCrewAction(userId: string) {
   const session = await auth()
-  
-  // 校验当前操作者的权限
   const admin = await prisma.user.findUnique({ where: { id: session?.user?.id || "" } })
   if (admin?.role !== "OWNER" && admin?.role !== "ADMIN") {
     throw new Error("权限不足：非法操作指挥序列")
   }
-  
-  // 保护最高指挥官免受误删
   const targetUser = await prisma.user.findUnique({ where: { id: userId } })
   if (targetUser?.role === "OWNER") {
     throw new Error("指令驳回：无法对最高指挥官执行抹除操作")
   }
-
-  // 执行彻底删除（由于在 schema 里加了 Cascade，Ta的发帖、请假、签到全都会被干净地级联抹除）
   await prisma.user.delete({ where: { id: userId } })
   revalidatePath("/dashboard/crew")
+}
+
+/**
+ * ==========================================
+ * 🌌 航行日志 (Flight Log Sync)
+ * ==========================================
+ */
+
+// 🚀 1. 获取全舰共享日志 (面向全体船员)
+export async function getFlightLogs() {
+  const session = await auth()
+  if (!session?.user?.id) return { error: "未授权" }
+
+  try {
+    const logs = await prisma.flightLog.findMany()
+    
+    const logRecord: Record<string, any> = {}
+    logs.forEach(log => {
+      logRecord[log.date] = {
+        title: log.title,
+        time: log.time,
+        content: log.content
+      }
+    })
+    return { data: logRecord }
+  } catch (error) {
+    return { error: "获取日志失败" }
+  }
+}
+
+// 🚀 2. 同步/创建日志 (严格验证指挥官权限)
+export async function syncFlightLog(date: string, title: string, time: string, content: string) {
+  const session = await auth()
+  if (!session?.user?.id) return { error: "未授权" }
+
+  const dbUser = await prisma.user.findUnique({ where: { id: session.user.id } })
+  if (dbUser?.role !== "OWNER" && dbUser?.role !== "ADMIN") {
+    return { error: "权限不足：仅指挥序列可录入航行日志" }
+  }
+
+  try {
+    await prisma.flightLog.upsert({
+      where: { date: date },
+      update: { title, time, content, userId: session.user.id },
+      create: {
+        userId: session.user.id,
+        date: date,
+        title: title,
+        time: time,
+        content: content,
+      }
+    })
+    revalidatePath("/dashboard")
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { error: "数据库写入失败" }
+  }
+}
+
+// 🚀 3. 删除日志 (严格验证指挥官权限)
+export async function deleteFlightLog(date: string) {
+  const session = await auth()
+  
+  const dbUser = await prisma.user.findUnique({ where: { id: session?.user?.id || "" } })
+  if (dbUser?.role !== "OWNER" && dbUser?.role !== "ADMIN") {
+    return { error: "权限不足：仅指挥序列可销毁档案" }
+  }
+
+  try {
+    await prisma.flightLog.delete({
+      where: { date: date }
+    })
+    revalidatePath("/dashboard")
+    return { success: true }
+  } catch (error) {
+    return { error: "删除失败" }
+  }
 }

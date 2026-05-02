@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
 import ReactMarkdown from "react-markdown"
+import { getFlightLogs, syncFlightLog, deleteFlightLog } from "@/app/actions"
 
 export function FlightLogCalendar({ userRole }: { userRole: string }) {
   const [viewDate, setViewDate] = useState(new Date())
@@ -29,13 +30,10 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
 
   useEffect(() => { 
     setMounted(true);
-    const savedLogs = localStorage.getItem("STARFLEET_FLIGHT_LOGS");
-    if (savedLogs) try { setLogs(JSON.parse(savedLogs)); } catch (e) { console.error(e); }
+    getFlightLogs().then(res => {
+      if (res.data) setLogs(res.data);
+    });
   }, [])
-  
-  useEffect(() => { 
-    if (mounted) localStorage.setItem("STARFLEET_FLIGHT_LOGS", JSON.stringify(logs)); 
-  }, [logs, mounted])
 
   const year = viewDate.getFullYear(); const month = viewDate.getMonth()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
@@ -71,17 +69,27 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
     setIsModalOpen(true); setIsTimePickerOpen(false); setFocusStyle(s => ({...s, opacity: 0}))
   }
 
-  const handleSaveLog = () => {
+  const handleSaveLog = async () => {
     if (selectedDateKey) {
       setLogs(p => ({...p, [selectedDateKey]: { title: editTitle, time: editTime, content: editContent }}));
       setIsModalOpen(false);
+
+      const res = await syncFlightLog(selectedDateKey, editTitle, editTime, editContent);
+      if (res?.error) {
+        alert("同步到指挥中心失败: " + res.error);
+      }
     }
   }
 
-  const handleClearLog = () => {
+  const handleClearLog = async () => {
     if (selectedDateKey) {
       setLogs(p => { const n = {...p}; delete n[selectedDateKey]; return n; });
       setIsModalOpen(false);
+
+      const res = await deleteFlightLog(selectedDateKey);
+      if (res?.error) {
+        alert("抹除档案失败: " + res.error);
+      }
     }
   }
 
@@ -109,7 +117,6 @@ export function FlightLogCalendar({ userRole }: { userRole: string }) {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[#02040a]/60 backdrop-blur-[15px]" onClick={() => setIsModalOpen(false)} />
           <style dangerouslySetInnerHTML={{ __html: `
-            /* 🚀 定点修复：彻底移除 scale，完美解决字体跳动 */
             @keyframes modal-breathe { 
               0%, 100% { box-shadow: 0 0 60px rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.2); } 
               50% { box-shadow: 0 0 100px rgba(16, 185, 129, 0.35); border-color: rgba(16, 185, 129, 0.4); } 

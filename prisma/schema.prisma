@@ -85,7 +85,6 @@ model User {
   realName      String?   
   studentId     String?   
   feishuLink    String?
-  
   role          Role      @default(PENDING)
   createdAt     DateTime  @default(now())
 
@@ -95,7 +94,8 @@ model User {
   attendances      Attendance[]
   leaveRequests    LeaveRequest[]
   announcements    Announcement[]
-  rollCallRecords  AttendanceRecord[] // 🚀 关联到跃迁集结记录
+  rollCallRecords  AttendanceRecord[] 
+  flightLogs       FlightLog[]        // 关联航行日志
 }
 
 // ==========================================
@@ -103,7 +103,7 @@ model User {
 // ==========================================
 model Meeting {
   id              String       @id @default(cuid())
-  title           String?     
+  title           String?
   date            DateTime     
   signInDeadline  DateTime?
   content         String?      @db.Text
@@ -125,12 +125,12 @@ model Attendance {
 model LeaveRequest {
   id        String      @id @default(cuid())
   userId    String     
-  startTime DateTime    // 🚀 替换了原有的单日 date
-  endTime   DateTime    // 🚀 新增：归舰时间
+  startTime DateTime    
+  endTime   DateTime    
   reason    String      @db.Text
   status    LeaveStatus @default(PENDING)
   handledBy String?
-  createdAt DateTime    @default(now()) // 🚀 新增：用于排序
+  createdAt DateTime    @default(now()) 
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -177,13 +177,27 @@ model RollCallSession {
 model AttendanceRecord {
   id        String   @id @default(cuid())
   userId    String
-  // 🚀 核心修复 1：加上 onDelete: Cascade，当船员被开除时，自动销毁他的签到记录
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade) 
   sessionId String
-  // 🚀 核心修复 2：加上 onDelete: Cascade，当签到场次被删除时，自动清空该场次下的所有打卡数据
   session   RollCallSession @relation(fields: [sessionId], references: [id], onDelete: Cascade) 
   timestamp DateTime @default(now())
 
   // 复合唯一键，防止同一船员在同一次集结中重复签到
   @@unique([userId, sessionId])
+}
+
+// ==========================================
+// 🌌 航行日志 (Flight Log System)
+// ==========================================
+model FlightLog {
+  id        String   @id @default(cuid())
+  userId    String   // 记录录入日志的指挥官 ID
+  date      String   @unique // 🚀 核心：全舰每天唯一归档坐标
+  title     String   
+  time      String   
+  content   String   @db.Text 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
