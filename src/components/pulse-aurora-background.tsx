@@ -275,16 +275,17 @@ export function PulseAuroraBackground() {
           }}
         />
 
-        {/* 第三层：Aurora WebGL 极光效果（底部 30%） */}
+        {/* 第三层：Aurora WebGL 极光效果（底部 55%，向上渐隐） */}
         <div
           ref={auroraContainerRef}
           className="absolute bottom-0 left-0 right-0 overflow-hidden"
           style={{
-            height: "35%",
-            opacity: isTransitioning ? 1 : 0.9,
-            transform: isTransitioning ? "scaleY(1.3) translateY(-5%)" : "scaleY(1) translateY(0)",
-            transition: `transform 0.8s ${EASING.easeOutExpo}, opacity 0.4s ease`,
+            height: "55%",
+            transform: isTransitioning ? "scaleY(1.2) translateY(-3%)" : "scaleY(1) translateY(0)",
+            transition: `transform 0.8s ${EASING.easeOutExpo}`,
             transformOrigin: "bottom center",
+            maskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 40%, rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)",
+            WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 40%, rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)",
           }}
         >
           <Aurora
@@ -294,16 +295,6 @@ export function PulseAuroraBackground() {
             speed={auroraParams.speed}
           />
         </div>
-
-        {/* 第四层：Aurora 上方的柔和渐隐遮罩 */}
-        <div
-          className="absolute bottom-0 left-0 right-0 pointer-events-none"
-          style={{
-            height: "40%",
-            background:
-              "linear-gradient(to bottom, #020205 0%, transparent 30%, transparent 100%)",
-          }}
-        />
 
         {/* 第五层：过渡时的光爆效果 */}
         <div
