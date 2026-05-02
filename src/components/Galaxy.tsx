@@ -174,6 +174,17 @@ void main() {
 const DEFAULT_FOCAL: [number, number] = [0.5, 0.5];
 const DEFAULT_ROTATION: [number, number] = [1.0, 0.0];
 
+// 检测是否为移动端（静态检测）
+const getIsMobileStatic = () => {
+  if (typeof window === 'undefined') return false;
+  const isSmall = window.innerWidth <= 1024;
+  const isTouch = (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || 'ontouchstart' in window;
+  const ua = navigator.userAgent || '';
+  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  return Boolean((isSmall && isTouch) || isMobileUA || reducedMotion);
+};
+
 interface GalaxyProps {
   focal?: [number, number];
   rotation?: [number, number];
@@ -217,6 +228,8 @@ export default function Galaxy({
   const smoothMousePos = useRef({ x: 0.5, y: 0.5 });
   const targetMouseActive = useRef(0.0);
   const smoothMouseActive = useRef(0.0);
+  const isVisibleRef = useRef(true);
+  const isMobileRef = useRef<boolean | null>(null);
 
   // 🚀 核心修复：将所有依赖移入 Ref 缓冲池，让它们在 Update 循环中自行拉取
   const propsRef = useRef({ focal, rotation, starSpeed, density, hueShift, disableAnimation, speed, glowIntensity, saturation, mouseRepulsion, twinkleIntensity, rotationSpeed, repulsionStrength, autoCenterRepulsion, mouseInteraction });
@@ -226,6 +239,12 @@ export default function Galaxy({
   }, [focal, rotation, starSpeed, density, hueShift, disableAnimation, speed, glowIntensity, saturation, mouseRepulsion, twinkleIntensity, rotationSpeed, repulsionStrength, autoCenterRepulsion, mouseInteraction]);
 
   useEffect(() => {
+    // 移动端跳过 WebGL 渲染
+    if (isMobileRef.current === null) {
+      isMobileRef.current = getIsMobileStatic();
+    }
+    if (isMobileRef.current) return;
+
     if (!ctnDom.current) return;
     const ctn = ctnDom.current;
     const renderer = new Renderer({
@@ -293,6 +312,9 @@ export default function Galaxy({
 
     function update(t: number) {
       animateId = requestAnimationFrame(update);
+      // 不可见时跳过渲染
+      if (!isVisibleRef.current) return;
+      
       const p = propsRef.current;
 
       if (!p.disableAnimation) {
@@ -343,22 +365,40 @@ export default function Galaxy({
       targetMouseActive.current = 0.0;
     }
 
-    if (propsRef.current.mouseInteraction) {
+    // 仅在非触摸设备上绑定鼠标事件
+    const isTouch = (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || 'ontouchstart' in window;
+    if (propsRef.current.mouseInteraction && !isTouch) {
       ctn.addEventListener('mousemove', handleMouseMove);
       ctn.addEventListener('mouseleave', handleMouseLeave);
+    }
+
+    // 添加 Intersection Observer 用于暂停离屏渲染
+    let observer: IntersectionObserver | null = null;
+    if ('IntersectionObserver' in window) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          isVisibleRef.current = entries[0]?.isIntersecting ?? true;
+        },
+        { threshold: 0.01 }
+      );
+      observer.observe(ctn);
     }
 
     return () => {
       cancelAnimationFrame(animateId);
       window.removeEventListener('resize', resize);
-      if (propsRef.current.mouseInteraction) {
+      if (observer) {
+        observer.disconnect();
+      }
+      // 仅在非触摸设备上移除鼠标监听
+      if (propsRef.current.mouseInteraction && !isTouch) {
         ctn.removeEventListener('mousemove', handleMouseMove);
         ctn.removeEventListener('mouseleave', handleMouseLeave);
       }
       ctn.removeChild(gl.canvas);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
-  // 🚀 依赖项被精简到了仅仅只有 transparent。页面不论怎么切，画布永远驻留。
+  // 🚀 依赖项被精简到了仅仅只有 transparent。页面不论怎么切，画布永远���留。
   }, [transparent]); 
 
   return <div ref={ctnDom} className="galaxy-container" {...rest} />;

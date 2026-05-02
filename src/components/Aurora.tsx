@@ -119,14 +119,33 @@ interface AuroraProps {
   speed?: number;
 }
 
+// 检测是否为移动端（静态检测）
+const getIsMobileStatic = () => {
+  if (typeof window === 'undefined') return false;
+  const isSmall = window.innerWidth <= 1024;
+  const isTouch = (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || 'ontouchstart' in window;
+  const ua = navigator.userAgent || '';
+  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  return Boolean((isSmall && isTouch) || isMobileUA || reducedMotion);
+};
+
 export default function Aurora(props: AuroraProps) {
   const { colorStops = ['#5227FF', '#7cff67', '#5227FF'], amplitude = 1.0, blend = 0.5 } = props;
   const propsRef = useRef<AuroraProps>(props);
   propsRef.current = props;
 
   const ctnDom = useRef<HTMLDivElement>(null);
+  const isVisibleRef = useRef(true);
+  const isMobileRef = useRef<boolean | null>(null);
 
   useEffect(() => {
+    // 移动端跳过 WebGL 渲染
+    if (isMobileRef.current === null) {
+      isMobileRef.current = getIsMobileStatic();
+    }
+    if (isMobileRef.current) return;
+
     const ctn = ctnDom.current;
     if (!ctn) return;
 
@@ -182,6 +201,9 @@ export default function Aurora(props: AuroraProps) {
     let animateId = 0;
     const update = (t: number) => {
       animateId = requestAnimationFrame(update);
+      // 不可见时跳过渲染
+      if (!isVisibleRef.current) return;
+      
       const { time = t * 0.01, speed = 1.0 } = propsRef.current;
       if (program) {
         program.uniforms.uTime.value = time * speed * 0.1;
@@ -197,11 +219,26 @@ export default function Aurora(props: AuroraProps) {
     };
     animateId = requestAnimationFrame(update);
 
+    // 添加 Intersection Observer 用于暂停离屏渲染
+    let observer: IntersectionObserver | null = null;
+    if ('IntersectionObserver' in window) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          isVisibleRef.current = entries[0]?.isIntersecting ?? true;
+        },
+        { threshold: 0.01 }
+      );
+      observer.observe(ctn);
+    }
+
     resize();
 
     return () => {
       cancelAnimationFrame(animateId);
       window.removeEventListener('resize', resize);
+      if (observer) {
+        observer.disconnect();
+      }
       if (ctn && gl.canvas.parentNode === ctn) {
         ctn.removeChild(gl.canvas);
       }

@@ -31,6 +31,34 @@ body {
 
 @layer utilities {
   /* ==========================================
+     🚀 移动端性能优化：减少动画开销
+     ========================================== */
+  @media (max-width: 1024px), (hover: none) {
+    /* 移动端关闭复杂动画，使用简化版本 */
+    .animate-flame-hover:hover::before {
+      animation: none !important;
+      opacity: 0.6 !important;
+    }
+    .animate-module-card {
+      animation: none !important;
+    }
+    .animate-purple-flow {
+      animation: none !important;
+    }
+  }
+
+  /* 尊重用户的减少动效设置 */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* ==========================================
      🚀 终极防断层：动效分离技术
      ========================================== */
      
