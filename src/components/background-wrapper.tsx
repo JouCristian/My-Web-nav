@@ -7,7 +7,7 @@ function BackgroundPlaceholder() {
   return (
     <div 
       className="fixed inset-0 z-[-1]"
-      style={{ backgroundColor: "#2b84a1" }}
+      style={{ backgroundColor: "#020205" }}
     />
   )
 }

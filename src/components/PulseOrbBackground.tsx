@@ -69,16 +69,16 @@ export function PulseOrbBackground() {
         left: 0,
         width: "100vw",
         height: fixedHeight,
-        backgroundColor: "#2b84a1", // 根据你图中的参数设置底色
+        backgroundColor: "#020205", // 根据你图中的参数设置底色
       }}
     >
       <div className="absolute inset-0">
         <Orb
           hue={102}                 // 你的截图参数: Hue Shift 102
-          hoverIntensity={0.4}      // 你的截图参数: Hover Intensity 0.4
+          hoverIntensity={0.5}      // 你的截图参数: Hover Intensity 0.4
           rotateOnHover={true}      // 你的截图参数: Rotate On Hover 开
-          forceHoverState={false}   // 你的截图参数: Force Hover State 关
-          backgroundColor="#2b84a1" // 你的截图参数: 容器背景色
+          forceHoverState={true}   // 你的截图参数: Force Hover State 关
+          backgroundColor="#020205" // 你的截图参数: 容器背景色
           isRound={isRound}         // 传入脉冲状态，驱动物理回弹形变
         />
       </div>
