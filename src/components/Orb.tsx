@@ -3,6 +3,17 @@ import { useEffect, useRef } from 'react';
 
 import './Orb.css';
 
+// 检测是否为移动端（静态检测）
+const getIsMobileStatic = () => {
+  if (typeof window === 'undefined') return false;
+  const isSmall = window.innerWidth <= 1024;
+  const isTouch = (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || 'ontouchstart' in window;
+  const ua = navigator.userAgent || '';
+  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  return Boolean((isSmall && isTouch) || isMobileUA || reducedMotion);
+};
+
 interface OrbProps {
   hue?: number;
   hoverIntensity?: number;
@@ -21,6 +32,8 @@ export default function Orb({
   isRound = false,
 }: OrbProps) {
   const ctnDom = useRef<HTMLDivElement>(null);
+  const isVisibleRef = useRef(true);
+  const isMobileRef = useRef<boolean | null>(null);
 
   // 用于在 requestAnimationFrame 中读取最新的 props，避免重新绑定 effect
   const targetProps = useRef({ isRound, hoverIntensity, hue, rotateOnHover, forceHoverState });
@@ -217,6 +230,12 @@ export default function Orb({
   `;
 
   useEffect(() => {
+    // 移动端跳过 WebGL 渲染
+    if (isMobileRef.current === null) {
+      isMobileRef.current = getIsMobileStatic();
+    }
+    if (isMobileRef.current) return;
+
     const container = ctnDom.current;
     if (!container) return;
 
@@ -286,12 +305,31 @@ export default function Orb({
       targetHover = 0;
     };
 
-    container.addEventListener('mousemove', handleMouseMove);
-    container.addEventListener('mouseleave', handleMouseLeave);
+    // 仅在非触摸设备上绑定鼠标事件
+    const isTouch = (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || 'ontouchstart' in window;
+    if (!isTouch) {
+      container.addEventListener('mousemove', handleMouseMove);
+      container.addEventListener('mouseleave', handleMouseLeave);
+    }
+
+    // 添加 Intersection Observer 用于暂停离屏渲染
+    let observer: IntersectionObserver | null = null;
+    if ('IntersectionObserver' in window) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          isVisibleRef.current = entries[0]?.isIntersecting ?? true;
+        },
+        { threshold: 0.01 }
+      );
+      observer.observe(container);
+    }
 
     let rafId: number;
     const update = () => {
       rafId = requestAnimationFrame(update);
+      // 不可见时跳过渲染
+      if (!isVisibleRef.current) return;
+      
       const t = performance.now();
       const dt = (t - lastTime) * 0.001;
       lastTime = t;
@@ -335,8 +373,14 @@ export default function Orb({
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resize);
-      container.removeEventListener('mousemove', handleMouseMove);
-      container.removeEventListener('mouseleave', handleMouseLeave);
+      if (observer) {
+        observer.disconnect();
+      }
+      // 仅在非触摸设备上移除鼠标监听
+      if (!isTouch) {
+        container.removeEventListener('mousemove', handleMouseMove);
+        container.removeEventListener('mouseleave', handleMouseLeave);
+      }
       container.removeChild(gl.canvas);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };

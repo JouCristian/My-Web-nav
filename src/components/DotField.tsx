@@ -6,6 +6,17 @@ import './DotField.css';
 
 const TWO_PI = Math.PI * 2;
 
+// 检测是否为移动端（静态检测，避免 hook 在 memo 组件中的问题）
+const getIsMobileStatic = () => {
+  if (typeof window === 'undefined') return false;
+  const isSmall = window.innerWidth <= 1024;
+  const isTouch = (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || 'ontouchstart' in window;
+  const ua = navigator.userAgent || '';
+  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  return Boolean((isSmall && isTouch) || isMobileUA || reducedMotion);
+};
+
 interface Dot {
   ax: number;
   ay: number;
@@ -49,6 +60,7 @@ const DotField = memo(({
   ...rest
 }: DotFieldProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isMobileRef = useRef<boolean | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const glowRef = useRef<SVGCircleElement>(null);
   const dotsRef = useRef<Dot[]>([]);
@@ -63,6 +75,12 @@ const DotField = memo(({
   const glowIdRef = useRef(`dot-field-glow-${Math.random().toString(36).slice(2, 9)}`);
 
   useEffect(() => {
+    // 移动端检测：跳过整个 Canvas 渲染逻辑
+    if (isMobileRef.current === null) {
+      isMobileRef.current = getIsMobileStatic();
+    }
+    if (isMobileRef.current) return;
+
     const canvas = canvasRef.current;
     const glowEl = glowRef.current;
     if (!canvas) return;
@@ -231,7 +249,11 @@ const DotField = memo(({
 
     doResize();
     window.addEventListener('resize', resize);
-    window.addEventListener('mousemove', onMouseMove, { passive: true });
+    // 仅在非触摸设备上监听鼠标事件
+    const isTouch = (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || 'ontouchstart' in window;
+    if (!isTouch) {
+      window.addEventListener('mousemove', onMouseMove, { passive: true });
+    }
     rafRef.current = requestAnimationFrame(tick);
 
     rebuildRef.current = () => {
@@ -244,7 +266,11 @@ const DotField = memo(({
       clearInterval(speedInterval);
       clearTimeout(resizeTimer);
       window.removeEventListener('resize', resize);
-      window.removeEventListener('mousemove', onMouseMove);
+      // 仅在非触摸设备上移除鼠标监听
+      const isTouch = (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || 'ontouchstart' in window;
+      if (!isTouch) {
+        window.removeEventListener('mousemove', onMouseMove);
+      }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
