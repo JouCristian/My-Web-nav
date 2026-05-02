@@ -5,8 +5,8 @@ import { createPortal } from "react-dom"
 import { usePathname } from "next/navigation"
 import dynamic from "next/dynamic"
 
-// 动态导入 Aurora 组件（带占位符防止闪烁）
-const Aurora = dynamic(() => import("./Aurora"), { 
+// 动态导入 AuroraRing 组件（带占位符防止闪烁）
+const AuroraRing = dynamic(() => import("./AuroraRing"), { 
   ssr: false,
   loading: () => <div className="w-full h-full" style={{ backgroundColor: "transparent" }} />
 })
@@ -25,57 +25,69 @@ const EASING = {
   easeInOutSine: "cubic-bezier(0.37, 0, 0.63, 1)",
 }
 
-// 剧本配置：不同的极光状态 - 更柔和、更缓慢的光扩散效果
+// 剧本配置：环形极光的不同状态
 const AURORA_SCRIPTS = [
   {
     name: "静谧深空",
-    amplitude: 0.35,  // 降低振幅，更柔和
-    blend: 0.85,      // 提高混合值，过渡更平滑
-    speed: 0.3,       // 大幅降低速度，光线缓慢流动
-    colorStops: ["#1e3a5f", "#0ea5e9", "#1e3a5f"],
+    amplitude: 0.8,
+    blend: 0.6,
+    speed: 0.3,
+    scale: 1.0,
+    ringRadius: 0.32,
+    ringWidth: 0.06,
+    colorStops: ["#0ea5e9", "#38bdf8", "#0ea5e9"],
     bgGradient: `
-      radial-gradient(ellipse 150% 100% at 50% 100%, rgba(14, 165, 233, 0.12) 0%, transparent 60%),
-      radial-gradient(ellipse 100% 80% at 20% 95%, rgba(99, 102, 241, 0.08) 0%, transparent 55%),
-      radial-gradient(ellipse 100% 80% at 80% 100%, rgba(6, 182, 212, 0.06) 0%, transparent 55%),
+      radial-gradient(ellipse 120% 80% at 50% 100%, rgba(14, 165, 233, 0.15) 0%, transparent 55%),
+      radial-gradient(ellipse 80% 60% at 30% 90%, rgba(56, 189, 248, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 80% 60% at 70% 95%, rgba(14, 165, 233, 0.06) 0%, transparent 50%),
       linear-gradient(to top, #030712 0%, #020205 50%, #020205 100%)
     `,
   },
   {
     name: "极光风暴",
-    amplitude: 1.2,   // 降低振幅
-    blend: 0.6,       // 提高混合值
-    speed: 0.8,       // 降低速度
+    amplitude: 1.8,
+    blend: 0.45,
+    speed: 0.6,
+    scale: 1.0,
+    ringRadius: 0.38,
+    ringWidth: 0.09,
     colorStops: ["#7c3aed", "#22d3ee", "#10b981"],
     bgGradient: `
-      radial-gradient(ellipse 180% 120% at 50% 100%, rgba(124, 58, 237, 0.18) 0%, transparent 65%),
-      radial-gradient(ellipse 120% 90% at 30% 90%, rgba(34, 211, 238, 0.12) 0%, transparent 60%),
-      radial-gradient(ellipse 120% 90% at 70% 95%, rgba(16, 185, 129, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 140% 100% at 50% 100%, rgba(124, 58, 237, 0.2) 0%, transparent 60%),
+      radial-gradient(ellipse 100% 70% at 25% 85%, rgba(34, 211, 238, 0.12) 0%, transparent 55%),
+      radial-gradient(ellipse 100% 70% at 75% 90%, rgba(16, 185, 129, 0.1) 0%, transparent 55%),
       linear-gradient(to top, #0f0a1a 0%, #020205 45%, #020205 100%)
     `,
   },
   {
     name: "星云漫游",
-    amplitude: 0.6,   // 降低振幅
-    blend: 0.75,      // 提高混合值
-    speed: 0.45,      // 降低速度
-    colorStops: ["#6366f1", "#a855f7", "#ec4899"],
+    amplitude: 1.2,
+    blend: 0.55,
+    speed: 0.4,
+    scale: 1.0,
+    ringRadius: 0.35,
+    ringWidth: 0.07,
+    colorStops: ["#a855f7", "#ec4899", "#6366f1"],
     bgGradient: `
-      radial-gradient(ellipse 160% 110% at 50% 100%, rgba(168, 85, 247, 0.14) 0%, transparent 62%),
-      radial-gradient(ellipse 110% 85% at 25% 92%, rgba(99, 102, 241, 0.09) 0%, transparent 58%),
-      radial-gradient(ellipse 110% 85% at 75% 98%, rgba(236, 72, 153, 0.07) 0%, transparent 58%),
+      radial-gradient(ellipse 130% 90% at 50% 100%, rgba(168, 85, 247, 0.18) 0%, transparent 58%),
+      radial-gradient(ellipse 90% 65% at 20% 88%, rgba(236, 72, 153, 0.1) 0%, transparent 52%),
+      radial-gradient(ellipse 90% 65% at 80% 92%, rgba(99, 102, 241, 0.08) 0%, transparent 52%),
       linear-gradient(to top, #0a0512 0%, #020205 48%, #020205 100%)
     `,
   },
   {
     name: "深渊脉动",
-    amplitude: 0.8,   // 降低振幅
-    blend: 0.7,       // 提高混合值
-    speed: 0.55,      // 降低速度
-    colorStops: ["#0891b2", "#3b82f6", "#8b5cf6"],
+    amplitude: 1.5,
+    blend: 0.5,
+    speed: 0.5,
+    scale: 1.0,
+    ringRadius: 0.36,
+    ringWidth: 0.08,
+    colorStops: ["#3b82f6", "#8b5cf6", "#0891b2"],
     bgGradient: `
-      radial-gradient(ellipse 170% 115% at 50% 100%, rgba(59, 130, 246, 0.16) 0%, transparent 63%),
-      radial-gradient(ellipse 115% 88% at 15% 95%, rgba(8, 145, 178, 0.1) 0%, transparent 56%),
-      radial-gradient(ellipse 115% 88% at 85% 92%, rgba(139, 92, 246, 0.08) 0%, transparent 56%),
+      radial-gradient(ellipse 135% 95% at 50% 100%, rgba(59, 130, 246, 0.18) 0%, transparent 58%),
+      radial-gradient(ellipse 95% 68% at 15% 90%, rgba(139, 92, 246, 0.12) 0%, transparent 52%),
+      radial-gradient(ellipse 95% 68% at 85% 88%, rgba(8, 145, 178, 0.1) 0%, transparent 52%),
       linear-gradient(to top, #030a12 0%, #020205 46%, #020205 100%)
     `,
   },
@@ -108,66 +120,72 @@ export function PulseAuroraBackground() {
   const bgLayerRef = useRef<HTMLDivElement>(null)
   const auroraContainerRef = useRef<HTMLDivElement>(null)
 
-  // 切换剧本的核心逻辑 - 柔和丝滑的非线性动效
-  // 缓慢过渡：轻柔蓄力 → 舒缓扩散 → 平滑着陆
+  // 切换剧本的核心逻辑 - 呼吸式缩放 + 颜色切换
+  // 五阶段过渡：收缩吸气 → 扩张爆发 → 回弹 → 稳定 → 恢复
   const switchScript = useCallback(() => {
     if (isTransitioning) return // 防止重复触发
     
     const nextIndex = (scriptIndex + 1) % AURORA_SCRIPTS.length
     const nextScript = AURORA_SCRIPTS[nextIndex]
-    const currentAmplitude = auroraParams.amplitude
     
     setIsTransitioning(true)
     setTransitionPhase("charge")
     setScriptIndex(nextIndex)
     
-    // 阶段1: 轻柔蓄力 (0-400ms) - 缓慢收缩，呼吸感
+    // 阶段1: 收缩吸气 (0-300ms) - 环收缩，呼吸感
     setAuroraParams((prev) => ({
       ...prev,
-      amplitude: currentAmplitude * 0.7,
-      speed: prev.speed * 0.6,
-      blend: Math.min(prev.blend * 1.15, 0.95),
+      scale: 0.85,  // 收缩
+      amplitude: prev.amplitude * 0.5,
+      speed: prev.speed * 0.4,
+      ringWidth: prev.ringWidth * 0.8,
     }))
     
-    // 阶段2: 舒缓扩散 (400-1200ms) - 柔和展开，颜色渐变
+    // 阶段2: 扩张爆发 (300-800ms) - 环扩大，颜色切换开始
     setTimeout(() => {
       setTransitionPhase("burst")
       setAuroraParams((prev) => ({
         ...prev,
-        amplitude: Math.max(nextScript.amplitude * 1.8, 1.5), // 柔和扩散
-        speed: Math.max(nextScript.speed * 1.5, 0.8),
-        blend: 0.55,
-        colorStops: nextScript.colorStops, // 开始颜色切换
+        scale: 1.25,  // 扩张超过目标
+        amplitude: nextScript.amplitude * 2.0,
+        speed: nextScript.speed * 1.8,
+        blend: 0.4,
+        ringRadius: nextScript.ringRadius * 1.1,
+        ringWidth: nextScript.ringWidth * 1.3,
+        colorStops: nextScript.colorStops, // 颜色切换
       }))
-    }, 400)
+    }, 300)
     
-    // 阶段3: 回落过渡 (1200-2000ms) - 光线逐渐收敛
+    // 阶段3: 回弹 (800-1400ms) - 环略微收缩回弹
     setTimeout(() => {
       setTransitionPhase("settle")
       setAuroraParams({
         ...nextScript,
-        amplitude: nextScript.amplitude * 1.35,
+        scale: 0.95,  // 回弹收缩
+        amplitude: nextScript.amplitude * 1.4,
         speed: nextScript.speed * 1.2,
-        blend: nextScript.blend * 0.95,
+        ringRadius: nextScript.ringRadius * 0.98,
+        ringWidth: nextScript.ringWidth * 1.1,
       })
-    }, 1200)
+    }, 800)
     
-    // 阶段4: 柔和着陆 (2000-2800ms) - 平滑过渡到目标状态
+    // 阶段4: 稳定 (1400-2000ms) - 接近目标状态
     setTimeout(() => {
       setAuroraParams({
         ...nextScript,
-        amplitude: nextScript.amplitude * 1.1,
+        scale: 1.03,  // 轻微超调
+        amplitude: nextScript.amplitude * 1.15,
         speed: nextScript.speed * 1.05,
       })
-    }, 2000)
+    }, 1400)
     
-    // 阶段5: 完全恢复 (2800ms+)
+    // 阶段5: 完全恢复 (2000ms+) - 回归平衡
     setTimeout(() => {
       setAuroraParams(nextScript)
       setIsTransitioning(false)
       setTransitionPhase("idle")
-    }, 2800)
-  }, [scriptIndex, isTransitioning, auroraParams.amplitude])
+    }, 2000)
+  }, [scriptIndex, isTransitioning])
   
   // 监听全局 aurora-shift 事件（loading 触发用）
   useEffect(() => {
@@ -371,11 +389,14 @@ export function PulseAuroraBackground() {
               : "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.45) 55%, rgba(0,0,0,0.15) 75%, rgba(0,0,0,0) 100%)",
           }}
         >
-          <Aurora
+          <AuroraRing
             colorStops={auroraParams.colorStops}
             amplitude={auroraParams.amplitude}
             blend={auroraParams.blend}
             speed={auroraParams.speed}
+            scale={auroraParams.scale}
+            ringRadius={auroraParams.ringRadius}
+            ringWidth={auroraParams.ringWidth}
           />
         </div>
 
