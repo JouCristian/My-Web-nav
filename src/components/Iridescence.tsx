@@ -13,7 +13,7 @@ void main() {
 }
 `;
 
-// 着色器已更新：加入了灰度/亮度计算，强制剔除所有色彩，只保留纯白光影
+// 核心修改：反转亮暗关系，让背景纯黑，波纹纯白
 const fragmentShader = `
 precision highp float;
 uniform float uTime;
@@ -36,17 +36,21 @@ void main() {
   }
   d += uTime;
   
-  // 计算原始的波纹矢量
+  // 计算原始波纹
   vec3 col = vec3(cos(uv * vec2(d, a)) * 0.6 + 0.4, cos(a + d) * 0.5 + 0.5);
   col = cos(col * cos(vec3(d, a, 2.5)) * 0.5 + 0.5);
   
-  // 核心：将其转换为纯粹的亮度 (Luminance)，制造纯白光效果
+  // 提取原始亮度
   float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));
   
-  // 增加平滑阶跃，提升白色光影的对比度，让其更具锐利感
-  luma = smoothstep(0.15, 0.85, luma);
+  // 核心：反转亮度！让原本暗的地方亮，亮的地方暗
+  // 然后通过 pow() 函数极大地压暗背景，只保留最亮的光晕线条
+  float invertedLuma = 1.0 - luma;
+  float sharpLuma = pow(invertedLuma, 3.0); // 3.0 是对比度系数，越大线条越细越暗
   
-  gl_FragColor = vec4(vec3(luma) * uColor, 1.0);
+  // 最终输出：纯白色，并用 sharpLuma 作为 Alpha 透明度
+  // 这样在 mix-blend-mode: screen 下，黑色的地方就完全透明，只有白光透出来
+  gl_FragColor = vec4(uColor, sharpLuma);
 }
 `;
 
@@ -61,9 +65,9 @@ interface IridescenceProps {
 }
 
 export default function Iridescence({
-  color = [1.0, 1.0, 1.0], // 默认锁定为纯白
+  color = [1.0, 1.0, 1.0], // 保持纯白
   speed = 0.5,
-  amplitude = 0.05,
+  amplitude = 0.035, // 保持较低的振幅，让光晕更紧致
   mouseReact = false,
 }: IridescenceProps) {
   const ctnDom = useRef<HTMLDivElement>(null);
@@ -83,7 +87,7 @@ export default function Iridescence({
   useEffect(() => {
     if (!ctnDom.current) return;
     const ctn = ctnDom.current;
-    const renderer = new Renderer();
+    const renderer = new Renderer({ alpha: true }); // 确保开启透明度支持
     const gl = renderer.gl;
     gl.clearColor(0, 0, 0, 0);
 
@@ -105,6 +109,7 @@ export default function Iridescence({
     program = new Program(gl, {
       vertex: vertexShader,
       fragment: fragmentShader,
+      transparent: true, // 告知 OGL 这个材质是透明的
       uniforms: {
         uTime: { value: 0 },
         uColor: { value: new Color(...currentProps.current.color) },
