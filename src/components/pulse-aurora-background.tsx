@@ -117,8 +117,7 @@ export function PulseAuroraBackground() {
   // 背景层引用
   const bgLayerRef = useRef<HTMLDivElement>(null)
 
-  // 切换剧本的核心逻辑 - 速度跃迁 + 颜色切换
-  // 四阶段过渡：加速 → 峰值 → 减速 → 恢复
+  // 切换剧本的核心逻辑 - 极简的“一脚油门”策略
   const switchScript = useCallback(() => {
     if (isTransitioning) return
     
@@ -127,42 +126,32 @@ export function PulseAuroraBackground() {
     const nextColor = hexToRgbArray(nextScript.color)
     
     setIsTransitioning(true)
-    setTransitionPhase("accelerate")
     setScriptIndex(nextIndex)
     
-    // 阶段1: 加速 (0-400ms) - 速度从 0.3 开始提升
-    setIridescenceParams((prev) => ({
-      ...prev,
-      speed: 0.8,
-    }))
+    // 开启 CSS 的呼吸放大和光晕效果
+    setTransitionPhase("peak")
     
-    // 阶段2: 峰值 (400-800ms) - 速度达到峰值 2.0，开始颜色切换
+    // WebGL 目标参数：直接下发新颜色，并把目标速度设定为一个极高的值（模拟空间跃迁）
+    // 底层的 Lerp 算法会自动将颜色平滑过渡，并把速度像跑车一样平滑拉高
+    setIridescenceParams({
+      color: nextColor,
+      speed: 2.5, // 🚀 一脚油门：目标速度拉爆
+    })
+    
+    // 800ms 后（正好是 CSS scale 动画的时间），松开油门
     setTimeout(() => {
-      setTransitionPhase("peak")
+      setTransitionPhase("idle") // CSS 恢复正常状态
+      
+      // 让目标速度回归正常值
+      // 底层的 Lerp 算法会自动处理平滑的减速回落，形成完美的抛物线速度曲线
       setIridescenceParams({
         color: nextColor,
-        speed: 2.0,
+        speed: nextScript.speed, 
       })
-    }, 400)
-    
-    // 阶段3: 减速 (800-1400ms) - 速度开始回落
-    setTimeout(() => {
-      setTransitionPhase("decelerate")
-      setIridescenceParams({
-        color: nextColor,
-        speed: 0.8,
-      })
+      
+      setIsTransitioning(false)
     }, 800)
     
-    // 阶段4: 恢复 (1400ms+) - 回到正常速度 0.3
-    setTimeout(() => {
-      setIridescenceParams({
-        color: nextColor,
-        speed: nextScript.speed,
-      })
-      setIsTransitioning(false)
-      setTransitionPhase("idle")
-    }, 1400)
   }, [scriptIndex, isTransitioning])
   
   // 监听全局 aurora-shift 事件
