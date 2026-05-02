@@ -13,6 +13,7 @@ void main() {
 }
 `;
 
+// 着色器彻底移除了 uSpeed 计算，改为接受 JavaScript 算好的绝对相位 uTime
 const fragmentShader = `
 precision highp float;
 uniform float uTime;
@@ -20,7 +21,6 @@ uniform vec3 uColor;
 uniform vec3 uResolution;
 uniform vec2 uMouse;
 uniform float uAmplitude;
-uniform float uSpeed;
 varying vec2 vUv;
 
 void main() {
@@ -28,20 +28,20 @@ void main() {
   vec2 uv = (vUv.xy * 2.0 - 1.0) * uResolution.xy / mr;
   uv += (uMouse - vec2(0.5)) * uAmplitude;
 
-  float d = -uTime * 0.5 * uSpeed;
+  float d = -uTime; 
   float a = 0.0;
   for (float i = 0.0; i < 8.0; ++i) {
     a += cos(i - d - a * uv.x);
     d += sin(uv.y * i + a);
   }
-  d += uTime * 0.5 * uSpeed;
+  d += uTime;
   vec3 col = vec3(cos(uv * vec2(d, a)) * 0.6 + 0.4, cos(a + d) * 0.5 + 0.5);
   col = cos(col * cos(vec3(d, a, 2.5)) * 0.5 + 0.5) * uColor;
   gl_FragColor = vec4(col, 1.0);
 }
 `;
 
-// 数学平滑插值函数
+// 极其丝滑的数学线性插值
 const lerp = (start: number, end: number, amt: number) => (1 - amt) * start + amt * end;
 
 interface IridescenceProps {
@@ -60,17 +60,13 @@ export default function Iridescence({
   const ctnDom = useRef<HTMLDivElement>(null);
   const mousePos = useRef({ x: 0.5, y: 0.5 });
   
-  // 记录目标值 (从 Props 获取)
   const targetProps = useRef({ color, speed, amplitude });
-  
-  // 记录当前帧渲染的过渡值
   const currentProps = useRef({
     color: [...color],
     speed: speed,
     amplitude: amplitude
   });
 
-  // 当外部参数变化时，只更新目标值，不直接修改 Shader
   useEffect(() => {
     targetProps.current = { color, speed, amplitude };
   }, [color, speed, amplitude]);
@@ -107,40 +103,45 @@ export default function Iridescence({
           value: new Float32Array([gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height])
         },
         uMouse: { value: new Float32Array([mousePos.current.x, mousePos.current.y]) },
-        uAmplitude: { value: currentProps.current.amplitude },
-        uSpeed: { value: currentProps.current.speed }
+        uAmplitude: { value: currentProps.current.amplitude }
       }
     });
 
-    resize(); // 立即调用一次修正分辨率
+    resize();
     const mesh = new Mesh(gl, { geometry, program });
+    
     let animateId: number;
+    let lastTime = performance.now();
+    let accumulatedPhase = 0; // 核心：使用增量累加的方式计算时间相位
 
-    function update(t: number) {
+    function update() {
       animateId = requestAnimationFrame(update);
       
-      // 平滑因子：数值越小，过渡越丝滑（0.05 约等于 Apple 的 easeOut 感觉）
-      const ease = 0.015;
+      const t = performance.now();
+      const dt = t - lastTime;
+      lastTime = t;
+
+      const ease = 0.03; // 丝滑过渡因子
       
-      // 帧级平滑插值 (Lerp)
       currentProps.current.speed = lerp(currentProps.current.speed, targetProps.current.speed, ease);
       currentProps.current.amplitude = lerp(currentProps.current.amplitude, targetProps.current.amplitude, ease);
       currentProps.current.color[0] = lerp(currentProps.current.color[0], targetProps.current.color[0], ease);
       currentProps.current.color[1] = lerp(currentProps.current.color[1], targetProps.current.color[1], ease);
       currentProps.current.color[2] = lerp(currentProps.current.color[2], targetProps.current.color[2], ease);
 
-      program.uniforms.uTime.value = t * 0.001;
-      program.uniforms.uSpeed.value = currentProps.current.speed;
+      // 无论运行多久、怎么变速，都使用当前速度乘以增量时间累加，彻底根除暴跳断层Bug
+      accumulatedPhase += dt * currentProps.current.speed * 0.0005;
+
+      program.uniforms.uTime.value = accumulatedPhase;
       program.uniforms.uAmplitude.value = currentProps.current.amplitude;
-      // 使用 .set() 复用内存，避免每帧 new Color
       program.uniforms.uColor.value.set(currentProps.current.color); 
 
       renderer.render({ scene: mesh });
     }
+    
     animateId = requestAnimationFrame(update);
     ctn.appendChild(gl.canvas);
 
-    // ... 鼠标事件代码保持不变 ...
     function handleMouseMove(e: MouseEvent) {
       const rect = ctn.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width;
@@ -149,6 +150,7 @@ export default function Iridescence({
       program.uniforms.uMouse.value[0] = x;
       program.uniforms.uMouse.value[1] = y;
     }
+    
     if (mouseReact) {
       ctn.addEventListener('mousemove', handleMouseMove);
     }
