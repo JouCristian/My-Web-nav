@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react"
 import { createPortal } from "react-dom"
+import { usePathname } from "next/navigation"
 import dynamic from "next/dynamic"
 
 // 动态导入 Aurora 组件
@@ -83,6 +84,9 @@ const NOISE_STYLE: React.CSSProperties = {
 }
 
 export function PulseAuroraBackground() {
+  const pathname = usePathname()
+  const isHomePage = pathname === "/"
+  
   const [mounted, setMounted] = useState(false)
   const [fixedHeight, setFixedHeight] = useState("100vh")
   const [isMobile, setIsMobile] = useState(false)
@@ -188,8 +192,8 @@ export function PulseAuroraBackground() {
 
   return (
     <>
-      {/* 时空切换按钮 */}
-      {createPortal(
+      {/* 时空切换按钮（仅在非首页显示） */}
+      {!isHomePage && createPortal(
         <div className="fixed bottom-8 right-8 z-[100]">
           <button
             onClick={switchScript}
