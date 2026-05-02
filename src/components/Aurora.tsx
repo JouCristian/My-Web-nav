@@ -207,7 +207,8 @@ export default function Aurora(props: AuroraProps) {
       }
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
-  }, [amplitude]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 只在挂载时初始化一次，参数更新通过 propsRef 在每帧 update 中处理
 
   return <div ref={ctnDom} className="aurora-container" style={{ backgroundColor: "transparent" }} />;
 }
