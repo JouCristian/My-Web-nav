@@ -3,36 +3,25 @@
 import React, { useEffect, useState, useCallback } from "react"
 import dynamic from "next/dynamic"
 
-// 动态导入 Orb，关闭 SSR 以防 OGL 报错
-const Orb = dynamic(() => import("./Orb"), { 
-  ssr: false,
-  loading: () => <div className="w-full h-full" style={{ backgroundColor: "#2b84a1" }} />
-})
+// 动态导入组件，避免 SSR 报错
+const Orb = dynamic(() => import("./Orb"), { ssr: false })
+const DotField = dynamic(() => import("./DotField"), { ssr: false })
 
 export function PulseOrbBackground() {
   const [mounted, setMounted] = useState(false)
   const [fixedHeight, setFixedHeight] = useState("100vh")
-  
-  // 控制 Orb 形变的状态
   const [isRound, setIsRound] = useState(false)
   
-  // 触发跃迁脉冲（变圆再回弹）
   const triggerPulse = useCallback(() => {
     if (isRound) return
-    
-    setIsRound(true) // 触发：开始向正圆形变
-    
-    // 维持圆形态 800ms 后释放，底层的 Spring Physics 会自动产生优雅的回弹动画
+    setIsRound(true) 
     setTimeout(() => {
       setIsRound(false) 
     }, 800)
-    
   }, [isRound])
   
-  // 监听全局事件触发 (适配你之前的逻辑)
   useEffect(() => {
     const handleOrbShift = () => triggerPulse()
-    // 兼容原有的 aurora-shift 事件名，或者你可以自己改成 orb-shift
     window.addEventListener("aurora-shift", handleOrbShift) 
     return () => window.removeEventListener("aurora-shift", handleOrbShift)
   }, [triggerPulse])
@@ -40,25 +29,20 @@ export function PulseOrbBackground() {
   useEffect(() => {
     setMounted(true)
     let lastWidth = window.innerWidth
-
-    const lockHeight = () => {
-      setFixedHeight(`${window.innerHeight}px`)
-    }
+    const lockHeight = () => setFixedHeight(`${window.innerHeight}px`)
     lockHeight()
-
     const handleResize = () => {
       if (window.innerWidth !== lastWidth) {
         lastWidth = window.innerWidth
         setTimeout(lockHeight, 100)
       }
     }
-
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
   if (!mounted) {
-    return <div className="fixed inset-0 z-[-1]" style={{ backgroundColor: "#2b84a1" }} aria-hidden="true" />
+    return <div className="fixed inset-0 z-[-1]" style={{ backgroundColor: "#020205" }} aria-hidden="true" />
   }
 
   return (
@@ -69,17 +53,36 @@ export function PulseOrbBackground() {
         left: 0,
         width: "100vw",
         height: fixedHeight,
-        backgroundColor: "#020205", // 根据你图中的参数设置底色
+        backgroundColor: "#020205", // 宇宙黑底色
       }}
     >
-      <div className="absolute inset-0">
+      {/* 第一层：DotField (完全按照截图参数配置) */}
+      <div className="absolute inset-0 z-0">
+        <DotField
+          dotRadius={1.5}
+          dotSpacing={14}
+          cursorRadius={500}
+          cursorForce={0.1}
+          bulgeOnly={true}
+          bulgeStrength={67}
+          glowRadius={160}
+          waveAmplitude={0}
+          sparkle={false}
+          gradientFrom="#339eb8"
+          gradientTo="#b497cf"
+          glowColor="#120f17"
+        />
+      </div>
+
+      {/* 第二层：Orb (放在上层，允许鼠标事件穿透到底层点阵) */}
+      <div className="absolute inset-0 z-10 pointer-events-none">
         <Orb
-          hue={102}                 // 你的截图参数: Hue Shift 102
-          hoverIntensity={0.5}      // 你的截图参数: Hover Intensity 0.4
-          rotateOnHover={true}      // 你的截图参数: Rotate On Hover 开
-          forceHoverState={true}   // 你的截图参数: Force Hover State 关
-          backgroundColor="#020205" // 你的截图参数: 容器背景色
-          isRound={isRound}         // 传入脉冲状态，驱动物理回弹形变
+          hue={102}                 
+          hoverIntensity={0.4}      
+          rotateOnHover={true}      
+          forceHoverState={false}   
+          backgroundColor="#020205" // 与容器底色一致
+          isRound={isRound}         
         />
       </div>
     </div>
