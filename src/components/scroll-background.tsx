@@ -193,7 +193,7 @@ function CameraController({ scrollProgressRef, scriptIndex }: { scrollProgressRe
     const targetPos = new THREE.Vector3().lerpVectors(startFrame.pos, endFrame.pos, Math.max(0, Math.min(1, easeProgress)))
     const targetLookAt = new THREE.Vector3().lerpVectors(startFrame.lookAt, endFrame.lookAt, Math.max(0, Math.min(1, easeProgress)))
 
-    // 🪶 核心：因为 currentPos 一直保留，所以 targetPos 瞬间突变时，这里依然会以 0.05 的速度平滑追击！
+    // ��� 核心：因为 currentPos 一直保留，所以 targetPos 瞬间突变时，这里依然会以 0.05 的速度平滑追击！
     currentPos.current.lerp(targetPos, 0.02)
     currentLookAt.current.lerp(targetLookAt, 0.02)
 
@@ -251,6 +251,46 @@ export function ScrollBackground() {
   }, [])
 
   if (!mounted) return <div className="fixed inset-0 bg-[#020205] z-[-1]" />
+
+  // 🚀 移动端性能保护：跳过 WebGL 银河系 / 写实地球 / 远程纹理 / 时空切换按钮
+  // 改用纯 CSS 多层径向渐变 + 伪星点兜底，零 GPU 显存占用
+  if (isMobile) {
+    return (
+      <div
+        className="fixed z-[-1] overflow-hidden"
+        style={{ top: 0, left: 0, width: "100vw", height: fixedHeight, backgroundColor: "#020205" }}
+        aria-hidden="true"
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `
+              radial-gradient(ellipse 90% 60% at 50% 0%, rgba(59, 130, 246, 0.18) 0%, transparent 55%),
+              radial-gradient(ellipse 60% 50% at 15% 75%, rgba(168, 85, 247, 0.16) 0%, transparent 60%),
+              radial-gradient(ellipse 70% 55% at 85% 90%, rgba(34, 211, 238, 0.10) 0%, transparent 60%),
+              #020205
+            `,
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-70"
+          style={{
+            backgroundImage: `
+              radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.7) 50%, transparent 100%),
+              radial-gradient(1px 1px at 73% 28%, rgba(200,220,255,0.55) 50%, transparent 100%),
+              radial-gradient(1.4px 1.4px at 38% 62%, rgba(255,240,200,0.6) 50%, transparent 100%),
+              radial-gradient(1px 1px at 88% 72%, rgba(255,255,255,0.45) 50%, transparent 100%),
+              radial-gradient(1px 1px at 25% 85%, rgba(180,200,255,0.5) 50%, transparent 100%),
+              radial-gradient(1px 1px at 60% 10%, rgba(255,255,255,0.55) 50%, transparent 100%),
+              radial-gradient(1px 1px at 5% 45%, rgba(255,255,255,0.4) 50%, transparent 100%),
+              radial-gradient(1.2px 1.2px at 95% 50%, rgba(220,230,255,0.5) 50%, transparent 100%)
+            `,
+          }}
+        />
+        <div className="absolute inset-0 pointer-events-none opacity-[0.025] mix-blend-overlay" style={NOISE_STYLE} />
+      </div>
+    )
+  }
 
   return (
     <>
