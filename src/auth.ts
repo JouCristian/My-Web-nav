@@ -51,7 +51,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
     }
   ],
-  pages: { signIn: '/login' },
+  // 🚀 用自定义 error 页代替 NextAuth 默认页（默认页在 v5 + Prisma Adapter 组合下有时会自身 500）
+  pages: { signIn: '/login', error: '/auth/error' },
+  // 🚀 events.signIn 在登录失败 / 创建账号失败时不会被调用，但 logger 会捕获所有错误
+  logger: {
+    error(error) {
+      console.error("[v0][auth][error]", {
+        name: (error as Error)?.name,
+        message: (error as Error)?.message,
+        cause: (error as any)?.cause,
+        stack: (error as Error)?.stack,
+      })
+    },
+    warn(code) {
+      console.warn("[v0][auth][warn]", code)
+    },
+  },
   callbacks: {
     async signIn({ user }) {
       // 🚀 只要有 id 即可放行，不再强行要求 email
