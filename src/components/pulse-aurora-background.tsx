@@ -333,25 +333,26 @@ export function PulseAuroraBackground() {
           }}
         />
 
-            {/* 第三层：Iridescence 流动效果（底部 60%，向上渐隐） */}
-            <div
-          className="absolute bottom-0 left-0 right-0 overflow-hidden"
+            {/* 第三层：Iridescence 流动效果（全屏覆盖，修复长宽比与跳动） */}
+        <div
+          className="absolute inset-0 overflow-hidden pointer-events-none"
           style={{
-            height: transitionPhase === "peak" ? "70%" : "60%",
-            transform: transitionPhase === "peak" 
-              ? "scaleY(1.08) translateY(-2%)" 
-              : "scaleY(1) translateY(0)",
-            transition: `all 0.8s ${EASING.easeOutExpo}`,
-            transformOrigin: "bottom center",
-            mixBlendMode: "screen", // ✅ 新增：滤色混合模式，去除WebGL暗部遮挡
-            maskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0) 100%)",
-            WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0) 100%)",
+            // 弃用改变 height 和 translateY 的做法，改用均匀的 scale 来实现呼吸感
+            transform: transitionPhase === "peak" ? "scale(1.05)" : "scale(1)",
+            transition: `transform 0.8s ${EASING.easeOutExpo}`,
+            transformOrigin: "center center",
+            mixBlendMode: "screen", // 关键：确保与底层星空完美融合
+            
+            // 将底部切断的遮罩改为全屏的径向渐变，让波纹在四周自然消散，而不是被切断
+            maskImage: "radial-gradient(ellipse at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0.1) 100%)",
+            WebkitMaskImage: "radial-gradient(ellipse at 50% 50%, rgba(0,0,0,1) 40%, rgba(0,0,0,0.1) 100%)",
+            opacity: 0.75, // 可以根据需要微调整体亮度
           }}
         >
           <Iridescence
             color={iridescenceParams.color}
             speed={iridescenceParams.speed}
-            amplitude={0.1}
+            amplitude={0.05} // 建议：全屏后振幅可稍微调小一点，显得更高级克制
             mouseReact={false}
           />
         </div>
