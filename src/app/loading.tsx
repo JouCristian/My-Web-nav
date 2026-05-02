@@ -5,14 +5,8 @@ import { useEffect } from "react"
 
 export default function GlobalLoading() {
   useEffect(() => {
-    // 🚀 保持极简跃迁触发：只在加载瞬间向下跃迁一次
-    const buttons = Array.from(document.querySelectorAll('button'));
-    const shiftBtn = buttons.find(btn => {
-      const text = btn.textContent || "";
-      return text.includes('SPACETIME') || text.includes('时空') || text.includes('航线') || text.includes('星际') || text.includes('轨道') || text.includes('深空') || text.includes('默认');
-    });
-    
-    if (shiftBtn) shiftBtn.click();
+    // 触发 Aurora 极光切换效果 - 使用全局事件
+    window.dispatchEvent(new CustomEvent("aurora-shift"))
   }, []);
 
   return (
