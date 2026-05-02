@@ -333,8 +333,8 @@ export function PulseAuroraBackground() {
           }}
         />
 
-        {/* 第三层：Iridescence 流动效果（底部 60%，向上渐隐） */}
-        <div
+            {/* 第三层：Iridescence 流动效果（底部 60%，向上渐隐） */}
+            <div
           className="absolute bottom-0 left-0 right-0 overflow-hidden"
           style={{
             height: transitionPhase === "peak" ? "70%" : "60%",
@@ -343,6 +343,7 @@ export function PulseAuroraBackground() {
               : "scaleY(1) translateY(0)",
             transition: `all 0.8s ${EASING.easeOutExpo}`,
             transformOrigin: "bottom center",
+            mixBlendMode: "screen", // ✅ 新增：滤色混合模式，去除WebGL暗部遮挡
             maskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0) 100%)",
             WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0) 100%)",
           }}

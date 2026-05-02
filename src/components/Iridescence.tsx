@@ -6,9 +6,7 @@ import './Iridescence.css';
 const vertexShader = `
 attribute vec2 uv;
 attribute vec2 position;
-
 varying vec2 vUv;
-
 void main() {
   vUv = uv;
   gl_Position = vec4(position, 0, 1);
@@ -17,20 +15,17 @@ void main() {
 
 const fragmentShader = `
 precision highp float;
-
 uniform float uTime;
 uniform vec3 uColor;
 uniform vec3 uResolution;
 uniform vec2 uMouse;
 uniform float uAmplitude;
 uniform float uSpeed;
-
 varying vec2 vUv;
 
 void main() {
   float mr = min(uResolution.x, uResolution.y);
   vec2 uv = (vUv.xy * 2.0 - 1.0) * uResolution.xy / mr;
-
   uv += (uMouse - vec2(0.5)) * uAmplitude;
 
   float d = -uTime * 0.5 * uSpeed;
@@ -45,6 +40,9 @@ void main() {
   gl_FragColor = vec4(col, 1.0);
 }
 `;
+
+// 数学平滑插值函数
+const lerp = (start: number, end: number, amt: number) => (1 - amt) * start + amt * end;
 
 interface IridescenceProps {
   color?: [number, number, number];
@@ -61,18 +59,20 @@ export default function Iridescence({
 }: IridescenceProps) {
   const ctnDom = useRef<HTMLDivElement>(null);
   const mousePos = useRef({ x: 0.5, y: 0.5 });
-  const programRef = useRef<Program | null>(null);
-  const propsRef = useRef({ color, speed, amplitude });
+  
+  // 记录目标值 (从 Props 获取)
+  const targetProps = useRef({ color, speed, amplitude });
+  
+  // 记录当前帧渲染的过渡值
+  const currentProps = useRef({
+    color: [...color],
+    speed: speed,
+    amplitude: amplitude
+  });
 
-  // 更新 propsRef 以便在动画循环中使用最新值
+  // 当外部参数变化时，只更新目标值，不直接修改 Shader
   useEffect(() => {
-    propsRef.current = { color, speed, amplitude };
-    // 动态更新 uniform 值（不重建渲染器）
-    if (programRef.current) {
-      programRef.current.uniforms.uSpeed.value = speed;
-      programRef.current.uniforms.uAmplitude.value = amplitude;
-      programRef.current.uniforms.uColor.value = new Color(...color);
-    }
+    targetProps.current = { color, speed, amplitude };
   }, [color, speed, amplitude]);
 
   useEffect(() => {
@@ -85,18 +85,16 @@ export default function Iridescence({
     let program: Program;
 
     function resize() {
-      const scale = 1;
-      renderer.setSize(ctn.offsetWidth * scale, ctn.offsetHeight * scale);
+      renderer.setSize(ctn.offsetWidth, ctn.offsetHeight);
       if (program) {
-        program.uniforms.uResolution.value = new Color(
+        program.uniforms.uResolution.value = new Float32Array([
           gl.canvas.width,
           gl.canvas.height,
           gl.canvas.width / gl.canvas.height
-        );
+        ]);
       }
     }
     window.addEventListener('resize', resize, false);
-    resize();
 
     const geometry = new Triangle(gl);
     program = new Program(gl, {
@@ -104,31 +102,45 @@ export default function Iridescence({
       fragment: fragmentShader,
       uniforms: {
         uTime: { value: 0 },
-        uColor: { value: new Color(...propsRef.current.color) },
+        uColor: { value: new Color(...currentProps.current.color) },
         uResolution: {
-          value: new Color(gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height)
+          value: new Float32Array([gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height])
         },
         uMouse: { value: new Float32Array([mousePos.current.x, mousePos.current.y]) },
-        uAmplitude: { value: propsRef.current.amplitude },
-        uSpeed: { value: propsRef.current.speed }
+        uAmplitude: { value: currentProps.current.amplitude },
+        uSpeed: { value: currentProps.current.speed }
       }
     });
-    programRef.current = program;
 
+    resize(); // 立即调用一次修正分辨率
     const mesh = new Mesh(gl, { geometry, program });
     let animateId: number;
 
     function update(t: number) {
       animateId = requestAnimationFrame(update);
+      
+      // 平滑因子：数值越小，过渡越丝滑（0.05 约等于 Apple 的 easeOut 感觉）
+      const ease = 0.05; 
+      
+      // 帧级平滑插值 (Lerp)
+      currentProps.current.speed = lerp(currentProps.current.speed, targetProps.current.speed, ease);
+      currentProps.current.amplitude = lerp(currentProps.current.amplitude, targetProps.current.amplitude, ease);
+      currentProps.current.color[0] = lerp(currentProps.current.color[0], targetProps.current.color[0], ease);
+      currentProps.current.color[1] = lerp(currentProps.current.color[1], targetProps.current.color[1], ease);
+      currentProps.current.color[2] = lerp(currentProps.current.color[2], targetProps.current.color[2], ease);
+
       program.uniforms.uTime.value = t * 0.001;
-      // 使用 propsRef 中的最新值
-      program.uniforms.uSpeed.value = propsRef.current.speed;
-      program.uniforms.uAmplitude.value = propsRef.current.amplitude;
+      program.uniforms.uSpeed.value = currentProps.current.speed;
+      program.uniforms.uAmplitude.value = currentProps.current.amplitude;
+      // 使用 .set() 复用内存，避免每帧 new Color
+      program.uniforms.uColor.value.set(currentProps.current.color); 
+
       renderer.render({ scene: mesh });
     }
     animateId = requestAnimationFrame(update);
     ctn.appendChild(gl.canvas);
 
+    // ... 鼠标事件代码保持不变 ...
     function handleMouseMove(e: MouseEvent) {
       const rect = ctn.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width;
@@ -151,10 +163,8 @@ export default function Iridescence({
         ctn.removeChild(gl.canvas);
       }
       gl.getExtension('WEBGL_lose_context')?.loseContext();
-      programRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 只在挂载时初始化一次
+  }, []);
 
   return <div ref={ctnDom} className="iridescence-container" style={{ backgroundColor: "transparent" }} />;
 }
