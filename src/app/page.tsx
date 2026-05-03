@@ -211,8 +211,9 @@ export default async function Home() {
       <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-24 sm:pb-40">
         
         {generatedLogos.length > 0 && (
-          {/* 🚀 Logo 轮播图：赋予了弹簧物理缩放效果 */}
           <div className="w-full mb-16 relative overflow-hidden pointer-events-auto z-10 mask-edges animate-spring-scale" style={{ animationDelay: '0.5s' }}>
+            {/* 🚀 修复点：将 JSX 注释安全地放在合法节点内部 */}
+            {/* 🚀 Logo 轮播图：赋予了弹簧物理缩放效果 */}
             <LogoLoop
               logos={generatedLogos}
               speed={45}
