@@ -72,28 +72,39 @@ export default async function Home() {
   }));
 
   return (
-    // 增加 overflow-x-hidden 确保没有任何元素能横向撑破屏幕
     <main className="min-h-screen bg-[#020205] text-white selection:bg-blue-500/30 relative overflow-x-hidden">
       
       <HideSpacetime />
 
       <style dangerouslySetInnerHTML={{ __html: `
-        /* 1. 文本上浮：加快速度，削弱模糊感，提升干脆度 */
+        /* 1. 文本上浮：削弱模糊感，提升干脆度 */
         @keyframes float-up {
           0% { opacity: 0; transform: translateY(30px) scale(0.98); filter: blur(5px); }
           100% { opacity: 1; transform: none; filter: none; }
         }
         .animate-float-up { 
-          animation: float-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) backwards; 
+          animation: float-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both; 
         }
 
-        /* 2. 🚀 Dock 专属：极其纯净的淡入！没有任何位移，绝对不破坏液态玻璃渲染 */
-        @keyframes dock-fade {
-          0% { opacity: 0; }
-          100% { opacity: 1; }
+        /* 2. 🚀 核心修复：直接将毛玻璃(backdrop-filter)写进动画，与位移/透明度同频插值渐变！ */
+        @keyframes dock-in {
+          0% { 
+            opacity: 0; 
+            transform: translateY(-30px);
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
+          }
+          100% { 
+            opacity: 1; 
+            transform: translateY(0);
+            /* 12px 刚好对应 Tailwind 的 backdrop-blur-md，完美衔接 */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+          }
         }
-        .animate-dock-fade {
-          animation: dock-fade 1s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+        .dock-wrapper > * {
+          animation: dock-in 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+          will-change: transform, opacity, backdrop-filter;
         }
 
         /* 3. LogoLoop 与按钮：弹簧放大，加快节奏 */
@@ -102,16 +113,16 @@ export default async function Home() {
           100% { opacity: 1; transform: none; filter: none; }
         }
         .animate-spring-scale {
-          animation: spring-scale-up 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+          animation: spring-scale-up 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
         }
 
-        /* 4. 背景专属：纯净渐显，移除可能导致底闪的 scale 变化 */
+        /* 4. 背景专属：纯净渐显 */
         @keyframes fade-in-bg {
           0% { opacity: 0; }
           100% { opacity: 1; }
         }
         .animate-bg-fade {
-          animation: fade-in-bg 1.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; 
+          animation: fade-in-bg 1.5s cubic-bezier(0.22, 1, 0.36, 1) both; 
         }
 
         /* 按钮微交互 */
@@ -145,13 +156,13 @@ export default async function Home() {
         }
       `}} />
 
-      {/* 🚀 背景：极度纯净平滑淡入 */}
+      {/* 背景：极度纯净平滑淡入 */}
       <div className="fixed inset-0 z-0 pointer-events-none animate-bg-fade bg-[#020205]">
         <HeroBackground />
       </div>
 
-      {/* 🚀 Dock 栏：改为纯透明度渐显，液态玻璃 0秒生效 */}
-      <div className="fixed top-0 left-0 right-0 z-[100] animate-dock-fade" style={{ animationDelay: '0s' }}>
+      {/* 🚀 Dock 栏：通过 dock-wrapper 强制下发毛玻璃渐隐动画，完美解决断崖式闪现 */}
+      <div className="fixed top-0 left-0 right-0 z-[100] dock-wrapper">
         <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
       </div>
 
@@ -159,7 +170,6 @@ export default async function Home() {
         
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.6)_0%,transparent_65%)] z-0 pointer-events-none"></div>
 
-        {/* 动画排期极速压缩：0.1s -> 0.3s -> 0.4s */}
         <div className="animate-float-up pointer-events-auto relative z-10 mb-6 sm:mb-8 font-mono text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
           <RotatingText
             prefix="Creating"
@@ -244,7 +254,6 @@ export default async function Home() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {links.map((link: Bookmark, index: number) => (
-            /* 书签卡片瀑布流加载速度提升：从 700ms 起步降至 500ms 起步 */
             <div key={link.id} className="animate-float-up" style={{ animationDelay: `${(index * 50) + 500}ms` }}>
               <NavigationCard 
                 id={link.id} 
