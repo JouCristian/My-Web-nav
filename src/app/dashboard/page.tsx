@@ -9,6 +9,8 @@ import { BroadcastCard } from "@/components/broadcast-card"
 import { CreateBroadcastModal } from "@/components/create-broadcast-modal"
 import { DashboardClock } from "@/components/dashboard-clock"
 import { FlightLogCalendar } from "@/components/flight-log-calendar"
+// 🚀 引入我们新写的步进器表单组件
+import { OnboardingForm } from "@/components/onboarding-form"
 
 const THEME_MAP = {
   blue: {
@@ -87,12 +89,27 @@ export default async function DashboardPage() {
     orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }]
   })
 
-  // 🛡️ 状态 1：拦截器逻辑
+  // ==========================================
+  // 🛡️ 状态 1：拦截器逻辑 (新兵入列引导)
+  // ==========================================
   if (!isCaptain && isProfileIncomplete) {
     return (
       <main className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        
+        {/* 🚀 Apple 物理弹簧阻尼曲线注入 */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes apple-spring-entry {
+            0% { opacity: 0; transform: scale(0.9) translateY(40px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+          }
+          .animate-apple-spring {
+            animation: apple-spring-entry 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+          }
+        `}} />
+
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-red-500/5 -rotate-12 blur-[100px] pointer-events-none animate-pulse"></div>
-        <div className="relative z-10 w-full max-w-lg">
+        
+        <div className="relative z-10 w-full max-w-xl">
           <div className="flex justify-end mb-6">
             <TransitionLink href="/" className="group flex items-center gap-4 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md transition-all active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
               <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-red-500/20 transition-colors">
@@ -106,32 +123,19 @@ export default async function DashboardPage() {
             </TransitionLink>
           </div>
 
-          <div className="bg-[#06060a]/90 border border-red-500/30 p-10 rounded-[2.5rem] backdrop-blur-2xl shadow-[0_0_80px_rgba(239,68,68,0.1)]">
-            <div className="flex items-center gap-4 mb-8 border-b border-red-500/20 pb-6">
-              <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500">🛡️</div>
-              <div>
-                <h1 className="text-2xl font-bold text-white tracking-widest font-[family-name:var(--font-space)]">身份权限识别</h1>
-                <p className="text-red-400/80 text-xs font-mono mt-1 uppercase tracking-widest">Entry Protocol Required</p>
-              </div>
-            </div>
-            <form action={updateRecruitProfile} className="space-y-6">
-               <div className="space-y-2">
-                <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">真实姓名 / Real Name</label>
-                <input type="text" name="realName" required className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-red-500/50 text-white" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">学号 / Student ID</label>
-                <input type="text" name="studentId" required className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-red-500/50 text-white" />
-              </div>
-              <button type="submit" className="w-full bg-red-500/20 border border-red-500/50 text-red-400 font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-white transition-all tracking-[0.3em]">提交建档</button>
-            </form>
+          {/* 🚀 注入了 animate-apple-spring 的全新步进器 */}
+          <div className="animate-apple-spring opacity-0">
+             <OnboardingForm />
           </div>
+
         </div>
       </main>
     )
   }
 
-  // 🛡️ 状态 2：拦截器逻辑
+  // ==========================================
+  // 🛡️ 状态 2：档案同步审核中逻辑
+  // ==========================================
   if (!isCaptain && dbUser.role === "PENDING") {
     return (
       <main className="min-h-screen bg-transparent flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -175,7 +179,9 @@ export default async function DashboardPage() {
     )
   }
 
+  // ==========================================
   // ✅ 状态 3：正式指挥大屏
+  // ==========================================
   return (
     <main className="min-h-screen pt-24 pb-12 sm:pt-20 sm:pb-16 md:py-16 px-4 sm:px-6 md:px-8 xl:px-24 text-white relative flex flex-col gap-8 sm:gap-12 overflow-x-hidden">
       
@@ -270,7 +276,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* 右侧：航行日志（移动端：grid 变单列后失去兄弟列撑高，给一个最小高度让 flex-1 的日历主体能完整显示；桌面端 lg 之上由 grid items-stretch 接管） */}
+        {/* 右侧：航行日志 */}
         <div className="lg:col-span-1 min-h-[560px] sm:min-h-[640px] lg:min-h-0 rounded-[2rem] sm:rounded-[3rem] lg:rounded-[3.5rem] border border-emerald-500/20 bg-[#06060a]/80 backdrop-blur-3xl p-5 sm:p-8 lg:p-10 shadow-[0_0_100px_rgba(16,185,129,0.15)] flex flex-col h-full relative overflow-hidden group">
           <div className="absolute inset-0 bg-emerald-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
           <FlightLogCalendar userRole={dbUser.role || "PENDING"} />

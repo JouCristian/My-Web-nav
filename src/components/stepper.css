@@ -1,0 +1,97 @@
+/* src/components/stepper.css */
+.outer-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .step-circle-container {
+    width: 100%;
+    overflow: hidden;
+  }
+  
+  .step-indicator-row {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    padding: 1rem 0 2rem 0;
+  }
+  
+  .step-content-default {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .step-default {
+    padding: 0.5rem 0;
+  }
+  
+  .footer-container {
+    padding-top: 1.5rem;
+  }
+  
+  .footer-nav {
+    display: flex;
+    align-items: center;
+  }
+  
+  .footer-nav.spread {
+    justify-content: space-between;
+  }
+  
+  .footer-nav.end {
+    justify-content: flex-end;
+  }
+  
+  .step-indicator {
+    position: relative;
+    cursor: pointer;
+    outline: none;
+  }
+  
+  .step-indicator-inner {
+    display: flex;
+    height: 2.5rem;
+    width: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    font-weight: 600;
+    border: 1px solid transparent;
+  }
+  
+  .active-dot {
+    height: 0.75rem;
+    width: 0.75rem;
+    border-radius: 9999px;
+    background-color: currentColor;
+    box-shadow: 0 0 10px currentColor;
+  }
+  
+  .step-number {
+    font-size: 0.875rem;
+    font-family: monospace;
+  }
+  
+  .step-connector {
+    position: relative;
+    margin: 0 0.5rem;
+    height: 2px;
+    flex: 1;
+    overflow: hidden;
+    border-radius: 2px;
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  
+  .step-connector-inner {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+  }
+  
+  .check-icon {
+    height: 1.2rem;
+    width: 1.2rem;
+    color: #fff;
+  }
