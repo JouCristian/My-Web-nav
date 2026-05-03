@@ -22,6 +22,7 @@ interface StepperProps extends HTMLAttributes<HTMLDivElement> {
   completeButtonText?: string;
   disableStepIndicators?: boolean;
   renderStepIndicator?: (props: RenderStepIndicatorProps) => ReactNode;
+  completedContent?: ReactNode; // 🚀 新增：完成后显示的内容，防止缩水
 }
 
 interface RenderStepIndicatorProps {
@@ -49,6 +50,7 @@ export default function Stepper({
   completeButtonText = 'Complete',
   disableStepIndicators = false,
   renderStepIndicator,
+  completedContent,
   ...rest
 }: StepperProps) {
   const [currentStep, setCurrentStep] = useState<number>(initialStep);
@@ -109,7 +111,7 @@ export default function Stepper({
                     step={stepNumber}
                     disableStepIndicators={disableStepIndicators}
                     currentStep={currentStep}
-                    onClickStep={clicked => {
+                    onClickStep={(clicked: number) => {
                       setDirection(clicked > currentStep ? 1 : -1);
                       updateStep(clicked);
                     }}
@@ -122,12 +124,12 @@ export default function Stepper({
         </div>
 
         <StepContentWrapper
-          isCompleted={isCompleted}
           currentStep={currentStep}
           direction={direction}
           className={`step-content-default ${contentClassName}`}
         >
-          {stepsArray[currentStep - 1]}
+          {/* 🚀 核心修复：如果已完成，直接渲染传入的完成态组件，不再渲染空白导致缩小 */}
+          {isCompleted ? completedContent : stepsArray[currentStep - 1]}
         </StepContentWrapper>
 
         {!isCompleted && (
@@ -150,29 +152,26 @@ export default function Stepper({
 }
 
 interface StepContentWrapperProps {
-  isCompleted: boolean;
   currentStep: number;
   direction: number;
   children: ReactNode;
   className?: string;
 }
 
-function StepContentWrapper({ isCompleted, currentStep, direction, children, className }: StepContentWrapperProps) {
-  const [parentHeight, setParentHeight] = useState<number>(0);
+function StepContentWrapper({ currentStep, direction, children, className }: StepContentWrapperProps) {
+  const [parentHeight, setParentHeight] = useState<number | "auto">("auto");
 
   return (
     <motion.div
       className={className}
       style={{ position: 'relative', overflow: 'hidden' }}
-      animate={{ height: isCompleted ? 0 : parentHeight }}
+      animate={{ height: parentHeight }}
       transition={appleSpring}
     >
       <AnimatePresence initial={false} mode="sync" custom={direction}>
-        {!isCompleted && (
-          <SlideTransition key={currentStep} direction={direction} onHeightReady={h => setParentHeight(h)}>
-            {children}
-          </SlideTransition>
-        )}
+        <SlideTransition key={currentStep} direction={direction} onHeightReady={h => setParentHeight(h)}>
+          {children}
+        </SlideTransition>
       </AnimatePresence>
     </motion.div>
   );
@@ -209,10 +208,13 @@ function SlideTransition({ children, direction, onHeightReady }: SlideTransition
   );
 }
 
+// 🚀 核心修复：彻底修正了进出场动画逻辑
+// direction > 0 代表前进：从右侧 (100%) 进入，向左侧 (-50%) 退出
+// direction < 0 代表后退：从左侧 (-100%) 进入，向右侧 (50%) 退出
 const stepVariants: Variants = {
-  enter: (dir: number) => ({ x: dir >= 0 ? '-100%' : '100%', opacity: 0 }),
+  enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
   center: { x: '0%', opacity: 1 },
-  exit: (dir: number) => ({ x: dir >= 0 ? '50%' : '-50%', opacity: 0 })
+  exit: (dir: number) => ({ x: dir > 0 ? '-50%' : '50%', opacity: 0 })
 };
 
 export function Step({ children }: { children: ReactNode }): JSX.Element {

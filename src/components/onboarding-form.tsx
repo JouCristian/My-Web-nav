@@ -3,9 +3,10 @@
 
 import { useState, useTransition } from "react"
 import Stepper, { Step } from "./stepper"
-import { updateRecruitProfile } from "@/app/actions"
+import { updateRecruitProfile, revokeRecruitProfile } from "@/app/actions"
+import Link from "next/link"
 
-export function OnboardingForm() {
+export function OnboardingForm({ defaultCompleted = false }: { defaultCompleted?: boolean }) {
   const [realName, setRealName] = useState("")
   const [studentId, setStudentId] = useState("")
   const [feishuLink, setFeishuLink] = useState("")
@@ -23,13 +24,50 @@ export function OnboardingForm() {
     })
   }
 
+  // 🚀 核心视效：这正是第一张图片的“档案审核中”状态
+  // 当点击提交，或者进入状态 2 时，它会自动丝滑撑满整个 Stepper 容器
+  const completedContent = (
+    <div className="flex flex-col items-center justify-center py-6 text-center animate-apple-spring">
+      <div className="relative w-20 h-20 mx-auto mb-8">
+        <div className="absolute inset-0 rounded-full border-2 border-blue-500/20"></div>
+        <div className="absolute inset-0 rounded-full border-t-2 border-blue-400 animate-spin"></div>
+        <div className="absolute inset-3 rounded-full bg-blue-500/10 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400 animate-pulse">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          </svg>
+        </div>
+      </div>
+      <h2 className="text-2xl font-bold text-white tracking-[0.2em] font-[family-name:var(--font-space)] mb-4">档案同步审核中</h2>
+      <p className="text-zinc-500 font-mono text-xs tracking-widest uppercase mb-10">Awaiting Command Clearance...</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full border-t border-white/5 pt-8">
+        <Link href="/contact" className="flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold hover:bg-emerald-500 hover:text-white transition-all text-xs tracking-widest active:scale-95">
+          <span>联系舰长加速审核 ✅</span>
+        </Link>
+        {/* 调用了你原有的撤销建档接口 */}
+        <form action={revokeRecruitProfile} className="w-full">
+          <button type="submit" className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 font-bold hover:bg-red-500 hover:text-white transition-all text-xs tracking-widest active:scale-95">
+            <span>撤销并重新填写档案 ↩</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+
+  // 根据当前状态自动切换容器边框和光晕的颜色（填表时是警告红，审核时是安全蓝）
+  const isFinished = defaultCompleted || isPending;
+  const borderColor = isFinished ? 'border-blue-500/30' : 'border-red-500/30';
+  const shadowColor = isFinished ? 'shadow-[0_0_80px_rgba(59,130,246,0.15)]' : 'shadow-[0_0_80px_rgba(239,68,68,0.15)]';
+
   return (
     <Stepper
+      initialStep={defaultCompleted ? 6 : 1}
       onFinalStepCompleted={handleComplete}
+      completedContent={completedContent}
       backButtonText="返回 / BACK"
       nextButtonText="确认录入 / NEXT"
       completeButtonText={isPending ? "数据刻录中..." : "提交核心档案 / SUBMIT"}
-      stepCircleContainerClassName="bg-[#06060a]/90 border border-red-500/30 p-6 sm:p-10 rounded-[2.5rem] backdrop-blur-2xl shadow-[0_0_80px_rgba(239,68,68,0.15)] w-full"
+      stepCircleContainerClassName={`bg-[#06060a]/90 border ${borderColor} p-6 sm:p-10 rounded-[2.5rem] backdrop-blur-2xl ${shadowColor} w-full transition-colors duration-1000`}
       nextButtonProps={{
         disabled: isPending,
         className: "bg-red-500/20 border border-red-500/50 text-red-400 font-bold py-3 px-6 rounded-2xl hover:bg-red-500 hover:text-white transition-all tracking-[0.1em] text-xs disabled:opacity-50"
@@ -39,7 +77,6 @@ export function OnboardingForm() {
         className: "text-zinc-500 hover:text-white font-mono tracking-[0.1em] text-xs px-4 transition-colors disabled:opacity-50"
       }}
     >
-      {/* Step 1: 拦截警告 */}
       <Step>
         <div className="flex items-center gap-4 mb-8 border-b border-red-500/20 pb-6">
           <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 animate-pulse">🛡️</div>
@@ -56,7 +93,6 @@ export function OnboardingForm() {
         </div>
       </Step>
       
-      {/* Step 2: 真实姓名 */}
       <Step>
         <div className="space-y-2 py-2">
           <h2 className="text-xl font-bold text-white tracking-widest font-[family-name:var(--font-space)] mb-1">生物学标识录入</h2>
@@ -66,7 +102,6 @@ export function OnboardingForm() {
         </div>
       </Step>
 
-      {/* Step 3: 学号 */}
       <Step>
         <div className="space-y-2 py-2">
           <h2 className="text-xl font-bold text-white tracking-widest font-[family-name:var(--font-space)] mb-1">星舰学院防伪编号</h2>
@@ -76,7 +111,6 @@ export function OnboardingForm() {
         </div>
       </Step>
 
-      {/* Step 4: 飞书 (选填) */}
       <Step>
         <div className="space-y-2 py-2">
           <h2 className="text-xl font-bold text-white tracking-widest font-[family-name:var(--font-space)] mb-1">亚空间通讯链路</h2>
@@ -86,7 +120,6 @@ export function OnboardingForm() {
         </div>
       </Step>
 
-      {/* Step 5: 确认页 */}
       <Step>
         <div className="space-y-4 py-2">
           <h2 className="text-xl font-bold text-white tracking-widest font-[family-name:var(--font-space)] mb-1">档案终审协议</h2>
