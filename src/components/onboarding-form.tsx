@@ -7,7 +7,6 @@ import Stepper, { Step } from "./stepper"
 import { updateRecruitProfile, revokeRecruitProfile } from "@/app/actions"
 import Link from "next/link"
 
-// 🚀 Apple 物理阻尼入场/退场曲线（带微弱果冻回弹感）
 const appleBounceEase = { type: "tween", ease: [0.34, 1.56, 0.64, 1], duration: 0.6 };
 
 // ==========================================
@@ -23,23 +22,24 @@ const ParticleExplosion = ({ isTriggered }: { isTriggered: boolean }) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
+    // 🚀 核心修复 1：使用精确的 ClientRect 获取真实宽高，解决粒子偏右的位移 BUG
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
 
-    // 生成 70 个向外喷射的发光红晶粒子
     const particles = Array.from({ length: 70 }).map(() => {
       const angle = Math.random() * Math.PI * 2;
       const speed = Math.random() * 12 + 6;
       return {
-        x: cx + (Math.random() - 0.5) * 120, // 初始位置汇聚在弹窗中心区域
+        x: cx + (Math.random() - 0.5) * 120, 
         y: cy + (Math.random() - 0.5) * 80,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         size: Math.random() * 3 + 1,
         alpha: 1,
-        decay: Math.random() * 0.03 + 0.015 // 粒子寿命衰减速度
+        decay: Math.random() * 0.03 + 0.015 
       };
     });
 
@@ -53,7 +53,7 @@ const ParticleExplosion = ({ isTriggered }: { isTriggered: boolean }) => {
         active = true;
         p.x += p.vx;
         p.y += p.vy;
-        p.vx *= 0.88; // 极强的空气阻力（减速刹车感）
+        p.vx *= 0.88; 
         p.vy *= 0.88; 
         p.alpha -= p.decay;
         
@@ -73,7 +73,8 @@ const ParticleExplosion = ({ isTriggered }: { isTriggered: boolean }) => {
     return () => cancelAnimationFrame(frameId);
   }, [isTriggered]);
 
-  return <canvas ref={canvasRef} className="fixed inset-0 z-[10000] pointer-events-none" />;
+  // 加上 block 确保占据真实物理空间
+  return <canvas ref={canvasRef} className="fixed inset-0 w-full h-full block z-[10000] pointer-events-none" />;
 };
 
 // ==========================================
@@ -86,7 +87,6 @@ export function OnboardingForm({ defaultCompleted = false }: { defaultCompleted?
   const [feishuLink, setFeishuLink] = useState("")
   const [isPending, startTransition] = useTransition()
 
-  // 专属极客风弹窗状态
   const [alertState, setAlertState] = useState({
     show: false,
     dissipating: false,
@@ -99,7 +99,6 @@ export function OnboardingForm({ defaultCompleted = false }: { defaultCompleted?
   };
 
   const handleComplete = () => {
-    // 🛡️ 高级表单校验：如果有缺漏，调出 Apple 曲线弹窗，并标记退回的步骤
     if (!realName || !studentId) {
       if (!realName) {
         triggerAlert("检测到生物学标识 (真实姓名) 未录入，无法通过安全隔离门，请返回补充验证。", 2);
@@ -109,7 +108,9 @@ export function OnboardingForm({ defaultCompleted = false }: { defaultCompleted?
       return;
     }
     
-    // 如果全部验证通过，提交到后台
+    // 🚀 核心修复 2：乐观更新！不要等后端响应，先强行把步骤推进到 6 (完成态)，让用户体验绝对丝滑
+    setActiveStep(6);
+    
     const formData = new FormData()
     formData.append("realName", realName)
     formData.append("studentId", studentId)
@@ -119,16 +120,28 @@ export function OnboardingForm({ defaultCompleted = false }: { defaultCompleted?
     })
   };
 
-  // 用户点击“确认重载”时
   const handleAcknowledgeAlert = () => {
-    // 1. 触发弹窗塌缩与粒子爆炸特效
     setAlertState(prev => ({ ...prev, dissipating: true }));
-    
-    // 2. 等待动画飞出，随后关闭背景模糊，并让 Stepper 自动倒退到指定的卡片
     setTimeout(() => {
       setAlertState(prev => ({ ...prev, show: false, dissipating: false }));
-      setActiveStep(alertState.targetStep); // 🚀 触发完美左滑逆向动画
+      setActiveStep(alertState.targetStep); 
     }, 450);
+  };
+
+  // 🚀 核心修复 4：接管“撤销档案”的提交事件
+  const handleRevoke = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // 1. 乐观更新：瞬间清空数据，并用丝滑的左滑动画退回到第 2 步
+    setRealName("");
+    setStudentId("");
+    setFeishuLink("");
+    setActiveStep(2); 
+
+    // 2. 后台静默抹除数据
+    startTransition(() => {
+      revokeRecruitProfile();
+    });
   };
 
   const completedContent = (
@@ -149,7 +162,8 @@ export function OnboardingForm({ defaultCompleted = false }: { defaultCompleted?
         <Link href="/contact" className="flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold hover:bg-emerald-500 hover:text-white transition-all text-xs tracking-widest active:scale-95">
           <span>联系舰长加速审核 ✅</span>
         </Link>
-        <form action={revokeRecruitProfile} className="w-full">
+        {/* 🚀 改为调用拦截函数 handleRevoke，不再直接触发 action */}
+        <form onSubmit={handleRevoke} className="w-full">
           <button type="submit" className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 font-bold hover:bg-red-500 hover:text-white transition-all text-xs tracking-widest active:scale-95">
             <span>撤销并重新填写档案 ↩</span>
           </button>
@@ -164,13 +178,9 @@ export function OnboardingForm({ defaultCompleted = false }: { defaultCompleted?
 
   return (
     <>
-      {/* ========================================== */}
-      {/* 🚀 极客定制版拦截警告弹窗 (Apple Bezier + Particles) */}
-      {/* ========================================== */}
       <AnimatePresence>
         {alertState.show && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-            {/* 非线性背景毛玻璃 */}
             <motion.div
               initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
               animate={{ opacity: 1, backdropFilter: alertState.dissipating ? "blur(0px)" : "blur(4px)" }}
@@ -179,10 +189,8 @@ export function OnboardingForm({ defaultCompleted = false }: { defaultCompleted?
               className="absolute inset-0 bg-black/40"
             />
 
-            {/* Apple 回弹曲线弹窗框体 */}
             <motion.div
               initial={{ scale: 0.7, opacity: 0, y: 30 }}
-              // 当触发消散时，弹窗向内失焦塌缩，同时放出粒子
               animate={alertState.dissipating 
                 ? { scale: 0.5, opacity: 0, y: 0, filter: "blur(10px)" } 
                 : { scale: 1, opacity: 1, y: 0, filter: "blur(0px)" }
@@ -208,19 +216,15 @@ export function OnboardingForm({ defaultCompleted = false }: { defaultCompleted?
               </button>
             </motion.div>
 
-            {/* 顶层高能粒子爆炸组件 */}
             <ParticleExplosion isTriggered={alertState.dissipating} />
           </div>
         )}
       </AnimatePresence>
 
-      {/* ========================================== */}
-      {/* 🚀 主步进器渲染 */}
-      {/* ========================================== */}
       <Stepper
         initialStep={defaultCompleted ? 6 : 1}
-        activeStep={activeStep} // 🚀 绑定外部控制状态
-        onStepChange={(step) => setActiveStep(step)} // 🚀 同步内部点击状态
+        activeStep={activeStep} 
+        onStepChange={(step) => setActiveStep(step)} 
         onFinalStepCompleted={handleComplete}
         completedContent={completedContent}
         backButtonText="返回 / BACK"
@@ -274,8 +278,8 @@ export function OnboardingForm({ defaultCompleted = false }: { defaultCompleted?
           <div className="space-y-2 py-2">
             <h2 className="text-xl font-bold text-white tracking-widest font-[family-name:var(--font-space)] mb-1">亚空间通讯链路</h2>
             <p className="text-red-400/80 text-xs font-mono uppercase tracking-widest mb-6">Comms Link (Optional)</p>
-            <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">飞书学习链接 / Feishu Url (选填)</label>
-            <input type="text" value={feishuLink} onChange={e => setFeishuLink(e.target.value)} placeholder="粘贴飞书学习链接..." className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-red-500/50 text-white transition-colors font-mono text-sm" />
+            <label className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] ml-2">飞书主页链接 / Feishu Url (选填)</label>
+            <input type="text" value={feishuLink} onChange={e => setFeishuLink(e.target.value)} placeholder="粘贴飞书主页链接..." className="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:border-red-500/50 text-white transition-colors font-mono text-sm" />
           </div>
         </Step>
 
@@ -299,7 +303,7 @@ export function OnboardingForm({ defaultCompleted = false }: { defaultCompleted?
               </div>
             </div>
             <p className="text-zinc-500 text-[10px] mt-4 tracking-[0.1em] leading-relaxed">
-              请最后确认您的核心信息无误。点击提交后，数据将永久刻录至星舰数据库，并转交最高指挥官审核。
+              请最后确认您的核心坐标无误。点击提交后，数据将永久刻录至星舰数据库，并转交最高指挥官审核。
             </p>
           </div>
         </Step>

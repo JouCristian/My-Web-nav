@@ -9,7 +9,7 @@ import './stepper.css';
 interface StepperProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   initialStep?: number;
-  activeStep?: number; // 🚀 新增：允许外部强制控制当前步骤
+  activeStep?: number; 
   onStepChange?: (step: number) => void;
   onFinalStepCompleted?: () => void;
   stepCircleContainerClassName?: string;
@@ -37,7 +37,7 @@ const appleEase = { type: 'tween', ease: [0.22, 1, 0.36, 1], duration: 0.6 };
 export default function Stepper({
   children,
   initialStep = 1,
-  activeStep, // 🚀 接收外部强制控制
+  activeStep, 
   onStepChange = () => {},
   onFinalStepCompleted = () => {},
   stepCircleContainerClassName = '',
@@ -62,7 +62,6 @@ export default function Stepper({
   const isCompleted = currentStep > totalSteps;
   const isLastStep = currentStep === totalSteps;
 
-  // 🚀 监听外部步骤控制（用于拦截弹窗回退）
   useEffect(() => {
     if (activeStep !== undefined && activeStep !== currentStep) {
       setDirection(activeStep > currentStep ? 1 : -1);
@@ -228,7 +227,12 @@ export function Step({ children }: { children: ReactNode }): JSX.Element {
 
 function StepIndicator({ step, currentStep, onClickStep, disableStepIndicators, isGlobalCompleted }: any) {
   const status = isGlobalCompleted ? 'globalComplete' : currentStep === step ? 'active' : currentStep < step ? 'inactive' : 'complete';
-  const handleClick = () => { if (step !== currentStep && !disableStepIndicators) onClickStep(step); };
+  
+  const handleClick = () => { 
+    // 🚀 核心修复 3：如果已经进入绿色的全局审核状态，强行锁死所有点击，禁止倒退
+    if (isGlobalCompleted) return;
+    if (step !== currentStep && !disableStepIndicators) onClickStep(step); 
+  };
 
   return (
     <motion.div onClick={handleClick} className="step-indicator" style={disableStepIndicators ? { pointerEvents: 'none', opacity: 0.5 } : {}} animate={status} initial={false}>
