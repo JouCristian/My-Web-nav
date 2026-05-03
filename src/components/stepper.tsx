@@ -2,13 +2,14 @@
 "use client"
 
 import { AnimatePresence, motion, Variants } from 'framer-motion';
-import React, { Children, HTMLAttributes, JSX, ReactNode, useLayoutEffect, useRef, useState } from 'react';
+import React, { Children, HTMLAttributes, JSX, ReactNode, useLayoutEffect, useRef, useState, useEffect } from 'react';
 
 import './stepper.css';
 
 interface StepperProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   initialStep?: number;
+  activeStep?: number; // 🚀 新增：允许外部强制控制当前步骤
   onStepChange?: (step: number) => void;
   onFinalStepCompleted?: () => void;
   stepCircleContainerClassName?: string;
@@ -22,7 +23,7 @@ interface StepperProps extends HTMLAttributes<HTMLDivElement> {
   completeButtonText?: string;
   disableStepIndicators?: boolean;
   renderStepIndicator?: (props: RenderStepIndicatorProps) => ReactNode;
-  completedContent?: ReactNode; // 🚀 新增：完成后显示的内容，防止缩水
+  completedContent?: ReactNode; 
 }
 
 interface RenderStepIndicatorProps {
@@ -31,12 +32,12 @@ interface RenderStepIndicatorProps {
   onStepClick: (clicked: number) => void;
 }
 
-// 🍎 注入 Apple 极简物理阻尼参数
-const appleSpring = { type: 'spring', stiffness: 300, damping: 30 };
+const appleEase = { type: 'tween', ease: [0.22, 1, 0.36, 1], duration: 0.6 };
 
 export default function Stepper({
   children,
   initialStep = 1,
+  activeStep, // 🚀 接收外部强制控制
   onStepChange = () => {},
   onFinalStepCompleted = () => {},
   stepCircleContainerClassName = '',
@@ -57,8 +58,17 @@ export default function Stepper({
   const [direction, setDirection] = useState<number>(0);
   const stepsArray = Children.toArray(children);
   const totalSteps = stepsArray.length;
+  
   const isCompleted = currentStep > totalSteps;
   const isLastStep = currentStep === totalSteps;
+
+  // 🚀 监听外部步骤控制（用于拦截弹窗回退）
+  useEffect(() => {
+    if (activeStep !== undefined && activeStep !== currentStep) {
+      setDirection(activeStep > currentStep ? 1 : -1);
+      setCurrentStep(activeStep);
+    }
+  }, [activeStep, currentStep]);
 
   const updateStep = (newStep: number) => {
     setCurrentStep(newStep);
@@ -111,24 +121,22 @@ export default function Stepper({
                     step={stepNumber}
                     disableStepIndicators={disableStepIndicators}
                     currentStep={currentStep}
+                    isGlobalCompleted={isCompleted}
                     onClickStep={(clicked: number) => {
                       setDirection(clicked > currentStep ? 1 : -1);
                       updateStep(clicked);
                     }}
                   />
                 )}
-                {isNotLastStep && <StepConnector isComplete={currentStep > stepNumber} />}
+                {isNotLastStep && (
+                  <StepConnector isComplete={currentStep > stepNumber} isGlobalCompleted={isCompleted} />
+                )}
               </React.Fragment>
             );
           })}
         </div>
 
-        <StepContentWrapper
-          currentStep={currentStep}
-          direction={direction}
-          className={`step-content-default ${contentClassName}`}
-        >
-          {/* 🚀 核心修复：如果已完成，直接渲染传入的完成态组件，不再渲染空白导致缩小 */}
+        <StepContentWrapper currentStep={currentStep} direction={direction} className={`step-content-default ${contentClassName}`}>
           {isCompleted ? completedContent : stepsArray[currentStep - 1]}
         </StepContentWrapper>
 
@@ -166,7 +174,7 @@ function StepContentWrapper({ currentStep, direction, children, className }: Ste
       className={className}
       style={{ position: 'relative', overflow: 'hidden' }}
       animate={{ height: parentHeight }}
-      transition={appleSpring}
+      transition={appleEase}
     >
       <AnimatePresence initial={false} mode="sync" custom={direction}>
         <SlideTransition key={currentStep} direction={direction} onHeightReady={h => setParentHeight(h)}>
@@ -200,7 +208,7 @@ function SlideTransition({ children, direction, onHeightReady }: SlideTransition
       initial="enter"
       animate="center"
       exit="exit"
-      transition={appleSpring}
+      transition={appleEase}
       style={{ position: 'absolute', left: 0, right: 0, top: 0 }}
     >
       {children}
@@ -208,9 +216,6 @@ function SlideTransition({ children, direction, onHeightReady }: SlideTransition
   );
 }
 
-// 🚀 核心修复：彻底修正了进出场动画逻辑
-// direction > 0 代表前进：从右侧 (100%) 进入，向左侧 (-50%) 退出
-// direction < 0 代表后退：从左侧 (-100%) 进入，向右侧 (50%) 退出
 const stepVariants: Variants = {
   enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
   center: { x: '0%', opacity: 1 },
@@ -221,12 +226,9 @@ export function Step({ children }: { children: ReactNode }): JSX.Element {
   return <div className="step-default">{children}</div>;
 }
 
-function StepIndicator({ step, currentStep, onClickStep, disableStepIndicators }: any) {
-  const status = currentStep === step ? 'active' : currentStep < step ? 'inactive' : 'complete';
-
-  const handleClick = () => {
-    if (step !== currentStep && !disableStepIndicators) onClickStep(step);
-  };
+function StepIndicator({ step, currentStep, onClickStep, disableStepIndicators, isGlobalCompleted }: any) {
+  const status = isGlobalCompleted ? 'globalComplete' : currentStep === step ? 'active' : currentStep < step ? 'inactive' : 'complete';
+  const handleClick = () => { if (step !== currentStep && !disableStepIndicators) onClickStep(step); };
 
   return (
     <motion.div onClick={handleClick} className="step-indicator" style={disableStepIndicators ? { pointerEvents: 'none', opacity: 0.5 } : {}} animate={status} initial={false}>
@@ -234,25 +236,29 @@ function StepIndicator({ step, currentStep, onClickStep, disableStepIndicators }
         variants={{
           inactive: { scale: 1, backgroundColor: 'rgba(255,255,255,0.05)', color: '#71717a', border: '1px solid transparent' },
           active: { scale: 1.1, backgroundColor: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.5)' },
-          complete: { scale: 1, backgroundColor: '#ef4444', color: '#fff', border: '1px solid transparent' }
+          complete: { scale: 1, backgroundColor: '#ef4444', color: '#fff', border: '1px solid transparent' },
+          globalComplete: { scale: 1, backgroundColor: '#10b981', color: '#fff', border: '1px solid transparent' }
         }}
-        transition={appleSpring}
+        transition={appleEase}
         className="step-indicator-inner"
       >
-        {status === 'complete' ? <CheckIcon className="check-icon" /> : status === 'active' ? <div className="active-dot" /> : <span className="step-number">{step}</span>}
+        {(status === 'complete' || status === 'globalComplete') ? <CheckIcon className="check-icon" /> : status === 'active' ? <div className="active-dot" /> : <span className="step-number">{step}</span>}
       </motion.div>
     </motion.div>
   );
 }
 
-function StepConnector({ isComplete }: { isComplete: boolean }) {
+function StepConnector({ isComplete, isGlobalCompleted }: { isComplete: boolean, isGlobalCompleted?: boolean }) {
   const lineVariants: Variants = {
     incomplete: { width: 0, backgroundColor: 'transparent' },
-    complete: { width: '100%', backgroundColor: '#ef4444' }
+    complete: { width: '100%', backgroundColor: '#ef4444' },
+    globalComplete: { width: '100%', backgroundColor: '#10b981' }
   };
+  const animateState = isGlobalCompleted ? 'globalComplete' : isComplete ? 'complete' : 'incomplete';
+
   return (
     <div className="step-connector">
-      <motion.div className="step-connector-inner" variants={lineVariants} initial={false} animate={isComplete ? 'complete' : 'incomplete'} transition={appleSpring} />
+      <motion.div className="step-connector-inner" variants={lineVariants} initial={false} animate={animateState} transition={appleEase} />
     </div>
   );
 }
