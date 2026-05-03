@@ -170,11 +170,11 @@ export function TopNavDock({ session, dbUser, isCaptain, onSignOut }: any) {
     ])
   ];
 
-  /* 🚀 物理镇压：强制取消自带的绝对/固定定位，强制取消背景色和边距，强行塞回液态玻璃中 */
+  /* Dock 已通过 CSS 设置为透明背景，GlassSurface 提供玻璃效果 */
   return (
     <Dock 
       items={items} 
-      className="!relative !inset-auto !transform-none !bg-transparent !border-none !shadow-none !m-0 !p-0 w-full flex justify-center" 
+      className="w-full flex justify-center" 
     />
   );
 }

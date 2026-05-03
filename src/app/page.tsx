@@ -154,15 +154,16 @@ export default async function Home() {
       <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] pointer-events-none">
         <div className="animate-dock-entry pointer-events-auto" style={{ animationDelay: '0.1s' }}>
           <GlassSurface 
-            width="auto"               /* 🚀 自动撑开内容宽度 */
-            height="auto"              /* 🚀 自动撑开高度，防止图标被切 */
-            borderRadius={35}          /* 🚀 形成完美的悬浮大胶囊 */
+            width="auto"
+            height="auto"
+            borderRadius={35}
             brightness={120}           
             opacity={0.4}              
             blur={20}                 
             displace={1.2}             
-            mixBlendMode="normal"     
-            className="px-2 py-1 min-w-[320px] shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-white/10" 
+            mixBlendMode="normal"
+            backgroundOpacity={0.15}
+            className="min-w-[320px]"
           >
             <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
           </GlassSurface>
