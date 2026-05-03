@@ -2,8 +2,9 @@
 import { auth, signIn } from "@/auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import Prism from "@/components/Prism" 
 import { HideSpacetime } from "@/components/hide-spacetime" 
+// 🚀 引入全新的网格扫描背景组件
+import { GridScan } from "@/components/GridScan"
 
 export default async function LoginPage({ searchParams }: { searchParams: { error?: string } }) {
   const session = await auth()
@@ -18,12 +19,13 @@ export default async function LoginPage({ searchParams }: { searchParams: { erro
       <HideSpacetime />
 
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes bg-warp {
-          0% { opacity: 0; transform: scale(2.5) translateZ(300px); filter: blur(30px); }
-          100% { opacity: 1; transform: scale(1) translateZ(0); filter: blur(0px); }
+        /* 🚀 极其柔和的 Apple 级淡入曲线，消除了原本的生硬缩放 */
+        @keyframes bg-smooth-fade {
+          0% { opacity: 0; filter: blur(8px); transform: scale(1.02); }
+          100% { opacity: 1; filter: blur(0px); transform: scale(1); }
         }
-        .animate-bg-warp {
-          animation: bg-warp 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        .animate-bg-smooth {
+          animation: bg-smooth-fade 2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
 
         @keyframes apple-spring-in {
@@ -57,18 +59,21 @@ export default async function LoginPage({ searchParams }: { searchParams: { erro
         .spring-physics:active { transform: scale(0.95) translateY(2px); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
       `}} />
 
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-80 mix-blend-screen animate-bg-warp">
-        {/* 🚀 核心更新：完美复刻截图中的 3D 旋转彩虹光谱参数 */}
-        <Prism
-          animationType="3drotate"
-          timeScale={0.3}
-          height={3.4}
-          baseWidth={5.9}
-          scale={3.4}
-          hueShift={0.2}
-          colorFrequency={1.7}
-          noise={0} 
-          glow={1}
+      {/* 🚀 替换为全新的 GridScan 雷达背景，注入了参数提取的值 */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-0 animate-bg-smooth">
+        <GridScan
+          linesColor="#2f293a"
+          scanColor="#9fe5ff"
+          lineThickness={1.4}
+          gridScale={0.07}
+          lineJitter={0.1}
+          scanGlow={0.4}
+          scanSoftness={2}
+          enablePost={true}
+          chromaticAberration={0.002}
+          noiseIntensity={0.01}
+          enableWebcam={false}
+          showPreview={false}
         />
       </div>
 
