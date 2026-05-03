@@ -77,28 +77,43 @@ export default async function Home() {
       <HideSpacetime />
 
       <style dangerouslySetInnerHTML={{ __html: `
+        /* 1. 文本与标准元素上浮动画 (标准 Apple 缓出) */
         @keyframes float-up {
           0% { opacity: 0; transform: translateY(40px) scale(0.95); filter: blur(10px); }
           100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
         }
-        .animate-float-up { opacity: 0; animation: float-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        .animate-float-up { 
+          opacity: 0; 
+          animation: float-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; 
+        }
 
+        /* 2. 🚀 弹簧回弹放大动画 (用于 Dock 和 LogoLoop，强物理阻尼体验) */
+        @keyframes spring-scale-up {
+          0% { opacity: 0; transform: scale(0.7) translateY(40px); filter: blur(15px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0px); }
+        }
+        .animate-spring-scale {
+          opacity: 0;
+          /* 0.34, 1.56, 0.64, 1 是 Apple 标志性的越界回弹曲线 (Overshoot) */
+          animation: spring-scale-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        /* 3. 🚀 背景专属：丝滑贝塞尔渐显 + 降模糊 + 微缩放落焦 */
+        @keyframes fade-in-bg {
+          0% { opacity: 0; filter: blur(30px); transform: scale(1.05); }
+          100% { opacity: 1; filter: blur(0px); transform: scale(1); }
+        }
+        .animate-bg-fade {
+          opacity: 0;
+          animation: fade-in-bg 2s cubic-bezier(0.22, 1, 0.36, 1) forwards; 
+        }
+
+        /* 鼠标悬停的微交互弹簧效果 */
         .spring-btn-hero { transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .spring-btn-hero:hover { transform: scale(1.05) translateY(-5px); box-shadow: 0 20px 40px rgba(59,130,246,0.3), inset 0 0 20px rgba(255,255,255,0.1); }
         .spring-btn-hero:active { transform: scale(0.95) translateY(2px); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
         
         .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-
-        /* 🚀 新增：深空背景点亮动画。包含渐显、降模糊、微缩放的 Apple 级质感 */
-        @keyframes fade-in-bg {
-          0% { opacity: 0; filter: blur(20px); transform: scale(1.05); }
-          100% { opacity: 1; filter: blur(0px); transform: scale(1); }
-        }
-        .animate-bg-fade {
-          opacity: 0;
-          /* 1秒时长，顶级非线性 UI 阻尼曲线 */
-          animation: fade-in-bg 1s cubic-bezier(0.22, 1, 0.36, 1) forwards; 
-        }
 
         .mask-edges {
           mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
@@ -126,18 +141,21 @@ export default async function Home() {
         }
       `}} />
 
-      {/* 🚀 性能优化：HeroBackground 内部按设备分流
-          - 桌面端：Aurora（WebGL）+ DotField（Canvas）双层效果
-          - 移动端：纯 CSS 径向渐变 + 伪星点，零 GPU 开销 */}
-      <HeroBackground />
+      {/* 🚀 背景包裹层：采用 2s 顶级非线性降模糊入场 */}
+      <div className="absolute inset-0 z-0 pointer-events-none animate-bg-fade">
+        <HeroBackground />
+      </div>
 
-      <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
+      {/* 🚀 顶栏包裹层：从小弹大回弹效果 */}
+      <div className="w-full relative z-50 animate-spring-scale" style={{ animationDelay: '0.1s' }}>
+        <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
+      </div>
 
       <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-5 sm:px-4 pt-32 sm:pt-24 md:pt-10 pb-12 pointer-events-none">
         
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.6)_0%,transparent_65%)] z-0 pointer-events-none"></div>
 
-        <div className="animate-float-up pointer-events-auto relative z-10 mb-6 sm:mb-8 font-mono text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
+        <div className="animate-float-up pointer-events-auto relative z-10 mb-6 sm:mb-8 font-mono text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.2s' }}>
           <RotatingText
             prefix="Creating"
             texts={['thinking!', 'coding!', 'components!', 'ysyxing!']}
@@ -153,7 +171,7 @@ export default async function Home() {
           />
         </div>
 
-        <h1 className="animate-float-up pointer-events-auto relative z-10 text-3xl sm:text-4xl md:text-6xl lg:text-7xl md:whitespace-nowrap font-bold tracking-tight md:tracking-tighter font-[family-name:var(--font-space)] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-5 sm:mb-6 px-2 text-balance leading-[1.15]" style={{ animationDelay: '0.2s' }}>
+        <h1 className="animate-float-up pointer-events-auto relative z-10 text-3xl sm:text-4xl md:text-6xl lg:text-7xl md:whitespace-nowrap font-bold tracking-tight md:tracking-tighter font-[family-name:var(--font-space)] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-5 sm:mb-6 px-2 text-balance leading-[1.15]" style={{ animationDelay: '0.3s' }}>
           <ShinyText 
             text={cardTitle} 
             speed={2} 
@@ -165,11 +183,12 @@ export default async function Home() {
           />
         </h1>
         
-        <p className="animate-float-up pointer-events-auto relative z-10 text-sm sm:text-base md:text-lg md:whitespace-nowrap text-zinc-300 tracking-wider sm:tracking-widest mx-auto leading-relaxed mb-12 sm:mb-16 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] px-4 max-w-md sm:max-w-none text-balance" style={{ animationDelay: '0.3s' }}>
+        <p className="animate-float-up pointer-events-auto relative z-10 text-sm sm:text-base md:text-lg md:whitespace-nowrap text-zinc-300 tracking-wider sm:tracking-widest mx-auto leading-relaxed mb-12 sm:mb-16 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] px-4 max-w-md sm:max-w-none text-balance" style={{ animationDelay: '0.4s' }}>
           {cardSubtitle}
         </p>
 
-        <div className="animate-float-up pointer-events-auto relative z-10" style={{ animationDelay: '0.4s' }}>
+        {/* 🚀 核心按钮包裹层：同样加入了强阻尼回弹入场 */}
+        <div className="animate-spring-scale pointer-events-auto relative z-10" style={{ animationDelay: '0.5s' }}>
           <TransitionLink 
             href={session ? "/dashboard" : "/login"} 
             className="spring-btn-hero group relative inline-flex items-center justify-center gap-3 sm:gap-4 px-9 py-4 sm:px-12 sm:py-5 rounded-full bg-white text-black font-bold text-base sm:text-lg overflow-hidden"
@@ -180,16 +199,20 @@ export default async function Home() {
           </TransitionLink>
         </div>
 
-        <div className="hidden sm:flex absolute bottom-10 left-1/2 -translate-x-1/2 flex-col items-center gap-3 opacity-40 animate-bounce pointer-events-auto z-10">
-          <span className="text-[9px] font-mono tracking-[0.4em] uppercase text-zinc-400">Scroll to Explore Databanks</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-zinc-500"><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+        {/* 向下滚动提示 */}
+        <div className="hidden sm:flex absolute bottom-10 left-1/2 -translate-x-1/2 flex-col items-center gap-3 opacity-40 pointer-events-auto z-10 animate-float-up" style={{ animationDelay: '0.8s' }}>
+          <div className="animate-bounce flex flex-col items-center gap-3">
+            <span className="text-[9px] font-mono tracking-[0.4em] uppercase text-zinc-400">Scroll to Explore Databanks</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-zinc-500"><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+          </div>
         </div>
       </section>
 
       <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-24 sm:pb-40">
         
         {generatedLogos.length > 0 && (
-          <div className="w-full mb-16 relative overflow-hidden pointer-events-auto z-10 mask-edges">
+          {/* 🚀 Logo 轮播图：赋予了弹簧物理缩放效果 */}
+          <div className="w-full mb-16 relative overflow-hidden pointer-events-auto z-10 mask-edges animate-spring-scale" style={{ animationDelay: '0.5s' }}>
             <LogoLoop
               logos={generatedLogos}
               speed={45}
@@ -203,21 +226,23 @@ export default async function Home() {
           </div>
         )}
 
-        <div className="flex items-center justify-center gap-4 sm:gap-6 mb-12 sm:mb-20 opacity-30">
+        {/* 装饰线条 */}
+        <div className="flex items-center justify-center gap-4 sm:gap-6 mb-12 sm:mb-20 opacity-30 animate-spring-scale" style={{ animationDelay: '0.6s' }}>
           <div className="h-px bg-gradient-to-r from-transparent to-white/50 w-20 sm:w-32 md:w-64"></div>
           <span className="w-2 h-2 rotate-45 border border-white/50"></span>
           <div className="h-px bg-gradient-to-l from-transparent to-white/50 w-20 sm:w-32 md:w-64"></div>
         </div>
 
         {isCaptain && (
-          <div className="mb-8 sm:mb-12">
+          <div className="mb-8 sm:mb-12 animate-spring-scale" style={{ animationDelay: '0.65s' }}>
             <AddCardForm />
           </div>
         )}
         
+        {/* 卡片瀑布流 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {links.map((link: Bookmark, index: number) => (
-            <div key={link.id} className="fade-in-nav opacity-0" style={{ animationDelay: `${(index * 100) + 200}ms` }}>
+            <div key={link.id} className="fade-in-nav opacity-0" style={{ animationDelay: `${(index * 100) + 700}ms` }}>
               <NavigationCard 
                 id={link.id} 
                 title={link.name} 
