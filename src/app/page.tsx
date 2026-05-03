@@ -80,41 +80,38 @@ export default async function Home() {
         /* 1. 文本与标准元素上浮动画 */
         @keyframes float-up {
           0% { opacity: 0; transform: translateY(40px) scale(0.95); filter: blur(10px); }
-          99% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
           100% { opacity: 1; transform: none; filter: none; }
         }
         .animate-float-up { 
-          animation: float-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) both; 
+          /* 🚀 使用 backwards：动画结束后释放 GPU 层级，恢复正常 CSS 渲染 */
+          animation: float-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) backwards; 
         }
 
-        /* 2. 🚀 Dock 专属动画：强制在 100% 时解除 transform 和 filter 限制 */
+        /* 2. 🚀 Dock 专属动画：强制在 100% 时解除 transform 和 filter 限制，瞬间恢复液态毛玻璃 */
         @keyframes dock-down {
           0% { opacity: 0; transform: translateY(-40px) scale(0.95); filter: blur(10px); }
-          99% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
           100% { opacity: 1; transform: none; filter: none; }
         }
         .animate-dock-down {
-          animation: dock-down 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+          animation: dock-down 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
         }
 
         /* 3. LogoLoop 与按钮专属：从小弹大回弹 */
         @keyframes spring-scale-up {
           0% { opacity: 0; transform: scale(0.85) translateY(30px); filter: blur(15px); }
-          99% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0px); }
           100% { opacity: 1; transform: none; filter: none; }
         }
         .animate-spring-scale {
-          animation: spring-scale-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+          animation: spring-scale-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
         }
 
         /* 4. 背景专属：丝滑贝塞尔渐显 */
         @keyframes fade-in-bg {
           0% { opacity: 0; filter: blur(30px); transform: scale(1.05); }
-          99% { opacity: 1; filter: blur(0px); transform: scale(1); }
           100% { opacity: 1; transform: none; filter: none; }
         }
         .animate-bg-fade {
-          animation: fade-in-bg 2s cubic-bezier(0.22, 1, 0.36, 1) both; 
+          animation: fade-in-bg 2s cubic-bezier(0.22, 1, 0.36, 1) backwards; 
         }
 
         /* 按钮微交互 */
@@ -148,12 +145,12 @@ export default async function Home() {
         }
       `}} />
 
-      {/* 🚀 背景：固定定位，永不撑开滚动条 */}
+      {/* 背景：固定定位，永不撑开滚动条 */}
       <div className="fixed inset-0 z-0 pointer-events-none animate-bg-fade">
         <HeroBackground />
       </div>
 
-      {/* 🚀 修复核心：将 relative 改为 fixed，Dock 栏将永远锁定在窗口顶部 */}
+      {/* 🚀 Dock 栏：固定在最顶部，动画完成后将完美恢复背景毛玻璃 */}
       <div className="fixed top-0 left-0 right-0 z-[100] animate-dock-down" style={{ animationDelay: '0.1s' }}>
         <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
       </div>
@@ -194,7 +191,7 @@ export default async function Home() {
           {cardSubtitle}
         </p>
 
-        {/* 核心按钮 */}
+        {/* 核心按钮弹簧入场 */}
         <div className="animate-spring-scale pointer-events-auto relative z-10" style={{ animationDelay: '0.5s' }}>
           <TransitionLink 
             href={session ? "/dashboard" : "/login"} 
