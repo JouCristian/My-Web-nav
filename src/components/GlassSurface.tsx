@@ -139,9 +139,8 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
     if (typeof window === 'undefined' || typeof document === 'undefined') {
       return true; 
     }
-    // 🚀 核心修复：只允许真正的 Safari 运行 SVG 液态渲染，防止 Chrome 假装支持导致黑屏
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    return isSafari;
+    // 🚀 核心物理破解：解除封印！强行在所有浏览器中启动 SVG 液态渲染！
+    return true;
   };
 
   const containerStyle: React.CSSProperties = {
