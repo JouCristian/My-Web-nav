@@ -72,7 +72,6 @@ export default async function Home() {
   }));
 
   return (
-    // 🚀 修复点 1：移除 overflow-x-hidden，防止 <main> 成为限制高度的滚动容器引发双滚动条
     <main className="min-h-screen bg-[#020205] text-white selection:bg-blue-500/30 relative">
       
       <HideSpacetime />
@@ -85,11 +84,10 @@ export default async function Home() {
           100% { opacity: 1; transform: none; filter: none; }
         }
         .animate-float-up { 
-          /* 🚀 使用 both 模式，确保元素在 delay 期间保持 0% 的隐形状态 */
           animation: float-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) both; 
         }
 
-        /* 2. 🚀 Dock 专属动画：从上方落下，并在 100% 时解除 transform，瞬间恢复毛玻璃特效！ */
+        /* 2. 🚀 Dock 专属动画：强制在 100% 时解除 transform 和 filter 限制 */
         @keyframes dock-down {
           0% { opacity: 0; transform: translateY(-40px) scale(0.95); filter: blur(10px); }
           99% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
@@ -150,13 +148,13 @@ export default async function Home() {
         }
       `}} />
 
-      {/* 🚀 修复点 2：将 absolute 更改为 fixed，将背景死死钉在视窗上，彻底解决撑出双滚动条的问题 */}
+      {/* 🚀 背景：固定定位，永不撑开滚动条 */}
       <div className="fixed inset-0 z-0 pointer-events-none animate-bg-fade">
         <HeroBackground />
       </div>
 
-      {/* 🚀 Dock 专属入场：从上往下坠入，动画结束后恢复毛玻璃 */}
-      <div className="w-full relative z-50 animate-dock-down" style={{ animationDelay: '0.1s' }}>
+      {/* 🚀 修复核心：将 relative 改为 fixed，Dock 栏将永远锁定在窗口顶部 */}
+      <div className="fixed top-0 left-0 right-0 z-[100] animate-dock-down" style={{ animationDelay: '0.1s' }}>
         <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
       </div>
 
@@ -196,7 +194,7 @@ export default async function Home() {
           {cardSubtitle}
         </p>
 
-        {/* 核心按钮弹簧入场 */}
+        {/* 核心按钮 */}
         <div className="animate-spring-scale pointer-events-auto relative z-10" style={{ animationDelay: '0.5s' }}>
           <TransitionLink 
             href={session ? "/dashboard" : "/login"} 
@@ -234,7 +232,6 @@ export default async function Home() {
           </div>
         )}
 
-        {/* 装饰线条 */}
         <div className="flex items-center justify-center gap-4 sm:gap-6 mb-12 sm:mb-20 opacity-30 animate-spring-scale" style={{ animationDelay: '0.6s' }}>
           <div className="h-px bg-gradient-to-r from-transparent to-white/50 w-20 sm:w-32 md:w-64"></div>
           <span className="w-2 h-2 rotate-45 border border-white/50"></span>
@@ -247,7 +244,6 @@ export default async function Home() {
           </div>
         )}
         
-        {/* 卡片瀑布流入场 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {links.map((link: Bookmark, index: number) => (
             <div key={link.id} className="animate-float-up" style={{ animationDelay: `${(index * 100) + 700}ms` }}>
