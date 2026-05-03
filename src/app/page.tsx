@@ -10,6 +10,7 @@ import RotatingText from "@/components/RotatingText"
 import ShinyText from "@/components/ShinyText" 
 import LogoLoop from "@/components/LogoLoop" 
 import { HeroBackground } from "@/components/hero-background"
+import GlassSurface from "@/components/GlassSurface"
 
 
 export const revalidate = 60;
@@ -150,24 +151,28 @@ export default async function Home() {
         <HeroBackground />
       </div>
 
-{/* Dock 栏 + 液态玻璃底座 - 直接使用内联样式确保生效 */}
+{/* Dock 栏 + 液态玻璃底座 */}
       <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] pointer-events-none">
-        <div 
-          className="animate-dock-entry pointer-events-auto min-w-[320px]" 
-          style={{ 
-            animationDelay: '0.1s',
-            background: 'rgba(15, 20, 35, 0.7)',
-            backdropFilter: 'blur(30px) saturate(200%) brightness(1.15)',
-            WebkitBackdropFilter: 'blur(30px) saturate(200%) brightness(1.15)',
-            borderRadius: '35px',
-            border: '2px solid rgba(255, 255, 255, 0.15)',
-            borderTop: '2px solid rgba(255, 255, 255, 0.4)',
-            borderBottom: '2px solid rgba(0, 0, 0, 0.4)',
-            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.6), 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.25), inset 0 -2px 4px rgba(0, 0, 0, 0.2)',
-            padding: '0.5rem 1rem'
-          }}
-        >
-          <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
+        <div className="animate-dock-entry pointer-events-auto" style={{ animationDelay: '0.1s' }}>
+          <GlassSurface 
+            width="auto"
+            height="auto"
+            borderRadius={50}
+            borderWidth={0.07}
+            backgroundOpacity={0.1}
+            saturation={1}
+            brightness={50}
+            opacity={0.93}
+            blur={11}
+            displace={0.5}
+            distortionScale={-180}
+            redOffset={0}
+            greenOffset={10}
+            blueOffset={20}
+            className="min-w-[320px]"
+          >
+            <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
+          </GlassSurface>
         </div>
       </div>
 
