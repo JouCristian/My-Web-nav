@@ -164,7 +164,8 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   }, [width, height]);
 
   useEffect(() => {
-    setSvgSupported(supportsSVGFilters());
+    // 强制使用 fallback 模式，因为 SVG backdrop-filter 在大多数浏览器上不支持
+    setSvgSupported(false);
   }, []);
 
   const supportsSVGFilters = () => {
