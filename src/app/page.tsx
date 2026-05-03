@@ -10,7 +10,7 @@ import RotatingText from "@/components/RotatingText"
 import ShinyText from "@/components/ShinyText" 
 import LogoLoop from "@/components/LogoLoop" 
 import { HeroBackground } from "@/components/hero-background"
-import GlassSurface from "@/components/GlassSurface" // 🚀 引入液态玻璃
+
 
 export const revalidate = 60;
 
@@ -150,28 +150,24 @@ export default async function Home() {
         <HeroBackground />
       </div>
 
-      {/* 🚀 修复核心：双层嵌套方案！外层负责顶部绝对居中，内层负责入场动画，再配合液态玻璃底座 */}
+{/* Dock 栏 + 液态玻璃底座 - 直接使用内联样式确保生效 */}
       <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] pointer-events-none">
-        <div className="animate-dock-entry pointer-events-auto" style={{ animationDelay: '0.1s' }}>
-          <GlassSurface 
-            width="auto"
-            height="auto"
-            borderRadius={35}
-            displace={15}
-            distortionScale={-150}
-            redOffset={5}
-            greenOffset={15}
-            blueOffset={25}
-            brightness={60}
-            opacity={0.8}
-            blur={12}
-            backgroundOpacity={0.15}
-            saturation={1.5}
-            mixBlendMode="screen"
-            className="min-w-[320px]"
-          >
-            <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
-          </GlassSurface>
+        <div 
+          className="animate-dock-entry pointer-events-auto min-w-[320px]" 
+          style={{ 
+            animationDelay: '0.1s',
+            background: 'rgba(15, 20, 35, 0.7)',
+            backdropFilter: 'blur(30px) saturate(200%) brightness(1.15)',
+            WebkitBackdropFilter: 'blur(30px) saturate(200%) brightness(1.15)',
+            borderRadius: '35px',
+            border: '2px solid rgba(255, 255, 255, 0.15)',
+            borderTop: '2px solid rgba(255, 255, 255, 0.4)',
+            borderBottom: '2px solid rgba(0, 0, 0, 0.4)',
+            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.6), 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.25), inset 0 -2px 4px rgba(0, 0, 0, 0.2)',
+            padding: '0.5rem 1rem'
+          }}
+        >
+          <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
         </div>
       </div>
 
