@@ -86,11 +86,11 @@ export default async function Home() {
           animation: float-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both; 
         }
 
-/* 🚀 修改后的 Dock 专属入场动画 */
-@keyframes dock-entry {
-  0% { opacity: 0; transform: translateY(-30px) scale(0.95); }
-  100% { opacity: 1; transform: none; } /* 关键修复：结束时清除 transform 矩阵 */
-}
+        /* 🚀 修改后的 Dock 专属入场动画 */
+        @keyframes dock-entry {
+          0% { opacity: 0; transform: translateY(-30px) scale(0.95); }
+          100% { opacity: 1; transform: none; } /* 关键修复：结束时清除 transform 矩阵 */
+        }
         .animate-dock-entry {
           animation: dock-entry 1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
         }
