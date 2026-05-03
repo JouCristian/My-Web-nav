@@ -10,6 +10,7 @@ import RotatingText from "@/components/RotatingText"
 import ShinyText from "@/components/ShinyText" 
 import LogoLoop from "@/components/LogoLoop" 
 import { HeroBackground } from "@/components/hero-background"
+import GlassSurface from "@/components/GlassSurface" // 🚀 1. 新增：导入液态玻璃组件
 
 export const revalidate = 60;
 
@@ -86,13 +87,13 @@ export default async function Home() {
           animation: float-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both; 
         }
 
-        /* 🚀 修改后的 Dock 专属入场动画 */
-        @keyframes dock-entry {
-          0% { opacity: 0; transform: translateY(-30px) scale(0.95); }
-          100% { opacity: 1; transform: none; } /* 关键修复：结束时清除 transform 矩阵 */
+        /* 🚀 2. 专属底部入场动画 (从下往上弹出) */
+        @keyframes dock-entry-bottom {
+          0% { opacity: 0; transform: translateY(50px) scale(0.95); }
+          100% { opacity: 1; transform: none; } /* 动画结束后清除 transform */
         }
-        .animate-dock-entry {
-          animation: dock-entry 1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        .animate-dock-entry-bottom {
+          animation: dock-entry-bottom 1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
         }
 
         /* 3. LogoLoop 与按钮：弹簧放大 */
@@ -149,10 +150,24 @@ export default async function Home() {
         <HeroBackground />
       </div>
 
-      {/* 🚀 修复核心：固定定位，直接用正常的 dock-entry 弹簧入场，保持原生毛玻璃完整无损 */}
-      <div className="fixed top-0 left-0 right-0 z-[100] animate-dock-entry pointer-events-none" style={{ animationDelay: '0.1s' }}>
+      {/* 🚀 核心修复：固定于底部 (bottom-8)，使用液态玻璃包裹 Dock */}
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] animate-dock-entry-bottom pointer-events-none" style={{ animationDelay: '0.1s' }}>
         <div className="pointer-events-auto">
-          <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
+          
+          <GlassSurface 
+            width="max-content"       
+            height={68}               
+            borderRadius={34}         
+            brightness={110}           
+            opacity={0.7}             
+            blur={16}                 
+            displace={0.8}            
+            mixBlendMode="normal"     
+            className="px-4 py-2 shadow-[0_20px_40px_rgba(0,0,0,0.5)] border border-white/10" 
+          >
+            <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
+          </GlassSurface>
+
         </div>
       </div>
 
@@ -204,13 +219,6 @@ export default async function Home() {
           </TransitionLink>
         </div>
 
-        {/* 向下滚动提示 */}
-        <div className="hidden sm:flex absolute bottom-10 left-1/2 -translate-x-1/2 flex-col items-center gap-3 opacity-40 pointer-events-auto z-10 animate-float-up" style={{ animationDelay: '0.6s' }}>
-          <div className="animate-bounce flex flex-col items-center gap-3">
-            <span className="text-[9px] font-mono tracking-[0.4em] uppercase text-zinc-400">Scroll to Explore Databanks</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-zinc-500"><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
-          </div>
-        </div>
       </section>
 
       <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-24 sm:pb-40">
