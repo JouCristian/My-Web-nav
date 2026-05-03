@@ -86,11 +86,11 @@ export default async function Home() {
           animation: float-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both; 
         }
 
-        /* 2. 🚀 Dock 专属入场：最纯粹的 CSS 动画，绝对不破坏原生毛玻璃渲染 */
-        @keyframes dock-entry {
-          0% { opacity: 0; transform: translateY(-30px) scale(0.95); }
-          100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
+/* 🚀 修改后的 Dock 专属入场动画 */
+@keyframes dock-entry {
+  0% { opacity: 0; transform: translateY(-30px) scale(0.95); }
+  100% { opacity: 1; transform: none; } /* 关键修复：结束时清除 transform 矩阵 */
+}
         .animate-dock-entry {
           animation: dock-entry 1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
         }
