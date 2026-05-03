@@ -157,12 +157,17 @@ export default async function Home() {
             width="auto"
             height="auto"
             borderRadius={35}
-            brightness={120}           
-            opacity={0.4}              
-            blur={20}                 
-            displace={1.2}             
-            mixBlendMode="normal"
+            displace={15}
+            distortionScale={-150}
+            redOffset={5}
+            greenOffset={15}
+            blueOffset={25}
+            brightness={60}
+            opacity={0.8}
+            blur={12}
             backgroundOpacity={0.15}
+            saturation={1.5}
+            mixBlendMode="screen"
             className="min-w-[320px]"
           >
             <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
