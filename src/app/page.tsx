@@ -11,6 +11,8 @@ import ShinyText from "@/components/ShinyText"
 import LogoLoop from "@/components/LogoLoop" 
 import { HeroBackground } from "@/components/hero-background"
 
+export const revalidate = 60;
+
 interface Bookmark {
   id: number;
   name: string;
