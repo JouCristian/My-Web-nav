@@ -72,49 +72,58 @@ export default async function Home() {
   }));
 
   return (
-    <main className="min-h-screen bg-[#020205] text-white selection:bg-blue-500/30 overflow-x-hidden relative">
+    // 🚀 修复点 1：移除 overflow-x-hidden，防止 <main> 成为限制高度的滚动容器引发双滚动条
+    <main className="min-h-screen bg-[#020205] text-white selection:bg-blue-500/30 relative">
       
       <HideSpacetime />
 
       <style dangerouslySetInnerHTML={{ __html: `
-        /* 1. 文本与标准元素上浮动画 (标准 Apple 缓出) */
+        /* 1. 文本与标准元素上浮动画 */
         @keyframes float-up {
           0% { opacity: 0; transform: translateY(40px) scale(0.95); filter: blur(10px); }
-          100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
+          99% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
+          100% { opacity: 1; transform: none; filter: none; }
         }
         .animate-float-up { 
-          opacity: 0; 
-          animation: float-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; 
+          /* 🚀 使用 both 模式，确保元素在 delay 期间保持 0% 的隐形状态 */
+          animation: float-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) both; 
         }
 
-        /* 2. 🚀 弹簧回弹放大动画 (用于 Dock 和 LogoLoop，强物理阻尼体验) */
+        /* 2. 🚀 Dock 专属动画：从上方落下，并在 100% 时解除 transform，瞬间恢复毛玻璃特效！ */
+        @keyframes dock-down {
+          0% { opacity: 0; transform: translateY(-40px) scale(0.95); filter: blur(10px); }
+          99% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
+          100% { opacity: 1; transform: none; filter: none; }
+        }
+        .animate-dock-down {
+          animation: dock-down 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+
+        /* 3. LogoLoop 与按钮专属：从小弹大回弹 */
         @keyframes spring-scale-up {
-          0% { opacity: 0; transform: scale(0.7) translateY(40px); filter: blur(15px); }
-          100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0px); }
+          0% { opacity: 0; transform: scale(0.85) translateY(30px); filter: blur(15px); }
+          99% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0px); }
+          100% { opacity: 1; transform: none; filter: none; }
         }
         .animate-spring-scale {
-          opacity: 0;
-          /* 0.34, 1.56, 0.64, 1 是 Apple 标志性的越界回弹曲线 (Overshoot) */
-          animation: spring-scale-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+          animation: spring-scale-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
         }
 
-        /* 3. 🚀 背景专属：丝滑贝塞尔渐显 + 降模糊 + 微缩放落焦 */
+        /* 4. 背景专属：丝滑贝塞尔渐显 */
         @keyframes fade-in-bg {
           0% { opacity: 0; filter: blur(30px); transform: scale(1.05); }
-          100% { opacity: 1; filter: blur(0px); transform: scale(1); }
+          99% { opacity: 1; filter: blur(0px); transform: scale(1); }
+          100% { opacity: 1; transform: none; filter: none; }
         }
         .animate-bg-fade {
-          opacity: 0;
-          animation: fade-in-bg 2s cubic-bezier(0.22, 1, 0.36, 1) forwards; 
+          animation: fade-in-bg 2s cubic-bezier(0.22, 1, 0.36, 1) both; 
         }
 
-        /* 鼠标悬停的微交互弹簧效果 */
+        /* 按钮微交互 */
         .spring-btn-hero { transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .spring-btn-hero:hover { transform: scale(1.05) translateY(-5px); box-shadow: 0 20px 40px rgba(59,130,246,0.3), inset 0 0 20px rgba(255,255,255,0.1); }
         .spring-btn-hero:active { transform: scale(0.95) translateY(2px); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
         
-        .fade-in-nav { animation: float-up 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-
         .mask-edges {
           mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
           -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
@@ -141,13 +150,13 @@ export default async function Home() {
         }
       `}} />
 
-      {/* 🚀 背景包裹层：采用 2s 顶级非线性降模糊入场 */}
-      <div className="absolute inset-0 z-0 pointer-events-none animate-bg-fade">
+      {/* 🚀 修复点 2：将 absolute 更改为 fixed，将背景死死钉在视窗上，彻底解决撑出双滚动条的问题 */}
+      <div className="fixed inset-0 z-0 pointer-events-none animate-bg-fade">
         <HeroBackground />
       </div>
 
-      {/* 🚀 顶栏包裹层：从小弹大回弹效果 */}
-      <div className="w-full relative z-50 animate-spring-scale" style={{ animationDelay: '0.1s' }}>
+      {/* 🚀 Dock 专属入场：从上往下坠入，动画结束后恢复毛玻璃 */}
+      <div className="w-full relative z-50 animate-dock-down" style={{ animationDelay: '0.1s' }}>
         <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
       </div>
 
@@ -187,7 +196,7 @@ export default async function Home() {
           {cardSubtitle}
         </p>
 
-        {/* 🚀 核心按钮包裹层：同样加入了强阻尼回弹入场 */}
+        {/* 核心按钮弹簧入场 */}
         <div className="animate-spring-scale pointer-events-auto relative z-10" style={{ animationDelay: '0.5s' }}>
           <TransitionLink 
             href={session ? "/dashboard" : "/login"} 
@@ -212,8 +221,6 @@ export default async function Home() {
         
         {generatedLogos.length > 0 && (
           <div className="w-full mb-16 relative overflow-hidden pointer-events-auto z-10 mask-edges animate-spring-scale" style={{ animationDelay: '0.5s' }}>
-            {/* 🚀 修复点：将 JSX 注释安全地放在合法节点内部 */}
-            {/* 🚀 Logo 轮播图：赋予了弹簧物理缩放效果 */}
             <LogoLoop
               logos={generatedLogos}
               speed={45}
@@ -240,10 +247,10 @@ export default async function Home() {
           </div>
         )}
         
-        {/* 卡片瀑布流 */}
+        {/* 卡片瀑布流入场 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {links.map((link: Bookmark, index: number) => (
-            <div key={link.id} className="fade-in-nav opacity-0" style={{ animationDelay: `${(index * 100) + 700}ms` }}>
+            <div key={link.id} className="animate-float-up" style={{ animationDelay: `${(index * 100) + 700}ms` }}>
               <NavigationCard 
                 id={link.id} 
                 title={link.name} 
