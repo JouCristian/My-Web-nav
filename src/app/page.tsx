@@ -80,29 +80,25 @@ export default async function Home() {
         /* 1. 文本上浮：干净利落的缓出 */
         @keyframes float-up {
           0% { opacity: 0; transform: translateY(30px); }
-          100% { opacity: 1; transform: none; }
+          100% { opacity: 1; transform: translateY(0); }
         }
         .animate-float-up { 
           animation: float-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both; 
         }
 
-        /* 2. 🚀 Dock 专属入场：完美保留内部 translateX(-50%) 的物理弹簧 */
+        /* 2. 🚀 Dock 专属入场：最纯粹的 CSS 动画，绝对不破坏原生毛玻璃渲染 */
         @keyframes dock-entry {
           0% { opacity: 0; transform: translateY(-30px) scale(0.95); }
-          99% { opacity: 1; transform: translateY(0) scale(1); }
-          /* 动画结束瞬间撤销所有 transform，把 GPU 渲染权交还给浏览器，液态玻璃满血复活！ */
-          100% { opacity: 1; transform: none; }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
         }
         .animate-dock-entry {
           animation: dock-entry 1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-          transform-origin: top center;
         }
 
         /* 3. LogoLoop 与按钮：弹簧放大 */
         @keyframes spring-scale-up {
           0% { opacity: 0; transform: scale(0.9) translateY(20px); filter: blur(10px); }
-          99% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0px); }
-          100% { opacity: 1; transform: none; filter: none; }
+          100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0px); }
         }
         .animate-spring-scale {
           animation: spring-scale-up 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -148,15 +144,14 @@ export default async function Home() {
         }
       `}} />
 
-      {/* 🚀 背景：极度纯净平滑淡入 */}
+      {/* 背景：极度纯净平滑淡入 */}
       <div className="fixed inset-0 z-0 pointer-events-none animate-bg-fade bg-[#020205]">
         <HeroBackground />
       </div>
 
-      {/* 🚀 修复核心：构造一个 1:1 等身大小的幽灵视窗。 
-          我们对这个幽灵视窗做动画，这样就不会覆盖组件内自带的居中位移，偏移 Bug 彻底解决！ */}
-      <div className="fixed inset-0 z-[100] pointer-events-none">
-        <div className="w-full h-full pointer-events-auto animate-dock-entry">
+      {/* 🚀 修复核心：固定定位，直接用正常的 dock-entry 弹簧入场，保持原生毛玻璃完整无损 */}
+      <div className="fixed top-0 left-0 right-0 z-[100] animate-dock-entry pointer-events-none" style={{ animationDelay: '0.1s' }}>
+        <div className="pointer-events-auto">
           <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
         </div>
       </div>
