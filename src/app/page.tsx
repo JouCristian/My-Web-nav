@@ -72,50 +72,50 @@ export default async function Home() {
   }));
 
   return (
-    <main className="min-h-screen bg-[#020205] text-white selection:bg-blue-500/30 relative">
+    // 增加 overflow-x-hidden 确保没有任何元素能横向撑破屏幕
+    <main className="min-h-screen bg-[#020205] text-white selection:bg-blue-500/30 relative overflow-x-hidden">
       
       <HideSpacetime />
 
       <style dangerouslySetInnerHTML={{ __html: `
-        /* 1. 文本与标准元素上浮动画 */
+        /* 1. 文本上浮：加快速度，削弱模糊感，提升干脆度 */
         @keyframes float-up {
-          0% { opacity: 0; transform: translateY(40px) scale(0.95); filter: blur(10px); }
+          0% { opacity: 0; transform: translateY(30px) scale(0.98); filter: blur(5px); }
           100% { opacity: 1; transform: none; filter: none; }
         }
         .animate-float-up { 
-          /* 🚀 使用 backwards：动画结束后释放 GPU 层级，恢复正常 CSS 渲染 */
-          animation: float-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) backwards; 
+          animation: float-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) backwards; 
         }
 
-        /* 2. 🚀 Dock 专属动画：强制在 100% 时解除 transform 和 filter 限制，瞬间恢复液态毛玻璃 */
-        @keyframes dock-down {
-          0% { opacity: 0; transform: translateY(-40px) scale(0.95); filter: blur(10px); }
-          100% { opacity: 1; transform: none; filter: none; }
+        /* 2. 🚀 Dock 专属：极其纯净的淡入！没有任何位移，绝对不破坏液态玻璃渲染 */
+        @keyframes dock-fade {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
         }
-        .animate-dock-down {
-          animation: dock-down 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+        .animate-dock-fade {
+          animation: dock-fade 1s cubic-bezier(0.22, 1, 0.36, 1) backwards;
         }
 
-        /* 3. LogoLoop 与按钮专属：从小弹大回弹 */
+        /* 3. LogoLoop 与按钮：弹簧放大，加快节奏 */
         @keyframes spring-scale-up {
-          0% { opacity: 0; transform: scale(0.85) translateY(30px); filter: blur(15px); }
+          0% { opacity: 0; transform: scale(0.9) translateY(20px); filter: blur(10px); }
           100% { opacity: 1; transform: none; filter: none; }
         }
         .animate-spring-scale {
-          animation: spring-scale-up 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+          animation: spring-scale-up 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
         }
 
-        /* 4. 背景专属：丝滑贝塞尔渐显 */
+        /* 4. 背景专属：纯净渐显，移除可能导致底闪的 scale 变化 */
         @keyframes fade-in-bg {
-          0% { opacity: 0; filter: blur(30px); transform: scale(1.05); }
-          100% { opacity: 1; transform: none; filter: none; }
+          0% { opacity: 0; }
+          100% { opacity: 1; }
         }
         .animate-bg-fade {
-          animation: fade-in-bg 2s cubic-bezier(0.22, 1, 0.36, 1) backwards; 
+          animation: fade-in-bg 1.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; 
         }
 
         /* 按钮微交互 */
-        .spring-btn-hero { transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .spring-btn-hero { transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .spring-btn-hero:hover { transform: scale(1.05) translateY(-5px); box-shadow: 0 20px 40px rgba(59,130,246,0.3), inset 0 0 20px rgba(255,255,255,0.1); }
         .spring-btn-hero:active { transform: scale(0.95) translateY(2px); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
         
@@ -145,13 +145,13 @@ export default async function Home() {
         }
       `}} />
 
-      {/* 背景：固定定位，永不撑开滚动条 */}
-      <div className="fixed inset-0 z-0 pointer-events-none animate-bg-fade">
+      {/* 🚀 背景：极度纯净平滑淡入 */}
+      <div className="fixed inset-0 z-0 pointer-events-none animate-bg-fade bg-[#020205]">
         <HeroBackground />
       </div>
 
-      {/* 🚀 Dock 栏：固定在最顶部，动画完成后将完美恢复背景毛玻璃 */}
-      <div className="fixed top-0 left-0 right-0 z-[100] animate-dock-down" style={{ animationDelay: '0.1s' }}>
+      {/* 🚀 Dock 栏：改为纯透明度渐显，液态玻璃 0秒生效 */}
+      <div className="fixed top-0 left-0 right-0 z-[100] animate-dock-fade" style={{ animationDelay: '0s' }}>
         <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
       </div>
 
@@ -159,7 +159,8 @@ export default async function Home() {
         
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.6)_0%,transparent_65%)] z-0 pointer-events-none"></div>
 
-        <div className="animate-float-up pointer-events-auto relative z-10 mb-6 sm:mb-8 font-mono text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.2s' }}>
+        {/* 动画排期极速压缩：0.1s -> 0.3s -> 0.4s */}
+        <div className="animate-float-up pointer-events-auto relative z-10 mb-6 sm:mb-8 font-mono text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
           <RotatingText
             prefix="Creating"
             texts={['thinking!', 'coding!', 'components!', 'ysyxing!']}
@@ -175,7 +176,7 @@ export default async function Home() {
           />
         </div>
 
-        <h1 className="animate-float-up pointer-events-auto relative z-10 text-3xl sm:text-4xl md:text-6xl lg:text-7xl md:whitespace-nowrap font-bold tracking-tight md:tracking-tighter font-[family-name:var(--font-space)] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-5 sm:mb-6 px-2 text-balance leading-[1.15]" style={{ animationDelay: '0.3s' }}>
+        <h1 className="animate-float-up pointer-events-auto relative z-10 text-3xl sm:text-4xl md:text-6xl lg:text-7xl md:whitespace-nowrap font-bold tracking-tight md:tracking-tighter font-[family-name:var(--font-space)] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-5 sm:mb-6 px-2 text-balance leading-[1.15]" style={{ animationDelay: '0.2s' }}>
           <ShinyText 
             text={cardTitle} 
             speed={2} 
@@ -187,12 +188,12 @@ export default async function Home() {
           />
         </h1>
         
-        <p className="animate-float-up pointer-events-auto relative z-10 text-sm sm:text-base md:text-lg md:whitespace-nowrap text-zinc-300 tracking-wider sm:tracking-widest mx-auto leading-relaxed mb-12 sm:mb-16 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] px-4 max-w-md sm:max-w-none text-balance" style={{ animationDelay: '0.4s' }}>
+        <p className="animate-float-up pointer-events-auto relative z-10 text-sm sm:text-base md:text-lg md:whitespace-nowrap text-zinc-300 tracking-wider sm:tracking-widest mx-auto leading-relaxed mb-12 sm:mb-16 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] px-4 max-w-md sm:max-w-none text-balance" style={{ animationDelay: '0.3s' }}>
           {cardSubtitle}
         </p>
 
-        {/* 核心按钮弹簧入场 */}
-        <div className="animate-spring-scale pointer-events-auto relative z-10" style={{ animationDelay: '0.5s' }}>
+        {/* 按钮爽快弹入 */}
+        <div className="animate-spring-scale pointer-events-auto relative z-10" style={{ animationDelay: '0.4s' }}>
           <TransitionLink 
             href={session ? "/dashboard" : "/login"} 
             className="spring-btn-hero group relative inline-flex items-center justify-center gap-3 sm:gap-4 px-9 py-4 sm:px-12 sm:py-5 rounded-full bg-white text-black font-bold text-base sm:text-lg overflow-hidden"
@@ -204,7 +205,7 @@ export default async function Home() {
         </div>
 
         {/* 向下滚动提示 */}
-        <div className="hidden sm:flex absolute bottom-10 left-1/2 -translate-x-1/2 flex-col items-center gap-3 opacity-40 pointer-events-auto z-10 animate-float-up" style={{ animationDelay: '0.8s' }}>
+        <div className="hidden sm:flex absolute bottom-10 left-1/2 -translate-x-1/2 flex-col items-center gap-3 opacity-40 pointer-events-auto z-10 animate-float-up" style={{ animationDelay: '0.6s' }}>
           <div className="animate-bounce flex flex-col items-center gap-3">
             <span className="text-[9px] font-mono tracking-[0.4em] uppercase text-zinc-400">Scroll to Explore Databanks</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-zinc-500"><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
@@ -215,7 +216,7 @@ export default async function Home() {
       <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-24 sm:pb-40">
         
         {generatedLogos.length > 0 && (
-          <div className="w-full mb-16 relative overflow-hidden pointer-events-auto z-10 mask-edges animate-spring-scale" style={{ animationDelay: '0.5s' }}>
+          <div className="w-full mb-16 relative overflow-hidden pointer-events-auto z-10 mask-edges animate-spring-scale" style={{ animationDelay: '0.4s' }}>
             <LogoLoop
               logos={generatedLogos}
               speed={45}
@@ -229,21 +230,22 @@ export default async function Home() {
           </div>
         )}
 
-        <div className="flex items-center justify-center gap-4 sm:gap-6 mb-12 sm:mb-20 opacity-30 animate-spring-scale" style={{ animationDelay: '0.6s' }}>
+        <div className="flex items-center justify-center gap-4 sm:gap-6 mb-12 sm:mb-20 opacity-30 animate-spring-scale" style={{ animationDelay: '0.5s' }}>
           <div className="h-px bg-gradient-to-r from-transparent to-white/50 w-20 sm:w-32 md:w-64"></div>
           <span className="w-2 h-2 rotate-45 border border-white/50"></span>
           <div className="h-px bg-gradient-to-l from-transparent to-white/50 w-20 sm:w-32 md:w-64"></div>
         </div>
 
         {isCaptain && (
-          <div className="mb-8 sm:mb-12 animate-spring-scale" style={{ animationDelay: '0.65s' }}>
+          <div className="mb-8 sm:mb-12 animate-spring-scale" style={{ animationDelay: '0.55s' }}>
             <AddCardForm />
           </div>
         )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {links.map((link: Bookmark, index: number) => (
-            <div key={link.id} className="animate-float-up" style={{ animationDelay: `${(index * 100) + 700}ms` }}>
+            /* 书签卡片瀑布流加载速度提升：从 700ms 起步降至 500ms 起步 */
+            <div key={link.id} className="animate-float-up" style={{ animationDelay: `${(index * 50) + 500}ms` }}>
               <NavigationCard 
                 id={link.id} 
                 title={link.name} 
