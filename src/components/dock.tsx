@@ -3,8 +3,7 @@
 
 import { motion, MotionValue, useMotionValue, useSpring, useTransform, type SpringOptions, AnimatePresence } from 'framer-motion';
 import React, { Children, cloneElement, useEffect, useRef, useState } from 'react';
-import GlassSurface from './GlassSurface';
-
+// 🚀 核心修复：移除了多余的 GlassSurface 引入
 import './dock.css';
 
 export type DockItemData = {
@@ -103,16 +102,13 @@ export default function Dock({
 }: DockProps) {
   const mouseX = useMotionValue(Infinity);
 
-  // 🚀 移动端响应式：监听屏幕尺寸，自动调整按键体积。在保证 8 图标不溢出前提下尽量放大，提升手机端可点性
   const [responsive, setResponsive] = useState({ size: baseItemSize, mag: magnification, height: panelHeight });
   useEffect(() => {
     const compute = () => {
       const w = window.innerWidth;
       if (w < 360) {
-        // 超窄屏（小型设备）：保守尺寸防溢出
         setResponsive({ size: 36, mag: 50, height: 54 });
       } else if (w < 480) {
-        // 主流手机（375-430px）：放大到 44px，更厚重
         setResponsive({ size: 44, mag: 60, height: 64 });
       } else if (w < 640) {
         setResponsive({ size: 46, mag: 62, height: 66 });
@@ -143,26 +139,8 @@ export default function Dock({
         role="toolbar"
         aria-label="Application dock"
       >
-        <div style={{ position: 'absolute', inset: 0, zIndex: -10, pointerEvents: 'none', borderRadius: 'inherit' }}>
-          {/* 🚀 严格按照截图参数复原：极高清晰度的边缘色散光学玻璃 */}
-          <GlassSurface
-            width="100%"
-            height="100%"
-            borderRadius={50}
-            backgroundOpacity={0.37}
-            saturation={1}
-            borderWidth={0.07}
-            brightness={50}
-            opacity={0.93}
-            blur={11}
-            displace={0.5} 
-            distortionScale={-180}
-            redOffset={0}
-            greenOffset={10}
-            blueOffset={20}
-          />
-        </div>
-
+        {/* 🚀 核心修复：彻底删除了这里的多余 GlassSurface，避免两层玻璃套娃！ */}
+        
         {items.map((item, index) => (
           <DockItem key={index} onClick={item.onClick} className={item.className} mouseX={mouseX} spring={spring} distance={distance} magnification={responsive.mag} baseItemSize={responsive.size}>
             <DockIcon>{item.icon}</DockIcon>
