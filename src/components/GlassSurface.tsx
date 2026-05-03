@@ -49,7 +49,6 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   className = '',
   style = {}
 }) => {
-  // 🚀 修复 1：剔除 React 18 useId 生成的冒号，防止 CSS 语法报错
   const rawId = useId();
   const id = rawId.replace(/:/g, ''); 
   
@@ -57,7 +56,6 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   const redGradId = `red-grad-${id}`;
   const blueGradId = `blue-grad-${id}`;
 
-  // 🚀 修复 2：乐观渲染，默认为 true。消除客户端接管页面时，从普通毛玻璃闪烁回液态玻璃的现象
   const [svgSupported, setSvgSupported] = useState<boolean>(true);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -139,16 +137,11 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
 
   const supportsSVGFilters = () => {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
-      return true; // 配合乐观渲染，SSR 阶段默认返回 true
+      return true; 
     }
-    const isWebkit = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-    const isFirefox = /Firefox/.test(navigator.userAgent);
-    if (isWebkit || isFirefox) {
-      return false;
-    }
-    const div = document.createElement('div');
-    div.style.backdropFilter = `url(#${filterId})`;
-    return div.style.backdropFilter !== '';
+    // 🚀 核心修复：只允许真正的 Safari 运行 SVG 液态渲染，防止 Chrome 假装支持导致黑屏
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    return isSafari;
   };
 
   const containerStyle: React.CSSProperties = {

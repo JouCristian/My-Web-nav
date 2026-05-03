@@ -170,6 +170,5 @@ export function TopNavDock({ session, dbUser, isCaptain, onSignOut }: any) {
     ])
   ];
 
-  /* 🚀 极其关键：通过 className 强制清除 Dock 自身可能的背景色和边框，把底色交给液态玻璃 */
   return <Dock items={items} className="!bg-transparent !border-none !shadow-none" />;
 }
