@@ -49,13 +49,15 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   style = {}
 }) => {
   const rawId = useId();
-  const id = rawId.replace(/:/g, ''); // 🚀 净化 ID，防止 CSS 解析失败
+  const id = rawId.replace(/:/g, '');
   
   const filterId = `glass-filter-${id}`;
   const redGradId = `red-grad-${id}`;
   const blueGradId = `blue-grad-${id}`;
 
-  const [svgSupported, setSvgSupported] = useState<boolean>(true);
+  // 🚀 修复：默认使用 fallback 模式，确保首次渲染就有玻璃效果
+  const [svgSupported, setSvgSupported] = useState<boolean>(false);
+  const [isClient, setIsClient] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const feImageRef = useRef<SVGFEImageElement>(null);
 
@@ -85,38 +87,51 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   };
 
   useEffect(() => {
-    const update = () => { feImageRef.current?.setAttribute('href', generateDisplacementMap()); };
-    update();
-    const ro = new ResizeObserver(update);
-    if (containerRef.current) ro.observe(containerRef.current);
-    return () => ro.disconnect();
-  }, [width, height, borderRadius, brightness, opacity]);
-
-  useEffect(() => {
+    setIsClient(true);
     // 🚀 核心：仅 Safari 支持完美的 SVG Backdrop Filter，Chrome 强制 Fallback 以防黑屏
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     setSvgSupported(isSafari);
   }, []);
 
+  useEffect(() => {
+    if (!isClient) return;
+    const update = () => { feImageRef.current?.setAttribute('href', generateDisplacementMap()); };
+    update();
+    const ro = new ResizeObserver(update);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, [isClient, width, height, borderRadius, brightness, opacity]);
+
+  // 🚀 关键修复：确保宽高值正确处理
+  const resolvedWidth = width === 'auto' ? 'fit-content' : (typeof width === 'number' ? `${width}px` : width);
+  const resolvedHeight = height === 'auto' ? 'fit-content' : (typeof height === 'number' ? `${height}px` : height);
+
   const containerStyle = {
     ...style,
-    width: typeof width === 'number' ? `${width}px` : width,
-    height: typeof height === 'number' ? `${height}px` : height,
+    width: resolvedWidth,
+    height: resolvedHeight,
     borderRadius: `${borderRadius}px`,
     '--glass-frost': backgroundOpacity,
     '--glass-saturation': saturation,
     '--filter-id': `url(#${filterId})`
   } as React.CSSProperties;
 
+  // 🚀 修复：服务端渲染时默认使用 fallback 样式，确保首屏就有玻璃效果
+  const surfaceClass = isClient 
+    ? (svgSupported ? 'glass-surface--svg' : 'glass-surface--fallback')
+    : 'glass-surface--fallback';
+
   return (
-    <div ref={containerRef} className={`glass-surface ${svgSupported ? 'glass-surface--svg' : 'glass-surface--fallback'} ${className}`} style={containerStyle}>
-      <svg className="glass-surface__filter">
-        <filter id={filterId} colorInterpolationFilters="sRGB">
-          <feImage ref={feImageRef} x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="map" />
-          <feDisplacementMap in="SourceGraphic" in2="map" scale={distortionScale} xChannelSelector="R" yChannelSelector="G" />
-          <feGaussianBlur stdDeviation={displace} />
-        </filter>
-      </svg>
+    <div ref={containerRef} className={`glass-surface ${surfaceClass} ${className}`} style={containerStyle}>
+      {svgSupported && (
+        <svg className="glass-surface__filter">
+          <filter id={filterId} colorInterpolationFilters="sRGB">
+            <feImage ref={feImageRef} x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="map" />
+            <feDisplacementMap in="SourceGraphic" in2="map" scale={distortionScale} xChannelSelector="R" yChannelSelector="G" />
+            <feGaussianBlur stdDeviation={displace} />
+          </filter>
+        </svg>
+      )}
       <div className="glass-surface__content">{children}</div>
     </div>
   );
