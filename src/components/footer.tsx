@@ -253,24 +253,19 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Dock Style Social Links - 无底座，hover区域仅限图标 */}
-          <div className="relative">
-            {/* Tooltip 显示区域 - 不触发 hover */}
-            <div className="h-8 pointer-events-none" />
-            {/* 实际图标区域 - 仅此区域触发 hover */}
-            <div 
-              className="flex items-center justify-center gap-3 sm:gap-4"
-              onMouseMove={(e) => mouseX.set(e.clientX)}
-              onMouseLeave={() => mouseX.set(Infinity)}
-            >
-              {SOCIAL_LINKS.map((link) => (
-                <DockSocialItem 
-                  key={link.name} 
-                  link={link} 
-                  mouseX={mouseX}
-                />
-              ))}
-            </div>
+          {/* Dock Style Social Links - 无底座，底部对齐防止偏移 */}
+          <div 
+            className="flex items-end justify-center gap-3 sm:gap-4 h-[72px]"
+            onMouseMove={(e) => mouseX.set(e.clientX)}
+            onMouseLeave={() => mouseX.set(Infinity)}
+          >
+            {SOCIAL_LINKS.map((link) => (
+              <DockSocialItem 
+                key={link.name} 
+                link={link} 
+                mouseX={mouseX}
+              />
+            ))}
           </div>
 
           {/* 底部分割装饰 */}
