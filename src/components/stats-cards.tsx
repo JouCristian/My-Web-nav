@@ -40,7 +40,7 @@ interface StatCardProps {
   borderColor: string
 }
 
-function StatCard({ icon, label, value, accentColor, borderColor }: StatCardProps) {
+function StatCard({ icon, label, value, accentColor }: StatCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   
   return (
@@ -57,19 +57,19 @@ function StatCard({ icon, label, value, accentColor, borderColor }: StatCardProp
       <GlassSurface
         width="auto"
         height="auto"
-        borderRadius={20}
+        borderRadius={24}
         brightness={120}
         opacity={0.4}
         blur={20}
         displace={1.2}
         mixBlendMode="normal"
         backgroundOpacity={0.12}
-        className="min-w-[140px]"
+        className="min-w-[180px]"
       >
-        <div className={`flex items-center gap-4 px-5 py-4 border-l-2 ${borderColor}`}>
+        <div className="flex items-center gap-5 px-6 py-5">
           {/* 图标容器 */}
-          <div className={`shrink-0 w-10 h-10 rounded-xl bg-black/30 border border-white/10 flex items-center justify-center`}>
-            <div className={`w-5 h-5 ${accentColor}`}>
+          <div className="shrink-0 w-12 h-12 rounded-xl bg-black/30 border border-white/10 flex items-center justify-center">
+            <div className={`w-6 h-6 ${accentColor}`}>
               {icon}
             </div>
           </div>
@@ -77,7 +77,7 @@ function StatCard({ icon, label, value, accentColor, borderColor }: StatCardProp
           {/* 文字内容 */}
           <div className="flex flex-col">
             <span className="text-xs text-zinc-500 uppercase tracking-wider font-medium">{label}</span>
-            <span className={`text-2xl font-bold ${accentColor} font-[family-name:var(--font-space)] tracking-wide`}>
+            <span className={`text-3xl font-bold ${accentColor} font-[family-name:var(--font-space)] tracking-wide`}>
               {typeof value === 'number' ? value.toLocaleString() : value}
             </span>
           </div>
@@ -98,8 +98,8 @@ export function StatsCards({ stats }: { stats?: StatsData }) {
   const safeStats = stats || { bookmarkCount: 0, todayVisits: 0, crewCount: 0 }
   
   return (
-    <div className="w-full max-w-4xl mx-auto px-4">
-      <div className="flex flex-wrap justify-center gap-4">
+    <div className="w-full max-w-5xl mx-auto px-4">
+      <div className="flex flex-wrap justify-center gap-6 sm:gap-8">
         <StatCard
           icon={<BookmarkIcon className="w-full h-full" />}
           label="收藏书签"

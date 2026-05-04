@@ -227,7 +227,7 @@ export default async function Home() {
         </div>
 
         {/* 统计数据卡片 - 在滚动提示上方 */}
-        <div className="relative z-10 mb-8 sm:mb-10 animate-spring-scale pointer-events-auto" style={{ animationDelay: '0.5s' }}>
+        <div className="relative z-10 mt-12 sm:mt-16 mb-8 sm:mb-10 animate-spring-scale pointer-events-auto" style={{ animationDelay: '0.5s' }}>
           <StatsCards stats={stats} />
         </div>
 
