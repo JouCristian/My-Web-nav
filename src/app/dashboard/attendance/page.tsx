@@ -30,10 +30,18 @@ export default async function AttendancePage() {
       image: (u.image || u.customAvatar || null) as string | null
     }))
 
-  // 🚀 严格过滤出的普通船员名单
+  // 🚀 严格过滤出的普通船员名单（包含加入时间用于正确统计）
   const crewMembers = allUsers
     .filter(u => u.role === "MEMBER")
     .map(u => (u.realName || u.name || u.nickname || u.githubName || "Unknown") as string)
+  
+  // 🚀 船员完整信息（包含创建时间）
+  const crewMembersWithJoinDate = allUsers
+    .filter(u => u.role === "MEMBER")
+    .map(u => ({
+      name: (u.realName || u.name || u.nickname || u.githubName || "Unknown") as string,
+      joinedAt: u.createdAt.getTime()
+    }))
 
   const currentUserName = (dbUser.realName || dbUser.name || dbUser.nickname || dbUser.githubName || "Unknown") as string
 
@@ -70,14 +78,14 @@ export default async function AttendancePage() {
       <div className="relative z-10 w-full flex flex-col gap-8 mb-8">
         
         {/* 🚀 核心修复：只传入 crewMembers，舰长和管理员彻底跳出签到考核规则 */}
-        <FleetAttendanceModule userRole={dbUser.role || "PENDING"} userName={currentUserName} crewMembers={crewMembers} />
+        <FleetAttendanceModule userRole={dbUser.role || "PENDING"} userName={currentUserName} crewMembers={crewMembers} crewMembersWithJoinDate={crewMembersWithJoinDate} />
         
         <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
           <div className="h-full">
             <LeaveRequestModule userRole={dbUser.role || "PENDING"} userName={currentUserName} />
           </div>
           <div className="h-full">
-            <AttendanceDashboardModule managers={managersData} crewMembers={crewMembers} />
+            <AttendanceDashboardModule managers={managersData} crewMembers={crewMembers} crewMembersWithJoinDate={crewMembersWithJoinDate} />
           </div>
         </div>
 

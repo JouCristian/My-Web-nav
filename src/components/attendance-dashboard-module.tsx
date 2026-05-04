@@ -19,12 +19,19 @@ export type ManagerData = {
   image: string | null;
 }
 
+type CrewMemberWithJoinDate = {
+  name: string;
+  joinedAt: number;
+}
+
 export function AttendanceDashboardModule({ 
   managers = [], 
-  crewMembers = [] 
+  crewMembers = [],
+  crewMembersWithJoinDate = []
 }: { 
   managers: any[], 
-  crewMembers: string[] 
+  crewMembers: string[],
+  crewMembersWithJoinDate?: CrewMemberWithJoinDate[]
 }) {
   const [mounted, setMounted] = useState(false)
   const [stats, setStats] = useState<CrewStats[]>([])
@@ -66,8 +73,13 @@ export function AttendanceDashboardModule({
           // 记录本局的签到者
           session.present.forEach(p => { if (map[p]) map[p].present++; });
           
-          // 记录本局的缺勤者/休假者
-          crewMembers.forEach(c => {
+          // 🚀 核心修复：只统计在签到发起前已加入的船员
+          const eligibleCrew = crewMembersWithJoinDate.length > 0
+            ? crewMembersWithJoinDate.filter(c => c.joinedAt <= sessionTime).map(c => c.name)
+            : crewMembers;
+          
+          // 记录本局的缺勤者/休假者（仅对当时已加入的船员）
+          eligibleCrew.forEach(c => {
             if (!session.present.includes(c)) {
               if (onLeaveNames.includes(c)) {
                 if (map[c]) map[c].leave++; 
@@ -94,7 +106,7 @@ export function AttendanceDashboardModule({
     fetchAllData()
     const interval = setInterval(fetchAllData, 3000)
     return () => clearInterval(interval)
-  }, [mounted, crewMembers])
+  }, [mounted, crewMembers, crewMembersWithJoinDate])
 
   const springConfig = { type: "spring", stiffness: 300, damping: 15, mass: 0.8 }
 

@@ -304,21 +304,34 @@ export async function markCrewPresentAction(sessionId: string, crewName: string)
   const admin = await prisma.user.findUnique({ where: { id: session?.user?.id || "" } })
   if (admin?.role !== "OWNER" && admin?.role !== "ADMIN") throw new Error("Permission Denied")
   
+  // 模糊匹配用户名
   const targetUser = await prisma.user.findFirst({
-    where: { OR: [{ realName: crewName }, { nickname: crewName }, { name: crewName }] }
+    where: { 
+      OR: [
+        { realName: crewName }, 
+        { nickname: crewName }, 
+        { name: crewName },
+        { githubName: crewName }
+      ] 
+    }
   })
-  if (!targetUser) throw new Error("Target crew not found")
-
+  if (!targetUser) {
+    console.error("Target crew not found:", crewName)
+    return { success: false, error: "找不到该船员" }
+  }
+  
   const existing = await prisma.attendanceRecord.findFirst({
     where: { userId: targetUser.id, sessionId: sessionId }
   })
-
+  
   if (!existing) {
     await prisma.attendanceRecord.create({
       data: { userId: targetUser.id, sessionId: sessionId }
     })
   }
+  
   revalidatePath("/dashboard/attendance")
+  return { success: true }
 }
 
 /**
