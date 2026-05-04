@@ -164,7 +164,9 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   }, [width, height]);
 
   useEffect(() => {
-    setSvgSupported(false);
+    // 只有 Safari 支持 backdrop-filter: url(#svg-filter)
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    setSvgSupported(isSafari);
   }, []);
 
   const supportsSVGFilters = () => {
