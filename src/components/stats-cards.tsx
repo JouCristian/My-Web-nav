@@ -3,27 +3,72 @@
 import { useState } from "react"
 import GlassSurface from "./GlassSurface"
 
-// SVG 图标组件
-function BookmarkIcon({ className }: { className?: string }) {
+// SVG 图标组件 - 添加动画支持
+function BookmarkIcon({ className, isHovered }: { className?: string; isHovered?: boolean }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg 
+      className={className} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="1.5" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+      style={{
+        transform: isHovered ? 'scale(1.15) rotate(-8deg)' : 'scale(1) rotate(0deg)',
+        transition: 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)'
+      }}
+    >
       <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
     </svg>
   )
 }
 
-function VisitIcon({ className }: { className?: string }) {
+function VisitIcon({ className, isHovered }: { className?: string; isHovered?: boolean }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg 
+      className={className} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="1.5" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+      style={{
+        transform: isHovered ? 'scale(1.2)' : 'scale(1)',
+        transition: 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)'
+      }}
+    >
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
+      <circle 
+        cx="12" 
+        cy="12" 
+        r="3"
+        style={{
+          transform: isHovered ? 'scale(1.3)' : 'scale(1)',
+          transformOrigin: 'center',
+          transition: 'transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 0.05s'
+        }}
+      />
     </svg>
   )
 }
 
-function CrewIcon({ className }: { className?: string }) {
+function CrewIcon({ className, isHovered }: { className?: string; isHovered?: boolean }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg 
+      className={className} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="1.5" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+      style={{
+        transform: isHovered ? 'scale(1.1) translateY(-2px)' : 'scale(1) translateY(0)',
+        transition: 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)'
+      }}
+    >
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
       <circle cx="9" cy="7" r="4" />
       <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -33,25 +78,26 @@ function CrewIcon({ className }: { className?: string }) {
 }
 
 interface StatCardProps {
-  icon: React.ReactNode
+  icon: (props: { className?: string; isHovered?: boolean }) => React.ReactNode
   label: string
   value: number | string
   accentColor: string
-  borderColor: string
 }
 
-function StatCard({ icon, label, value, accentColor }: StatCardProps) {
+function StatCard({ icon: Icon, label, value, accentColor }: StatCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   
   return (
     <div 
-      className="relative"
+      className="relative will-change-transform"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{
-        // Apple 风格贝塞尔曲线: cubic-bezier(0.25, 0.1, 0.25, 1)
+        // Apple 风格贝塞尔曲线
         transform: isHovered ? 'scale(1.05)' : 'scale(1)',
-        transition: 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)'
+        transition: 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
+        // 保持高光可见 - 不被裁剪
+        zIndex: isHovered ? 10 : 1
       }}
     >
       <GlassSurface
@@ -64,13 +110,13 @@ function StatCard({ icon, label, value, accentColor }: StatCardProps) {
         displace={1.2}
         mixBlendMode="normal"
         backgroundOpacity={0.12}
-        className="min-w-[180px]"
+        className="min-w-[180px] overflow-visible"
       >
         <div className="flex items-center gap-5 px-6 py-5">
           {/* 图标容器 */}
-          <div className="shrink-0 w-12 h-12 rounded-xl bg-black/30 border border-white/10 flex items-center justify-center">
+          <div className="shrink-0 w-12 h-12 rounded-xl bg-black/30 border border-white/10 flex items-center justify-center overflow-visible">
             <div className={`w-6 h-6 ${accentColor}`}>
-              {icon}
+              <Icon className="w-full h-full" isHovered={isHovered} />
             </div>
           </div>
           
@@ -99,27 +145,25 @@ export function StatsCards({ stats }: { stats?: StatsData }) {
   
   return (
     <div className="w-full max-w-5xl mx-auto px-4">
-      <div className="flex flex-wrap justify-center gap-6 sm:gap-8">
+      {/* 添加 overflow-visible 确保高光不被裁剪 */}
+      <div className="flex flex-wrap justify-center gap-6 sm:gap-8 overflow-visible">
         <StatCard
-          icon={<BookmarkIcon className="w-full h-full" />}
+          icon={BookmarkIcon}
           label="收藏书签"
           value={safeStats.bookmarkCount}
           accentColor="text-cyan-400"
-          borderColor="border-cyan-500"
         />
         <StatCard
-          icon={<VisitIcon className="w-full h-full" />}
+          icon={VisitIcon}
           label="今日访问"
           value={safeStats.todayVisits}
           accentColor="text-amber-400"
-          borderColor="border-amber-500"
         />
         <StatCard
-          icon={<CrewIcon className="w-full h-full" />}
+          icon={CrewIcon}
           label="船员人数"
           value={safeStats.crewCount}
           accentColor="text-purple-400"
-          borderColor="border-purple-500"
         />
       </div>
     </div>

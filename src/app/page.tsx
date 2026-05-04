@@ -178,7 +178,7 @@ export default async function Home() {
         </div>
       </div>
 
-      <section className="relative z-10 w-full min-h-[75vh] sm:min-h-[80vh] flex flex-col items-center justify-center text-center px-5 sm:px-4 pt-28 sm:pt-24 md:pt-10 pb-8 pointer-events-none">
+      <section className="relative z-10 w-full min-h-[70vh] sm:min-h-[72vh] flex flex-col items-center justify-center text-center px-5 sm:px-4 pt-24 sm:pt-20 md:pt-8 pb-6 pointer-events-none">
         
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.6)_0%,transparent_65%)] z-0 pointer-events-none"></div>
 
@@ -227,23 +227,23 @@ export default async function Home() {
         </div>
 
         {/* 统计数据卡片 - 在滚动提示上方 */}
-        <div className="relative z-10 mt-12 sm:mt-16 mb-8 sm:mb-10 animate-spring-scale pointer-events-auto" style={{ animationDelay: '0.5s' }}>
+        <div className="relative z-10 mt-10 sm:mt-12 mb-6 sm:mb-8 animate-spring-scale pointer-events-auto overflow-visible" style={{ animationDelay: '0.5s' }}>
           <StatsCards stats={stats} />
         </div>
 
         {/* 向下滚动提示 */}
-        <div className="hidden sm:flex absolute bottom-8 left-1/2 -translate-x-1/2 flex-col items-center gap-3 opacity-40 pointer-events-auto z-10 animate-float-up" style={{ animationDelay: '0.6s' }}>
-          <div className="animate-bounce flex flex-col items-center gap-3">
+        <div className="hidden sm:flex flex-col items-center gap-2 opacity-40 pointer-events-auto z-10 animate-float-up mt-4" style={{ animationDelay: '0.6s' }}>
+          <div className="animate-bounce flex flex-col items-center gap-2">
             <span className="text-[9px] font-mono tracking-[0.4em] uppercase text-zinc-400">Scroll to Explore Databanks</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-zinc-500"><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
           </div>
         </div>
       </section>
 
-      <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-24 sm:pb-40 pt-4">
+      <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-24 sm:pb-40 -mt-4 sm:-mt-8">
         
         {generatedLogos.length > 0 && (
-          <div className="w-full mb-12 sm:mb-16 relative overflow-hidden pointer-events-auto z-10 mask-edges animate-spring-scale" style={{ animationDelay: '0.55s' }}>
+          <div className="w-full mb-10 sm:mb-12 relative overflow-hidden pointer-events-auto z-10 mask-edges animate-spring-scale" style={{ animationDelay: '0.55s' }}>
             <LogoLoop
               logos={generatedLogos}
               speed={45}
