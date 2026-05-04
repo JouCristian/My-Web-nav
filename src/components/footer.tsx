@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import GlassSurface from './GlassSurface'
 
 // 社交链接配置
 const SOCIAL_LINKS = [
@@ -94,37 +95,61 @@ function SocialLink({ link }: { link: typeof SOCIAL_LINKS[0] }) {
       href={link.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex flex-col items-center gap-2"
+      className="group flex flex-col items-center gap-3"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       aria-label={`Visit ${link.name}`}
     >
-      {/* Icon Container */}
+      {/* GlassSurface Icon Container */}
       <div 
-        className="relative w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 ease-out"
+        className="relative"
         style={{
-          backgroundColor: isHovered ? `${link.color}15` : 'rgba(255,255,255,0.03)',
-          borderColor: isHovered ? `${link.color}40` : 'rgba(255,255,255,0.08)',
-          borderWidth: '1px',
-          borderStyle: 'solid',
-          transform: isHovered ? 'translateY(-4px) scale(1.1)' : 'translateY(0) scale(1)',
-          boxShadow: isHovered ? `0 8px 24px ${link.color}20` : 'none',
+          transform: isHovered ? 'scale(1.15) translateY(-4px)' : 'scale(1) translateY(0)',
+          transition: 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
+          willChange: 'transform',
         }}
       >
-        <div 
-          className="w-5 h-5 transition-colors duration-300"
-          style={{ color: isHovered ? link.color : 'rgba(161, 161, 170, 1)' }}
+        <GlassSurface
+          width={52}
+          height={52}
+          borderRadius={16}
+          brightness={isHovered ? 140 : 120}
+          opacity={0.4}
+          blur={20}
+          displace={1.2}
+          mixBlendMode="normal"
+          backgroundOpacity={isHovered ? 0.18 : 0.12}
         >
-          {link.icon}
-        </div>
+          <div 
+            className="w-full h-full flex items-center justify-center"
+            style={{
+              boxShadow: isHovered ? `0 0 24px ${link.color}30, inset 0 0 12px ${link.color}15` : 'none',
+              borderRadius: '16px',
+              transition: 'box-shadow 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
+            }}
+          >
+            <div 
+              className="w-6 h-6"
+              style={{ 
+                color: isHovered ? link.color : 'rgba(161, 161, 170, 1)',
+                transition: 'color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
+                filter: isHovered ? `drop-shadow(0 0 8px ${link.color}60)` : 'none',
+              }}
+            >
+              {link.icon}
+            </div>
+          </div>
+        </GlassSurface>
       </div>
       
       {/* Label */}
       <span 
-        className="text-[10px] font-medium tracking-wide transition-all duration-300"
+        className="text-[11px] font-medium tracking-wide"
         style={{ 
           color: isHovered ? link.color : 'rgba(113, 113, 122, 1)',
-          opacity: isHovered ? 1 : 0.7,
+          opacity: isHovered ? 1 : 0.8,
+          transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
+          textShadow: isHovered ? `0 0 12px ${link.color}40` : 'none',
         }}
       >
         {link.name}
@@ -160,8 +185,8 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Social Links Grid */}
-          <div className="flex flex-wrap justify-center gap-6 sm:gap-8">
+          {/* Social Links Grid with Glass Effect */}
+          <div className="flex flex-wrap justify-center gap-5 sm:gap-6">
             {SOCIAL_LINKS.map((link) => (
               <SocialLink key={link.name} link={link} />
             ))}
