@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState, useEffect, Children, cloneElement } from 'react'
+import { motion, MotionValue, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion'
 import GlassSurface from './GlassSurface'
 
 // 社交链接配置
@@ -87,79 +88,134 @@ const SOCIAL_LINKS = [
   },
 ]
 
-function SocialLink({ link }: { link: typeof SOCIAL_LINKS[0] }) {
-  const [isHovered, setIsHovered] = useState(false)
-  
+// Dock 配置
+const DOCK_CONFIG = {
+  baseSize: 52,
+  magnification: 72,
+  distance: 140,
+  spring: { mass: 0.1, stiffness: 150, damping: 12 }
+}
+
+// 单个 Dock 图标项
+function DockSocialItem({ 
+  link, 
+  mouseX 
+}: { 
+  link: typeof SOCIAL_LINKS[0]
+  mouseX: MotionValue<number>
+}) {
+  const ref = useRef<HTMLAnchorElement>(null)
+  const isHovered = useMotionValue(0)
+  const [showLabel, setShowLabel] = useState(false)
+
+  // 计算鼠标与图标中心的距离
+  const mouseDistance = useTransform(mouseX, val => {
+    const rect = ref.current?.getBoundingClientRect() ?? { x: 0, width: DOCK_CONFIG.baseSize }
+    return val - rect.x - DOCK_CONFIG.baseSize / 2
+  })
+
+  // 根据距离计算放大尺寸
+  const targetSize = useTransform(
+    mouseDistance, 
+    [-DOCK_CONFIG.distance, 0, DOCK_CONFIG.distance], 
+    [DOCK_CONFIG.baseSize, DOCK_CONFIG.magnification, DOCK_CONFIG.baseSize]
+  )
+  const size = useSpring(targetSize, DOCK_CONFIG.spring)
+
+  // 监听 hover 状态显示 label
+  useEffect(() => {
+    const unsubscribe = isHovered.on('change', latest => {
+      setShowLabel(latest === 1)
+    })
+    return () => unsubscribe()
+  }, [isHovered])
+
   return (
-    <a
+    <motion.a
+      ref={ref}
       href={link.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex flex-col items-center gap-3"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      style={{ width: size, height: size }}
+      onHoverStart={() => isHovered.set(1)}
+      onHoverEnd={() => isHovered.set(0)}
+      className="relative flex items-end justify-center"
       aria-label={`Visit ${link.name}`}
     >
-      {/* GlassSurface Icon Container */}
-      <div 
-        className="relative"
+      {/* Tooltip Label */}
+      <AnimatePresence>
+        {showLabel && (
+          <motion.div
+            initial={{ opacity: 0, y: 4, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.9 }}
+            transition={{ duration: 0.15 }}
+            className="absolute -top-8 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-sm border border-white/10 whitespace-nowrap z-20"
+          >
+            <span 
+              className="text-[11px] font-medium"
+              style={{ color: link.color }}
+            >
+              {link.name}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Glass Icon Container */}
+      <motion.div 
+        className="w-full h-full"
         style={{
-          transform: isHovered ? 'scale(1.15) translateY(-4px)' : 'scale(1) translateY(0)',
-          transition: 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
-          willChange: 'transform',
+          filter: showLabel ? `drop-shadow(0 0 12px ${link.color}50)` : 'none',
         }}
       >
         <GlassSurface
-          width={52}
-          height={52}
+          width="100%"
+          height="100%"
           borderRadius={16}
-          brightness={isHovered ? 140 : 120}
+          brightness={showLabel ? 140 : 120}
           opacity={0.4}
           blur={20}
           displace={1.2}
           mixBlendMode="normal"
-          backgroundOpacity={isHovered ? 0.18 : 0.12}
+          backgroundOpacity={showLabel ? 0.18 : 0.12}
         >
           <div 
             className="w-full h-full flex items-center justify-center"
             style={{
-              boxShadow: isHovered ? `0 0 24px ${link.color}30, inset 0 0 12px ${link.color}15` : 'none',
+              boxShadow: showLabel ? `inset 0 0 16px ${link.color}20` : 'none',
               borderRadius: '16px',
-              transition: 'box-shadow 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
             }}
           >
-            <div 
-              className="w-6 h-6"
+            <motion.div 
+              className="w-[45%] h-[45%]"
               style={{ 
-                color: isHovered ? link.color : 'rgba(161, 161, 170, 1)',
-                transition: 'color 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
-                filter: isHovered ? `drop-shadow(0 0 8px ${link.color}60)` : 'none',
+                color: showLabel ? link.color : 'rgba(161, 161, 170, 1)',
               }}
+              animate={{
+                color: showLabel ? link.color : 'rgba(161, 161, 170, 1)',
+              }}
+              transition={{ duration: 0.2 }}
             >
               {link.icon}
-            </div>
+            </motion.div>
           </div>
         </GlassSurface>
-      </div>
-      
-      {/* Label */}
-      <span 
-        className="text-[11px] font-medium tracking-wide"
-        style={{ 
-          color: isHovered ? link.color : 'rgba(113, 113, 122, 1)',
-          opacity: isHovered ? 1 : 0.8,
-          transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
-          textShadow: isHovered ? `0 0 12px ${link.color}40` : 'none',
-        }}
-      >
-        {link.name}
-      </span>
-    </a>
+      </motion.div>
+    </motion.a>
   )
 }
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
+  const mouseX = useMotionValue(Infinity)
+
+  // 滚动时重置鼠标位置，避免图标卡在放大状态
+  useEffect(() => {
+    const handleScroll = () => mouseX.set(Infinity)
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [mouseX])
 
   return (
     <footer className="relative w-full mt-24 pb-8">
@@ -185,10 +241,18 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Social Links Grid with Glass Effect */}
-          <div className="flex flex-wrap justify-center gap-5 sm:gap-6">
+          {/* Dock Style Social Links - 无底座 */}
+          <div 
+            className="flex items-end justify-center gap-3 sm:gap-4 h-24"
+            onMouseMove={(e) => mouseX.set(e.clientX)}
+            onMouseLeave={() => mouseX.set(Infinity)}
+          >
             {SOCIAL_LINKS.map((link) => (
-              <SocialLink key={link.name} link={link} />
+              <DockSocialItem 
+                key={link.name} 
+                link={link} 
+                mouseX={mouseX}
+              />
             ))}
           </div>
 
