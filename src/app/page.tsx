@@ -13,6 +13,7 @@ import { HeroBackground } from "@/components/hero-background"
 import GlassSurface from "@/components/GlassSurface"
 import { StatsCards } from "@/components/stats-cards"
 import { Footer } from "@/components/footer"
+import { VisitTracker } from "@/components/visit-tracker"
 import { getStats } from "@/app/actions"
 
 export const revalidate = 60;
@@ -177,6 +178,9 @@ export default async function Home() {
           </GlassSurface>
         </div>
       </div>
+
+      {/* 访问统计追踪器 */}
+      <VisitTracker />
 
       {/* Hero 区 - 核心内容垂直居中 */}
       <section className="relative z-10 w-full min-h-[55vh] sm:min-h-[58vh] flex flex-col items-center justify-center text-center px-5 sm:px-4 pt-28 sm:pt-32 pb-8 pointer-events-none">

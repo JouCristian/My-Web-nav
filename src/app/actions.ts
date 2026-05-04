@@ -93,16 +93,44 @@ export async function refreshBookmarkIcon(id: number) {
   return { success: true }
 }
 
+// 获取北京时间的日期字符串 (YYYY-MM-DD)
+function getBeijingDateString(): string {
+  const now = new Date()
+  // 北京时间 = UTC + 8小时
+  const beijingTime = new Date(now.getTime() + 8 * 60 * 60 * 1000)
+  return beijingTime.toISOString().split('T')[0]
+}
+
+// 记录网站访问
+export async function recordVisit() {
+  try {
+    const dateKey = getBeijingDateString()
+    
+    await prisma.dailyVisit.upsert({
+      where: { date: dateKey },
+      update: { count: { increment: 1 } },
+      create: { date: dateKey, count: 1 }
+    })
+    
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to record visit:", error)
+    return { success: false }
+  }
+}
+
 // 获取统计数据
 export async function getStats() {
   try {
-    const [bookmarkCount, crewCount] = await Promise.all([
+    const dateKey = getBeijingDateString()
+    
+    const [bookmarkCount, crewCount, dailyVisit] = await Promise.all([
       prisma.bookmark.count(),
-      prisma.user.count({ where: { role: { in: ['MEMBER', 'ADMIN', 'OWNER'] } } })
+      prisma.user.count({ where: { role: { in: ['MEMBER', 'ADMIN', 'OWNER'] } } }),
+      prisma.dailyVisit.findUnique({ where: { date: dateKey } })
     ])
     
-    // 今日访问次数 - 简化版本，可后续扩展为真实统计
-    const todayVisits = Math.floor(Math.random() * 50) + 10 // 临时模拟数据
+    const todayVisits = dailyVisit?.count ?? 0
     
     return { bookmarkCount, crewCount, todayVisits }
   } catch (error) {

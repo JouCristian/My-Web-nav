@@ -110,7 +110,7 @@ function StatCard({ icon: Icon, label, value, accentColor }: StatCardProps) {
         displace={1.2}
         mixBlendMode="normal"
         backgroundOpacity={0.12}
-        className="min-w-[180px] overflow-visible"
+        className="overflow-visible"
       >
         <div className="flex items-center gap-5 px-6 py-5">
           {/* 图标容器 */}
@@ -120,10 +120,10 @@ function StatCard({ icon: Icon, label, value, accentColor }: StatCardProps) {
             </div>
           </div>
           
-          {/* 文字内容 */}
-          <div className="flex flex-col">
-            <span className="text-xs text-zinc-500 uppercase tracking-wider font-medium">{label}</span>
-            <span className={`text-3xl font-bold ${accentColor} font-[family-name:var(--font-space)] tracking-wide`}>
+          {/* 文字内容 - 允许数字撑大 */}
+          <div className="flex flex-col min-w-[80px]">
+            <span className="text-xs text-zinc-500 uppercase tracking-wider font-medium whitespace-nowrap">{label}</span>
+            <span className={`text-3xl font-bold ${accentColor} font-[family-name:var(--font-space)] tracking-wide tabular-nums whitespace-nowrap`}>
               {typeof value === 'number' ? value.toLocaleString() : value}
             </span>
           </div>
