@@ -198,6 +198,17 @@ model AttendanceRecord {
 }
 
 // ==========================================
+// 📊 网站访问统计 (Daily Visit Counter)
+// ==========================================
+model DailyVisit {
+  id        String   @id @default(cuid())
+  date      String   @unique  // 格式: YYYY-MM-DD (北京时间)
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==========================================
 // 🌌 航行日志 (Flight Log System)
 // ==========================================
 model FlightLog {
