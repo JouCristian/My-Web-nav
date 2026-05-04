@@ -178,11 +178,12 @@ export default async function Home() {
         </div>
       </div>
 
-      <section className="relative z-10 w-full min-h-[70vh] sm:min-h-[72vh] flex flex-col items-center justify-center text-center px-5 sm:px-4 pt-24 sm:pt-20 md:pt-8 pb-6 pointer-events-none">
+      {/* Hero 区 - 核心内容垂直居中 */}
+      <section className="relative z-10 w-full min-h-[55vh] sm:min-h-[58vh] flex flex-col items-center justify-center text-center px-5 sm:px-4 pt-28 sm:pt-32 pb-8 pointer-events-none">
         
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.6)_0%,transparent_65%)] z-0 pointer-events-none"></div>
 
-        <div className="animate-float-up pointer-events-auto relative z-10 mb-6 sm:mb-8 font-mono text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
+        <div className="animate-float-up pointer-events-auto relative z-10 mb-5 sm:mb-6 font-mono text-xl sm:text-2xl md:text-3xl font-bold tracking-widest text-zinc-100 drop-shadow-[0_2px_10px_rgba(0,0,0,1)]" style={{ animationDelay: '0.1s' }}>
           <RotatingText
             prefix="Creating"
             texts={['thinking!', 'coding!', 'components!', 'ysyxing!']}
@@ -198,7 +199,7 @@ export default async function Home() {
           />
         </div>
 
-        <h1 className="animate-float-up pointer-events-auto relative z-10 text-3xl sm:text-4xl md:text-6xl lg:text-7xl md:whitespace-nowrap font-bold tracking-tight md:tracking-tighter font-[family-name:var(--font-space)] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-5 sm:mb-6 px-2 text-balance leading-[1.15]" style={{ animationDelay: '0.2s' }}>
+        <h1 className="animate-float-up pointer-events-auto relative z-10 text-3xl sm:text-4xl md:text-6xl lg:text-7xl md:whitespace-nowrap font-bold tracking-tight md:tracking-tighter font-[family-name:var(--font-space)] drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)] mb-4 sm:mb-5 px-2 text-balance leading-[1.15]" style={{ animationDelay: '0.2s' }}>
           <ShinyText 
             text={cardTitle} 
             speed={2} 
@@ -210,11 +211,11 @@ export default async function Home() {
           />
         </h1>
         
-        <p className="animate-float-up pointer-events-auto relative z-10 text-sm sm:text-base md:text-lg md:whitespace-nowrap text-zinc-300 tracking-wider sm:tracking-widest mx-auto leading-relaxed mb-12 sm:mb-16 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] px-4 max-w-md sm:max-w-none text-balance" style={{ animationDelay: '0.3s' }}>
+        <p className="animate-float-up pointer-events-auto relative z-10 text-sm sm:text-base md:text-lg md:whitespace-nowrap text-zinc-300 tracking-wider sm:tracking-widest mx-auto leading-relaxed mb-8 sm:mb-10 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] px-4 max-w-md sm:max-w-none text-balance" style={{ animationDelay: '0.3s' }}>
           {cardSubtitle}
         </p>
 
-        {/* 按钮爽快弹入 */}
+        {/* 按钮 */}
         <div className="animate-spring-scale pointer-events-auto relative z-10" style={{ animationDelay: '0.4s' }}>
           <TransitionLink 
             href={session ? "/dashboard" : "/login"} 
@@ -225,14 +226,16 @@ export default async function Home() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5 sm:w-5 sm:h-5 relative z-10 transition-transform group-hover:translate-x-1"><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
           </TransitionLink>
         </div>
+      </section>
 
-        {/* 统计数据卡片 - 在滚动提示上方 */}
-        <div className="relative z-10 mt-10 sm:mt-12 mb-6 sm:mb-8 animate-spring-scale pointer-events-auto overflow-visible" style={{ animationDelay: '0.5s' }}>
+      {/* 统计数据卡片区 - 独立 section */}
+      <section className="relative z-10 w-full flex flex-col items-center px-4 py-6 sm:py-8 pointer-events-none">
+        <div className="animate-spring-scale pointer-events-auto overflow-visible" style={{ animationDelay: '0.5s' }}>
           <StatsCards stats={stats} />
         </div>
 
         {/* 向下滚动提示 */}
-        <div className="hidden sm:flex flex-col items-center gap-2 opacity-40 pointer-events-auto z-10 animate-float-up mt-4" style={{ animationDelay: '0.6s' }}>
+        <div className="hidden sm:flex flex-col items-center gap-2 opacity-40 pointer-events-auto z-10 animate-float-up mt-8" style={{ animationDelay: '0.6s' }}>
           <div className="animate-bounce flex flex-col items-center gap-2">
             <span className="text-[9px] font-mono tracking-[0.4em] uppercase text-zinc-400">Scroll to Explore Databanks</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-zinc-500"><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
@@ -240,10 +243,11 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-24 sm:pb-40 -mt-4 sm:-mt-8">
+      {/* LogoLoop 和卡片区 */}
+      <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-24 sm:pb-40 pt-4 sm:pt-6">
         
         {generatedLogos.length > 0 && (
-          <div className="w-full mb-10 sm:mb-12 relative overflow-hidden pointer-events-auto z-10 mask-edges animate-spring-scale" style={{ animationDelay: '0.55s' }}>
+          <div className="w-full mb-8 sm:mb-10 relative overflow-hidden pointer-events-auto z-10 mask-edges animate-spring-scale" style={{ animationDelay: '0.65s' }}>
             <LogoLoop
               logos={generatedLogos}
               speed={45}
