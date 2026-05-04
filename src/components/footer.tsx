@@ -229,7 +229,7 @@ export function Footer() {
       </div>
 
       <div className="relative max-w-4xl mx-auto px-6">
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-4">
           
           {/* Section Title */}
           <div className="text-center">
@@ -241,18 +241,11 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Dock Style Social Links - 无底座，容器高度紧贴图标 */}
+          {/* Dock Style Social Links - 无底座 */}
           <div 
-            className="flex items-end justify-center gap-3 sm:gap-4 pt-8"
-            onMouseMove={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect()
-              // 只在图标实际区域内触发（底部72px范围）
-              if (e.clientY >= rect.bottom - 80) {
-                mouseX.set(e.clientX)
-              } else {
-                mouseX.set(Infinity)
-              }
-            }}
+            className="flex items-end justify-center gap-3 sm:gap-4 pt-10"
+            style={{ marginTop: '-16px' }}
+            onMouseMove={(e) => mouseX.set(e.clientX)}
             onMouseLeave={() => mouseX.set(Infinity)}
           >
             {SOCIAL_LINKS.map((link) => (
