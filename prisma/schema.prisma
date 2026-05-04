@@ -137,12 +137,23 @@ model LeaveRequest {
 // ==========================================
 // 🔖 导航书签 (模块A 下方等)
 // ==========================================
+enum BookmarkCategory {
+  TOOL       // 工具类
+  DOC        // 文档类
+  TUTORIAL   // 教程类
+  RESOURCE   // 资源类
+  COMMUNITY  // 社区类
+  OTHER      // 其他
+}
+
 model Bookmark {
-  id          Int      @id @default(autoincrement())
+  id          Int              @id @default(autoincrement())
   name        String
   url         String
   description String?
-  createdAt   DateTime @default(now())
+  category    BookmarkCategory @default(OTHER)
+  iconSvg     String?          @db.Text  // 存储预抓取的 SVG 图标数据
+  createdAt   DateTime         @default(now())
 }
 
 // ==========================================
