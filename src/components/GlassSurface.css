@@ -6,14 +6,9 @@
   transition: opacity 0.26s ease-out;
 }
 
-.glass-surface__filter {
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  z-index: -1;
+.glass-surface__canvas {
+  opacity: 0.8;
+  mix-blend-mode: screen;
 }
 
 .glass-surface__content {
@@ -25,98 +20,7 @@
   padding: 0.25rem 0.5rem;
   border-radius: inherit;
   position: relative;
-  z-index: 1;
   background: transparent;
-}
-
-/* Safari - 原生 SVG backdrop-filter 支持 */
-.glass-surface--svg {
-  background: hsl(0 0% 0% / var(--glass-frost, 0.1));
-  -webkit-backdrop-filter: var(--filter-id) saturate(var(--glass-saturation, 1));
-  backdrop-filter: var(--filter-id) saturate(var(--glass-saturation, 1));
-  box-shadow:
-    inset 0 0 2px 1px rgba(255, 255, 255, 0.15),
-    inset 0 0 10px 4px rgba(255, 255, 255, 0.05),
-    0 4px 16px rgba(0, 0, 0, 0.1),
-    0 8px 24px rgba(0, 0, 0, 0.1),
-    0 16px 56px rgba(0, 0, 0, 0.1);
-}
-
-/* Chrome/Firefox - CSS 模拟液态玻璃边缘折射效果 */
-.glass-surface--fallback {
-  background: rgba(10, 15, 30, 0.6);
-  backdrop-filter: blur(12px) saturate(1.2);
-  -webkit-backdrop-filter: blur(12px) saturate(1.2);
-  box-shadow:
-    /* 外层光晕 - 模拟折射 */
-    0 0 0 1px rgba(255, 255, 255, 0.08),
-    /* 顶部高光边缘 */
-    inset 0 1px 1px rgba(255, 255, 255, 0.25),
-    /* 底部暗边 */
-    inset 0 -1px 1px rgba(0, 0, 0, 0.3),
-    /* 外部阴影 */
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    0 2px 8px rgba(0, 0, 0, 0.2);
-  /* 边缘渐变边框 - 模拟折射效果 */
-  border: 1px solid transparent;
-  background-clip: padding-box;
-  position: relative;
-}
-
-/* 边缘折射光晕效果 */
-.glass-surface--fallback::before {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  border-radius: inherit;
-  padding: 3px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 100, 100, 0.15) 0%,
-    rgba(100, 255, 100, 0.1) 25%,
-    rgba(100, 100, 255, 0.15) 50%,
-    rgba(255, 100, 255, 0.1) 75%,
-    rgba(100, 255, 255, 0.15) 100%
-  );
-  -webkit-mask: 
-    linear-gradient(#fff 0 0) content-box, 
-    linear-gradient(#fff 0 0);
-  mask: 
-    linear-gradient(#fff 0 0) content-box, 
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  z-index: -1;
-  animation: shimmer 8s ease-in-out infinite;
-}
-
-/* 内层玻璃光泽 */
-.glass-surface--fallback::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0.03) 30%,
-    rgba(0, 0, 0, 0.05) 70%,
-    rgba(0, 0, 0, 0.1) 100%
-  );
-  pointer-events: none;
-  z-index: 0;
-}
-
-@keyframes shimmer {
-  0%, 100% {
-    opacity: 0.6;
-    filter: hue-rotate(0deg);
-  }
-  50% {
-    opacity: 0.9;
-    filter: hue-rotate(30deg);
-  }
 }
 
 .glass-surface:focus-visible {
