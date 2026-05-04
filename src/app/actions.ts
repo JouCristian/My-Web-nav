@@ -126,7 +126,8 @@ export async function getStats() {
     
     const [bookmarkCount, crewCount, dailyVisit] = await Promise.all([
       prisma.bookmark.count(),
-      prisma.user.count({ where: { role: { in: ['MEMBER', 'ADMIN', 'OWNER'] } } }),
+      // 统计所有船员档案室成员（舰长、管理员、普通船员）
+      prisma.user.count(),
       prisma.dailyVisit.findUnique({ where: { date: dateKey } })
     ])
     
