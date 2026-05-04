@@ -95,15 +95,20 @@ export async function refreshBookmarkIcon(id: number) {
 
 // 获取统计数据
 export async function getStats() {
-  const [bookmarkCount, crewCount] = await Promise.all([
-    prisma.bookmark.count(),
-    prisma.user.count({ where: { role: { in: ['MEMBER', 'ADMIN', 'OWNER'] } } })
-  ])
-  
-  // 今日访问次数 - 简化版本，可后续扩展为真实统计
-  const todayVisits = Math.floor(Math.random() * 50) + 10 // 临时模拟数据
-  
-  return { bookmarkCount, crewCount, todayVisits }
+  try {
+    const [bookmarkCount, crewCount] = await Promise.all([
+      prisma.bookmark.count(),
+      prisma.user.count({ where: { role: { in: ['MEMBER', 'ADMIN', 'OWNER'] } } })
+    ])
+    
+    // 今日访问次数 - 简化版本，可后续扩展为真实统计
+    const todayVisits = Math.floor(Math.random() * 50) + 10 // 临时模拟数据
+    
+    return { bookmarkCount, crewCount, todayVisits }
+  } catch (error) {
+    console.error("Failed to get stats:", error)
+    return { bookmarkCount: 0, crewCount: 0, todayVisits: 0 }
+  }
 }
 
 export async function deleteBookmark(id: number) {

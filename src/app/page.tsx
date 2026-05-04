@@ -13,6 +13,7 @@ import { HeroBackground } from "@/components/hero-background"
 import GlassSurface from "@/components/GlassSurface"
 import { StatsCards } from "@/components/stats-cards"
 import { Footer } from "@/components/footer"
+import { getStats } from "@/app/actions"
 
 export const revalidate = 60;
 
@@ -31,6 +32,7 @@ interface Bookmark {
 export default async function Home() {
   const session = await auth()
   const links = await prisma.bookmark.findMany({ orderBy: { createdAt: 'desc' } })
+  const stats = await getStats()
 
   // @ts-ignore
   const isCaptain = session?.user?.isCaptain
@@ -176,7 +178,7 @@ export default async function Home() {
         </div>
       </div>
 
-      <section className="relative z-10 w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-5 sm:px-4 pt-32 sm:pt-24 md:pt-10 pb-12 pointer-events-none">
+      <section className="relative z-10 w-full min-h-[75vh] sm:min-h-[80vh] flex flex-col items-center justify-center text-center px-5 sm:px-4 pt-28 sm:pt-24 md:pt-10 pb-8 pointer-events-none">
         
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.6)_0%,transparent_65%)] z-0 pointer-events-none"></div>
 
@@ -224,8 +226,13 @@ export default async function Home() {
           </TransitionLink>
         </div>
 
+        {/* 统计数据卡片 - 在滚动提示上方 */}
+        <div className="relative z-10 mb-8 sm:mb-10 animate-spring-scale pointer-events-auto" style={{ animationDelay: '0.5s' }}>
+          <StatsCards stats={stats} />
+        </div>
+
         {/* 向下滚动提示 */}
-        <div className="hidden sm:flex absolute bottom-10 left-1/2 -translate-x-1/2 flex-col items-center gap-3 opacity-40 pointer-events-auto z-10 animate-float-up" style={{ animationDelay: '0.6s' }}>
+        <div className="hidden sm:flex absolute bottom-8 left-1/2 -translate-x-1/2 flex-col items-center gap-3 opacity-40 pointer-events-auto z-10 animate-float-up" style={{ animationDelay: '0.6s' }}>
           <div className="animate-bounce flex flex-col items-center gap-3">
             <span className="text-[9px] font-mono tracking-[0.4em] uppercase text-zinc-400">Scroll to Explore Databanks</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-zinc-500"><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
@@ -233,15 +240,10 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 统计数据卡片区 */}
-      <section className="relative z-10 py-8 sm:py-12 animate-spring-scale pointer-events-auto" style={{ animationDelay: '0.5s' }}>
-        <StatsCards />
-      </section>
-
-      <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-24 sm:pb-40">
+      <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-24 sm:pb-40 pt-4">
         
         {generatedLogos.length > 0 && (
-          <div className="w-full mb-16 relative overflow-hidden pointer-events-auto z-10 mask-edges animate-spring-scale" style={{ animationDelay: '0.4s' }}>
+          <div className="w-full mb-12 sm:mb-16 relative overflow-hidden pointer-events-auto z-10 mask-edges animate-spring-scale" style={{ animationDelay: '0.55s' }}>
             <LogoLoop
               logos={generatedLogos}
               speed={45}
