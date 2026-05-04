@@ -3,10 +3,20 @@
 import { useState, useTransition } from "react"
 import { addBookmark, fetchMetadata } from "@/app/actions"
 
+const CATEGORIES = [
+  { value: 'TOOL', label: '工具', color: 'cyan' },
+  { value: 'DOC', label: '文档', color: 'blue' },
+  { value: 'TUTORIAL', label: '教程', color: 'green' },
+  { value: 'RESOURCE', label: '资源', color: 'yellow' },
+  { value: 'COMMUNITY', label: '社区', color: 'purple' },
+  { value: 'OTHER', label: '其他', color: 'gray' },
+] as const
+
 export function AddCardForm() {
   const [url, setUrl] = useState("")
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
+  const [category, setCategory] = useState<string>("OTHER")
   const [isFetching, setIsFetching] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -31,6 +41,7 @@ export function AddCardForm() {
       setUrl("")
       setName("")
       setDescription("")
+      setCategory("OTHER")
       setShowSuccess(true)
       setTimeout(() => setShowSuccess(false), 2000)
     })
@@ -75,6 +86,39 @@ export function AddCardForm() {
           value={description} onChange={(e) => setDescription(e.target.value)}
           className="flex-1 min-w-0 bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-white outline-none focus:border-white/30 text-base"
         />
+      </div>
+
+      {/* 分类选择器 */}
+      <div className="flex flex-wrap gap-2">
+        <span className="text-white/50 text-sm py-1.5">分类:</span>
+        {CATEGORIES.map((cat) => (
+          <label
+            key={cat.value}
+            className={`cursor-pointer px-3 py-1.5 rounded-lg text-sm transition-all border ${
+              category === cat.value
+                ? cat.color === 'cyan' ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                : cat.color === 'blue' ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
+                : cat.color === 'green' ? 'bg-green-500/20 border-green-500/50 text-green-400'
+                : cat.color === 'yellow' ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400'
+                : cat.color === 'purple' ? 'bg-purple-500/20 border-purple-500/50 text-purple-400'
+                : 'bg-gray-500/20 border-gray-500/50 text-gray-400'
+                : 'bg-black/30 border-white/10 text-white/60 hover:border-white/20'
+            }`}
+          >
+            <input
+              type="radio"
+              name="category"
+              value={cat.value}
+              checked={category === cat.value}
+              onChange={(e) => setCategory(e.target.value)}
+              className="sr-only"
+            />
+            {cat.label}
+          </label>
+        ))}
+      </div>
+
+      <div className="flex justify-end">
         <button 
           type="submit" 
           disabled={isPending}

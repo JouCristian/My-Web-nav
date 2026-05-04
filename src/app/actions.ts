@@ -11,12 +11,99 @@ import { auth, signIn} from "@/auth"
  * 🔖 模块 1：导航书签管理
  * ==========================================
  */
+
+// 图标抓取辅助函数
+async function fetchFaviconForBookmark(websiteUrl: string): Promise<string | null> {
+  const FAVICON_PATHS = ['/favicon.ico', '/favicon.png', '/favicon.svg', '/apple-touch-icon.png']
+  
+  const imageToBase64 = async (url: string): Promise<string | null> => {
+    try {
+      const response = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        signal: AbortSignal.timeout(3000)
+      })
+      if (!response.ok) return null
+      const contentType = response.headers.get('content-type') || 'image/x-icon'
+      const buffer = await response.arrayBuffer()
+      return `data:${contentType};base64,${Buffer.from(buffer).toString('base64')}`
+    } catch { return null }
+  }
+
+  try {
+    const urlObj = new URL(websiteUrl)
+    const baseUrl = urlObj.origin
+
+    // 从 HTML 中提取
+    try {
+      const response = await fetch(websiteUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        signal: AbortSignal.timeout(5000)
+      })
+      if (response.ok) {
+        const html = await response.text()
+        const linkRegex = /<link[^>]*rel=["'](?:shortcut )?icon["'][^>]*href=["']([^"']+)["'][^>]*>/gi
+        let match
+        while ((match = linkRegex.exec(html)) !== null) {
+          let href = match[1]
+          if (href.startsWith('//')) href = 'https:' + href
+          else if (href.startsWith('/')) href = baseUrl + href
+          else if (!href.startsWith('http')) href = baseUrl + '/' + href
+          const base64 = await imageToBase64(href)
+          if (base64) return base64
+        }
+      }
+    } catch { /* continue */ }
+
+    // 尝试常见路径
+    for (const path of FAVICON_PATHS) {
+      const base64 = await imageToBase64(baseUrl + path)
+      if (base64) return base64
+    }
+
+    // Google Favicon 服务作为后备
+    return await imageToBase64(`https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64`)
+  } catch { return null }
+}
+
+type BookmarkCategory = 'TOOL' | 'DOC' | 'TUTORIAL' | 'RESOURCE' | 'COMMUNITY' | 'OTHER'
+
 export async function addBookmark(formData: FormData) {
   const name = formData.get("name") as string
   const url = formData.get("url") as string
   const description = formData.get("description") as string
-  await prisma.bookmark.create({ data: { name, url, description } })
+  const category = (formData.get("category") as BookmarkCategory) || 'OTHER'
+  
+  // 异步抓取图标
+  const iconSvg = await fetchFaviconForBookmark(url)
+  
+  await prisma.bookmark.create({ 
+    data: { name, url, description, category, iconSvg } 
+  })
   revalidatePath("/")
+}
+
+// 手动更新书签图标
+export async function refreshBookmarkIcon(id: number) {
+  const bookmark = await prisma.bookmark.findUnique({ where: { id } })
+  if (!bookmark) return { error: "书签不存在" }
+  
+  const iconSvg = await fetchFaviconForBookmark(bookmark.url)
+  await prisma.bookmark.update({ where: { id }, data: { iconSvg } })
+  revalidatePath("/")
+  return { success: true }
+}
+
+// 获取统计数据
+export async function getStats() {
+  const [bookmarkCount, crewCount] = await Promise.all([
+    prisma.bookmark.count(),
+    prisma.user.count({ where: { role: { in: ['MEMBER', 'ADMIN', 'OWNER'] } } })
+  ])
+  
+  // 今日访问次数 - 简化版本，可后续扩展为真实统计
+  const todayVisits = Math.floor(Math.random() * 50) + 10 // 临时模拟数据
+  
+  return { bookmarkCount, crewCount, todayVisits }
 }
 
 export async function deleteBookmark(id: number) {

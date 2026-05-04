@@ -4,15 +4,28 @@ import { useState, useEffect} from "react"
 import { createPortal } from "react-dom"
 import { deleteBookmark } from "@/app/actions"
 
+type BookmarkCategory = 'TOOL' | 'DOC' | 'TUTORIAL' | 'RESOURCE' | 'COMMUNITY' | 'OTHER'
+
+const CATEGORY_CONFIG: Record<BookmarkCategory, { label: string; color: string; borderColor: string; bgColor: string }> = {
+  TOOL: { label: '工具', color: 'text-cyan-400', borderColor: 'border-cyan-500/30', bgColor: 'bg-cyan-500/10' },
+  DOC: { label: '文档', color: 'text-blue-400', borderColor: 'border-blue-500/30', bgColor: 'bg-blue-500/10' },
+  TUTORIAL: { label: '教程', color: 'text-green-400', borderColor: 'border-green-500/30', bgColor: 'bg-green-500/10' },
+  RESOURCE: { label: '资源', color: 'text-yellow-400', borderColor: 'border-yellow-500/30', bgColor: 'bg-yellow-500/10' },
+  COMMUNITY: { label: '社区', color: 'text-purple-400', borderColor: 'border-purple-500/30', bgColor: 'bg-purple-500/10' },
+  OTHER: { label: '其他', color: 'text-gray-400', borderColor: 'border-gray-500/30', bgColor: 'bg-gray-500/10' },
+}
+
 interface NavigationCardProps {
   id: number;
   title: string;
   description: string;
   url: string;
   showDelete: boolean;
+  category?: BookmarkCategory;
+  iconSvg?: string | null;
 }
 
-export function NavigationCard({ id, title, description, url, showDelete }: NavigationCardProps) {
+export function NavigationCard({ id, title, description, url, showDelete, category = 'OTHER', iconSvg }: NavigationCardProps) {
   // 🚀 新增：控制弹窗显示和删除中状态
   const [showModal, setShowModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -32,7 +45,9 @@ export function NavigationCard({ id, title, description, url, showDelete }: Navi
     }
   };
 
-  const faviconUrl = `https://www.google.com/s2/favicons?domain=${getDomain(url)}&sz=64`;
+  // 优先使用预存的图标，否则回退到 Google favicon 服务
+  const faviconUrl = iconSvg || `https://www.google.com/s2/favicons?domain=${getDomain(url)}&sz=64`;
+  const categoryConfig = CATEGORY_CONFIG[category];
 
   // 处理删除逻辑
   const handleDelete = async () => {
@@ -68,12 +83,12 @@ export function NavigationCard({ id, title, description, url, showDelete }: Navi
           href={url} 
           target="_blank" 
           rel="noopener noreferrer"
-          className="block h-full bg-black/75 p-5 rounded-3xl border border-white/10 transition-all duration-200 group-hover:border-white/20 active:scale-[0.98] overflow-hidden"
+          className={`block h-full bg-black/75 p-5 rounded-3xl border transition-all duration-200 active:scale-[0.98] overflow-hidden ${categoryConfig.borderColor} group-hover:border-white/30`}
         >
           <div className="flex flex-col h-full">
             <div className="flex items-start justify-between mb-3 gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="shrink-0 w-8 h-8 rounded-full bg-black/30 flex items-center justify-center overflow-hidden p-1 border border-white/10 group-hover:border-white/30 transition-colors">
+                <div className={`shrink-0 w-8 h-8 rounded-full bg-black/30 flex items-center justify-center overflow-hidden p-1 border ${categoryConfig.borderColor} group-hover:border-white/40 transition-colors`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={faviconUrl} alt="logo" className="w-full h-full object-contain rounded-full" />
                 </div>
@@ -81,7 +96,10 @@ export function NavigationCard({ id, title, description, url, showDelete }: Navi
                   {title}
                 </h3>
               </div>
-              <span className="shrink-0 text-white/20 group-hover:text-white/60 transition-colors mt-1">✦</span>
+              {/* 分类标签 */}
+              <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium ${categoryConfig.bgColor} ${categoryConfig.color} border ${categoryConfig.borderColor}`}>
+                {categoryConfig.label}
+              </span>
             </div>
             <p className="text-zinc-300 text-sm line-clamp-2 leading-relaxed flex-1">
               {description}

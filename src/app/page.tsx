@@ -10,15 +10,21 @@ import RotatingText from "@/components/RotatingText"
 import ShinyText from "@/components/ShinyText" 
 import LogoLoop from "@/components/LogoLoop" 
 import { HeroBackground } from "@/components/hero-background"
-import GlassSurface from "@/components/GlassSurface" // 🚀 引入液态玻璃
+import GlassSurface from "@/components/GlassSurface"
+import { StatsCards } from "@/components/stats-cards"
+import { Footer } from "@/components/footer"
 
 export const revalidate = 60;
+
+type BookmarkCategory = 'TOOL' | 'DOC' | 'TUTORIAL' | 'RESOURCE' | 'COMMUNITY' | 'OTHER'
 
 interface Bookmark {
   id: number;
   name: string;
   url: string;
   description: string | null;
+  category: BookmarkCategory;
+  iconSvg: string | null;
   createdAt: Date;
 }
 
@@ -227,6 +233,11 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* 统计数据卡片区 */}
+      <section className="relative z-10 py-8 sm:py-12 animate-spring-scale pointer-events-auto" style={{ animationDelay: '0.5s' }}>
+        <StatsCards />
+      </section>
+
       <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-24 sm:pb-40">
         
         {generatedLogos.length > 0 && (
@@ -264,12 +275,17 @@ export default async function Home() {
                 title={link.name} 
                 description={link.description || ""} 
                 url={link.url} 
-                showDelete={isCaptain} 
+                showDelete={isCaptain}
+                category={link.category}
+                iconSvg={link.iconSvg}
               />
             </div>
           ))}
         </div>
       </section>
+
+      {/* 底部页脚 */}
+      <Footer />
     </main>
   )
 }
