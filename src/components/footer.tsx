@@ -7,7 +7,7 @@ import {
   useSpring,
   useTransform,
   AnimatePresence
-} from 'motion/react'
+} from 'framer-motion'
 import React, { useEffect, useRef, useState, Children, cloneElement } from 'react'
 import GlassSurface from './GlassSurface'
 
