@@ -58,6 +58,9 @@ export function FleetAttendanceModule({
   const [selectedAbsenceCrew, setSelectedAbsenceCrew] = useState<string | null>(null)
 
   const [leaveRequests, setLeaveRequests] = useState<any[]>([])
+  
+  // 用于阻止定时刷新覆盖乐观更新
+  const [isUpdating, setIsUpdating] = useState(false)
 
   const isManager = userRole === "OWNER" || userRole === "ADMIN"
   const allCrew = useMemo(() => isManager ? [...crewMembers] : Array.from(new Set([userName, ...crewMembers])).filter(Boolean), [isManager, crewMembers, userName])
@@ -266,9 +269,6 @@ export function FleetAttendanceModule({
     });
     return absences.sort((a, b) => b.log.timestamp - a.log.timestamp);
   }
-
-  // 用于阻止定时刷新覆盖乐观更新
-  const [isUpdating, setIsUpdating] = useState(false)
 
   const handleDeleteAbsence = async (dateKey: string, logId: string, crewName: string) => {
     // 先阻止定时刷新
