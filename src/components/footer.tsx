@@ -108,11 +108,23 @@ function DockSocialItem({
   const isHovered = useMotionValue(0)
   const [showLabel, setShowLabel] = useState(false)
 
+  // 缓存 ref 的位置，避免频繁读取 DOM 导致抖动
+  const [center, setCenter] = useState(0)
+  
+  useEffect(() => {
+    const updateCenter = () => {
+      if (ref.current) {
+        const rect = ref.current.getBoundingClientRect()
+        setCenter(rect.x + rect.width / 2)
+      }
+    }
+    updateCenter()
+    window.addEventListener('resize', updateCenter)
+    return () => window.removeEventListener('resize', updateCenter)
+  }, [])
+
   // 计算鼠标与图标中心的距离
-  const mouseDistance = useTransform(mouseX, val => {
-    const rect = ref.current?.getBoundingClientRect() ?? { x: 0, width: DOCK_CONFIG.baseSize }
-    return val - rect.x - DOCK_CONFIG.baseSize / 2
-  })
+  const mouseDistance = useTransform(mouseX, val => val - center)
 
   // 根据距离计算放大尺寸
   const targetSize = useTransform(
@@ -241,20 +253,24 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Dock Style Social Links - 无底座 */}
-          <div 
-            className="flex items-end justify-center gap-3 sm:gap-4 pt-10"
-            style={{ marginTop: '-16px' }}
-            onMouseMove={(e) => mouseX.set(e.clientX)}
-            onMouseLeave={() => mouseX.set(Infinity)}
-          >
-            {SOCIAL_LINKS.map((link) => (
-              <DockSocialItem 
-                key={link.name} 
-                link={link} 
-                mouseX={mouseX}
-              />
-            ))}
+          {/* Dock Style Social Links - 无底座，hover区域仅限图标 */}
+          <div className="relative">
+            {/* Tooltip 显示区域 - 不触发 hover */}
+            <div className="h-8 pointer-events-none" />
+            {/* 实际图标区域 - 仅此区域触发 hover */}
+            <div 
+              className="flex items-center justify-center gap-3 sm:gap-4"
+              onMouseMove={(e) => mouseX.set(e.clientX)}
+              onMouseLeave={() => mouseX.set(Infinity)}
+            >
+              {SOCIAL_LINKS.map((link) => (
+                <DockSocialItem 
+                  key={link.name} 
+                  link={link} 
+                  mouseX={mouseX}
+                />
+              ))}
+            </div>
           </div>
 
           {/* 底部分割装饰 */}
