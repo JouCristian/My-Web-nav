@@ -6,6 +6,11 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
+// 清除旧缓存以加载新生成的 Prisma Client（包含 DailyVisit 模型）
+if (globalForPrisma.prisma) {
+  globalForPrisma.prisma = undefined
+}
+
 function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL ?? process.env.DIRECT_URL
   if (!connectionString) {
