@@ -11,17 +11,25 @@ type RollCallLog = {
   timestamp: number;
   present: string[];
   missing: string[];
-  onLeave?: string[]; 
+  onLeave?: string[];
+  expectedCount?: number; // 应到人数
+}
+
+type CrewMemberWithJoinDate = {
+  name: string;
+  joinedAt: number;
 }
 
 export function FleetAttendanceModule({ 
   userRole, 
   userName = "Captain",
-  crewMembers = [] 
+  crewMembers = [],
+  crewMembersWithJoinDate = []
 }: { 
   userRole: string, 
   userName?: string,
-  crewMembers?: string[]
+  crewMembers?: string[],
+  crewMembersWithJoinDate?: CrewMemberWithJoinDate[]
 }) {
   const [mounted, setMounted] = useState(false)
   
@@ -61,7 +69,8 @@ export function FleetAttendanceModule({
     let isFetching = false
 
     const fetchAllData = async () => {
-      if (isFetching) return
+      // 如果正在进行缺勤干预操作，跳过本次刷新
+      if (isFetching || isUpdating) return
       isFetching = true
       try {
         const [history, leaves] = await Promise.all([
@@ -76,6 +85,12 @@ export function FleetAttendanceModule({
           const dateKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
           
           const sessionTime = session.timestamp;
+          
+          // 🚀 核心修复：只统计在签到发起前已加入的船员
+          const eligibleCrew = crewMembersWithJoinDate.length > 0
+            ? crewMembersWithJoinDate.filter(c => c.joinedAt <= sessionTime).map(c => c.name)
+            : allCrew;
+          
           const activeLeaves = leaves.filter(req => {
             if (req.status !== "APPROVED") return false;
             const start = new Date(req.startTime).getTime();
@@ -84,7 +99,8 @@ export function FleetAttendanceModule({
           });
           const onLeaveNames = activeLeaves.map(r => r.applicant);
           
-          const unresponded = allCrew.filter(c => !session.present.includes(c));
+          // 只在符合条件的船员中计算缺勤
+          const unresponded = eligibleCrew.filter(c => !session.present.includes(c));
           const trueMissing = unresponded.filter(c => !onLeaveNames.includes(c));
           const currentlyOnLeave = unresponded.filter(c => onLeaveNames.includes(c));
 
@@ -93,7 +109,8 @@ export function FleetAttendanceModule({
             timestamp: session.timestamp,
             present: session.present,
             missing: trueMissing,
-            onLeave: currentlyOnLeave
+            onLeave: currentlyOnLeave,
+            expectedCount: eligibleCrew.length // 应到人数
           };
 
           if (!newLogs[dateKey]) newLogs[dateKey] = [];
@@ -110,7 +127,7 @@ export function FleetAttendanceModule({
     fetchAllData()
     const interval = setInterval(fetchAllData, 3000) 
     return () => clearInterval(interval)
-  }, [mounted, allCrew]) 
+  }, [mounted, allCrew, crewMembersWithJoinDate, isUpdating]) 
 
   useEffect(() => {
     if (!mounted) return
@@ -250,7 +267,14 @@ export function FleetAttendanceModule({
     return absences.sort((a, b) => b.log.timestamp - a.log.timestamp);
   }
 
+  // 用于阻止定时刷新覆盖乐观更新
+  const [isUpdating, setIsUpdating] = useState(false)
+
   const handleDeleteAbsence = async (dateKey: string, logId: string, crewName: string) => {
+    // 先阻止定时刷新
+    setIsUpdating(true)
+    
+    // 乐观更新本地状态
     setLogs(prev => {
       const newState = { ...prev };
       if (newState[dateKey]) {
@@ -269,9 +293,16 @@ export function FleetAttendanceModule({
     });
 
     try {
-      await markCrewPresentAction(logId, crewName)
+      const result = await markCrewPresentAction(logId, crewName)
+      if (!result?.success) {
+        console.error("Failed to override absence:", result?.error)
+      }
+      // 给云端一点时间同步
+      await new Promise(r => setTimeout(r, 500))
     } catch (error) {
       console.error("Failed to override absence in cloud", error)
+    } finally {
+      setIsUpdating(false)
     }
   }
 
@@ -657,7 +688,9 @@ export function FleetAttendanceModule({
                                       <div className={`text-xs sm:text-sm font-bold mb-1 transition-colors truncate ${selectedLogId === log.id ? 'text-amber-400' : 'text-white group-hover:text-amber-300'}`}>
                                         签到记录 / {new Date(log.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}
                                       </div>
-                                      <div className="text-[10px] font-mono text-zinc-500 uppercase mt-1 truncate">Status: SYNCED - {log.present.length} Crew</div>
+                                      <div className="text-[10px] font-mono text-zinc-500 uppercase mt-1 truncate">
+                                        应到: {log.expectedCount || '?'} | 实到: {log.present.length} | 缺勤: {log.missing.length}
+                                      </div>
                                     </div>
                                     
                                     <div className="flex items-center gap-3 sm:gap-4 z-10 shrink-0">
@@ -682,7 +715,15 @@ export function FleetAttendanceModule({
                           <motion.div key="detail" variants={{in:{x:0, opacity:1}, out:{x:50, opacity:0}}} initial="out" animate="in" exit="out" transition={{type:"spring", stiffness:300, damping:30}} className="flex flex-col h-full min-h-0">
                             <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 border-b border-amber-500/20 pb-3 sm:pb-4">
                               <button onClick={()=>setSelectedLogId(null)} className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/5 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-400 transition-all flex items-center justify-center active:scale-90 shrink-0">◀</button>
-                              <div className="min-w-0"><h2 className="text-base sm:text-xl font-bold text-amber-400 tracking-[0.15em] sm:tracking-[0.2em]">档案详情</h2>{activeDetail && <span className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase truncate block">Ref: {new Date(activeDetail.timestamp).toLocaleString()}</span>}</div>
+                              <div className="min-w-0 flex-1">
+                                <h2 className="text-base sm:text-xl font-bold text-amber-400 tracking-[0.15em] sm:tracking-[0.2em]">档案详情</h2>
+                                {activeDetail && (
+                                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                                    <span className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase">{new Date(activeDetail.timestamp).toLocaleString()}</span>
+                                    <span className="text-[9px] sm:text-[10px] font-mono text-amber-400/60 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">应到: {activeDetail.expectedCount || '?'}</span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 flex-1 overflow-hidden min-h-0">
                                <div className="bg-black/40 border border-emerald-500/20 rounded-2xl p-4 flex flex-col h-full shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
