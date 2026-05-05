@@ -30,7 +30,7 @@ export function SpotlightCard({
     <div
       ref={divRef}
       onMouseMove={handleMouseMove}
-      className={`spotlight-card p-4 sm:p-6 rounded-2xl ${className}`}
+      className={`spotlight-card p-5 sm:p-6 rounded-2xl ${className}`}
     >
       {children}
     </div>
