@@ -195,17 +195,17 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
               <div className="relative z-10 h-[420px] sm:h-[480px] overflow-hidden -mx-5 sm:-mx-6 -mb-5 sm:-mb-6">
                 <ScrollStack
                   className="h-full"
-                  itemDistance={80}
-                  stackDistance={18}
-                  stackPosition={0.12}
-                  baseScale={0.88}
-                  rotationAmount={0.4}
-                  blurAmount={1.2}
+                  itemDistance={100}
+                  stackDistance={10}
+                  stackPosition={0.05}
+                  baseScale={0.94}
+                  rotationAmount={0.2}
+                  blurAmount={0.8}
                   onStackComplete={() => setStackComplete(true)}
                 >
                   {stackCards.map((card, index) => (
                     <ScrollStackItem key={index}>
-                      <div className={`h-36 sm:h-40 rounded-2xl bg-gradient-to-br ${card.gradient} p-5 sm:p-6 flex flex-col justify-between shadow-lg`}>
+                      <div className={`h-52 sm:h-56 rounded-2xl bg-gradient-to-br ${card.gradient} p-5 sm:p-6 flex flex-col justify-between shadow-lg`}>
                         <div className="flex items-start justify-between">
                           <div>
                             <h4 className="text-xl sm:text-2xl font-bold text-white mb-1">{card.title}</h4>
@@ -222,7 +222,7 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
                   
                   {/* 最后一张：CTA 卡片 */}
                   <ScrollStackItem>
-                    <div className="h-36 sm:h-40 rounded-2xl bg-gradient-to-br from-zinc-800/90 to-zinc-900/90 border border-white/10 p-5 sm:p-6 flex flex-col items-center justify-center text-center shadow-lg">
+                    <div className="h-52 sm:h-56 rounded-2xl bg-gradient-to-br from-zinc-800/90 to-zinc-900/90 border border-white/10 p-5 sm:p-6 flex flex-col items-center justify-center text-center shadow-lg">
                       <p className="text-zinc-400 text-sm mb-4">准备好开始你的芯片设计之旅了吗？</p>
                       <a
                         href="https://ysyx.oscc.cc"

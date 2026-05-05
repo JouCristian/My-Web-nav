@@ -25,7 +25,7 @@ interface ScrollStackProps {
 }
 
 // Spring physics for smooth animation
-const spring = (current: number, target: number, velocity: number, stiffness = 0.08, damping = 0.85) => {
+const spring = (current: number, target: number, velocity: number, stiffness = 0.1, damping = 0.8) => {
   const force = (target - current) * stiffness
   const newVelocity = (velocity + force) * damping
   const newValue = current + newVelocity
@@ -35,18 +35,19 @@ const spring = (current: number, target: number, velocity: number, stiffness = 0
 const ScrollStack: React.FC<ScrollStackProps> = ({
   children,
   className = '',
-  itemDistance = 60,
-  stackDistance = 20,
-  stackPosition = 0.15,
+  itemDistance = 120,
+  stackDistance = 12,
+  stackPosition = 0.08,
   baseScale = 0.92,
-  rotationAmount = 0.5,
-  blurAmount = 0.8,
+  rotationAmount = 0.3,
+  blurAmount = 0.6,
   onStackComplete
 }) => {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const cardsRef = useRef<HTMLElement[]>([])
   const [isReady, setIsReady] = useState(false)
   const rafRef = useRef<number | null>(null)
+  const completedRef = useRef(false)
   
   // Spring state for each card
   const springStatesRef = useRef<{
@@ -63,6 +64,7 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
     const scrollTop = scroller.scrollTop
     const containerHeight = scroller.clientHeight
     const stackPositionPx = containerHeight * stackPosition
+    const totalCards = cardsRef.current.length
 
     let needsAnotherFrame = false
 
@@ -79,48 +81,50 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
         }
       }
 
-      const cardRect = card.getBoundingClientRect()
-      const cardTopRelative = card.offsetTop - scrollTop
-      
-      // Calculate how far the card is from the stack position
-      const distanceFromStack = cardTopRelative - stackPositionPx
+      const cardTop = card.offsetTop - scrollTop
+      const distanceFromStack = cardTop - stackPositionPx
       
       // Target values
       let targetScale = 1
       let targetTranslateY = 0
       let targetRotate = 0
       let targetBlur = 0
+      let zIndex = totalCards - i // Default: earlier cards have higher z-index
 
-      // When card reaches stack position, it sticks and scales down
+      // When card reaches stack position
       if (distanceFromStack <= 0) {
-        // Card is at or past the stack position - stick it
-        const stackIndex = cardsRef.current.filter((_, j) => {
-          const jTop = cardsRef.current[j].offsetTop - scrollTop
-          return jTop - stackPositionPx <= 0 && j < i
+        // Count how many cards are stacked above this one
+        const stackedAbove = cardsRef.current.filter((c, j) => {
+          if (j <= i || !c) return false
+          const otherTop = c.offsetTop - scrollTop
+          return otherTop - stackPositionPx <= 0
         }).length
 
-        // Stick to stack position with offset for each stacked card
-        targetTranslateY = -distanceFromStack + stackIndex * stackDistance
+        // This card is being stacked - lock to position with offset
+        targetTranslateY = -distanceFromStack
         
-        // Scale down based on stack depth
-        const depthRatio = Math.min(1, Math.abs(distanceFromStack) / (containerHeight * 0.5))
-        targetScale = 1 - depthRatio * (1 - baseScale)
+        // Scale down based on how many cards are stacked on top
+        targetScale = Math.max(baseScale, 1 - stackedAbove * (1 - baseScale) * 0.5)
         
-        // Slight rotation for depth effect
-        targetRotate = stackIndex * rotationAmount
+        // Slight backward rotation for depth
+        targetRotate = -stackedAbove * rotationAmount
         
-        // Blur cards that are deeper in the stack
-        if (stackIndex > 0) {
-          targetBlur = stackIndex * blurAmount
-        }
+        // Blur cards that have others stacked on top
+        targetBlur = stackedAbove * blurAmount
+
+        // Cards that reach stack position go to back (lower z-index)
+        zIndex = i
+      } else {
+        // Card hasn't reached stack yet - it should be on top
+        zIndex = totalCards + i
       }
 
       // Apply spring physics
       const state = springStatesRef.current[i]
-      const newScale = spring(state.scale.value, targetScale, state.scale.velocity)
-      const newTranslateY = spring(state.translateY.value, targetTranslateY, state.translateY.velocity, 0.12, 0.8)
-      const newRotate = spring(state.rotate.value, targetRotate, state.rotate.velocity)
-      const newBlur = spring(state.blur.value, targetBlur, state.blur.velocity)
+      const newScale = spring(state.scale.value, targetScale, state.scale.velocity, 0.12, 0.75)
+      const newTranslateY = spring(state.translateY.value, targetTranslateY, state.translateY.velocity, 0.15, 0.72)
+      const newRotate = spring(state.rotate.value, targetRotate, state.rotate.velocity, 0.1, 0.8)
+      const newBlur = spring(state.blur.value, targetBlur, state.blur.velocity, 0.1, 0.8)
 
       state.scale = newScale
       state.translateY = newTranslateY
@@ -140,23 +144,21 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
 
       // Apply transforms
       card.style.transform = `translate3d(0, ${newTranslateY.value}px, 0) scale(${newScale.value}) rotate(${newRotate.value}deg)`
-      card.style.filter = newBlur.value > 0.1 ? `blur(${newBlur.value}px)` : ''
-      
-      // Z-index: cards that are more "stuck" should be on top
-      const isStuck = distanceFromStack <= 0
-      card.style.zIndex = isStuck ? String(100 + i) : String(50 - i)
+      card.style.filter = newBlur.value > 0.1 ? `blur(${newBlur.value}px)` : 'none'
+      card.style.zIndex = String(zIndex)
     })
 
-    // Check if last card is in view for completion callback
-    const lastCard = cardsRef.current[cardsRef.current.length - 1]
-    if (lastCard) {
+    // Check if last card is visible
+    const lastCard = cardsRef.current[totalCards - 1]
+    if (lastCard && !completedRef.current) {
       const lastCardTop = lastCard.offsetTop - scrollTop
-      if (lastCardTop <= stackPositionPx + containerHeight * 0.5) {
+      if (lastCardTop <= containerHeight * 0.6) {
+        completedRef.current = true
         onStackComplete?.()
       }
     }
 
-    // Continue animation if needed
+    // Continue animation loop
     if (needsAnotherFrame) {
       rafRef.current = requestAnimationFrame(updateCards)
     }
@@ -169,16 +171,16 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
     rafRef.current = requestAnimationFrame(updateCards)
   }, [updateCards])
 
-  // Animation loop for spring physics
+  // Animation loop
   useEffect(() => {
+    if (!isReady) return
+    
     const animate = () => {
       updateCards()
       rafRef.current = requestAnimationFrame(animate)
     }
     
-    if (isReady) {
-      rafRef.current = requestAnimationFrame(animate)
-    }
+    rafRef.current = requestAnimationFrame(animate)
     
     return () => {
       if (rafRef.current) {
@@ -208,6 +210,7 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
       card.style.position = 'relative'
       card.style.willChange = 'transform, filter'
       card.style.transformOrigin = 'top center'
+      card.style.zIndex = String(cards.length - i)
       if (i < cards.length - 1) {
         card.style.marginBottom = `${itemDistance}px`
       }
@@ -215,7 +218,6 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
 
     setIsReady(true)
 
-    // Add scroll listener
     scroller.addEventListener('scroll', handleScroll, { passive: true })
 
     return () => {
