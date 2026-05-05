@@ -8,7 +8,7 @@
   border-radius: 1rem;
   --mouse-x: 50%;
   --mouse-y: 50%;
-  --spotlight-color: rgba(34, 211, 238, 0.25);
+  --spotlight-color: rgba(255, 255, 255, 0.15);
 }
 
 .spotlight-card::before {
