@@ -14,10 +14,10 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
         <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
           
           {/* 左侧：大字标题和介绍文字 */}
-          <div className="w-full lg:w-[42%] text-center lg:text-left flex flex-col justify-center">
+          <div className="w-full lg:w-[45%] text-center lg:text-left flex flex-col justify-center">
             <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-8 leading-[1.15]">
               <span className="block">什么是</span>
-              <span className="block text-cyan-400 drop-shadow-[0_0_40px_rgba(34,211,238,0.6)]">「一生一芯」？</span>
+              <span className="block text-cyan-400 drop-shadow-[0_0_40px_rgba(34,211,238,0.6)] whitespace-nowrap">「一生一芯」？</span>
             </h2>
             
             <p className="text-lg sm:text-xl text-zinc-300 leading-relaxed mb-6 max-w-lg mx-auto lg:mx-0 text-pretty">
@@ -32,7 +32,7 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
           </div>
           
           {/* 右侧：Mac 风格窗口卡片 + Spotlight 效果 */}
-          <div className="w-full lg:w-[58%] lg:flex-shrink-0">
+          <div className="w-full lg:w-[55%] lg:flex-shrink-0">
             <SpotlightCard 
               className="bg-[#0c0c14]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.05)]"
               spotlightColor="rgba(255, 255, 255, 0.15)"
