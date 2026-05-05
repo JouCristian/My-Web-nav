@@ -246,9 +246,6 @@ export default async function Home() {
 
       {/* LogoLoop 和卡片区 */}
       <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-24 sm:pb-40 pt-4 sm:pt-6">
-        
-        {/* 一生一芯介绍区块 */}
-        <YsyxIntroSection className="animate-float-up mb-12 sm:mb-16" />
 
         {generatedLogos.length > 0 && (
           <div className="w-full mb-8 sm:mb-10 relative overflow-hidden pointer-events-auto z-10 mask-edges animate-spring-scale" style={{ animationDelay: '0.65s' }}>
@@ -270,6 +267,9 @@ export default async function Home() {
           <span className="w-2 h-2 rotate-45 border border-white/50"></span>
           <div className="h-px bg-gradient-to-l from-transparent to-white/50 w-20 sm:w-32 md:w-64"></div>
         </div>
+
+        {/* 一生一芯介绍区块 */}
+        <YsyxIntroSection className="animate-float-up mb-12 sm:mb-16" />
 
         {isCaptain && (
           <div className="mb-8 sm:mb-12 animate-spring-scale" style={{ animationDelay: '0.55s' }}>
