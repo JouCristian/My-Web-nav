@@ -104,6 +104,13 @@ const SplitText: React.FC<SplitTextProps> = ({
         reduceWhiteSpace: false,
         onSplit: (self: GSAPSplitText) => {
           assignTargets(self);
+          
+          // If animation already completed, just set final state immediately
+          if (animationCompletedRef.current) {
+            gsap.set(targets, { ...to });
+            return;
+          }
+          
           return gsap.fromTo(
             targets,
             { ...from },
@@ -117,10 +124,16 @@ const SplitText: React.FC<SplitTextProps> = ({
                 start,
                 once: true,
                 fastScrollEnd: true,
-                anticipatePin: 0.4
+                anticipatePin: 0.4,
+                onLeaveBack: () => {
+                  // Keep final state when scrolling back up
+                  gsap.set(targets, { ...to });
+                }
               },
               onComplete: () => {
                 animationCompletedRef.current = true;
+                // Ensure final state is locked in
+                gsap.set(targets, { ...to, clearProps: 'willChange' });
                 onCompleteRef.current?.();
               },
               willChange: 'transform, opacity',
@@ -131,13 +144,17 @@ const SplitText: React.FC<SplitTextProps> = ({
       });
       el._rbsplitInstance = splitInstance;
       return () => {
+        // Only clean up ScrollTriggers, don't revert text if animation completed
         ScrollTrigger.getAll().forEach(st => {
           if (st.trigger === el) st.kill();
         });
-        try {
-          splitInstance.revert();
-        } catch (_) {}
-        el._rbsplitInstance = undefined;
+        // Don't revert split if animation already completed - keep text visible
+        if (!animationCompletedRef.current) {
+          try {
+            splitInstance.revert();
+          } catch (_) {}
+          el._rbsplitInstance = undefined;
+        }
       };
     },
     {

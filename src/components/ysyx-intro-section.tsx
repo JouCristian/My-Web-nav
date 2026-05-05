@@ -15,18 +15,33 @@ interface YsyxIntroSectionProps {
 export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [cardVisible, setCardVisible] = useState(false)
+  const animationTriggeredRef = useRef(false)
 
   useEffect(() => {
     if (!cardRef.current) return
+    
+    // If animation was already triggered, keep visible
+    if (animationTriggeredRef.current) {
+      setCardVisible(true)
+      return
+    }
 
     const trigger = ScrollTrigger.create({
       trigger: cardRef.current,
       start: "top 85%",
       once: true,
-      onEnter: () => setCardVisible(true)
+      onEnter: () => {
+        animationTriggeredRef.current = true
+        setCardVisible(true)
+      }
     })
 
-    return () => trigger.kill()
+    return () => {
+      // Don't reset visibility on cleanup if animation already triggered
+      if (!animationTriggeredRef.current) {
+        trigger.kill()
+      }
+    }
   }, [])
 
   return (
