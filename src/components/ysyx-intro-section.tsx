@@ -15,9 +15,9 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
           
           {/* 左侧：大字标题和介绍文字 */}
           <div className="w-full lg:w-[42%] text-center lg:text-left flex flex-col justify-center">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white mb-8 leading-tight">
-              什么是
-              <span className="text-cyan-400 drop-shadow-[0_0_40px_rgba(34,211,238,0.6)]">「一生一芯」</span>？
+            <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-8 leading-[1.15]">
+              <span className="block">什么是</span>
+              <span className="block text-cyan-400 drop-shadow-[0_0_40px_rgba(34,211,238,0.6)]">「一生一芯」？</span>
             </h2>
             
             <p className="text-lg sm:text-xl text-zinc-300 leading-relaxed mb-6 max-w-lg mx-auto lg:mx-0 text-pretty">
