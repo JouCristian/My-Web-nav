@@ -13,6 +13,7 @@ import { HeroBackground } from "@/components/hero-background"
 import GlassSurface from "@/components/GlassSurface"
 import { StatsCards } from "@/components/stats-cards"
 import { Footer } from "@/components/footer"
+import { YsyxIntroSection } from "@/components/ysyx-intro-section"
 import { getStats } from "@/app/actions"
 
 export const revalidate = 60;
@@ -242,6 +243,9 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* 一生一芯介绍区块 */}
+      <YsyxIntroSection className="animate-float-up" />
 
       {/* LogoLoop 和卡片区 */}
       <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-24 sm:pb-40 pt-4 sm:pt-6">
