@@ -8,12 +8,12 @@ interface YsyxIntroSectionProps {
 
 export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
   return (
-    <section className={`relative z-10 w-full py-20 sm:py-32 px-4 sm:px-6 ${className || ''}`}>
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-10 lg:gap-16">
+    <section className={`relative z-10 w-full py-12 sm:py-20 ${className || ''}`}>
+      <div className="w-full">
+        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 lg:gap-12">
           
           {/* 左侧：大字标题和介绍文字 */}
-          <div className="flex-1 text-center lg:text-left">
+          <div className="w-full lg:w-[45%] text-center lg:text-left">
             <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-6 leading-[1.1] text-balance">
               <span className="block">什么是</span>
               <span className="block text-cyan-400 drop-shadow-[0_0_30px_rgba(34,211,238,0.5)]">
@@ -34,13 +34,13 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
           </div>
           
           {/* 右侧：Mac 风格窗口卡片 + Spotlight 效果 */}
-          <div className="flex-1 w-full max-w-xl lg:max-w-none">
+          <div className="w-full lg:w-[55%] lg:flex-shrink-0">
             <SpotlightCard 
               className="bg-[#0d0d14]/90 backdrop-blur-xl border border-white/[0.08] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.05)]"
               spotlightColor="rgba(34, 211, 238, 0.2)"
             >
               {/* Mac 窗口顶栏 */}
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06] bg-white/[0.02] -mx-4 -mt-4 sm:-mx-6 sm:-mt-6 mb-4 sm:mb-6 relative z-10">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06] bg-white/[0.02] rounded-t-2xl -mx-4 -mt-4 sm:-mx-6 sm:-mt-6 mb-4 sm:mb-6 relative z-10">
                 {/* 三个圆点按钮 */}
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-[#ff5f57] shadow-[0_0_6px_rgba(255,95,87,0.5)]" />
