@@ -1,12 +1,34 @@
 "use client"
 
+import { useRef, useEffect, useState } from "react"
 import { SpotlightCard } from "./spotlight-card"
+import SplitText from "./split-text"
+import { gsap } from "gsap"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
+
+gsap.registerPlugin(ScrollTrigger)
 
 interface YsyxIntroSectionProps {
   className?: string
 }
 
 export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
+  const cardRef = useRef<HTMLDivElement>(null)
+  const [cardVisible, setCardVisible] = useState(false)
+
+  useEffect(() => {
+    if (!cardRef.current) return
+
+    const trigger = ScrollTrigger.create({
+      trigger: cardRef.current,
+      start: "top 85%",
+      once: true,
+      onEnter: () => setCardVisible(true)
+    })
+
+    return () => trigger.kill()
+  }, [])
+
   return (
     <section className={`relative z-10 w-full py-16 sm:py-24 ${className || ''}`}>
       <div className="w-full">
@@ -16,23 +38,76 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
           {/* 左侧：大字标题和介绍文字 */}
           <div className="w-full lg:w-[45%] text-center lg:text-left flex flex-col justify-center">
             <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-8 leading-[1.15]">
-              <span className="block">什么是</span>
-              <span className="block text-cyan-400 drop-shadow-[0_0_40px_rgba(34,211,238,0.6)] whitespace-nowrap">「一生一芯」？</span>
+              <SplitText
+                text="什么是"
+                tag="span"
+                className="block text-white"
+                splitType="chars"
+                delay={80}
+                duration={0.8}
+                ease="power3.out"
+                from={{ opacity: 0, y: 60 }}
+                to={{ opacity: 1, y: 0 }}
+                threshold={0.2}
+                rootMargin="-50px"
+                textAlign="left"
+              />
+              <SplitText
+                text="「一生一芯」？"
+                tag="span"
+                className="block text-cyan-400 drop-shadow-[0_0_40px_rgba(34,211,238,0.6)] whitespace-nowrap"
+                splitType="chars"
+                delay={60}
+                duration={0.8}
+                ease="power3.out"
+                from={{ opacity: 0, y: 60, scale: 0.9 }}
+                to={{ opacity: 1, y: 0, scale: 1 }}
+                threshold={0.2}
+                rootMargin="-50px"
+                textAlign="left"
+              />
             </h2>
             
-            <p className="text-lg sm:text-xl text-zinc-300 leading-relaxed mb-6 max-w-lg mx-auto lg:mx-0 text-pretty">
-              「一生一芯」是中国科学院大学计算所发起的开源芯片教育项目，
-              旨在让每一位学生都能设计属于自己的 CPU 处理器。
-            </p>
+            <SplitText
+              text="「一生一芯」是中国科学院大学计算所发起的开源芯片教育项目，旨在让每一位学生都能设计属于自己的 CPU 处理器。"
+              tag="p"
+              className="text-lg sm:text-xl text-zinc-300 leading-relaxed mb-6 max-w-lg mx-auto lg:mx-0"
+              splitType="words"
+              delay={40}
+              duration={0.6}
+              ease="power2.out"
+              from={{ opacity: 0, y: 30 }}
+              to={{ opacity: 1, y: 0 }}
+              threshold={0.1}
+              rootMargin="-80px"
+              textAlign="left"
+            />
             
-            <p className="text-base text-zinc-500 leading-relaxed max-w-lg mx-auto lg:mx-0 text-pretty">
-              通过系统的课程学习和实践，你将掌握数字电路设计、计算机体系结构、
-              操作系统等核心知识，并最终完成一颗可以运行 Linux 的 RISC-V 处理器。
-            </p>
+            <SplitText
+              text="通过系统的课程学习和实践，你将掌握数字电路设计、计算机体系结构、操作系统等核心知识，并最终完成一颗可以运行 Linux 的 RISC-V 处理器。"
+              tag="p"
+              className="text-base text-zinc-500 leading-relaxed max-w-lg mx-auto lg:mx-0"
+              splitType="words"
+              delay={30}
+              duration={0.5}
+              ease="power2.out"
+              from={{ opacity: 0, y: 20 }}
+              to={{ opacity: 1, y: 0 }}
+              threshold={0.1}
+              rootMargin="-100px"
+              textAlign="left"
+            />
           </div>
           
           {/* 右侧：Mac 风格窗口卡片 + Spotlight 效果 */}
-          <div className="w-full lg:w-[55%] lg:flex-shrink-0">
+          <div 
+            ref={cardRef}
+            className={`w-full lg:w-[55%] lg:flex-shrink-0 transition-all duration-1000 ease-out ${
+              cardVisible 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 translate-y-16'
+            }`}
+          >
             <SpotlightCard 
               className="bg-[#0c0c14]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.05)]"
               spotlightColor="rgba(255, 255, 255, 0.15)"
