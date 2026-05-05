@@ -38,35 +38,62 @@
   position: relative;
   width: 100%;
   height: 100%;
-  overflow-y: scroll !important;
+  overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
+  scroll-behavior: smooth;
 }
 
 .scroll-stack-inner {
-  padding: 1.5rem 1.5rem 16rem;
-  min-height: calc(100% + 400px);
+  padding: 1rem 1.25rem 20rem;
+  min-height: calc(100% + 600px);
 }
 
 .scroll-stack-card {
   transform-origin: top center;
   will-change: transform, filter;
   backface-visibility: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
   width: 100%;
   border-radius: 1rem;
   box-sizing: border-box;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
   position: relative;
 }
 
 .scroll-stack-end {
   width: 100%;
-  height: 200px;
+  height: 300px;
+  pointer-events: none;
+}
+
+/* ==========================================
+   自定义滚动条样式
+   ========================================== */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 3px;
+  margin: 8px 0;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.4) 0%, rgba(34, 211, 238, 0.2) 100%);
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.6) 0%, rgba(34, 211, 238, 0.4) 100%);
+}
+
+/* Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 211, 238, 0.3) rgba(255, 255, 255, 0.03);
 }
 
 /* 🚀 这里的变量保持您的原始配置 */

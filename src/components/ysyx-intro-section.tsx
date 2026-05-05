@@ -195,12 +195,12 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
               <div className="relative z-10 h-[420px] sm:h-[480px] overflow-hidden -mx-5 sm:-mx-6 -mb-5 sm:-mb-6">
                 <ScrollStack
                   className="h-full"
-                  itemDistance={200}
-                  itemStackDistance={25}
-                  stackPosition="20%"
-                  baseScale={0.8}
-                  rotationAmount={0.7}
-                  blurAmount={0.5}
+                  itemDistance={80}
+                  stackDistance={18}
+                  stackPosition={0.12}
+                  baseScale={0.88}
+                  rotationAmount={0.4}
+                  blurAmount={1.2}
                   onStackComplete={() => setStackComplete(true)}
                 >
                   {stackCards.map((card, index) => (
