@@ -244,12 +244,12 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 一生一芯介绍区块 */}
-      <YsyxIntroSection className="animate-float-up" />
-
       {/* LogoLoop 和卡片区 */}
       <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-24 sm:pb-40 pt-4 sm:pt-6">
         
+        {/* 一生一芯介绍区块 */}
+        <YsyxIntroSection className="animate-float-up mb-12 sm:mb-16" />
+
         {generatedLogos.length > 0 && (
           <div className="w-full mb-8 sm:mb-10 relative overflow-hidden pointer-events-auto z-10 mask-edges animate-spring-scale" style={{ animationDelay: '0.65s' }}>
             <LogoLoop
