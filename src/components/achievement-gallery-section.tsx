@@ -13,65 +13,42 @@ interface AchievementGallerySectionProps {
 export function AchievementGallerySection({ className = "" }: AchievementGallerySectionProps) {
   return (
     <section className={`relative w-full ${className}`}>
-      {/* 区块标题 */}
-      <div className="text-center mb-8 sm:mb-12">
+      {/* 激光流容器 - 位于卡片上方，与卡片顶部重合 */}
+      <div className="relative w-full">
+        {/* LaserFlow 动画区域 */}
+        <div className="absolute top-0 left-0 right-0 h-[300px] sm:h-[400px] z-10 pointer-events-none">
+          <LaserFlow
+            color="#cf9eff"
+            horizontalBeamOffset={-0.25}
+            verticalBeamOffset={0.0}
+            horizontalSizing={0.5}
+            verticalSizing={4}
+            wispDensity={1.6}
+            wispSpeed={21.5}
+            wispIntensity={5}
+            flowSpeed={0.35}
+            flowStrength={0.37}
+            fogIntensity={0.82}
+            fogScale={0.23}
+            fogFallSpeed={1.55}
+            decay={1.1}
+            falloffStart={1.2}
+          />
+        </div>
+
+        {/* 主内容卡片 - 顶部与激光流重合 */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.8 }}
+          className="relative w-full pt-[180px] sm:pt-[250px]"
         >
-          <span className="inline-block px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-mono tracking-[0.2em] uppercase mb-4">
-            Achievement Gallery
-          </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">
-            星际成果档案馆
-          </h2>
-          <p className="text-zinc-400 text-sm sm:text-base max-w-xl mx-auto">
-            记录西南科技大学一生一芯小组的每一次突破与荣耀
-          </p>
-        </motion.div>
-      </div>
-
-      {/* 主内容卡片 - 全宽适配 */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8, delay: 0.2 }}
-        className="relative w-full"
-      >
-        {/* LaserFlow 背景容器 */}
-        <div 
-          className="relative w-full min-h-[500px] sm:min-h-[600px] rounded-[2rem] sm:rounded-[3rem] overflow-hidden"
-          style={{ backgroundColor: '#06060a' }}
-        >
-          {/* LaserFlow 动画 - 位于左侧 */}
-          <div className="absolute inset-0 pointer-events-auto">
-            <LaserFlow
-              color="#cf9eff"
-              horizontalBeamOffset={-0.25}
-              verticalBeamOffset={0.0}
-              horizontalSizing={0.5}
-              verticalSizing={4}
-              wispDensity={1.6}
-              wispSpeed={21.5}
-              wispIntensity={5}
-              flowSpeed={0.35}
-              flowStrength={0.37}
-              fogIntensity={0.82}
-              fogScale={0.23}
-              fogFallSpeed={1.55}
-              decay={1.1}
-              falloffStart={1.2}
-            />
-          </div>
-
           {/* 内容卡片 - 带紫色边框 */}
           <div 
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] sm:w-[88%] h-[85%] sm:h-[80%] rounded-2xl sm:rounded-3xl border-2 border-purple-500/40 bg-[#0a0a12]/80 backdrop-blur-xl flex flex-col sm:flex-row z-10"
+            className="relative w-full min-h-[450px] sm:min-h-[500px] rounded-2xl sm:rounded-3xl border border-purple-500/30 bg-[#0a0a12]/90 backdrop-blur-xl flex flex-col sm:flex-row"
             style={{
-              boxShadow: '0 0 60px rgba(207, 158, 255, 0.1), inset 0 0 60px rgba(0,0,0,0.5)'
+              boxShadow: '0 0 80px rgba(207, 158, 255, 0.08), inset 0 0 60px rgba(0,0,0,0.5)'
             }}
           >
             {/* 左侧：标题区域 */}
@@ -148,17 +125,8 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
               </div>
             </div>
           </div>
-
-          {/* 装饰性边框光晕 */}
-          <div 
-            className="absolute inset-0 rounded-[2rem] sm:rounded-[3rem] pointer-events-none"
-            style={{
-              border: '1px solid rgba(207, 158, 255, 0.15)',
-              boxShadow: 'inset 0 0 100px rgba(207, 158, 255, 0.05)'
-            }}
-          />
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </section>
   );
 }
