@@ -423,7 +423,7 @@ export function FleetAttendanceModule({
                               animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
                               exit={{ opacity: 0, scale: 0.9, y: -10, filter: "blur(10px)" }}
                               transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                              className="absolute top-[120%] left-1/2 -translate-x-1/2 z-[50] w-64"
+                              className="absolute top-[120%] left-1/2 -translate-x-1/2 z-[100] w-64"
                             >
                               <div className="w-full bg-[#060813]/95 border border-amber-500/40 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(245,158,11,0.2)] p-4 flex flex-col gap-4 backdrop-blur-xl">
                                 <div className="flex justify-between items-center px-4 font-mono text-[10px] text-amber-500/60 tracking-widest uppercase"><span>MINUTES</span><span>SECONDS</span></div>
@@ -470,7 +470,7 @@ export function FleetAttendanceModule({
                   <div className="flex flex-col items-center opacity-50">
                     <div className="w-20 h-20 border-4 border-dashed border-zinc-600 rounded-full animate-[spin_10s_linear_infinite] mb-6"></div>
                     <span className="font-mono tracking-[0.3em] text-zinc-400 uppercase">Awaiting Command...</span>
-                    <span className="text-xs text-zinc-600 mt-2">等待舰长开启跃迁通道</span>
+                    <span className="text-xs text-zinc-600 mt-2">等待舰长开启跃���通道</span>
                   </div>
                 )}
               </div>

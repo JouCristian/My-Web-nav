@@ -62,6 +62,17 @@ body {
 
 @layer utilities {
   /* ==========================================
+     🚀 滚动条隐藏工具类
+     ========================================== */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari, Opera */
+  }
+
+  /* ==========================================
      🚀 移动端性能优化：减少动画开销
      ========================================== */
   @media (max-width: 1024px), (hover: none) {

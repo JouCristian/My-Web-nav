@@ -104,7 +104,7 @@ function DockSocialItem({
   link: typeof SOCIAL_LINKS[0]
   mouseX: MotionValue<number>
 }) {
-  const ref = useRef<HTMLAnchorElement>(null)
+  const ref = useRef<HTMLDivElement>(null)
   const isHovered = useMotionValue(0)
   const [showLabel, setShowLabel] = useState(false)
 
@@ -143,78 +143,84 @@ function DockSocialItem({
   }, [isHovered])
 
   return (
-    <motion.a
+    // 外层固定尺寸容器，防止放大时布局抖动
+    <div 
       ref={ref}
-      href={link.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{ width: size, height: size }}
-      onHoverStart={() => isHovered.set(1)}
-      onHoverEnd={() => isHovered.set(0)}
-      className="relative flex items-end justify-center"
-      aria-label={`Visit ${link.name}`}
+      className="relative flex items-center justify-center"
+      style={{ width: DOCK_CONFIG.magnification, height: DOCK_CONFIG.magnification }}
     >
-      {/* Tooltip Label */}
-      <AnimatePresence>
-        {showLabel && (
-          <motion.div
-            initial={{ opacity: 0, y: 4, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 4, scale: 0.9 }}
-            transition={{ duration: 0.15 }}
-            className="absolute -top-8 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-sm border border-white/10 whitespace-nowrap z-20"
-          >
-            <span 
-              className="text-[11px] font-medium"
-              style={{ color: link.color }}
-            >
-              {link.name}
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Glass Icon Container */}
-      <motion.div 
-        className="w-full h-full"
-        style={{
-          filter: showLabel ? `drop-shadow(0 0 12px ${link.color}50)` : 'none',
-        }}
+      <motion.a
+        href={link.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ width: size, height: size }}
+        onHoverStart={() => isHovered.set(1)}
+        onHoverEnd={() => isHovered.set(0)}
+        className="relative flex items-center justify-center"
+        aria-label={`Visit ${link.name}`}
       >
-        <GlassSurface
-          width="100%"
-          height="100%"
-          borderRadius={16}
-          brightness={showLabel ? 140 : 120}
-          opacity={0.4}
-          blur={20}
-          displace={1.2}
-          mixBlendMode="normal"
-          backgroundOpacity={showLabel ? 0.18 : 0.12}
-        >
-          <div 
-            className="w-full h-full flex items-center justify-center"
-            style={{
-              boxShadow: showLabel ? `inset 0 0 16px ${link.color}20` : 'none',
-              borderRadius: '16px',
-            }}
-          >
-            <motion.div 
-              className="w-[45%] h-[45%]"
-              style={{ 
-                color: showLabel ? link.color : 'rgba(161, 161, 170, 1)',
-              }}
-              animate={{
-                color: showLabel ? link.color : 'rgba(161, 161, 170, 1)',
-              }}
-              transition={{ duration: 0.2 }}
+        {/* Tooltip Label */}
+        <AnimatePresence>
+          {showLabel && (
+            <motion.div
+              initial={{ opacity: 0, y: 4, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 4, scale: 0.9 }}
+              transition={{ duration: 0.15 }}
+              className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-sm border border-white/10 whitespace-nowrap z-50 pointer-events-none"
             >
-              {link.icon}
+              <span 
+                className="text-[11px] font-medium"
+                style={{ color: link.color }}
+              >
+                {link.name}
+              </span>
             </motion.div>
-          </div>
-        </GlassSurface>
-      </motion.div>
-    </motion.a>
+          )}
+        </AnimatePresence>
+
+        {/* Glass Icon Container */}
+        <motion.div 
+          className="w-full h-full"
+          style={{
+            filter: showLabel ? `drop-shadow(0 0 12px ${link.color}50)` : 'none',
+          }}
+        >
+          <GlassSurface
+            width="100%"
+            height="100%"
+            borderRadius={16}
+            brightness={showLabel ? 140 : 120}
+            opacity={0.4}
+            blur={20}
+            displace={1.2}
+            mixBlendMode="normal"
+            backgroundOpacity={showLabel ? 0.18 : 0.12}
+          >
+            <div 
+              className="w-full h-full flex items-center justify-center"
+              style={{
+                boxShadow: showLabel ? `inset 0 0 16px ${link.color}20` : 'none',
+                borderRadius: '16px',
+              }}
+            >
+              <motion.div 
+                className="w-[45%] h-[45%]"
+                style={{ 
+                  color: showLabel ? link.color : 'rgba(161, 161, 170, 1)',
+                }}
+                animate={{
+                  color: showLabel ? link.color : 'rgba(161, 161, 170, 1)',
+                }}
+                transition={{ duration: 0.2 }}
+              >
+                {link.icon}
+              </motion.div>
+            </div>
+          </GlassSurface>
+        </motion.div>
+      </motion.a>
+    </div>
   )
 }
 
@@ -253,9 +259,9 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Dock Style Social Links - 无底座，底部对齐防止偏移 */}
+          {/* Dock Style Social Links - 固定尺寸容器防止抖动 */}
           <div 
-            className="flex items-end justify-center gap-3 sm:gap-4 h-[72px]"
+            className="flex flex-wrap items-center justify-center gap-0 sm:gap-1 px-2 sm:px-0"
             onMouseMove={(e) => mouseX.set(e.clientX)}
             onMouseLeave={() => mouseX.set(Infinity)}
           >
