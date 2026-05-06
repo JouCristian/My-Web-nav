@@ -13,8 +13,8 @@ interface AchievementGallerySectionProps {
 export function AchievementGallerySection({ className = "" }: AchievementGallerySectionProps) {
   return (
     <section className={`relative w-full ${className}`}>
-      {/* 激光流区域 - 正常流式布局，高度固定 */}
-      <div className="relative w-full h-[300px] sm:h-[350px]">
+      {/* 激光流区域 - 增加高度确保源头不被截断 */}
+      <div className="relative w-full h-[400px] sm:h-[500px]">
         <LaserFlow
           color="#cf9eff"
           horizontalBeamOffset={-0.25}
@@ -34,13 +34,13 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
         />
       </div>
 
-      {/* 主内容卡片 - 紧贴激光流底部，使用负margin让卡片顶部与激光流底部重合 */}
+      {/* 主内容卡片 - 大幅负margin让卡片顶部与激光流底部紧密贴合 */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="relative w-full -mt-[50px] sm:-mt-[60px] z-10"
+        className="relative w-full -mt-[180px] sm:-mt-[220px] z-10"
       >
           {/* 内容卡片 - 带紫色边框 */}
           <div 
