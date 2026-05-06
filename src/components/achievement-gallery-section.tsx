@@ -51,6 +51,7 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
               speed={1.8}
               enableShadows={true}
               enableOnHover={false}
+              className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-[0.15em]"
             >
               SWUST YSYX TEAM
             </GlitchText>
