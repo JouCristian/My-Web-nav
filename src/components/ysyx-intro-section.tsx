@@ -143,20 +143,20 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
               
               <div className="relative z-10 pt-10 sm:pt-14 flex flex-col min-h-[400px] sm:min-h-[460px]">
                 
-                <div className="flex-1 flex items-center gap-8 px-6 sm:px-10">
+                <div className="flex-1 flex flex-col sm:flex-row items-center gap-6 sm:gap-8 px-4 sm:px-6 lg:px-10">
                   
-                  {/* 定点修改：图片 Card 整体放大逻辑 */}
-                  <div className="flex-shrink-0">
+                  {/* 定点修改：图片 Card 整体放大逻辑 - 移动端使用较小尺寸 */}
+                  <div className="flex-shrink-0 hidden sm:block">
                     <motion.div
-                      whileHover={{ scale: 1.08 }} // 让整个“高光+图片”组合整体放大
+                      whileHover={{ scale: 1.08 }}
                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
                       className="relative z-20"
                     >
                       <GlareHover
-                        width="230px"  // 尺寸提升到 260px
+                        width="230px"
                         height="230px"
                         background="transparent"
-                        borderRadius="24px" // 调大圆角更显精致
+                        borderRadius="24px"
                         borderColor="rgba(255,255,255,0.1)"
                         glareColor="#ffffff"
                         glareOpacity={0.3}
@@ -171,8 +171,44 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
                           containerWidth="240px"
                           imageHeight="240px"
                           imageWidth="240px"
-                          rotateAmplitude={10} // 稍微减小旋转幅度，配合整体放大更稳重
-                          scaleOnHover={1}    // 重要：设为1，禁止内部图片单独放大
+                          rotateAmplitude={10}
+                          scaleOnHover={1}
+                          showMobileWarning={false}
+                          showTooltip={false}
+                          displayOverlayContent={true}
+                        />
+                      </GlareHover>
+                    </motion.div>
+                  </div>
+                  
+                  {/* 移动端使用较小尺寸的图片 */}
+                  <div className="flex-shrink-0 block sm:hidden">
+                    <motion.div
+                      whileHover={{ scale: 1.08 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                      className="relative z-20"
+                    >
+                      <GlareHover
+                        width="160px"
+                        height="160px"
+                        background="transparent"
+                        borderRadius="16px"
+                        borderColor="rgba(255,255,255,0.1)"
+                        glareColor="#ffffff"
+                        glareOpacity={0.3}
+                        glareSize={180}
+                        transitionDuration={1650}
+                        playOnce={true}
+                      >
+                        <TiltedCard
+                          imageSrc="/images/ysyx-logo.png"
+                          altText="一生一芯 Logo"
+                          containerHeight="160px"
+                          containerWidth="160px"
+                          imageHeight="160px"
+                          imageWidth="160px"
+                          rotateAmplitude={8}
+                          scaleOnHover={1}
                           showMobileWarning={false}
                           showTooltip={false}
                           displayOverlayContent={true}
@@ -182,8 +218,8 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
                   </div>
                   
                   {/* 右侧：文字与按钮 */}
-                  <div className="flex-1 flex justify-center">
-                    <div className="flex flex-col items-start text-left">
+                  <div className="flex-1 flex justify-center w-full sm:w-auto">
+                    <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
                       <div className="mb-6">
                         <div className="text-xl sm:text-2xl font-bold text-white min-h-[1.8em] leading-tight">
                           <TextType
