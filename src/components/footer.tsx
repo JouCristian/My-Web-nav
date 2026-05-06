@@ -151,7 +151,7 @@ function DockSocialItem({
       style={{ width: size, height: size }}
       onHoverStart={() => isHovered.set(1)}
       onHoverEnd={() => isHovered.set(0)}
-      className="relative flex items-end justify-center"
+      className="relative flex items-center justify-center"
       aria-label={`Visit ${link.name}`}
     >
       {/* Tooltip Label */}
@@ -259,7 +259,7 @@ export function Footer() {
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <div 
-              className="flex items-end justify-start sm:justify-center gap-2.5 sm:gap-4 h-[100px] min-w-max px-4 sm:px-0 mx-auto"
+              className="flex items-center justify-start sm:justify-center gap-2.5 sm:gap-4 h-[100px] min-w-max px-4 sm:px-0 mx-auto pt-6"
               onMouseMove={(e) => mouseX.set(e.clientX)}
               onMouseLeave={() => mouseX.set(Infinity)}
             >
