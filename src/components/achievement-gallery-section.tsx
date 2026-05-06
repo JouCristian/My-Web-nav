@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import GlitchText from "./GlitchText";
+import { getGalleryImages, addGalleryImage, deleteGalleryImage } from "@/app/actions";
 
 // 动态导入避免 SSR 问题
 const LaserFlow = dynamic(() => import("./LaserFlow"), { ssr: false });
@@ -34,19 +35,32 @@ export function AchievementGallerySection({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [newImageText, setNewImageText] = useState("");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [modalView, setModalView] = useState<'add' | 'manage'>('add'); // 弹窗视图切换
+  const [modalView, setModalView] = useState<'add' | 'manage'>('add');
 
   const canManage = isCaptain || isAdmin;
 
   useEffect(() => { setIsMounted(true) }, []);
 
-  // TODO: 从数据库加载图片
-  // useEffect(() => {
-  //   fetchGalleryImages().then(setImages);
-  // }, []);
+  // 从数据库加载图片
+  useEffect(() => {
+    const loadImages = async () => {
+      try {
+        const result = await getGalleryImages();
+        if (result.data) {
+          setImages(result.data);
+        }
+      } catch (error) {
+        console.error("加载图片失败:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadImages();
+  }, []);
 
   // 处理文件选择
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,27 +93,27 @@ export function AchievementGallerySection({
     if (!previewImage) return;
     setIsUploading(true);
     try {
-      // TODO: 上传到 Vercel Blob 或其他存储服务
-      // const blob = await upload(selectedFile.name, selectedFile, { access: 'public' });
-      // const imageUrl = blob.url;
+      // 保存到数据库
+      const result = await addGalleryImage(previewImage, newImageText || "成果展示");
       
-      // 目前使用 base64 预览（实际部署时应替换为上传后的URL）
-      const newImage: GalleryImage = {
-        id: Date.now().toString(),
-        image: previewImage,
-        text: newImageText || "成果展示"
-      };
-      setImages(prev => [...prev, newImage]);
+      if (result.error) {
+        alert(result.error);
+        return;
+      }
+      
+      if (result.data) {
+        setImages(prev => [...prev, result.data!]);
+      }
+      
       setNewImageText("");
       setPreviewImage(null);
       setSelectedFile(null);
       // 重置文件输入
       const fileInput = document.getElementById('gallery-file-input') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
-      // TODO: 保存到数据库
-      // await saveGalleryImage(newImage);
     } catch (error) {
       console.error("添加图片失败:", error);
+      alert("添加图片失败，请重试");
     } finally {
       setIsUploading(false);
     }
@@ -113,9 +127,17 @@ export function AchievementGallerySection({
   };
 
   const handleDeleteImage = async (id: string) => {
-    setImages(prev => prev.filter(img => img.id !== id));
-    // TODO: 从数据库删除
-    // await deleteGalleryImage(id);
+    try {
+      const result = await deleteGalleryImage(id);
+      if (result.error) {
+        alert(result.error);
+        return;
+      }
+      setImages(prev => prev.filter(img => img.id !== id));
+    } catch (error) {
+      console.error("删除图片失败:", error);
+      alert("删除图片失败，请重试");
+    }
   };
 
   // 空状态 UI
@@ -132,7 +154,7 @@ export function AchievementGallerySection({
       </div>
       <div className="space-y-2">
         <p className="text-zinc-300 text-lg sm:text-xl font-medium">
-          成果档案馆
+          成果���案馆
         </p>
         <p className="text-zinc-500 text-sm sm:text-base max-w-md">
           这里将展示小组的精彩成果与里程碑时刻

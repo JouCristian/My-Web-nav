@@ -212,3 +212,14 @@ model FlightLog {
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// ==========================================
+// 🖼️ 成果档案馆 (Achievement Gallery)
+// ==========================================
+model GalleryImage {
+  id          String   @id @default(cuid())
+  imageData   String   @db.Text  // Base64 图片数据
+  title       String             // 图片标题/描述
+  uploaderId  String             // 上传者ID
+  createdAt   DateTime @default(now())
+}
