@@ -180,7 +180,7 @@ export default async function Home() {
         </div>
       </div>
 
-      {/* Hero 区 - 核心内容垂直居中 */}
+      {/* Hero 区 - 核心内容垂��居中 */}
       <section className="relative z-10 w-full min-h-[55vh] sm:min-h-[58vh] flex flex-col items-center justify-center text-center px-5 sm:px-4 pt-28 sm:pt-32 pb-8 pointer-events-none">
         
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(2,4,10,0.6)_0%,transparent_65%)] z-0 pointer-events-none"></div>
@@ -273,7 +273,11 @@ export default async function Home() {
         <YsyxIntroSection className="animate-float-up mb-12 sm:mb-16" />
 
         {/* 成果展示区块 */}
-        <AchievementGallerySection className="animate-float-up mb-12 sm:mb-16" />
+        <AchievementGallerySection 
+          className="animate-float-up mb-12 sm:mb-16" 
+          isCaptain={isCaptain}
+          isAdmin={isCommander}
+        />
 
         {isCaptain && (
           <div className="mb-8 sm:mb-12 animate-spring-scale" style={{ animationDelay: '0.55s' }}>
