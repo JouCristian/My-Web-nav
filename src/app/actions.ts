@@ -549,6 +549,12 @@ export async function addGalleryImage(imageData: string, title: string) {
   }
 
   try {
+    // 检查图片数据大小（Base64大约比原文件大33%）
+    const dataSizeKB = Math.round(imageData.length / 1024)
+    if (dataSizeKB > 5000) {
+      return { error: `图片太大 (${dataSizeKB}KB)，请压缩后重试（建议小于3MB）` }
+    }
+
     const newImage = await prisma.galleryImage.create({
       data: {
         imageData: imageData,
@@ -565,9 +571,17 @@ export async function addGalleryImage(imageData: string, title: string) {
         text: newImage.title
       }
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("添加档案图片失败:", error)
-    return { error: "添加档案图片失败" }
+    // 提供更详细的错误信息
+    const errMsg = error instanceof Error ? error.message : String(error)
+    if (errMsg.includes("does not exist") || errMsg.includes("relation")) {
+      return { error: "数据库表未创建，请运行 prisma db push" }
+    }
+    if (errMsg.includes("too long") || errMsg.includes("value too large")) {
+      return { error: "图片数据太大，请使用更小的图片" }
+    }
+    return { error: "添加档案图片失败，请稍后重试" }
   }
 }
 
