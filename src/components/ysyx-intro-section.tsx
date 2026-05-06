@@ -179,7 +179,7 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
                         <TextType
                           text={[
                             "设计你的第一颗 CPU",
-                            "从零开始的处理器之旅",
+                            "从零开始的处��器之旅",
                             "让芯片设计不再遥不可及",
                             "用代码点亮你的硅梦想"
                           ]}
@@ -195,27 +195,18 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
                       <p className="text-xs text-zinc-600 mt-2 font-mono">YSYX · Open Source Chip Education</p>
                     </div>
                     
-                    {/* 访问官网按钮 - 精致设计 */}
+                    {/* 访问官网按钮 - 仿照"开启星际之旅"按钮风格 */}
                     <a
                       href="https://ysyx.oscc.cc"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group relative inline-flex items-center gap-3 px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500/10 to-cyan-400/5 border border-cyan-400/20 hover:border-cyan-400/40 hover:from-cyan-500/15 hover:to-cyan-400/10 transition-all duration-300 w-fit"
+                      className="spring-btn-hero group relative inline-flex items-center justify-center gap-3 px-6 py-3 rounded-full bg-white text-black font-bold text-sm overflow-hidden w-fit"
                     >
-                      {/* 发光背景 */}
-                      <div className="absolute inset-0 rounded-xl bg-cyan-400/5 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500" />
-                      
-                      {/* 按钮内容 */}
-                      <div className="relative flex items-center gap-3">
-                        <span className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors duration-300">
-                          进入官网
-                        </span>
-                        <div className="w-6 h-6 rounded-md bg-cyan-400/20 flex items-center justify-center group-hover:bg-cyan-400/30 group-hover:scale-110 transition-all duration-300">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5 text-cyan-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
-                          </svg>
-                        </div>
-                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                      <span className="relative z-10 tracking-[0.1em]">进入官网</span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4 relative z-10 transition-transform group-hover:translate-x-1">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
+                      </svg>
                     </a>
                   </div>
                 </div>
