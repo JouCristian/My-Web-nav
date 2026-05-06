@@ -409,7 +409,7 @@ export function FleetAttendanceModule({
                             <motion.div 
                               key="time-overlay"
                               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                              className="fixed inset-0 z-[40]" 
+                              className="fixed inset-0 z-[9998] bg-black/50" 
                               onClick={(e) => { e.stopPropagation(); setIsTimePickerOpen(false); }} 
                             />
                           )}
@@ -423,7 +423,7 @@ export function FleetAttendanceModule({
                               animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
                               exit={{ opacity: 0, scale: 0.9, y: -10, filter: "blur(10px)" }}
                               transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                              className="absolute top-[120%] left-1/2 -translate-x-1/2 z-[100] w-64"
+                              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-72"
                             >
                               <div className="w-full bg-[#060813]/95 border border-amber-500/40 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(245,158,11,0.2)] p-4 flex flex-col gap-4 backdrop-blur-xl">
                                 <div className="flex justify-between items-center px-4 font-mono text-[10px] text-amber-500/60 tracking-widest uppercase"><span>MINUTES</span><span>SECONDS</span></div>
