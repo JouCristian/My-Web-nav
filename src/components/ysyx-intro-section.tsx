@@ -216,11 +216,6 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
                           </svg>
                         </div>
                       </div>
-                      
-                      {/* 边框动画光效 */}
-                      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                        <div className="absolute inset-[-1px] rounded-xl bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent animate-pulse" style={{ maskImage: 'linear-gradient(black, black) content-box, linear-gradient(black, black)', maskComposite: 'exclude', padding: '1px' }} />
-                      </div>
                     </a>
                   </div>
                 </div>
@@ -278,125 +273,6 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
                     <div className="flex items-center gap-2 text-xs sm:text-sm">
                       <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.6)]" />
                       <span className="text-zinc-400">可流片的真实芯片</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs sm:text-sm">
-                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.6)]" />
-                      <span className="text-zinc-400">开源社区支持</span>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-                </div>
-
-                {/* 中部：Logo + 按钮区域 */}
-                <div className="flex-1 flex items-center justify-center gap-6 sm:gap-10 px-4 py-4">
-                  {/* 左侧：TiltedCard Logo */}
-                  <div className="flex-shrink-0">
-                    <TiltedCard
-                      imageSrc="/images/ysyx-logo.png"
-                      altText="一生一芯 Logo"
-                      containerHeight="100px"
-                      containerWidth="100px"
-                      imageHeight="100px"
-                      imageWidth="100px"
-                      rotateAmplitude={16}
-                      scaleOnHover={1.15}
-                      showMobileWarning={false}
-                      showTooltip={false}
-                      displayOverlayContent={true}
-                      overlayContent={
-                        <div className="w-[100px] h-[100px] rounded-xl bg-gradient-to-br from-cyan-400/10 to-transparent" />
-                      }
-                    />
-                  </div>
-                  
-                  {/* 右侧：访问官网按钮 */}
-                  <a
-                    href="https://ysyx.oscc.cc"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group relative flex items-center justify-center w-[120px] sm:w-[140px] h-[100px] rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.02] transition-all duration-300 hover:border-cyan-400/30 hover:bg-white/[0.04]"
-                  >
-                    {/* ShapeBlur 背景动效 */}
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                      <ShapeBlur
-                        variation={0}
-                        shapeSize={0.8}
-                        roundness={0.5}
-                        borderSize={0.04}
-                        circleSize={0.4}
-                        circleEdge={0.8}
-                      />
-                    </div>
-                    
-                    {/* 按钮内容 */}
-                    <div className="relative z-10 flex flex-col items-center gap-2">
-                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-400/20 to-cyan-400/5 border border-cyan-400/20 flex items-center justify-center group-hover:scale-110 group-hover:border-cyan-400/40 transition-all duration-300">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-cyan-400">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                        </svg>
-                      </div>
-                      <span className="text-xs font-medium text-zinc-400 group-hover:text-cyan-400 transition-colors duration-300">
-                        访问官网
-                      </span>
-                    </div>
-                  </a>
-                </div>
-
-                {/* 滚动关键词 - 紧贴底部分界线 */}
-                <div className="overflow-hidden -mx-5 sm:-mx-6 mb-0">
-                  <ScrollVelocity
-                    texts={[
-                      <span key="row1" className="flex items-center gap-4 text-sm sm:text-base font-mono font-semibold text-zinc-400">
-                        <span className="text-cyan-400">RISC-V</span>
-                        <span className="text-zinc-600">·</span>
-                        <span>Verilog</span>
-                        <span className="text-zinc-600">·</span>
-                        <span className="text-cyan-400">Linux</span>
-                        <span className="text-zinc-600">·</span>
-                        <span>NPC</span>
-                        <span className="text-zinc-600">·</span>
-                        <span className="text-cyan-400">SoC</span>
-                        <span className="text-zinc-600">·</span>
-                        <span>Chisel</span>
-                        <span className="text-zinc-600">·</span>
-                        <span className="text-cyan-400">FPGA</span>
-                      </span>,
-                      <span key="row2" className="flex items-center gap-4 text-sm sm:text-base font-mono font-semibold text-zinc-500">
-                        <span>数字电路</span>
-                        <span className="text-zinc-600">·</span>
-                        <span className="text-cyan-400/80">体系结构</span>
-                        <span className="text-zinc-600">·</span>
-                        <span>操作系统</span>
-                        <span className="text-zinc-600">·</span>
-                        <span className="text-cyan-400/80">编译原理</span>
-                        <span className="text-zinc-600">·</span>
-                        <span>性能优化</span>
-                        <span className="text-zinc-600">·</span>
-                        <span className="text-cyan-400/80">流片验证</span>
-                      </span>
-                    ]}
-                    velocity={30}
-                    numCopies={4}
-                    className="[&>div]:gap-0.5"
-                  />
-                </div>
-
-                {/* 底部：核心亮点列表 */}
-                <div className="pt-4 border-t border-white/[0.06]">
-                  <div className="grid grid-cols-2 gap-3 px-2">
-                    <div className="flex items-center gap-2 text-xs sm:text-sm">
-                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.6)]" />
-                      <span className="text-zinc-400">国科大官方出品</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs sm:text-sm">
-                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.6)]" />
-                      <span className="text-zinc-400">完整 CPU 设计流程</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs sm:text-sm">
-                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.6)]" />
-                      <span className="text-zinc-400">可流片���真实芯片</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs sm:text-sm">
                       <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.6)]" />
