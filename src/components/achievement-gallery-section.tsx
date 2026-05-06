@@ -37,6 +37,7 @@ export function AchievementGallerySection({
   const [newImageText, setNewImageText] = useState("");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [modalView, setModalView] = useState<'add' | 'manage'>('add'); // 弹窗视图切换
 
   const canManage = isCaptain || isAdmin;
 
@@ -187,122 +188,180 @@ export function AchievementGallerySection({
                 </div>
               </div>
 
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-[0.05em] sm:tracking-[0.1em] mb-5 sm:mb-8 leading-tight relative z-10 drop-shadow-[0_0_15px_rgba(168,85,247,0.3)]">
-                成果档案管理
-              </h2>
-
-              {/* 添加图片表单 */}
-              <div className="relative z-10 bg-black/40 border border-white/5 rounded-2xl p-4 sm:p-6 mb-6">
-                <h3 className="text-sm font-bold text-zinc-300 mb-4 tracking-wider uppercase">添加新图片</h3>
-                <div className="space-y-4">
-                  {/* 文件选择区域 */}
-                  <div>
-                    <label className="text-xs text-zinc-500 mb-1.5 block">选择图片</label>
-                    {!previewImage ? (
-                      <label 
-                        htmlFor="gallery-file-input"
-                        className="flex flex-col items-center justify-center w-full h-32 rounded-xl bg-black/50 border-2 border-dashed border-white/10 hover:border-purple-500/50 cursor-pointer transition-colors group"
-                      >
-                        <svg className="w-8 h-8 text-zinc-500 group-hover:text-purple-400 transition-colors mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                        </svg>
-                        <span className="text-sm text-zinc-500 group-hover:text-purple-400 transition-colors">点击选择图片</span>
-                        <span className="text-xs text-zinc-600 mt-1">支持 JPG、PNG、GIF，最大 10MB</span>
-                        <input
-                          id="gallery-file-input"
-                          type="file"
-                          accept="image/*"
-                          onChange={handleFileSelect}
-                          className="hidden"
-                        />
-                      </label>
-                    ) : (
-                      <div className="relative w-full h-32 rounded-xl overflow-hidden border border-purple-500/30">
-                        <img src={previewImage} alt="预览" className="w-full h-full object-cover" />
-                        <button
-                          onClick={handleClearPreview}
-                          className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 border border-white/10 text-white hover:bg-red-500/50 transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                        <div className="absolute bottom-2 left-2 px-2 py-1 rounded-md bg-black/60 text-xs text-white">
-                          {selectedFile?.name}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <label className="text-xs text-zinc-500 mb-1.5 block">图片描述（可选）</label>
-                    <input
-                      type="text"
-                      value={newImageText}
-                      onChange={(e) => setNewImageText(e.target.value)}
-                      placeholder="例如：第一期流片成果"
-                      className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/50 transition-colors"
-                    />
-                  </div>
-                  <button
-                    onClick={handleAddImage}
-                    disabled={isUploading || !previewImage}
-                    className="w-full px-4 py-3 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-300 font-bold text-sm hover:bg-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {isUploading ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-purple-300/30 border-t-purple-300 rounded-full animate-spin" />
-                        添加中...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                        </svg>
-                        添加图片
-                      </>
-                    )}
-                  </button>
-                </div>
+              {/* 视图切换标签 */}
+              <div className="flex gap-2 mb-6 relative z-10">
+                <button
+                  onClick={() => setModalView('add')}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                    modalView === 'add' 
+                      ? 'bg-purple-500/20 border border-purple-500/40 text-purple-300' 
+                      : 'bg-black/30 border border-white/5 text-zinc-400 hover:text-white hover:border-white/10'
+                  }`}
+                >
+                  添加图片
+                </button>
+                <button
+                  onClick={() => setModalView('manage')}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                    modalView === 'manage' 
+                      ? 'bg-purple-500/20 border border-purple-500/40 text-purple-300' 
+                      : 'bg-black/30 border border-white/5 text-zinc-400 hover:text-white hover:border-white/10'
+                  }`}
+                >
+                  管理图片
+                  {images.length > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-md bg-purple-500/30 text-purple-300 text-xs">
+                      {images.length}
+                    </span>
+                  )}
+                </button>
               </div>
 
-              {/* 已有图片列表 */}
-              <div className="relative z-10 bg-black/40 border border-white/5 rounded-2xl p-4 sm:p-6 flex-1 min-h-0">
-                <h3 className="text-sm font-bold text-zinc-300 mb-4 tracking-wider uppercase">
-                  已添加图片 ({images.length})
-                </h3>
-                <div className="max-h-[30vh] overflow-y-auto ios-scrollbar pr-2 space-y-3">
-                  {images.length === 0 ? (
-                    <p className="text-zinc-500 text-sm text-center py-8">暂无图片，请添加第一张</p>
-                  ) : (
-                    images.map((img) => (
-                      <div key={img.id} className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.05] transition-colors">
-                        <img 
-                          src={img.image} 
-                          alt={img.text} 
-                          className="w-16 h-12 rounded-lg object-cover border border-white/10"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-white font-medium truncate">{img.text}</p>
-                          <p className="text-xs text-zinc-500 truncate">{img.image}</p>
+              {/* 内容区域 - 带翻转动画 */}
+              <div className="relative z-10 flex-1 min-h-0">
+                <AnimatePresence mode="wait">
+                  {modalView === 'add' ? (
+                    <motion.div
+                      key="add-view"
+                      initial={{ opacity: 0, rotateY: -90 }}
+                      animate={{ opacity: 1, rotateY: 0 }}
+                      exit={{ opacity: 0, rotateY: 90 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="bg-black/40 border border-white/5 rounded-2xl p-4 sm:p-6"
+                    >
+                      <h3 className="text-sm font-bold text-zinc-300 mb-4 tracking-wider uppercase">添加新图片</h3>
+                      <div className="space-y-4">
+                        {/* 文件选择区域 */}
+                        <div>
+                          <label className="text-xs text-zinc-500 mb-1.5 block">选择图片</label>
+                          {!previewImage ? (
+                            <label 
+                              htmlFor="gallery-file-input"
+                              className="flex flex-col items-center justify-center w-full h-32 rounded-xl bg-black/50 border-2 border-dashed border-white/10 hover:border-purple-500/50 cursor-pointer transition-colors group"
+                            >
+                              <svg className="w-8 h-8 text-zinc-500 group-hover:text-purple-400 transition-colors mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                              </svg>
+                              <span className="text-sm text-zinc-500 group-hover:text-purple-400 transition-colors">点击选择图片</span>
+                              <span className="text-xs text-zinc-600 mt-1">支持 JPG、PNG、GIF，最大 10MB</span>
+                              <input
+                                id="gallery-file-input"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileSelect}
+                                className="hidden"
+                              />
+                            </label>
+                          ) : (
+                            <div className="relative w-full h-32 rounded-xl overflow-hidden border border-purple-500/30">
+                              <img src={previewImage} alt="预览" className="w-full h-full object-cover" />
+                              <button
+                                onClick={handleClearPreview}
+                                className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 border border-white/10 text-white hover:bg-red-500/50 transition-colors"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                              <div className="absolute bottom-2 left-2 px-2 py-1 rounded-md bg-black/60 text-xs text-white">
+                                {selectedFile?.name}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="text-xs text-zinc-500 mb-1.5 block">图片描述（可选）</label>
+                          <input
+                            type="text"
+                            value={newImageText}
+                            onChange={(e) => setNewImageText(e.target.value)}
+                            placeholder="例如：第一期流片成果"
+                            className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/50 transition-colors"
+                          />
                         </div>
                         <button
-                          onClick={() => handleDeleteImage(img.id)}
-                          className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 transition-all"
+                          onClick={handleAddImage}
+                          disabled={isUploading || !previewImage}
+                          className="w-full px-4 py-3 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-300 font-bold text-sm hover:bg-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
+                          {isUploading ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-purple-300/30 border-t-purple-300 rounded-full animate-spin" />
+                              添加中...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                              </svg>
+                              添加图片
+                            </>
+                          )}
                         </button>
                       </div>
-                    ))
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="manage-view"
+                      initial={{ opacity: 0, rotateY: 90 }}
+                      animate={{ opacity: 1, rotateY: 0 }}
+                      exit={{ opacity: 0, rotateY: -90 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="bg-black/40 border border-white/5 rounded-2xl p-4 sm:p-6 h-full"
+                    >
+                      <h3 className="text-sm font-bold text-zinc-300 mb-4 tracking-wider uppercase">
+                        已添加图片 ({images.length})
+                      </h3>
+                      <div className="max-h-[45vh] overflow-y-auto ios-scrollbar pr-2 space-y-3">
+                        {images.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-4">
+                              <svg className="w-8 h-8 text-purple-400/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                              </svg>
+                            </div>
+                            <p className="text-zinc-400 text-sm mb-2">暂无图片</p>
+                            <p className="text-zinc-500 text-xs">切换到"添加图片"标签页添加第一张</p>
+                          </div>
+                        ) : (
+                          images.map((img, index) => (
+                            <motion.div 
+                              key={img.id} 
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: index * 0.05 }}
+                              className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.05] hover:border-purple-500/20 transition-all"
+                            >
+                              <img 
+                                src={img.image} 
+                                alt={img.text} 
+                                className="w-20 h-14 rounded-lg object-cover border border-white/10 group-hover:border-purple-500/30 transition-colors"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-white font-medium truncate">{img.text}</p>
+                                <p className="text-xs text-zinc-500 mt-0.5">已添加到档案馆</p>
+                              </div>
+                              <button
+                                onClick={() => handleDeleteImage(img.id)}
+                                className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:scale-105 transition-all"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </motion.div>
+                          ))
+                        )}
+                      </div>
+                    </motion.div>
                   )}
-                </div>
+                </AnimatePresence>
               </div>
 
               {/* 底部按钮 */}
-              <div className="flex justify-end items-center mt-6 sm:mt-10 relative z-10">
+              <div className="flex justify-end items-center mt-6 sm:mt-8 relative z-10">
                 <button 
-                  onClick={() => setIsModalOpen(false)} 
+                  onClick={() => { setIsModalOpen(false); setModalView('add'); }} 
                   className="px-5 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 text-white font-bold tracking-[0.15em] sm:tracking-[0.2em] uppercase text-[10px] hover:bg-white/10 transition-all active:scale-95"
                 >
                   关闭档案管理
