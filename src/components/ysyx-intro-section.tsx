@@ -3,6 +3,8 @@
 import { useRef, useEffect, useState } from "react"
 import { SpotlightCard } from "./spotlight-card"
 import SplitText from "./split-text"
+import { ScrollVelocity } from "./scroll-velocity"
+import { TextType } from "./text-type"
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 
@@ -145,17 +147,92 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
                 <div className="w-[52px]" />
               </div>
               
-              {/* 内容区域 - 增加高度 */}
-              <div className="relative z-10 pt-6 sm:pt-8">
-                {/* 占位内容，后续设计 */}
-                <div className="flex flex-col items-center justify-center min-h-[380px] sm:min-h-[420px] text-zinc-500">
-                  <div className="w-20 h-20 mb-5 rounded-2xl bg-gradient-to-br from-white/[0.08] to-white/[0.02] border border-white/[0.08] flex items-center justify-center backdrop-blur-sm">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-10 h-10 text-zinc-400">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0 1 12 15a9.065 9.065 0 0 0-6.23.693L5 14.5m14.8.8 1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0 1 12 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
-                    </svg>
+              {/* 内容区域 */}
+              <div className="relative z-10 pt-6 sm:pt-8 flex flex-col min-h-[380px] sm:min-h-[420px]">
+                
+                {/* 顶部：打字机效果标题 */}
+                <div className="text-center px-4 mb-6">
+                  <div className="text-xl sm:text-2xl font-bold text-white mb-2 min-h-[2em]">
+                    <TextType
+                      text={[
+                        "设计你的第一颗 CPU",
+                        "从零开始的处理器之旅",
+                        "让芯片设计不再遥不可及",
+                        "用代码点亮你的硅梦想"
+                      ]}
+                      typingSpeed={80}
+                      pauseDuration={2000}
+                      deletingSpeed={40}
+                      showCursor={true}
+                      cursorCharacter="_"
+                      cursorClassName="text-cyan-400"
+                      className="text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-300"
+                    />
                   </div>
-                  <span className="text-sm font-mono tracking-wider text-zinc-600">内容即将呈现</span>
+                  <p className="text-xs text-zinc-500 font-mono">// Your journey starts here</p>
                 </div>
+
+                {/* 中部：滚动关键词 */}
+                <div className="flex-1 flex flex-col justify-center overflow-hidden -mx-5 sm:-mx-6">
+                  <ScrollVelocity
+                    texts={[
+                      <span key="row1" className="flex items-center gap-4 text-sm sm:text-base font-mono font-semibold text-zinc-400">
+                        <span className="text-cyan-400">RISC-V</span>
+                        <span className="text-zinc-600">·</span>
+                        <span>Verilog</span>
+                        <span className="text-zinc-600">·</span>
+                        <span className="text-cyan-400">Linux</span>
+                        <span className="text-zinc-600">·</span>
+                        <span>NPC</span>
+                        <span className="text-zinc-600">·</span>
+                        <span className="text-cyan-400">SoC</span>
+                        <span className="text-zinc-600">·</span>
+                        <span>Chisel</span>
+                        <span className="text-zinc-600">·</span>
+                        <span className="text-cyan-400">FPGA</span>
+                      </span>,
+                      <span key="row2" className="flex items-center gap-4 text-sm sm:text-base font-mono font-semibold text-zinc-500">
+                        <span>数字电路</span>
+                        <span className="text-zinc-600">·</span>
+                        <span className="text-cyan-400/80">体系结构</span>
+                        <span className="text-zinc-600">·</span>
+                        <span>操作系统</span>
+                        <span className="text-zinc-600">·</span>
+                        <span className="text-cyan-400/80">编译原理</span>
+                        <span className="text-zinc-600">·</span>
+                        <span>性能优化</span>
+                        <span className="text-zinc-600">·</span>
+                        <span className="text-cyan-400/80">流片验证</span>
+                      </span>
+                    ]}
+                    velocity={30}
+                    numCopies={4}
+                    className="flex-shrink-0"
+                  />
+                </div>
+
+                {/* 底部：核心亮点列表 */}
+                <div className="mt-auto pt-6 border-t border-white/[0.06]">
+                  <div className="grid grid-cols-2 gap-3 px-2">
+                    <div className="flex items-center gap-2 text-xs sm:text-sm">
+                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.6)]" />
+                      <span className="text-zinc-400">国科大官方出品</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs sm:text-sm">
+                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.6)]" />
+                      <span className="text-zinc-400">完整 CPU 设计流程</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs sm:text-sm">
+                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.6)]" />
+                      <span className="text-zinc-400">可流片的真实芯片</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs sm:text-sm">
+                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.6)]" />
+                      <span className="text-zinc-400">开源社区支持</span>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </SpotlightCard>
           </div>
