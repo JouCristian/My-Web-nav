@@ -152,17 +152,17 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
               <div className="relative z-10 pt-6 sm:pt-8 flex flex-col min-h-[380px] sm:min-h-[420px]">
                 
                 {/* 主内容区：左右布局 */}
-                <div className="flex-1 flex gap-5 sm:gap-6 px-4 sm:px-5">
+                <div className="flex-1 flex gap-6 sm:gap-8 px-4 sm:px-6">
                   
-                  {/* 左侧：Logo 图片 */}
-                  <div className="flex-shrink-0 pt-1">
+                  {/* 左侧：Logo 图片 - 放大 */}
+                  <div className="flex-shrink-0">
                     <TiltedCard
                       imageSrc="/images/ysyx-logo.png"
                       altText="一生一芯 Logo"
-                      containerHeight="140px"
-                      containerWidth="140px"
-                      imageHeight="140px"
-                      imageWidth="140px"
+                      containerHeight="160px"
+                      containerWidth="160px"
+                      imageHeight="160px"
+                      imageWidth="160px"
                       rotateAmplitude={16}
                       scaleOnHover={1.15}
                       showMobileWarning={false}
@@ -171,15 +171,15 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
                     />
                   </div>
                   
-                  {/* 右侧：打字机标题 + 按钮 */}
-                  <div className="flex-1 flex flex-col">
+                  {/* 右侧：打字机标题 + 按钮 - 填充整个右侧空间 */}
+                  <div className="flex-1 flex flex-col justify-between py-1">
                     {/* 打字机效果标题 - 与左侧Logo顶部对齐 */}
-                    <div className="mb-4">
-                      <div className="text-lg sm:text-xl font-bold text-white min-h-[1.8em] leading-tight">
+                    <div>
+                      <div className="text-xl sm:text-2xl font-bold text-white min-h-[1.8em] leading-tight">
                         <TextType
                           text={[
                             "设计你的第一颗 CPU",
-                            "从零开始的处��器之旅",
+                            "从零开始的处理器之旅",
                             "让芯片设计不再遥不可及",
                             "用代码点亮你的硅梦想"
                           ]}
@@ -192,7 +192,7 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
                           className="text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-300"
                         />
                       </div>
-                      <p className="text-xs text-zinc-600 mt-2 font-mono">YSYX · Open Source Chip Education</p>
+                      <p className="text-xs text-zinc-500 mt-3 font-mono tracking-wide">YSYX · Open Source Chip Education</p>
                     </div>
                     
                     {/* 访问官网按钮 - 仿照"开启星际之旅"按钮风格 */}
@@ -200,7 +200,7 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
                       href="https://ysyx.oscc.cc"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="spring-btn-hero group relative inline-flex items-center justify-center gap-3 px-6 py-3 rounded-full bg-white text-black font-bold text-sm overflow-hidden w-fit"
+                      className="spring-btn-hero group relative inline-flex items-center justify-center gap-3 px-6 py-3 rounded-full bg-white text-black font-bold text-sm overflow-hidden w-fit mt-auto"
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
                       <span className="relative z-10 tracking-[0.1em]">进入官网</span>
