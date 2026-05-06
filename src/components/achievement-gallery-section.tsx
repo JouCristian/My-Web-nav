@@ -36,24 +36,24 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
           />
         </div>
 
-        {/* 右侧：文字内容区域 - 与激光流等高，内容居中偏下 */}
+        {/* 右侧：文字内容区域 - 内容集中在上半部分，避免被card遮挡 */}
         <motion.div
           initial={{ opacity: 0, x: 30 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="relative w-full lg:w-1/2 flex flex-col justify-center px-6 sm:px-10 lg:px-14 py-8 lg:py-12"
+          className="relative w-full lg:w-1/2 flex flex-col justify-start px-6 sm:px-10 lg:px-14 pt-12 sm:pt-16 lg:pt-24 pb-[350px] sm:pb-[450px]"
         >
           {/* 小标签 */}
-          <div className="flex items-center gap-2 mb-4 sm:mb-6">
-            <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-            <span className="text-purple-400 text-[10px] sm:text-xs font-mono tracking-[0.25em] uppercase">
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-purple-500 animate-pulse" />
+            <span className="text-purple-400 text-[10px] sm:text-xs font-mono tracking-[0.2em] uppercase">
               SWUST YSYX Team
             </span>
           </div>
 
-          {/* 主标题 */}
-          <h3 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight tracking-tight">
+          {/* 主标题 - 更紧凑 */}
+          <h3 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-3 sm:mb-4 leading-tight tracking-tight">
             西南科技大学
             <br />
             <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
@@ -61,36 +61,35 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
             </span>
           </h3>
 
-          {/* 副标题 */}
-          <p className="text-zinc-400 text-sm sm:text-base lg:text-lg leading-relaxed mb-6 sm:mb-8 max-w-lg">
+          {/* 副标题 - 精简 */}
+          <p className="text-zinc-400 text-xs sm:text-sm lg:text-base leading-relaxed mb-4 sm:mb-6 max-w-md">
             从零开始，亲手设计属于自己的处理器。
-            <br className="hidden sm:block" />
             在星海中探索 CPU 的精妙设计，记录每一次突破与成长。
           </p>
 
-          {/* 统计数据 */}
-          <div className="flex gap-8 sm:gap-12 mb-6 sm:mb-8">
+          {/* 统计数据 - 更紧凑 */}
+          <div className="flex gap-6 sm:gap-10 mb-4 sm:mb-5">
             <div>
-              <div className="text-3xl sm:text-4xl lg:text-5xl font-bold">
+              <div className="text-2xl sm:text-3xl lg:text-4xl font-bold">
                 <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                   --
                 </span>
               </div>
-              <div className="text-zinc-500 text-xs sm:text-sm mt-1">成果展示</div>
+              <div className="text-zinc-500 text-[10px] sm:text-xs mt-0.5">成果展示</div>
             </div>
             <div>
-              <div className="text-3xl sm:text-4xl lg:text-5xl font-bold">
+              <div className="text-2xl sm:text-3xl lg:text-4xl font-bold">
                 <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                   --
                 </span>
               </div>
-              <div className="text-zinc-500 text-xs sm:text-sm mt-1">活跃成员</div>
+              <div className="text-zinc-500 text-[10px] sm:text-xs mt-0.5">活跃成员</div>
             </div>
           </div>
 
           {/* 提示文字 */}
-          <div className="flex items-center gap-2 text-zinc-500 text-xs sm:text-sm">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] sm:text-xs">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
             </svg>
             <span>仅舰长和管理员可添加成果图片</span>
