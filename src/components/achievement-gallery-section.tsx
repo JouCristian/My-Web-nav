@@ -81,7 +81,7 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
           </div>
 
           {/* 特色标签 */}
-          <div className="flex flex-wrap gap-2 mb-8 sm:mb-10">
+          <div className="flex flex-wrap gap-2">
             {['RISC-V', 'CPU设计', '数字电路', '开源硬件', '流片验证'].map((tag) => (
               <span 
                 key={tag}
@@ -90,35 +90,6 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
                 {tag}
               </span>
             ))}
-          </div>
-
-          {/* 统计数据 - 更醒目 */}
-          <div className="flex gap-8 sm:gap-12 mb-6 sm:mb-8">
-            <div className="text-center">
-              <div className="text-4xl sm:text-5xl lg:text-6xl font-black">
-                <span className="bg-gradient-to-b from-purple-300 to-purple-500 bg-clip-text text-transparent">
-                  --
-                </span>
-              </div>
-              <div className="text-zinc-400 text-xs sm:text-sm mt-1 font-medium">成果展示</div>
-            </div>
-            <div className="w-px h-16 bg-gradient-to-b from-transparent via-purple-500/30 to-transparent" />
-            <div className="text-center">
-              <div className="text-4xl sm:text-5xl lg:text-6xl font-black">
-                <span className="bg-gradient-to-b from-pink-300 to-pink-500 bg-clip-text text-transparent">
-                  --
-                </span>
-              </div>
-              <div className="text-zinc-400 text-xs sm:text-sm mt-1 font-medium">活跃成员</div>
-            </div>
-          </div>
-
-          {/* 提示文字 - 更精致 */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800/50 border border-zinc-700/50 w-fit">
-            <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-            </svg>
-            <span className="text-zinc-400 text-xs sm:text-sm">仅舰长和管理员可添加成果图片</span>
           </div>
         </motion.div>
       </div>
@@ -146,7 +117,7 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
             </div>
             <div>
               <p className="text-zinc-400 text-base sm:text-lg font-medium mb-2">
-                成果图片展示区
+                成果���片展示区
               </p>
               <p className="text-zinc-500 text-sm">
                 即将开放，敬请期待
