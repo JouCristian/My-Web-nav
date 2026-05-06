@@ -42,8 +42,60 @@ export function AchievementGallerySection({
   const [modalView, setModalView] = useState<'add' | 'manage'>('add');
 
   const canManage = isCaptain || isAdmin;
+  const [isCompressing, setIsCompressing] = useState(false);
 
   useEffect(() => { setIsMounted(true) }, []);
+
+  // 图片压缩函数 - 超过指定大小自动压缩
+  const compressImage = (file: File, maxSizeKB: number = 500): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('无法创建canvas'));
+            return;
+          }
+
+          // 计算压缩比例
+          let { width, height } = img;
+          const maxDimension = 1920; // 最大宽高
+          
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = (height / width) * maxDimension;
+              width = maxDimension;
+            } else {
+              width = (width / height) * maxDimension;
+              height = maxDimension;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // 尝试不同的质量参数直到满足大小要求
+          let quality = 0.9;
+          let result = canvas.toDataURL('image/jpeg', quality);
+          
+          while (result.length / 1024 > maxSizeKB && quality > 0.1) {
+            quality -= 0.1;
+            result = canvas.toDataURL('image/jpeg', quality);
+          }
+
+          resolve(result);
+        };
+        img.onerror = () => reject(new Error('图片加载失败'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('文件读取失败'));
+      reader.readAsDataURL(file);
+    });
+  };
 
   // 从数据库加载图片
   useEffect(() => {
@@ -62,8 +114,8 @@ export function AchievementGallerySection({
     loadImages();
   }, []);
 
-  // 处理文件选择
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 处理文件选择 - 自动压缩大图片
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
@@ -73,20 +125,43 @@ export function AchievementGallerySection({
       return;
     }
     
-    // 检查文件大小（限制10MB）
-    if (file.size > 10 * 1024 * 1024) {
-      alert('图片大小不能超过10MB');
+    // 检查文件大小（限制20MB原图）
+    if (file.size > 20 * 1024 * 1024) {
+      alert('图片大小不能超过20MB');
       return;
     }
     
     setSelectedFile(file);
     
-    // 生成预览
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setPreviewImage(event.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    // 如果图片大于500KB，自动压缩
+    const fileSizeKB = file.size / 1024;
+    if (fileSizeKB > 500) {
+      setIsCompressing(true);
+      try {
+        const compressed = await compressImage(file, 500);
+        setPreviewImage(compressed);
+        const originalKB = Math.round(fileSizeKB);
+        const compressedKB = Math.round(compressed.length / 1024);
+        console.log(`[v0] 图片已压缩: ${originalKB}KB -> ${compressedKB}KB`);
+      } catch (error) {
+        console.error('压缩失败，使用原图:', error);
+        // 压缩失败时使用原图
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setPreviewImage(event.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setIsCompressing(false);
+      }
+    } else {
+      // 小图片直接使用
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setPreviewImage(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleAddImage = async () => {
@@ -256,7 +331,13 @@ export function AchievementGallerySection({
                         {/* 文件选择区域 */}
                         <div>
                           <label className="text-xs text-zinc-500 mb-1.5 block">选择图片</label>
-                          {!previewImage ? (
+                          {isCompressing ? (
+                            <div className="flex flex-col items-center justify-center w-full h-32 rounded-xl bg-black/50 border-2 border-dashed border-purple-500/30">
+                              <div className="w-8 h-8 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mb-2" />
+                              <span className="text-sm text-purple-400">正在压缩图片...</span>
+                              <span className="text-xs text-zinc-500 mt-1">大图片会自动压缩以提高上传速度</span>
+                            </div>
+                          ) : !previewImage ? (
                             <label 
                               htmlFor="gallery-file-input"
                               className="flex flex-col items-center justify-center w-full h-32 rounded-xl bg-black/50 border-2 border-dashed border-white/10 hover:border-purple-500/50 cursor-pointer transition-colors group"
@@ -265,7 +346,7 @@ export function AchievementGallerySection({
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                               </svg>
                               <span className="text-sm text-zinc-500 group-hover:text-purple-400 transition-colors">点击选择图片</span>
-                              <span className="text-xs text-zinc-600 mt-1">支持 JPG、PNG、GIF，最大 10MB</span>
+                              <span className="text-xs text-zinc-600 mt-1">支持 JPG、PNG、GIF，大图自动压缩</span>
                               <input
                                 id="gallery-file-input"
                                 type="file"
