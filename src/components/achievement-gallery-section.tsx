@@ -14,7 +14,7 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
   return (
     <section className={`relative w-full ${className}`}>
       {/* 激光流区域 - 增加高度确保源头不被截断 */}
-      <div className="relative w-full h-[580px] sm:h-[700px]">
+      <div className="relative w-full h-[680px] sm:h-[800px]">
         <LaserFlow
           color="#cf9eff"
           horizontalBeamOffset={-0.25}
@@ -40,7 +40,7 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="relative w-full -mt-[280px] sm:-mt-[350px] z-10"
+        className="relative w-full -mt-[340px] sm:-mt-[420px] z-10"
       >
           {/* 内容卡片 - 带紫色边框 */}
           <div 
