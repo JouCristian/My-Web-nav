@@ -239,8 +239,8 @@ export function AchievementGallerySection({
                 </button>
               </div>
 
-              {/* 内容区域 - 带翻转动画 */}
-              <div className="relative z-10 flex-1 min-h-0">
+              {/* 内容区域 - 固定高度，带翻转动画 */}
+              <div className="relative z-10 h-[400px] sm:h-[450px]">
                 <AnimatePresence mode="wait">
                   {modalView === 'add' ? (
                     <motion.div
@@ -249,7 +249,7 @@ export function AchievementGallerySection({
                       animate={{ opacity: 1, rotateY: 0 }}
                       exit={{ opacity: 0, rotateY: 90 }}
                       transition={{ duration: 0.3, ease: "easeInOut" }}
-                      className="bg-black/40 border border-white/5 rounded-2xl p-4 sm:p-6"
+                      className="absolute inset-0 bg-black/40 border border-white/5 rounded-2xl p-4 sm:p-6 overflow-y-auto ios-scrollbar"
                     >
                       <h3 className="text-sm font-bold text-zinc-300 mb-4 tracking-wider uppercase">添加新图片</h3>
                       <div className="space-y-4">
@@ -329,12 +329,12 @@ export function AchievementGallerySection({
                       animate={{ opacity: 1, rotateY: 0 }}
                       exit={{ opacity: 0, rotateY: -90 }}
                       transition={{ duration: 0.3, ease: "easeInOut" }}
-                      className="bg-black/40 border border-white/5 rounded-2xl p-4 sm:p-6 h-full"
+                      className="absolute inset-0 bg-black/40 border border-white/5 rounded-2xl p-4 sm:p-6 flex flex-col"
                     >
-                      <h3 className="text-sm font-bold text-zinc-300 mb-4 tracking-wider uppercase">
+                      <h3 className="text-sm font-bold text-zinc-300 mb-4 tracking-wider uppercase shrink-0">
                         已添加图片 ({images.length})
                       </h3>
-                      <div className="max-h-[45vh] overflow-y-auto ios-scrollbar pr-2 space-y-3">
+                      <div className="flex-1 overflow-y-auto ios-scrollbar pr-2 space-y-3">
                         {images.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-12 text-center">
                             <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-4">
