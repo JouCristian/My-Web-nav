@@ -14,6 +14,7 @@ import GlassSurface from "@/components/GlassSurface"
 import { StatsCards } from "@/components/stats-cards"
 import { Footer } from "@/components/footer"
 import { YsyxIntroSection } from "@/components/ysyx-intro-section"
+import { AchievementGallerySection } from "@/components/achievement-gallery-section"
 import { getStats } from "@/app/actions"
 
 export const revalidate = 60;
@@ -270,6 +271,9 @@ export default async function Home() {
 
         {/* 一生一芯介绍区块 */}
         <YsyxIntroSection className="animate-float-up mb-12 sm:mb-16" />
+
+        {/* 成果展示区块 */}
+        <AchievementGallerySection className="animate-float-up mb-12 sm:mb-16" />
 
         {isCaptain && (
           <div className="mb-8 sm:mb-12 animate-spring-scale" style={{ animationDelay: '0.55s' }}>
