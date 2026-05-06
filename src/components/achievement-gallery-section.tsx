@@ -501,7 +501,7 @@ export function AchievementGallerySection({
         {/* 顶部区域：激光流 + 文字内容并排 */}
         <div className="relative w-full flex flex-col lg:flex-row items-stretch">
           {/* 左侧：激光流区域 - 移动端隐藏 */}
-          <div className="relative hidden lg:flex lg:w-1/2 h-[850px]">
+          <div className="relative w-full lg:w-1/2 h-[600px] sm:h-[750px] lg:h-[850px] hidden lg:block">
             <LaserFlow
               color="#cf9eff"
               horizontalBeamOffset={0}
@@ -523,11 +523,11 @@ export function AchievementGallerySection({
 
           {/* 右侧：文字内容区域 - 移动端全宽居中 */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative w-full lg:w-1/2 lg:h-[850px] flex flex-col justify-start items-center lg:items-start text-center lg:text-left px-6 sm:px-10 lg:px-16 pt-8 sm:pt-12 lg:pt-20 pb-8 sm:pb-12"
+            className="relative w-full lg:w-1/2 flex flex-col justify-start items-center lg:items-start text-center lg:text-left px-6 sm:px-10 lg:px-16 pt-8 sm:pt-12 lg:pt-20 pb-8 sm:pb-12 lg:pb-[450px]"
           >
             {/* GlitchText 标题 */}
             <div className="mb-6 sm:mb-8">
@@ -582,7 +582,7 @@ export function AchievementGallerySection({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="relative w-full mt-8 lg:-mt-[425px] z-10"
+          className="relative w-full -mt-0 sm:-mt-0 lg:-mt-[425px] z-10"
         >
           {/* 图片展示卡片 */}
           <div
