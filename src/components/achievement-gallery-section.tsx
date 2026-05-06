@@ -21,18 +21,18 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
             color="#cf9eff"
             horizontalBeamOffset={0}
             verticalBeamOffset={0.0}
-            horizontalSizing={0.5}
-            verticalSizing={4}
-            wispDensity={1.6}
+            horizontalSizing={0.7}
+            verticalSizing={5.5}
+            wispDensity={2.0}
             wispSpeed={21.5}
-            wispIntensity={5}
+            wispIntensity={7}
             flowSpeed={0.35}
-            flowStrength={0.57}
-            fogIntensity={0.82}
-            fogScale={0.33}
+            flowStrength={0.65}
+            fogIntensity={0.95}
+            fogScale={0.4}
             fogFallSpeed={1.55}
-            decay={1.1}
-            falloffStart={1.2}
+            decay={1.0}
+            falloffStart={1.0}
           />
         </div>
 
@@ -104,7 +104,7 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="relative w-full -mt-[270px] sm:-mt-[340px] z-10"
+        className="relative w-full -mt-[280px] sm:-mt-[350px] z-10"
       >
         {/* 图片展示卡片 - 带紫色边框，无内部黑框 */}
         <div
