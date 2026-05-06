@@ -12,11 +12,11 @@ interface AchievementGallerySectionProps {
 
 export function AchievementGallerySection({ className = "" }: AchievementGallerySectionProps) {
   return (
-    <section className={`relative w-full ${className}`}>
-      {/* 激光流容器 - 位于卡片上方，与卡片顶部重合 */}
-      <div className="relative w-full">
-        {/* LaserFlow 动画区域 */}
-        <div className="absolute top-0 left-0 right-0 h-[300px] sm:h-[400px] z-10 pointer-events-none">
+    <section className={`relative w-full overflow-visible ${className}`}>
+      {/* 激光流容器 - 允许溢出，不被截断 */}
+      <div className="relative w-full overflow-visible">
+        {/* LaserFlow 动画区域 - 使用负的top值让激光流延伸到section外部 */}
+        <div className="absolute -top-[100px] sm:-top-[150px] left-0 right-0 h-[450px] sm:h-[550px] z-10 pointer-events-none overflow-visible">
           <LaserFlow
             color="#cf9eff"
             horizontalBeamOffset={-0.25}
@@ -36,13 +36,13 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
           />
         </div>
 
-        {/* 主内容卡片 - 顶部与激光流重合 */}
+        {/* 主内容卡片 - 顶部与激光流底部紧密贴合 */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="relative w-full pt-[180px] sm:pt-[250px]"
+          className="relative w-full pt-[280px] sm:pt-[320px]"
         >
           {/* 内容卡片 - 带紫色边框 */}
           <div 
