@@ -1,5 +1,6 @@
 "use client"
 
+import type { SpringOptions } from "motion/react"
 import { useRef, useState } from "react"
 import { motion, useMotionValue, useSpring } from "motion/react"
 
@@ -18,6 +19,13 @@ interface TiltedCardProps {
   displayOverlayContent?: boolean
 }
 
+// 官方推荐的 spring 配置 - 更加平滑线性
+const springValues: SpringOptions = {
+  damping: 30,
+  stiffness: 100,
+  mass: 2
+}
+
 export default function TiltedCard({
   imageSrc,
   altText = "Tilted card image",
@@ -32,90 +40,119 @@ export default function TiltedCard({
   overlayContent,
   displayOverlayContent = false,
 }: TiltedCardProps) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [isHovered, setIsHovered] = useState(false)
+  const ref = useRef<HTMLElement>(null)
+  const [lastY, setLastY] = useState(0)
 
   const x = useMotionValue(0)
   const y = useMotionValue(0)
+  const rotateX = useSpring(useMotionValue(0), springValues)
+  const rotateY = useSpring(useMotionValue(0), springValues)
+  const scale = useSpring(1, springValues)
+  const opacity = useSpring(0)
+  const rotateFigcaption = useSpring(0, {
+    stiffness: 350,
+    damping: 30,
+    mass: 1
+  })
 
-  const springConfig = { stiffness: 150, damping: 15, mass: 0.1 }
-  const xSpring = useSpring(x, springConfig)
-  const ySpring = useSpring(y, springConfig)
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  function handleMouse(e: React.MouseEvent<HTMLElement>) {
     if (!ref.current) return
+
     const rect = ref.current.getBoundingClientRect()
-    const centerX = rect.left + rect.width / 2
-    const centerY = rect.top + rect.height / 2
-    const mouseX = e.clientX - centerX
-    const mouseY = e.clientY - centerY
+    const offsetX = e.clientX - rect.left - rect.width / 2
+    const offsetY = e.clientY - rect.top - rect.height / 2
 
-    const rotateX = (mouseY / (rect.height / 2)) * -rotateAmplitude
-    const rotateY = (mouseX / (rect.width / 2)) * rotateAmplitude
+    const rotationX = (offsetY / (rect.height / 2)) * -rotateAmplitude
+    const rotationY = (offsetX / (rect.width / 2)) * rotateAmplitude
 
-    x.set(rotateX)
-    y.set(rotateY)
+    rotateX.set(rotationX)
+    rotateY.set(rotationY)
+
+    x.set(e.clientX - rect.left)
+    y.set(e.clientY - rect.top)
+
+    const velocityY = offsetY - lastY
+    rotateFigcaption.set(-velocityY * 0.6)
+    setLastY(offsetY)
   }
 
-  const handleMouseLeave = () => {
-    setIsHovered(false)
-    x.set(0)
-    y.set(0)
+  function handleMouseEnter() {
+    scale.set(scaleOnHover)
+    opacity.set(1)
+  }
+
+  function handleMouseLeave() {
+    opacity.set(0)
+    scale.set(1)
+    rotateX.set(0)
+    rotateY.set(0)
+    rotateFigcaption.set(0)
   }
 
   return (
-    <div
+    <figure
+      ref={ref}
+      className="relative flex flex-col items-center justify-center"
       style={{
         height: containerHeight,
         width: containerWidth,
-        perspective: "1000px",
+        perspective: "800px"
       }}
+      onMouseMove={handleMouse}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
+      {showMobileWarning && (
+        <div className="absolute top-4 text-center text-xs text-zinc-500 sm:hidden">
+          在桌面端查看以获得最佳交互体验
+        </div>
+      )}
+
       <motion.div
-        ref={ref}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={handleMouseLeave}
+        className="relative"
         style={{
-          rotateX: xSpring,
-          rotateY: ySpring,
-          scale: isHovered ? scaleOnHover : 1,
-          transformStyle: "preserve-3d",
+          width: imageWidth,
+          height: imageHeight,
+          rotateX,
+          rotateY,
+          scale,
+          transformStyle: "preserve-3d"
         }}
-        className="relative w-full h-full rounded-2xl overflow-hidden cursor-pointer"
       >
-        <img
+        <motion.img
           src={imageSrc}
           alt={altText}
+          className="absolute top-0 left-0 object-cover rounded-2xl will-change-transform"
           style={{
-            height: imageHeight,
             width: imageWidth,
+            height: imageHeight,
+            transform: "translateZ(0)"
           }}
-          className="object-cover rounded-2xl"
         />
 
         {displayOverlayContent && overlayContent && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            {overlayContent}
-          </div>
-        )}
-
-        {showTooltip && isHovered && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-sm px-3 py-1.5 rounded-lg text-white text-sm whitespace-nowrap"
+          <motion.div 
+            className="absolute top-0 left-0 z-10 will-change-transform"
+            style={{ transform: "translateZ(30px)" }}
           >
-            {altText}
+            {overlayContent}
           </motion.div>
         )}
       </motion.div>
 
-      {showMobileWarning && (
-        <p className="text-center text-xs text-zinc-500 mt-2 lg:hidden">
-          在桌面端查看以获得最佳交互体验
-        </p>
+      {showTooltip && (
+        <motion.figcaption
+          className="pointer-events-none absolute left-0 top-0 rounded bg-white px-2.5 py-1 text-[10px] text-zinc-800 z-20"
+          style={{
+            x,
+            y,
+            opacity,
+            rotate: rotateFigcaption
+          }}
+        >
+          {altText}
+        </motion.figcaption>
       )}
-    </div>
+    </figure>
   )
 }

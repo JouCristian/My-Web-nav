@@ -6,7 +6,8 @@ import SplitText from "./split-text"
 import { ScrollVelocity } from "./scroll-velocity"
 import { TextType } from "./text-type"
 import TiltedCard from "./tilted-card"
-import ShapeBlur from "./shape-blur"
+import GlareHover from "./glare-hover" 
+import { motion } from "motion/react" // 引入 motion 实现整体缩放
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 
@@ -24,7 +25,6 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
   useEffect(() => {
     if (!cardRef.current) return
     
-    // If animation was already triggered, keep visible
     if (animationTriggeredRef.current) {
       setCardVisible(true)
       return
@@ -41,7 +41,6 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
     })
 
     return () => {
-      // Don't reset visibility on cleanup if animation already triggered
       if (!animationTriggeredRef.current) {
         trigger.kill()
       }
@@ -51,10 +50,9 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
   return (
     <section className={`relative z-10 w-full py-16 sm:py-24 ${className || ''}`}>
       <div className="w-full">
-        {/* 使用 items-center 让左右两边垂直居中对齐 */}
         <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
           
-          {/* 左侧：大字标题和介绍文字 */}
+          {/* 左侧：介绍文字 */}
           <div className="w-full lg:w-[45%] text-center lg:text-left flex flex-col justify-center">
             <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-8 leading-[1.15]">
               <SplitText
@@ -101,7 +99,7 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
               rootMargin="-80px"
               textAlign="left"
             />
-            
+
             <SplitText
               text="通过系统的课程学习和实践，你将掌握数字电路设计、计算机体系结构、操作系统等核心知识，并最终完成一颗可以运行 Linux 的 RISC-V 处理器。"
               tag="p"
@@ -118,7 +116,7 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
             />
           </div>
           
-          {/* 右侧：Mac 风格窗口卡片 + Spotlight 效果 */}
+          {/* 右侧：Mac 风格窗口卡片 */}
           <div 
             ref={cardRef}
             className={`w-full lg:w-[55%] lg:flex-shrink-0 transition-all duration-1000 ease-out ${
@@ -128,108 +126,104 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
             }`}
           >
             <SpotlightCard 
-              className="bg-[#0c0c14]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.05)]"
-              spotlightColor="rgba(255, 255, 255, 0.15)"
+              className="bg-[#16161b]/85 backdrop-blur-3xl backdrop-saturate-[180%] border border-white/10 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.05)]"
+              spotlightColor="rgba(255, 255, 255, 0.08)"
             >
-              {/* Mac 窗口顶栏 */}
-              <div className="flex items-center gap-2 px-5 py-4 border-b border-white/[0.06] bg-white/[0.02] rounded-t-2xl -mx-5 -mt-5 sm:-mx-6 sm:-mt-6 relative z-10">
-                {/* 三个圆点按钮 */}
+              <div className="flex items-center gap-2 px-5 py-4 border-b border-white/[0.08] bg-white/[0.04] rounded-t-2xl -mx-5 -mt-5 sm:-mx-6 sm:-mt-6 relative z-10">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[#ff5f57] shadow-[0_0_8px_rgba(255,95,87,0.6)]" />
-                  <div className="w-3 h-3 rounded-full bg-[#febc2e] shadow-[0_0_8px_rgba(254,188,46,0.6)]" />
-                  <div className="w-3 h-3 rounded-full bg-[#28c840] shadow-[0_0_8px_rgba(40,200,64,0.6)]" />
+                  <div className="w-3 h-3 rounded-full bg-[#ff5f57] shadow-[0_0_8px_rgba(255,95,87,0.4)]" />
+                  <div className="w-3 h-3 rounded-full bg-[#febc2e] shadow-[0_0_8px_rgba(254,188,46,0.4)]" />
+                  <div className="w-3 h-3 rounded-full bg-[#28c840] shadow-[0_0_8px_rgba(40,200,64,0.4)]" />
                 </div>
-                
-                {/* 窗口标题 */}
                 <div className="flex-1 flex justify-center">
-                  <span className="text-xs font-mono text-zinc-500 tracking-wider">ysyx.oscc.cc</span>
+                  <span className="text-xs font-mono text-zinc-400 tracking-wider">ysyx.oscc.cc</span>
                 </div>
-                
-                {/* 占位，保持居中 */}
                 <div className="w-[52px]" />
               </div>
               
-              {/* 内容区域 */}
-              <div className="relative z-10 pt-6 sm:pt-8 flex flex-col min-h-[380px] sm:min-h-[420px]">
+              <div className="relative z-10 pt-10 sm:pt-14 flex flex-col min-h-[400px] sm:min-h-[460px]">
                 
-                {/* 顶部：打字机效果标题 */}
-                <div className="text-center px-4">
-                  <div className="text-xl sm:text-2xl font-bold text-white min-h-[2em]">
-                    <TextType
-                      text={[
-                        "设计你的第一颗 CPU",
-                        "从零开始的处理器之旅",
-                        "让芯片设计不再遥不可及",
-                        "用代码点亮你的硅梦想"
-                      ]}
-                      typingSpeed={80}
-                      pauseDuration={2000}
-                      deletingSpeed={40}
-                      showCursor={true}
-                      cursorCharacter="_"
-                      cursorClassName="text-cyan-400"
-                      className="text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-300"
-                    />
-                  </div>
-                </div>
-
-                {/* 中部：Logo + 按钮区域 */}
-                <div className="flex-1 flex items-center justify-center gap-6 sm:gap-10 px-4 py-4">
-                  {/* 左侧：TiltedCard Logo */}
+                <div className="flex-1 flex items-center gap-8 px-6 sm:px-10">
+                  
+                  {/* 定点修改：图片 Card 整体放大逻辑 */}
                   <div className="flex-shrink-0">
-                    <TiltedCard
-                      imageSrc="/images/ysyx-logo.png"
-                      altText="一生一芯 Logo"
-                      containerHeight="100px"
-                      containerWidth="100px"
-                      imageHeight="100px"
-                      imageWidth="100px"
-                      rotateAmplitude={16}
-                      scaleOnHover={1.15}
-                      showMobileWarning={false}
-                      showTooltip={false}
-                      displayOverlayContent={true}
-                      overlayContent={
-                        <div className="w-[100px] h-[100px] rounded-xl bg-gradient-to-br from-cyan-400/10 to-transparent" />
-                      }
-                    />
+                    <motion.div
+                      whileHover={{ scale: 1.08 }} // 让整个“高光+图片”组合整体放大
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                      className="relative z-20"
+                    >
+                      <GlareHover
+                        width="230px"  // 尺寸提升到 260px
+                        height="230px"
+                        background="transparent"
+                        borderRadius="24px" // 调大圆角更显精致
+                        borderColor="rgba(255,255,255,0.1)"
+                        glareColor="#ffffff"
+                        glareOpacity={0.3}
+                        glareSize={250}
+                        transitionDuration={1650}
+                        playOnce={true}
+                      >
+                        <TiltedCard
+                          imageSrc="/images/ysyx-logo.png"
+                          altText="一生一芯 Logo"
+                          containerHeight="240px"
+                          containerWidth="240px"
+                          imageHeight="240px"
+                          imageWidth="240px"
+                          rotateAmplitude={10} // 稍微减小旋转幅度，配合整体放大更稳重
+                          scaleOnHover={1}    // 重要：设为1，禁止内部图片单独放大
+                          showMobileWarning={false}
+                          showTooltip={false}
+                          displayOverlayContent={true}
+                        />
+                      </GlareHover>
+                    </motion.div>
                   </div>
                   
-                  {/* 右侧：访问官网按钮 */}
-                  <a
-                    href="https://ysyx.oscc.cc"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group relative flex items-center justify-center w-[120px] sm:w-[140px] h-[100px] rounded-xl overflow-hidden border border-white/[0.08] bg-white/[0.02] transition-all duration-300 hover:border-cyan-400/30 hover:bg-white/[0.04]"
-                  >
-                    {/* ShapeBlur 背景动效 */}
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                      <ShapeBlur
-                        variation={0}
-                        shapeSize={0.8}
-                        roundness={0.5}
-                        borderSize={0.04}
-                        circleSize={0.4}
-                        circleEdge={0.8}
-                      />
-                    </div>
-                    
-                    {/* 按钮内容 */}
-                    <div className="relative z-10 flex flex-col items-center gap-2">
-                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-400/20 to-cyan-400/5 border border-cyan-400/20 flex items-center justify-center group-hover:scale-110 group-hover:border-cyan-400/40 transition-all duration-300">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-cyan-400">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                        </svg>
+                  {/* 右侧：文字与按钮 */}
+                  <div className="flex-1 flex justify-center">
+                    <div className="flex flex-col items-start text-left">
+                      <div className="mb-6">
+                        <div className="text-xl sm:text-2xl font-bold text-white min-h-[1.8em] leading-tight">
+                          <TextType
+                            text={[
+                              "设计你的第一颗 CPU",
+                              "从零开始的处理器之旅",
+                              "芯片设计不再遥不可及",
+                              "用代码点亮你的硅梦想",
+                              "加入西科一生一芯小组",
+                              "共同进步！YSYX！"
+                            ]}
+                            typingSpeed={80}
+                            pauseDuration={2000}
+                            deletingSpeed={40}
+                            showCursor={true}
+                            cursorCharacter="_"
+                            cursorClassName="text-cyan-400"
+                            className="text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-300"
+                          />
+                        </div>
+                        <p className="text-xs text-zinc-500 mt-2 font-mono tracking-widest uppercase">YSYX · Open Source Chip Education</p>
                       </div>
-                      <span className="text-xs font-medium text-zinc-400 group-hover:text-cyan-400 transition-colors duration-300">
-                        访问官网
-                      </span>
+                      
+                      <a
+                        href="https://ysyx.oscc.cc"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="spring-btn-hero group relative inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-full bg-white text-black font-bold text-sm overflow-hidden"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                        <span className="relative z-10 tracking-[0.1em]">进入官网</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4 relative z-10 transition-transform group-hover:translate-x-1">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
+                        </svg>
+                      </a>
                     </div>
-                  </a>
+                  </div>
                 </div>
 
-                {/* 滚动关键词 - 紧贴底部分界线 */}
-                <div className="overflow-hidden -mx-5 sm:-mx-6 mb-0">
+                <div className="overflow-hidden -mx-5 sm:-mx-6 mt-8 mb-2">
                   <ScrollVelocity
                     texts={[
                       <span key="row1" className="flex items-center gap-4 text-sm sm:text-base font-mono font-semibold text-zinc-400">
@@ -263,12 +257,11 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
                     ]}
                     velocity={30}
                     numCopies={4}
-                    className="[&>div]:gap-0.5"
+                    className="[&>div]:gap-1"
                   />
                 </div>
 
-                {/* 底部：核心亮点列表 */}
-                <div className="pt-4 border-t border-white/[0.06]">
+                <div className="pt-4 border-t border-white/[0.1]">
                   <div className="grid grid-cols-2 gap-3 px-2">
                     <div className="flex items-center gap-2 text-xs sm:text-sm">
                       <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.6)]" />
@@ -288,11 +281,9 @@ export function YsyxIntroSection({ className }: YsyxIntroSectionProps) {
                     </div>
                   </div>
                 </div>
-
               </div>
             </SpotlightCard>
           </div>
-          
         </div>
       </div>
     </section>
