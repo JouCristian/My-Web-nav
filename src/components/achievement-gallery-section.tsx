@@ -12,38 +12,36 @@ interface AchievementGallerySectionProps {
 
 export function AchievementGallerySection({ className = "" }: AchievementGallerySectionProps) {
   return (
-    <section className={`relative w-full overflow-visible ${className}`}>
-      {/* 激光流容器 - 允许溢出，不被截断 */}
-      <div className="relative w-full overflow-visible">
-        {/* LaserFlow 动画区域 - 使用负的top值让激光流延伸到section外部 */}
-        <div className="absolute -top-[100px] sm:-top-[150px] left-0 right-0 h-[450px] sm:h-[550px] z-10 pointer-events-none overflow-visible">
-          <LaserFlow
-            color="#cf9eff"
-            horizontalBeamOffset={-0.25}
-            verticalBeamOffset={0.0}
-            horizontalSizing={0.5}
-            verticalSizing={4}
-            wispDensity={1.6}
-            wispSpeed={21.5}
-            wispIntensity={5}
-            flowSpeed={0.35}
-            flowStrength={0.37}
-            fogIntensity={0.82}
-            fogScale={0.23}
-            fogFallSpeed={1.55}
-            decay={1.1}
-            falloffStart={1.2}
-          />
-        </div>
+    <section className={`relative w-full ${className}`}>
+      {/* 激光流区域 - 正常流式布局，高度固定 */}
+      <div className="relative w-full h-[300px] sm:h-[350px]">
+        <LaserFlow
+          color="#cf9eff"
+          horizontalBeamOffset={-0.25}
+          verticalBeamOffset={0.0}
+          horizontalSizing={0.5}
+          verticalSizing={4}
+          wispDensity={1.6}
+          wispSpeed={21.5}
+          wispIntensity={5}
+          flowSpeed={0.35}
+          flowStrength={0.37}
+          fogIntensity={0.82}
+          fogScale={0.23}
+          fogFallSpeed={1.55}
+          decay={1.1}
+          falloffStart={1.2}
+        />
+      </div>
 
-        {/* 主内容卡片 - 顶部与激光流底部紧密贴合 */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="relative w-full pt-[280px] sm:pt-[320px]"
-        >
+      {/* 主内容卡片 - 紧贴激光流底部，使用负margin让卡片顶部与激光流底部重合 */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8 }}
+        className="relative w-full -mt-[50px] sm:-mt-[60px] z-10"
+      >
           {/* 内容卡片 - 带紫色边框 */}
           <div 
             className="relative w-full min-h-[450px] sm:min-h-[500px] rounded-2xl sm:rounded-3xl border border-purple-500/30 bg-[#0a0a12]/90 backdrop-blur-xl flex flex-col sm:flex-row"
@@ -126,7 +124,6 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
             </div>
           </div>
         </motion.div>
-      </div>
     </section>
   );
 }
