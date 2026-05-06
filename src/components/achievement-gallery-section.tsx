@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
+import GlitchText from "./GlitchText";
 
 // 动态导入 LaserFlow 避免 SSR 问题
 const LaserFlow = dynamic(() => import("./LaserFlow"), { ssr: false });
@@ -44,19 +45,15 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
           transition={{ duration: 0.8, delay: 0.2 }}
           className="relative w-full lg:w-1/2 flex flex-col justify-start px-6 sm:px-10 lg:px-16 pt-8 sm:pt-12 lg:pt-20 pb-[350px] sm:pb-[450px]"
         >
-          {/* 顶部标签组 */}
-          <div className="flex flex-wrap items-center gap-3 mb-6 sm:mb-8">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20">
-              <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-              <span className="text-purple-400 text-xs font-mono tracking-[0.15em] uppercase">
-                SWUST YSYX Team
-              </span>
-            </div>
-            <div className="px-3 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/20">
-              <span className="text-pink-400 text-xs font-medium">
-                成果档案馆
-              </span>
-            </div>
+          {/* GlitchText 标题 */}
+          <div className="mb-6 sm:mb-8">
+            <GlitchText
+              speed={1.8}
+              enableShadows={true}
+              enableOnHover={false}
+            >
+              SWUST YSYX TEAM
+            </GlitchText>
           </div>
 
           {/* 主标题 - 更大更突出 */}
