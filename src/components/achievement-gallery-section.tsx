@@ -20,19 +20,19 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
           <LaserFlow
             color="#cf9eff"
             horizontalBeamOffset={0}
-            verticalBeamOffset={0.0}
+            verticalBeamOffset={-0.135}
             horizontalSizing={1.5}
-            verticalSizing={2.5}
+            verticalSizing={1.5}
             wispDensity={6.0}
             wispSpeed={15.5}
-            wispIntensity={15}
+            wispIntensity={8}
             flowSpeed={0.35}
-            flowStrength={0.65}
-            fogIntensity={0.95}
+            flowStrength={0.45}
+            fogIntensity={0.55}
             fogScale={0.4}
             fogFallSpeed={1.55}
             decay={1.0}
-            falloffStart={2.0}
+            falloffStart={1.5}
           />
         </div>
 
