@@ -162,7 +162,7 @@ function DockSocialItem({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 4, scale: 0.9 }}
             transition={{ duration: 0.15 }}
-            className="absolute -top-8 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-sm border border-white/10 whitespace-nowrap z-20"
+            className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-sm border border-white/10 whitespace-nowrap z-50 pointer-events-none"
           >
             <span 
               className="text-[11px] font-medium"
@@ -255,11 +255,11 @@ export function Footer() {
 
           {/* Dock Style Social Links - 移动端支持横向滚动 */}
           <div 
-            className="w-full max-w-full overflow-x-auto scrollbar-hide pb-2"
+            className="w-full max-w-full overflow-x-auto scrollbar-hide"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <div 
-              className="flex items-end justify-start sm:justify-center gap-2.5 sm:gap-4 h-[72px] min-w-max px-4 sm:px-0 mx-auto"
+              className="flex items-end justify-start sm:justify-center gap-2.5 sm:gap-4 h-[100px] min-w-max px-4 sm:px-0 mx-auto"
               onMouseMove={(e) => mouseX.set(e.clientX)}
               onMouseLeave={() => mouseX.set(Infinity)}
             >
