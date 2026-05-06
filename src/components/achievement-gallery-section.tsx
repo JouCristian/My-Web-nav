@@ -40,7 +40,7 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="relative w-full -mt-[200px] sm:-mt-[260px] z-10"
+        className="relative w-full -mt-[270px] sm:-mt-[340px] z-10"
       >
           {/* 内容卡片 - 带紫色边框 */}
           <div 
