@@ -104,8 +104,7 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="relative w-full -mt-[320px] sm:-mt-[420px] z-10"
-      >
+        className="relative w-full -mt-[310px] sm:-mt-[410px] z-10"      >
         {/* 图片展示卡片 - 带紫色边框，无内部黑框 */}
         <div
           className="relative w-full min-h-[400px] sm:min-h-[500px] rounded-2xl sm:rounded-3xl border border-purple-500/30 bg-[#0a0a12]/90 backdrop-blur-xl p-6 sm:p-8 lg:p-10"
