@@ -389,7 +389,7 @@ export function FleetAttendanceModule({
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center bg-[#02040a]/60 border border-white/5 rounded-2xl sm:rounded-[2rem] p-4 sm:p-8 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] relative z-10">
+          <div className="flex-1 flex flex-col items-center justify-center bg-[#02040a]/60 border border-white/5 rounded-2xl sm:rounded-[2rem] p-4 sm:p-8 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] relative z-10 overflow-visible">
             {!isRollCallActive && (
               <div className="w-full max-w-md flex flex-col items-center gap-8 relative">
                 {isManager ? (
@@ -409,7 +409,7 @@ export function FleetAttendanceModule({
                             <motion.div 
                               key="time-overlay"
                               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                              className="fixed inset-0 z-[9998] bg-black/50" 
+                              className="fixed inset-0 z-[9998]" 
                               onClick={(e) => { e.stopPropagation(); setIsTimePickerOpen(false); }} 
                             />
                           )}
@@ -423,7 +423,7 @@ export function FleetAttendanceModule({
                               animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
                               exit={{ opacity: 0, scale: 0.9, y: -10, filter: "blur(10px)" }}
                               transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-72"
+                              className="absolute top-full left-1/2 -translate-x-1/2 mt-4 z-[9999] w-72"
                             >
                               <div className="w-full bg-[#060813]/95 border border-amber-500/40 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(245,158,11,0.2)] p-4 flex flex-col gap-4 backdrop-blur-xl">
                                 <div className="flex justify-between items-center px-4 font-mono text-[10px] text-amber-500/60 tracking-widest uppercase"><span>MINUTES</span><span>SECONDS</span></div>
