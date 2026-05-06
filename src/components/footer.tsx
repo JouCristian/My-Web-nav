@@ -253,24 +253,19 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Dock Style Social Links - 移动端支持横向滚动，垂直方向允许溢出显示光晕 */}
+          {/* Dock Style Social Links - 移动端自动换行，不使用overflow避免裁剪光晕和tooltip */}
           <div 
-            className="w-full max-w-full overflow-x-auto overflow-y-visible scrollbar-hide"
-            style={{ WebkitOverflowScrolling: 'touch' }}
+            className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 px-4 sm:px-0 py-4"
+            onMouseMove={(e) => mouseX.set(e.clientX)}
+            onMouseLeave={() => mouseX.set(Infinity)}
           >
-            <div 
-              className="flex items-center justify-start sm:justify-center gap-2.5 sm:gap-4 h-[100px] min-w-max px-4 sm:px-0 mx-auto py-4"
-              onMouseMove={(e) => mouseX.set(e.clientX)}
-              onMouseLeave={() => mouseX.set(Infinity)}
-            >
-              {SOCIAL_LINKS.map((link) => (
-                <DockSocialItem 
-                  key={link.name} 
-                  link={link} 
-                  mouseX={mouseX}
-                />
-              ))}
-            </div>
+            {SOCIAL_LINKS.map((link) => (
+              <DockSocialItem 
+                key={link.name} 
+                link={link} 
+                mouseX={mouseX}
+              />
+            ))}
           </div>
 
           {/* 底部分割装饰 */}
