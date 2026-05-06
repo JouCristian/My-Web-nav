@@ -34,8 +34,9 @@ export function AchievementGallerySection({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [newImageUrl, setNewImageUrl] = useState("");
   const [newImageText, setNewImageText] = useState("");
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const canManage = isCaptain || isAdmin;
 
@@ -46,18 +47,54 @@ export function AchievementGallerySection({
   //   fetchGalleryImages().then(setImages);
   // }, []);
 
+  // 处理文件选择
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // 检查文件类型
+    if (!file.type.startsWith('image/')) {
+      alert('请选择图片文件');
+      return;
+    }
+    
+    // 检查文件大小（限制10MB）
+    if (file.size > 10 * 1024 * 1024) {
+      alert('图片大小不能超过10MB');
+      return;
+    }
+    
+    setSelectedFile(file);
+    
+    // 生成预览
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setPreviewImage(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleAddImage = async () => {
-    if (!newImageUrl.trim()) return;
+    if (!previewImage) return;
     setIsUploading(true);
     try {
+      // TODO: 上传到 Vercel Blob 或其他存储服务
+      // const blob = await upload(selectedFile.name, selectedFile, { access: 'public' });
+      // const imageUrl = blob.url;
+      
+      // 目前使用 base64 预览（实际部署时应替换为上传后的URL）
       const newImage: GalleryImage = {
         id: Date.now().toString(),
-        image: newImageUrl,
+        image: previewImage,
         text: newImageText || "成果展示"
       };
       setImages(prev => [...prev, newImage]);
-      setNewImageUrl("");
       setNewImageText("");
+      setPreviewImage(null);
+      setSelectedFile(null);
+      // 重置文件输入
+      const fileInput = document.getElementById('gallery-file-input') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
       // TODO: 保存到数据库
       // await saveGalleryImage(newImage);
     } catch (error) {
@@ -65,6 +102,13 @@ export function AchievementGallerySection({
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleClearPreview = () => {
+    setPreviewImage(null);
+    setSelectedFile(null);
+    const fileInput = document.getElementById('gallery-file-input') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
   };
 
   const handleDeleteImage = async (id: string) => {
@@ -151,15 +195,43 @@ export function AchievementGallerySection({
               <div className="relative z-10 bg-black/40 border border-white/5 rounded-2xl p-4 sm:p-6 mb-6">
                 <h3 className="text-sm font-bold text-zinc-300 mb-4 tracking-wider uppercase">添加新图片</h3>
                 <div className="space-y-4">
+                  {/* 文件选择区域 */}
                   <div>
-                    <label className="text-xs text-zinc-500 mb-1.5 block">图片URL</label>
-                    <input
-                      type="text"
-                      value={newImageUrl}
-                      onChange={(e) => setNewImageUrl(e.target.value)}
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-purple-500/50 transition-colors"
-                    />
+                    <label className="text-xs text-zinc-500 mb-1.5 block">选择图片</label>
+                    {!previewImage ? (
+                      <label 
+                        htmlFor="gallery-file-input"
+                        className="flex flex-col items-center justify-center w-full h-32 rounded-xl bg-black/50 border-2 border-dashed border-white/10 hover:border-purple-500/50 cursor-pointer transition-colors group"
+                      >
+                        <svg className="w-8 h-8 text-zinc-500 group-hover:text-purple-400 transition-colors mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                        </svg>
+                        <span className="text-sm text-zinc-500 group-hover:text-purple-400 transition-colors">点击选择图片</span>
+                        <span className="text-xs text-zinc-600 mt-1">支持 JPG、PNG、GIF，最大 10MB</span>
+                        <input
+                          id="gallery-file-input"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                        />
+                      </label>
+                    ) : (
+                      <div className="relative w-full h-32 rounded-xl overflow-hidden border border-purple-500/30">
+                        <img src={previewImage} alt="预览" className="w-full h-full object-cover" />
+                        <button
+                          onClick={handleClearPreview}
+                          className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 border border-white/10 text-white hover:bg-red-500/50 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                        <div className="absolute bottom-2 left-2 px-2 py-1 rounded-md bg-black/60 text-xs text-white">
+                          {selectedFile?.name}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="text-xs text-zinc-500 mb-1.5 block">图片描述（可选）</label>
@@ -173,7 +245,7 @@ export function AchievementGallerySection({
                   </div>
                   <button
                     onClick={handleAddImage}
-                    disabled={isUploading || !newImageUrl.trim()}
+                    disabled={isUploading || !previewImage}
                     className="w-full px-4 py-3 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-300 font-bold text-sm hover:bg-purple-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isUploading ? (
