@@ -512,3 +512,81 @@ export async function deleteFlightLog(date: string) {
     return { error: "删除失败" }
   }
 }
+
+/**
+ * ==========================================
+ * 🖼️ 成果档案馆 (Achievement Gallery)
+ * ==========================================
+ */
+
+// 获取所有档案图片 (公开可见)
+export async function getGalleryImages() {
+  try {
+    const images = await prisma.galleryImage.findMany({
+      orderBy: { createdAt: 'desc' }
+    })
+    return { 
+      data: images.map(img => ({
+        id: img.id,
+        image: img.imageData,
+        text: img.title
+      }))
+    }
+  } catch (error) {
+    console.error("获取档案图片失败:", error)
+    return { error: "获取档案图片失败" }
+  }
+}
+
+// 添加档案图片 (仅舰长/管理员)
+export async function addGalleryImage(imageData: string, title: string) {
+  const session = await auth()
+  if (!session?.user?.id) return { error: "未授权" }
+
+  const dbUser = await prisma.user.findUnique({ where: { id: session.user.id } })
+  if (dbUser?.role !== "OWNER" && dbUser?.role !== "ADMIN") {
+    return { error: "权限不足：仅指挥序列可添加档案图片" }
+  }
+
+  try {
+    const newImage = await prisma.galleryImage.create({
+      data: {
+        imageData: imageData,
+        title: title || "成果展示",
+        uploaderId: session.user.id
+      }
+    })
+    revalidatePath("/")
+    return { 
+      success: true, 
+      data: {
+        id: newImage.id,
+        image: newImage.imageData,
+        text: newImage.title
+      }
+    }
+  } catch (error) {
+    console.error("添加档案图片失败:", error)
+    return { error: "添加档案图片失败" }
+  }
+}
+
+// 删除档案图片 (仅舰长/管理员)
+export async function deleteGalleryImage(id: string) {
+  const session = await auth()
+  if (!session?.user?.id) return { error: "未授权" }
+
+  const dbUser = await prisma.user.findUnique({ where: { id: session.user.id } })
+  if (dbUser?.role !== "OWNER" && dbUser?.role !== "ADMIN") {
+    return { error: "权限不足：仅指挥序列可删除档案图片" }
+  }
+
+  try {
+    await prisma.galleryImage.delete({ where: { id } })
+    revalidatePath("/")
+    return { success: true }
+  } catch (error) {
+    console.error("删除档案图片失败:", error)
+    return { error: "删除档案图片失败" }
+  }
+}
