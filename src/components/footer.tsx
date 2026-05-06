@@ -253,13 +253,13 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Dock Style Social Links - 移动端支持横向滚动 */}
+          {/* Dock Style Social Links - 移动端支持横向滚动，垂直方向允许溢出显示光晕 */}
           <div 
-            className="w-full max-w-full overflow-x-auto scrollbar-hide"
+            className="w-full max-w-full overflow-x-auto overflow-y-visible scrollbar-hide"
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <div 
-              className="flex items-center justify-start sm:justify-center gap-2.5 sm:gap-4 h-[100px] min-w-max px-4 sm:px-0 mx-auto pt-6"
+              className="flex items-center justify-start sm:justify-center gap-2.5 sm:gap-4 h-[100px] min-w-max px-4 sm:px-0 mx-auto py-4"
               onMouseMove={(e) => mouseX.set(e.clientX)}
               onMouseLeave={() => mouseX.set(Infinity)}
             >
