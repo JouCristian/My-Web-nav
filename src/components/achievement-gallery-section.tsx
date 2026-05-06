@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
@@ -43,6 +43,12 @@ export function AchievementGallerySection({
 
   const canManage = isCaptain || isAdmin;
   const [isCompressing, setIsCompressing] = useState(false);
+
+  // 缓存 CircularGallery 的 items，避免父组件状态变化导致重新渲染
+  const galleryItems = useMemo(() => 
+    images.map(img => ({ image: img.image, text: img.text })), 
+    [images]
+  );
 
   useEffect(() => { setIsMounted(true) }, []);
 
@@ -599,10 +605,10 @@ export function AchievementGallerySection({
             )}
 
             {/* 图片展示区域 */}
-            {images.length > 0 ? (
+            {galleryItems.length > 0 ? (
               <div className="w-full h-[400px] sm:h-[500px]">
                 <CircularGallery
-                  items={images.map(img => ({ image: img.image, text: img.text }))}
+                  items={galleryItems}
                   bend={0}
                   textColor="#ffffff"
                   borderRadius={0.11}
