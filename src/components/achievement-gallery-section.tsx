@@ -16,7 +16,7 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
       {/* 顶部区域：激光流 + 文字内容并排 */}
       <div className="relative w-full flex flex-col lg:flex-row items-stretch">
         {/* 左侧：激光流区域 */}
-        <div className="relative w-full lg:w-1/2 h-[500px] sm:h-[600px] lg:h-[700px]">
+        <div className="relative w-full lg:w-1/2 h-[600px] sm:h-[750px] lg:h-[850px]">
           <LaserFlow
             color="#cf9eff"
             horizontalBeamOffset={0}
@@ -104,7 +104,7 @@ export function AchievementGallerySection({ className = "" }: AchievementGallery
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="relative w-full -mt-[280px] sm:-mt-[350px] z-10"
+        className="relative w-full -mt-[320px] sm:-mt-[420px] z-10"
       >
         {/* 图片展示卡片 - 带紫色边框，无内部黑框 */}
         <div
