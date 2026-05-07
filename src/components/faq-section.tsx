@@ -163,11 +163,15 @@ function FAQItem({
 
   return (
     <motion.div
-      layout
+      layout="position"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.4, ease: smoothBezier }}
+      transition={{ 
+        duration: 0.4, 
+        ease: smoothBezier,
+        layout: { duration: 0.4, ease: [0.32, 0.72, 0, 1] }
+      }}
       className="relative"
     >
       <GlassSurface
@@ -223,13 +227,18 @@ function FAQItem({
 
           {/* 展开内容 */}
           <CollapsePanel isOpen={isExpanded}>
-            <div className="pt-4 mt-4 border-t border-white/5">
-                  {/* 回答列表 */}
+            <motion.div 
+              className="pt-4 mt-4 border-t border-white/5"
+              layout
+              transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+            >
+                  {/* 回答列表 - 带最大高度 */}
                   {question.answers.length > 0 ? (
-                    <div className="space-y-4 mb-4">
+                    <div className="space-y-4 mb-4 max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent pr-1">
                       {question.answers.map((answer) => (
                         <motion.div
                           key={answer.id}
+                          layout
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.4, ease: smoothBezier }}
@@ -319,24 +328,27 @@ function FAQItem({
                     )}
                   </div>
 
-                  {/* 回答输入框 - 在按钮下方展开 */}
+                  {/* 回答输入框 - 在按钮下方展开，带平滑宽度过渡 */}
                   <AnimatePresence>
                     {isReplying && (
                       <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
+                        layout
+                        initial={{ height: 0, opacity: 0, scale: 0.98 }}
+                        animate={{ height: 'auto', opacity: 1, scale: 1 }}
+                        exit={{ height: 0, opacity: 0, scale: 0.98 }}
                         transition={{
-                          height: { duration: 0.5, ease: [0.32, 0.72, 0, 1] },
-                          opacity: { duration: 0.35, ease: [0.32, 0.72, 0, 1] }
+                          height: { duration: 0.45, ease: [0.32, 0.72, 0, 1] },
+                          opacity: { duration: 0.3, ease: [0.32, 0.72, 0, 1] },
+                          scale: { duration: 0.4, ease: [0.32, 0.72, 0, 1] },
+                          layout: { duration: 0.4, ease: [0.32, 0.72, 0, 1] }
                         }}
-                        style={{ overflow: 'hidden' }}
+                        style={{ overflow: 'hidden', transformOrigin: 'top center' }}
                       >
                         <motion.div 
-                          initial={{ y: -15, opacity: 0 }}
+                          initial={{ y: -12, opacity: 0 }}
                           animate={{ y: 0, opacity: 1 }}
-                          exit={{ y: -15, opacity: 0 }}
-                          transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1], delay: 0.05 }}
+                          exit={{ y: -12, opacity: 0 }}
+                          transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1], delay: 0.03 }}
                           className="mt-4 space-y-3"
                         >
                           <textarea
@@ -369,7 +381,7 @@ function FAQItem({
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </div>
+            </motion.div>
           </CollapsePanel>
         </div>
       </GlassSurface>
@@ -490,7 +502,7 @@ export function FAQSection({
 
           {/* 展开内容 */}
           <CollapsePanel isOpen={isExpanded}>
-            <div className="pt-6 mt-6 border-t border-white/5">
+            <div className="pt-6 mt-6 border-t border-white/5 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                   {/* 登录提示 */}
                   {!isLoggedIn && (
                     <div className="mb-6 p-4 flex items-center justify-center gap-3 bg-zinc-800/50 border border-zinc-700/50 rounded-2xl text-zinc-500">
@@ -558,24 +570,27 @@ export function FAQSection({
                         <span>{isAsking ? '收起' : '提出新问题'}</span>
                       </button>
                       
-                      {/* 输入框 - 在按钮下方展开 */}
+                      {/* 输入框 - 在按钮下方展开，带平滑过渡 */}
                       <AnimatePresence>
                         {isAsking && (
                           <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
+                            layout
+                            initial={{ height: 0, opacity: 0, scale: 0.98 }}
+                            animate={{ height: 'auto', opacity: 1, scale: 1 }}
+                            exit={{ height: 0, opacity: 0, scale: 0.98 }}
                             transition={{
-                              height: { duration: 0.5, ease: [0.32, 0.72, 0, 1] },
-                              opacity: { duration: 0.35, ease: [0.32, 0.72, 0, 1] }
+                              height: { duration: 0.45, ease: [0.32, 0.72, 0, 1] },
+                              opacity: { duration: 0.3, ease: [0.32, 0.72, 0, 1] },
+                              scale: { duration: 0.4, ease: [0.32, 0.72, 0, 1] },
+                              layout: { duration: 0.4, ease: [0.32, 0.72, 0, 1] }
                             }}
-                            style={{ overflow: 'hidden' }}
+                            style={{ overflow: 'hidden', transformOrigin: 'top center' }}
                           >
                             <motion.div 
-                              initial={{ y: -20, opacity: 0 }}
+                              initial={{ y: -15, opacity: 0 }}
                               animate={{ y: 0, opacity: 1 }}
-                              exit={{ y: -20, opacity: 0 }}
-                              transition={{ duration: 0.45, ease: [0.32, 0.72, 0, 1], delay: 0.05 }}
+                              exit={{ y: -15, opacity: 0 }}
+                              transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1], delay: 0.03 }}
                               className="mt-3 p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3"
                             >
                               <textarea
