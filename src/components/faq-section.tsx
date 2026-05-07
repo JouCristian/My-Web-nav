@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-// 自定义滚动条样式 - 默认隐藏，hover时显示
+// 自定义滚动条样式 + FAQ专用玻璃项样式
 const scrollbarStyles = `
   .faq-scrollbar {
     overflow-y: scroll;
@@ -30,6 +30,17 @@ const scrollbarStyles = `
   }
   .faq-scrollbar::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.25);
+  }
+  
+  /* FAQ玻璃项 - 内容区撑满，宽度过渡 */
+  .faq-glass-item {
+    width: 100% !important;
+    transition: all 0.45s cubic-bezier(0.32, 0.72, 0, 1) !important;
+  }
+  .faq-glass-item .glass-surface__content {
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
   }
 `
 import GlassSurface from './GlassSurface'
@@ -197,11 +208,12 @@ function FAQItem({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.4, ease: smoothBezier }}
-      className="relative"
+      className="relative w-full"
     >
       <GlassSurface
         width="100%"
         height="auto"
+        className="faq-glass-item"
         borderRadius={16}
         brightness={120}
         opacity={0.4}
@@ -210,14 +222,14 @@ function FAQItem({
         mixBlendMode="normal"
         backgroundOpacity={0.08}
       >
-        <div className="p-4 sm:p-5">
+        <div className="p-4 sm:p-5 w-full min-w-0">
           {/* 问题头部 */}
           <div 
-            className="flex items-start gap-3 cursor-pointer group"
+            className="flex items-start gap-3 cursor-pointer group w-full min-w-0"
             onClick={() => setIsExpanded(!isExpanded)}
           >
             <Avatar src={question.authorImage} name={question.authorName} />
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 overflow-hidden">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-sm font-medium text-zinc-200 truncate">
                   {question.authorName || '匿名用户'}
@@ -252,7 +264,7 @@ function FAQItem({
 
           {/* 展开内容 */}
           <CollapsePanel isOpen={isExpanded}>
-            <div className="pt-4 mt-4 border-t border-white/5">
+            <div className="pt-4 mt-4 border-t border-white/5 overflow-hidden">
                   {/* 回答列表 - 带最大高度，滚动条hover时显示 */}
                   {question.answers.length > 0 ? (
                     <div className="space-y-4 mb-4 max-h-[280px] pr-2 faq-scrollbar">
@@ -275,7 +287,7 @@ function FAQItem({
                                 {new Date(answer.createdAt).toLocaleDateString('zh-CN')}
                               </span>
                             </div>
-                            <p className="text-sm text-zinc-400 leading-relaxed">
+                            <p className="text-sm text-zinc-400 leading-relaxed break-words overflow-hidden">
                               {answer.content}
                             </p>
                           </div>
@@ -444,7 +456,7 @@ export function FAQSection({
         <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent" />
       </div>
 
-      {/* 主容器 - 可折�� */}
+      {/* 主容器 - 可折叠 */}
       <GlassSurface
         width="100%"
         height="auto"
@@ -455,8 +467,9 @@ export function FAQSection({
         displace={1.2}
         mixBlendMode="normal"
         backgroundOpacity={0.1}
+        className="faq-glass-item"
       >
-        <div className="p-5 sm:p-6">
+        <div className="p-5 sm:p-6 w-full">
           {/* 折叠头部 */}
           <div 
             className="flex items-center justify-between cursor-pointer group"
@@ -647,7 +660,7 @@ export function FAQSection({
 
                   {/* 问题列表 - 带最大高度，滚动条hover时显示 */}
                   {questions.length > 0 ? (
-                    <div className="space-y-4 max-h-[60vh] faq-scrollbar pr-2">
+                    <div className="flex flex-col gap-4 max-h-[60vh] faq-scrollbar pr-2 w-full">
                       <AnimatePresence mode="popLayout">
                         {questions.map((question) => (
                           <FAQItem
