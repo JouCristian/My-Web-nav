@@ -96,6 +96,7 @@ model User {
   announcements    Announcement[]
   rollCallRecords  AttendanceRecord[] 
   flightLogs       FlightLog[]        // 关联航行日志
+  faqQuestions     FAQQuestion[]      // 关联FAQ提问
 }
 
 // ==========================================
@@ -222,4 +223,32 @@ model GalleryImage {
   title       String             // 图片标题/描述
   uploaderId  String             // 上传者ID
   createdAt   DateTime @default(now())
+}
+
+// ==========================================
+// ❓ FAQ 问答系统 (FAQ System)
+// ==========================================
+model FAQQuestion {
+  id          String      @id @default(cuid())
+  content     String      @db.Text   // 问题内容
+  authorId    String                 // 提问者ID
+  authorName  String?                // 提问者昵称
+  authorImage String?                // 提问者头像
+  createdAt   DateTime    @default(now())
+  
+  author      User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  answers     FAQAnswer[]
+}
+
+model FAQAnswer {
+  id           String      @id @default(cuid())
+  content      String      @db.Text   // 回答内容
+  questionId   String                 // 关联问题ID
+  authorId     String                 // 回答者ID
+  authorName   String?                // 回答者昵称
+  authorImage  String?                // 回答者头像
+  authorRole   String?                // 回答者角色标识
+  createdAt    DateTime    @default(now())
+  
+  question     FAQQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 }
