@@ -56,55 +56,58 @@ function ExpandablePanel({
   className?: string
 }) {
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence initial={false} mode="sync">
       {isOpen && (
-        <div className={`relative ${className}`}>
+        <motion.div 
+          className={`relative ${className}`}
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ 
+            height: 'auto', 
+            opacity: 1,
+          }}
+          exit={{ 
+            height: 0, 
+            opacity: 0,
+          }}
+          transition={{
+            height: { 
+              duration: 0.4, 
+              ease: elasticBezier 
+            },
+            opacity: { 
+              duration: 0.25,
+              ease: smoothBezier
+            }
+          }}
+          style={{ overflow: 'hidden' }}
+        >
           {/* 形变装饰层 - 只影响背景 */}
           <motion.div
-            className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent rounded-xl pointer-events-none"
-            initial={{ scaleX: 1.03, scaleY: 0.7, opacity: 0 }}
+            className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent rounded-xl pointer-events-none"
+            initial={{ scaleX: 1.02, scaleY: 0.85, opacity: 0 }}
             animate={{ 
-              scaleX: [1.03, 0.98, 1.01, 1], 
-              scaleY: [0.7, 1.05, 0.98, 1],
-              opacity: [0, 0.5, 0.3, 0]
+              scaleX: [1.02, 0.99, 1.005, 1], 
+              scaleY: [0.85, 1.03, 0.99, 1],
+              opacity: [0, 0.6, 0.3, 0]
             }}
             exit={{ 
-              scaleX: [1, 1.02, 1.05], 
-              scaleY: [1, 0.95, 0.6],
-              opacity: [0, 0.3, 0]
+              scaleX: [1, 1.01, 1.03], 
+              scaleY: [1, 0.97, 0.85],
+              opacity: [0, 0.4, 0]
             }}
             transition={{
-              duration: 0.5,
+              duration: 0.4,
               ease: elasticBezier,
               times: [0, 0.4, 0.7, 1]
             }}
             style={{ originY: 0 }}
           />
           
-          {/* 内容层 - 只做高度和透明度动画 */}
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ 
-              height: 'auto', 
-              opacity: 1,
-              transition: {
-                height: { duration: 0.45, ease: elasticBezier },
-                opacity: { duration: 0.3, delay: 0.1 }
-              }
-            }}
-            exit={{ 
-              height: 0, 
-              opacity: 0,
-              transition: {
-                height: { duration: 0.35, ease: [0.4, 0, 0.2, 1] },
-                opacity: { duration: 0.2 }
-              }
-            }}
-            className="overflow-hidden"
-          >
+          {/* 内容层 */}
+          <div className="relative">
             {children}
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       )}
     </AnimatePresence>
   )
@@ -340,12 +343,18 @@ function FAQItem({
                             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 resize-none transition-colors"
                           />
                           <div className="flex items-center gap-2 justify-end">
-                            <button
-                              onClick={() => setIsReplying(false)}
-                              className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 transition-colors"
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setIsReplying(false)
+                              }}
+                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                              className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/5 rounded-lg transition-colors"
                             >
                               取消
-                            </button>
+                            </motion.button>
                             <motion.button
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
@@ -420,11 +429,31 @@ export function FAQSection({
             onClick={() => setIsExpanded(!isExpanded)}
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center">
-                <svg className="w-6 h-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <motion.div 
+                className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center"
+                whileHover={{ 
+                  scale: 1.08, 
+                  rotate: [0, -8, 8, -4, 0],
+                  borderColor: 'rgba(245, 158, 11, 0.5)'
+                }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ 
+                  scale: { type: "spring", stiffness: 400, damping: 17 },
+                  rotate: { duration: 0.5, ease: elasticBezier }
+                }}
+              >
+                <motion.svg 
+                  className="w-6 h-6 text-amber-400" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor" 
+                  strokeWidth={2}
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
+                </motion.svg>
+              </motion.div>
               <div>
                 <h3 className="text-lg font-bold text-zinc-100 tracking-wide">
                   常见问题
@@ -463,15 +492,55 @@ export function FAQSection({
                   {/* 提问按钮 */}
                   {isLoggedIn && !isAsking && (
                     <motion.button
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                      onClick={() => setIsAsking(true)}
-                      className="w-full mb-6 p-4 flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-2xl text-amber-400 font-medium hover:from-amber-500/20 hover:to-orange-500/20 transition-all"
+                      whileHover={{ scale: 1.015, y: -2 }}
+                      whileTap={{ scale: 0.98, y: 0 }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setIsAsking(true)
+                      }}
+                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                      className="relative w-full mb-6 p-4 flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-2xl text-amber-400 font-medium hover:from-amber-500/20 hover:to-orange-500/20 hover:border-amber-500/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] transition-all duration-300 group overflow-visible"
                     >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                      </svg>
-                      提出新问题
+                      {/* 加号图标 + 灯泡图标组合 */}
+                      <div className="relative flex items-center gap-2">
+                        <motion.div
+                          className="relative"
+                          whileHover={{ rotate: 90 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                          </svg>
+                        </motion.div>
+                        <motion.svg 
+                          className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor" 
+                          strokeWidth={2}
+                          initial={{ scale: 0.5, y: 5 }}
+                          whileHover={{ scale: 1.2, y: -2 }}
+                          animate={{ scale: 1, y: 0 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </motion.svg>
+                      </div>
+                      <span>提出新问题</span>
+                      
+                      {/* hover 时的光晕效果 */}
+                      <motion.div 
+                        className="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-500/0 via-amber-500/5 to-amber-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                        animate={{ 
+                          backgroundPosition: ['200% 0', '-200% 0']
+                        }}
+                        transition={{ 
+                          duration: 3, 
+                          repeat: Infinity,
+                          ease: "linear"
+                        }}
+                        style={{ backgroundSize: '200% 100%' }}
+                      />
                     </motion.button>
                   )}
 
@@ -495,12 +564,18 @@ export function FAQSection({
                             className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 resize-none transition-colors"
                           />
                           <div className="flex items-center gap-2 justify-end">
-                            <button
-                              onClick={() => setIsAsking(false)}
-                              className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 transition-colors"
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setIsAsking(false)
+                              }}
+                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                              className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/5 rounded-lg transition-colors"
                             >
                               取消
-                            </button>
+                            </motion.button>
                             <motion.button
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
