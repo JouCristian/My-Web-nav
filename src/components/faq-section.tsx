@@ -35,16 +35,29 @@ interface FAQSectionProps {
 }
 
 // 贝塞尔曲线配置
-const bezierTransition = {
+const bezierExpand = {
   type: "tween" as const,
-  ease: [0.34, 1.56, 0.64, 1] as [number, number, number, number], // 弹性贝塞尔曲线
-  duration: 0.5
+  ease: [0.34, 1.56, 0.64, 1] as [number, number, number, number], // 弹性展开
+  duration: 0.45
+}
+
+const bezierCollapse = {
+  type: "tween" as const,
+  ease: [0.64, 0, 0.78, 0.36] as [number, number, number, number], // 弹性收起（反向）
+  duration: 0.35
 }
 
 const smoothBezier = {
   type: "tween" as const,
   ease: [0.22, 1, 0.36, 1] as [number, number, number, number], // 平滑缓出
   duration: 0.4
+}
+
+// 箭头旋转动画 - 更快速响应
+const arrowTransition = {
+  type: "spring" as const,
+  stiffness: 400,
+  damping: 25
 }
 
 // 角色标签组件
@@ -180,8 +193,8 @@ function FAQItem({
               )}
               <motion.div
                 animate={{ rotate: isExpanded ? 180 : 0 }}
-                transition={bezierTransition}
-                className="text-zinc-500 group-hover:text-zinc-300 transition-colors"
+                transition={arrowTransition}
+                className="text-zinc-500 group-hover:text-zinc-200 transition-colors duration-150"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -191,14 +204,13 @@ function FAQItem({
           </div>
 
           {/* 展开内容 */}
-          <AnimatePresence>
+          <AnimatePresence mode="wait">
             {isExpanded && (
               <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={bezierTransition}
-                className="overflow-hidden"
+                initial={{ height: 0, opacity: 0, y: -10 }}
+                animate={{ height: 'auto', opacity: 1, y: 0, transition: bezierExpand }}
+                exit={{ height: 0, opacity: 0, y: -10, transition: bezierCollapse }}
+                className="overflow-hidden origin-top"
               >
                 <div className="pt-4 mt-4 border-t border-white/5">
                   {/* 回答列表 */}
@@ -275,14 +287,13 @@ function FAQItem({
                   </div>
 
                   {/* 回答输入框 */}
-                  <AnimatePresence>
+                  <AnimatePresence mode="wait">
                     {isReplying && (
                       <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={bezierTransition}
-                        className="overflow-hidden"
+                        initial={{ height: 0, opacity: 0, y: -10 }}
+                        animate={{ height: 'auto', opacity: 1, y: 0, transition: bezierExpand }}
+                        exit={{ height: 0, opacity: 0, y: -10, transition: bezierCollapse }}
+                        className="overflow-hidden origin-top"
                       >
                         <div className="mt-4 space-y-3">
                           <textarea
@@ -358,7 +369,7 @@ export function FAQSection({
         <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent" />
       </div>
 
-      {/* 主容器 - 可折叠 */}
+      {/* 主容器 - 可折�� */}
       <GlassSurface
         width="100%"
         height="auto"
@@ -397,9 +408,15 @@ export function FAQSection({
                 {questions.length} 个问题
               </span>
               <motion.div
-                animate={{ rotate: isExpanded ? 180 : 0 }}
-                transition={bezierTransition}
-                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 group-hover:text-zinc-200 group-hover:bg-white/10 transition-all"
+                animate={{ 
+                  rotate: isExpanded ? 180 : 0,
+                  scale: 1,
+                  backgroundColor: isExpanded ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)'
+                }}
+                whileHover={{ scale: 1.08, backgroundColor: 'rgba(255,255,255,0.15)' }}
+                whileTap={{ scale: 0.95 }}
+                transition={arrowTransition}
+                className="w-10 h-10 rounded-xl border border-white/10 flex items-center justify-center text-zinc-400 group-hover:text-zinc-100 transition-colors duration-100"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -409,14 +426,13 @@ export function FAQSection({
           </div>
 
           {/* 展开内容 */}
-          <AnimatePresence>
+          <AnimatePresence mode="wait">
             {isExpanded && (
               <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={bezierTransition}
-                className="overflow-hidden"
+                initial={{ height: 0, opacity: 0, y: -15 }}
+                animate={{ height: 'auto', opacity: 1, y: 0, transition: { ...bezierExpand, duration: 0.5 } }}
+                exit={{ height: 0, opacity: 0, y: -15, transition: { ...bezierCollapse, duration: 0.38 } }}
+                className="overflow-hidden origin-top"
               >
                 <div className="pt-6 mt-6 border-t border-white/5">
                   {/* 提问按钮 */}
@@ -444,14 +460,13 @@ export function FAQSection({
                   )}
 
                   {/* 提问输入框 */}
-                  <AnimatePresence>
+                  <AnimatePresence mode="wait">
                     {isAsking && (
                       <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={bezierTransition}
-                        className="overflow-hidden mb-6"
+                        initial={{ height: 0, opacity: 0, y: -10 }}
+                        animate={{ height: 'auto', opacity: 1, y: 0, transition: bezierExpand }}
+                        exit={{ height: 0, opacity: 0, y: -10, transition: bezierCollapse }}
+                        className="overflow-hidden origin-top mb-6"
                       >
                         <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
                           <textarea
