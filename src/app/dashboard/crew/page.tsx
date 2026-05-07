@@ -7,6 +7,8 @@ import { CrewActionButtons } from "@/components/crew-action-buttons"
 import { RemoveCrewButton } from "@/components/remove-crew-button"
 // 🚀 引入舰长专属授权组件
 import { AdminAuthModal } from "@/components/admin-auth-modal"
+// 🚀 引入编辑档案组件
+import { EditCrewProfileButton } from "@/components/edit-crew-profile-button"
 
 export default async function CrewArchivesPage() {
   const session = await auth()
@@ -126,12 +128,14 @@ export default async function CrewArchivesPage() {
                   
                   <div className="flex flex-col min-w-0 flex-1">
                     <div className="flex items-baseline gap-2 sm:gap-4 flex-wrap">
+                      {/* 🚀 优先使用档案室专用昵称，否则使用原字段 */}
                       <span className={`text-base sm:text-xl font-bold tracking-wider font-[family-name:var(--font-space)] truncate ${isOwner ? 'text-yellow-400' : isAdmin ? 'text-purple-300' : 'text-zinc-200'}`}>
-                        {user.realName || user.nickname || "未知宇航员"}
+                        {user.crewNickname || user.realName || user.nickname || "未知宇航员"}
                       </span>
-                      {user.studentId && (
+                      {/* 🚀 优先使用档案室专用学号 */}
+                      {(user.crewStudentId || user.studentId) && (
                         <span className="text-[10px] font-mono text-zinc-500 tracking-[0.15em] sm:tracking-[0.2em] border border-white/5 bg-white/5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg shrink-0">
-                          ID: {user.studentId}
+                          ID: {user.crewStudentId || user.studentId}
                         </span>
                       )}
                     </div>
@@ -147,40 +151,52 @@ export default async function CrewArchivesPage() {
                     <CrewActionButtons userId={user.id} realName={user.realName || "未知新兵"} />
                   ) : (
                     <div className="flex items-center gap-3 sm:gap-6 md:gap-8 flex-wrap md:flex-nowrap w-full md:w-auto justify-between md:justify-end">
-                      {!isPending && (
-                        user.feishuLink ? (
-                          <a 
-                            href={user.feishuLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="group/fs relative flex items-center gap-2 sm:gap-3 bg-[#060813]/60 border border-teal-500/30 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl shrink-0 overflow-hidden transition-all duration-500 hover:border-teal-500 hover:shadow-[0_0_20px_rgba(20,184,166,0.2)]"
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-teal-400/10 to-transparent -translate-x-full group-hover/fs:animate-[shimmer_2s_infinite]"></div>
-                            <div className="relative flex items-center gap-2 sm:gap-3">
-                              <div className="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)] animate-pulse shrink-0"></div>
-                              <span className="text-[9px] sm:text-[10px] text-teal-300 font-mono uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold">飞书链接就绪</span>
-                            </div>
-                          </a>
-                        ) : (
-                          isSelf ? (
-                            <Link 
-                              href="/profile" 
-                              className="group/fs relative flex items-center gap-2 sm:gap-3 bg-[#060813]/60 border border-red-500/30 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl shrink-0 overflow-hidden transition-all duration-500 hover:border-red-500 hover:shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                      {/* 🚀 优先使用档案室专用飞书链接 */}
+                        {!isPending && (() => {
+                          const effectiveFeishuLink = user.crewFeishuLink || user.feishuLink;
+                          return effectiveFeishuLink ? (
+                            <a 
+                              href={effectiveFeishuLink} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="group/fs relative flex items-center gap-2 sm:gap-3 bg-[#060813]/60 border border-teal-500/30 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl shrink-0 overflow-hidden transition-all duration-500 hover:border-teal-500 hover:shadow-[0_0_20px_rgba(20,184,166,0.2)]"
                             >
-                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-400/10 to-transparent -translate-x-full group-hover/fs:animate-[shimmer_2s_infinite]"></div>
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-teal-400/10 to-transparent -translate-x-full group-hover/fs:animate-[shimmer_2s_infinite]"></div>
                               <div className="relative flex items-center gap-2 sm:gap-3">
-                                <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-ping shrink-0"></div>
-                                <span className="text-[9px] sm:text-[10px] text-red-400 font-mono uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold">缺失飞书链接</span>
+                                <div className="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)] animate-pulse shrink-0"></div>
+                                <span className="text-[9px] sm:text-[10px] text-teal-300 font-mono uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold">飞书链接就绪</span>
                               </div>
-                            </Link>
+                            </a>
                           ) : (
-                            <div className="relative flex items-center gap-2 sm:gap-3 bg-[#060813]/40 border border-red-500/10 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl shrink-0 opacity-40">
-                              <div className="w-2 h-2 rounded-full bg-red-500/50 shadow-[0_0_5px_rgba(239,68,68,0.3)] shrink-0"></div>
-                              <span className="text-[9px] sm:text-[10px] text-red-400/60 font-mono uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold">飞书链接缺失</span>
-                            </div>
-                          )
-                        )
-                      )}
+                            isSelf ? (
+                              <div className="group/fs relative flex items-center gap-2 sm:gap-3 bg-[#060813]/60 border border-red-500/30 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl shrink-0 overflow-hidden">
+                                <div className="relative flex items-center gap-2 sm:gap-3">
+                                  <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-ping shrink-0"></div>
+                                  <span className="text-[9px] sm:text-[10px] text-red-400 font-mono uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold">缺失飞书链接</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="relative flex items-center gap-2 sm:gap-3 bg-[#060813]/40 border border-red-500/10 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl shrink-0 opacity-40">
+                                <div className="w-2 h-2 rounded-full bg-red-500/50 shadow-[0_0_5px_rgba(239,68,68,0.3)] shrink-0"></div>
+                                <span className="text-[9px] sm:text-[10px] text-red-400/60 font-mono uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold">飞书链接缺失</span>
+                              </div>
+                            )
+                          );
+                        })()}
+                        
+                        {/* 🚀 自己可以编辑自己的档案室信息 */}
+                        {!isPending && isSelf && (
+                          <EditCrewProfileButton 
+                            currentData={{
+                              crewNickname: user.crewNickname,
+                              crewStudentId: user.crewStudentId,
+                              crewFeishuLink: user.crewFeishuLink,
+                              realName: user.realName,
+                              studentId: user.studentId,
+                              feishuLink: user.feishuLink,
+                            }}
+                          />
+                        )}
                       
                       <div className="flex flex-col items-end sm:border-l border-white/10 sm:pl-4 md:pl-6">
                         <span className="text-[9px] uppercase font-mono tracking-[0.3em] text-zinc-600 mb-1">Authorization</span>

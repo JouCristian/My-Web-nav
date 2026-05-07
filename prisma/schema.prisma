@@ -87,6 +87,11 @@ model User {
   feishuLink    String?
   role          Role      @default(PENDING)
   createdAt     DateTime  @default(now())
+  
+  // 档案室专用显示信息（与 profile 分离，类似群昵称）
+  crewNickname  String?   // 档案室显示昵称
+  crewStudentId String?   // 档案室显示学号
+  crewFeishuLink String?  // 档案室显示飞书链接
 
   // 关系映射
   accounts         Account[]
