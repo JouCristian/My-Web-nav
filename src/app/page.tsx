@@ -34,20 +34,21 @@ interface Bookmark {
 }
 
 export default async function Home() {
-  const session = await auth()
-  const links = await prisma.bookmark.findMany({ orderBy: { createdAt: 'desc' } })
-  const stats = await getStats()
-  const faqQuestions = await getFAQQuestions()
+  // 并行获取所有数据，减少瀑布式请求延迟
+  const [session, links, stats, faqQuestions] = await Promise.all([
+    auth(),
+    prisma.bookmark.findMany({ orderBy: { createdAt: 'desc' } }),
+    getStats(),
+    getFAQQuestions()
+  ])
 
   // @ts-ignore
   const isCaptain = session?.user?.isCaptain
 
-  let dbUser = null
-  if (session?.user?.id) {
-    dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id }
-    })
-  }
+  // 用户信息查询（依赖 session，无法并行）
+  const dbUser = session?.user?.id 
+    ? await prisma.user.findUnique({ where: { id: session.user.id } })
+    : null
 
   const isCommander = isCaptain || (dbUser && (dbUser.role === "ADMIN" || dbUser.role === "OWNER"));
   const isAuthorizedCrew = dbUser && dbUser.role === "MEMBER";
