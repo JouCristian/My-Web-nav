@@ -591,55 +591,28 @@ export function AchievementGallerySection({
               boxShadow: '0 0 80px rgba(207, 158, 255, 0.08), inset 0 0 60px rgba(0,0,0,0.5)'
             }}
           >
-            {/* 背景装饰层 */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              {/* 微妙网格 */}
+            {/* 背景装饰层 - z-0 确保在最底层 */}
+            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+              {/* 渐变网格背景 */}
               <div 
-                className="absolute inset-0 opacity-[0.015]"
+                className="absolute inset-0"
                 style={{
                   backgroundImage: `
-                    linear-gradient(rgba(168, 85, 247, 0.5) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(168, 85, 247, 0.5) 1px, transparent 1px)
+                    linear-gradient(to bottom, rgba(139, 92, 246, 0.06) 0%, transparent 50%, rgba(139, 92, 246, 0.04) 100%),
+                    linear-gradient(rgba(139, 92, 246, 0.08) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(139, 92, 246, 0.08) 1px, transparent 1px)
                   `,
-                  backgroundSize: '60px 60px'
+                  backgroundSize: '100% 100%, 40px 40px, 40px 40px'
                 }}
               />
               
-              {/* 底部渐变光晕 */}
+              {/* 中心辐射渐变 */}
               <div 
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-[200px]"
+                className="absolute inset-0"
                 style={{
-                  background: 'radial-gradient(ellipse at center bottom, rgba(168, 85, 247, 0.08) 0%, rgba(168, 85, 247, 0.03) 40%, transparent 70%)',
+                  background: 'radial-gradient(ellipse 80% 50% at 50% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 60%)',
                 }}
               />
-              
-              {/* 顶部微弱渐变 */}
-              <div 
-                className="absolute top-0 left-0 right-0 h-[150px]"
-                style={{
-                  background: 'linear-gradient(to bottom, rgba(168, 85, 247, 0.03), transparent)',
-                }}
-              />
-              
-              {/* 装饰星点 - 使用CSS动画 */}
-              <div className="absolute inset-0">
-                {[...Array(12)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-1 h-1 rounded-full bg-purple-400/30"
-                    style={{
-                      left: `${10 + (i * 7.5) % 80}%`,
-                      top: `${15 + (i * 11) % 70}%`,
-                      animation: `gallery-star-pulse ${2 + (i % 3)}s ease-in-out infinite`,
-                      animationDelay: `${i * 0.3}s`,
-                    }}
-                  />
-                ))}
-              </div>
-              
-              {/* 边角光效 */}
-              <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-purple-500/5 to-transparent rounded-br-full" />
-              <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-purple-500/5 to-transparent rounded-tl-full" />
             </div>
             
             {/* 编辑按钮 - 只有舰长和管理员可见 */}
@@ -655,9 +628,9 @@ export function AchievementGallerySection({
               </button>
             )}
 
-            {/* 图片展示区域 */}
+            {/* 图片展示区域 - z-10 确保在背景之上 */}
             {galleryItems.length > 0 ? (
-              <div className="w-full h-[400px] sm:h-[500px]">
+              <div className="relative z-10 w-full h-[400px] sm:h-[500px]">
                 <CircularGallery
                   items={galleryItems}
                   bend={0}
