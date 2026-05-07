@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Link from 'next/link'
 
 // 自定义滚动条样式 + FAQ专用玻璃项样式
 const scrollbarStyles = `
@@ -148,9 +149,9 @@ function RoleBadge({ role }: { role: string | null }) {
   )
 }
 
-// 头像组件 - 使用优化的图片组件
-function Avatar({ src, name, size = 'md' }: { src?: string | null; name?: string | null; size?: 'sm' | 'md' }) {
-  return (
+// 头像组件 - 使用优化的图片组件，支持点击跳转到用户主页
+function Avatar({ src, name, size = 'md', userId }: { src?: string | null; name?: string | null; size?: 'sm' | 'md'; userId?: string }) {
+  const avatar = (
     <OptimizedAvatar 
       src={src} 
       alt={name || '用户头像'} 
@@ -159,6 +160,20 @@ function Avatar({ src, name, size = 'md' }: { src?: string | null; name?: string
       className="border border-white/10"
     />
   )
+  
+  if (userId) {
+    return (
+      <Link 
+        href={`/profile/${userId}`} 
+        className="shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {avatar}
+      </Link>
+    )
+  }
+  
+  return avatar
 }
 
 // 单个问答项
@@ -229,7 +244,7 @@ function FAQItem({
             className="flex items-start gap-3 cursor-pointer group w-full min-w-0"
             onClick={() => setIsExpanded(!isExpanded)}
           >
-            <Avatar src={question.authorImage} name={question.authorName} />
+            <Avatar src={question.authorImage} name={question.authorName} userId={question.authorId} />
             <div className="flex-1 min-w-0 overflow-hidden">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-sm font-medium text-zinc-200 truncate">
@@ -277,7 +292,7 @@ function FAQItem({
                           transition={{ duration: 0.35, ease: smoothBezier }}
                           className="flex items-start gap-3 pl-4 border-l-2 border-cyan-500/30"
                         >
-                          <Avatar src={answer.authorImage} name={answer.authorName} size="sm" />
+                          <Avatar src={answer.authorImage} name={answer.authorName} size="sm" userId={answer.authorId} />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <span className="text-sm font-medium text-zinc-200 truncate">
@@ -431,13 +446,21 @@ export function FAQSection({
   const [isAsking, setIsAsking] = useState(false)
   const [questionContent, setQuestionContent] = useState('')
   const [isPending, startTransition] = useTransition()
+  const scrollPositionRef = useRef<number>(0)
 
+  // 提交前保存滚动位置，提交后恢复
   const handleSubmitQuestion = () => {
     if (!questionContent.trim()) return
+    // 保存当前滚动位置
+    scrollPositionRef.current = window.scrollY
     startTransition(async () => {
       await submitFAQQuestion(questionContent)
       setQuestionContent('')
       setIsAsking(false)
+      // 延迟恢复滚动位置（等待 DOM 更新）
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: scrollPositionRef.current, behavior: 'instant' })
+      })
     })
   }
 
