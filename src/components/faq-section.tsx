@@ -1,10 +1,19 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-// 自定义滚动条样式
+// 自定义滚动条样式 - 默认隐藏，hover时显示
 const scrollbarStyles = `
+  .faq-scrollbar {
+    overflow-y: scroll;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.3s ease;
+  }
+  .faq-scrollbar:hover {
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  }
   .faq-scrollbar::-webkit-scrollbar {
     width: 6px;
   }
@@ -12,15 +21,15 @@ const scrollbarStyles = `
     background: transparent;
   }
   .faq-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: transparent;
     border-radius: 3px;
+    transition: background 0.3s ease;
+  }
+  .faq-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
   }
   .faq-scrollbar::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.25);
-  }
-  .faq-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
   }
 `
 import GlassSurface from './GlassSurface'
@@ -156,17 +165,6 @@ function FAQItem({
   const [isReplying, setIsReplying] = useState(false)
   const [replyContent, setReplyContent] = useState('')
   const [isPending, startTransition] = useTransition()
-  const [showOverflow, setShowOverflow] = useState(false)
-
-  // 动画完成后再显示滚动条，避免闪烁
-  useEffect(() => {
-    if (isExpanded) {
-      const timer = setTimeout(() => setShowOverflow(true), 450)
-      return () => clearTimeout(timer)
-    } else {
-      setShowOverflow(false)
-    }
-  }, [isExpanded])
 
   const handleSubmitAnswer = () => {
     if (!replyContent.trim()) return
@@ -255,11 +253,9 @@ function FAQItem({
           {/* 展开内容 */}
           <CollapsePanel isOpen={isExpanded}>
             <div className="pt-4 mt-4 border-t border-white/5">
-                  {/* 回答列表 - 带最大高度，动画完成后才显示滚动 */}
+                  {/* 回答列表 - 带最大高度，滚动条hover时显示 */}
                   {question.answers.length > 0 ? (
-                    <div 
-                      className={`space-y-4 mb-4 max-h-[280px] pr-2 faq-scrollbar ${showOverflow ? 'overflow-y-auto' : 'overflow-hidden'}`}
-                    >
+                    <div className="space-y-4 mb-4 max-h-[280px] pr-2 faq-scrollbar">
                       {question.answers.map((answer) => (
                         <motion.div
                           key={answer.id}
@@ -649,9 +645,9 @@ export function FAQSection({
                     </div>
                   )}
 
-                  {/* 问题列表 - 带最大高度和滚动 */}
+                  {/* 问题列表 - 带最大高度，滚动条hover时显示 */}
                   {questions.length > 0 ? (
-                    <div className="space-y-4 max-h-[60vh] overflow-y-auto faq-scrollbar pr-2">
+                    <div className="space-y-4 max-h-[60vh] faq-scrollbar pr-2">
                       <AnimatePresence mode="popLayout">
                         {questions.map((question) => (
                           <FAQItem
