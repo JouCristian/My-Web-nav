@@ -75,3 +75,53 @@ export async function toggleAdminRole(userId: string, makeAdmin: boolean) {
 
   revalidatePath("/dashboard/crew")
 }
+
+// 🚀 5. 更新档案室显示信息：每个船员可以编辑自己的档案室信息
+export async function updateCrewProfile(data: {
+  crewNickname?: string
+  crewStudentId?: string
+  crewFeishuLink?: string
+}) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized: 请先登录")
+
+  // 验证飞书链接格式（如果提供）
+  if (data.crewFeishuLink && data.crewFeishuLink.trim()) {
+    const feishuPattern = /^https?:\/\/(.*\.)?(feishu\.cn|larksuite\.com)/i
+    if (!feishuPattern.test(data.crewFeishuLink.trim())) {
+      throw new Error("Invalid: 请输入有效的飞书链接")
+    }
+  }
+
+  // 更新当前用户的档案室信息
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: {
+      crewNickname: data.crewNickname?.trim() || null,
+      crewStudentId: data.crewStudentId?.trim() || null,
+      crewFeishuLink: data.crewFeishuLink?.trim() || null,
+    }
+  })
+
+  revalidatePath("/dashboard/crew")
+}
+
+// 🚀 6. 获取当前用户的档案室信息
+export async function getMyCrewProfile() {
+  const session = await auth()
+  if (!session?.user?.id) return null
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      crewNickname: true,
+      crewStudentId: true,
+      crewFeishuLink: true,
+      realName: true,
+      studentId: true,
+      feishuLink: true,
+    }
+  })
+
+  return user
+}
