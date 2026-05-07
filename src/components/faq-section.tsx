@@ -35,29 +35,48 @@ interface FAQSectionProps {
 }
 
 // 贝塞尔曲线配置
-const bezierExpand = {
-  type: "tween" as const,
-  ease: [0.34, 1.56, 0.64, 1] as [number, number, number, number], // 弹性展开
-  duration: 0.45
-}
-
-const bezierCollapse = {
-  type: "tween" as const,
-  ease: [0.64, 0, 0.78, 0.36] as [number, number, number, number], // 弹性收起（反向）
-  duration: 0.35
-}
-
 const smoothBezier = {
   type: "tween" as const,
-  ease: [0.22, 1, 0.36, 1] as [number, number, number, number], // 平滑缓出
+  ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
   duration: 0.4
 }
 
 // 箭头旋转动画 - 更快速响应
 const arrowTransition = {
   type: "spring" as const,
-  stiffness: 400,
-  damping: 25
+  stiffness: 500,
+  damping: 30
+}
+
+// 展开动画 - 拉伸变窄再回弹
+const expandAnimation = {
+  height: ['0px', 'auto'],
+  opacity: [0, 1],
+  scaleY: [0.8, 1.03, 0.98, 1],    // 压缩 -> 过度拉伸 -> 轻微回弹 -> 正常
+  scaleX: [1.02, 0.98, 1.01, 1],   // 略宽 -> 变窄 -> 轻微回弹 -> 正常
+}
+
+const expandTransition = {
+  duration: 0.55,
+  ease: [0.34, 1.56, 0.64, 1] as [number, number, number, number],
+  times: [0, 0.5, 0.75, 1],
+  scaleY: { duration: 0.55, ease: [0.34, 1.56, 0.64, 1] as [number, number, number, number] },
+  scaleX: { duration: 0.55, ease: [0.34, 1.56, 0.64, 1] as [number, number, number, number] },
+}
+
+// 收起动画 - 压缩变宽再回弹
+const collapseAnimation = {
+  height: '0px',
+  opacity: 0,
+  scaleY: [1, 1.02, 0.85],        // 正常 -> 轻微拉伸 -> 压缩消失
+  scaleX: [1, 0.99, 1.04],        // 正常 -> 轻微收窄 -> 变宽消失
+}
+
+const collapseTransition = {
+  duration: 0.4,
+  ease: [0.36, 0, 0.66, -0.2] as [number, number, number, number],
+  scaleY: { duration: 0.4, times: [0, 0.3, 1], ease: [0.36, 0, 0.66, -0.2] as [number, number, number, number] },
+  scaleX: { duration: 0.4, times: [0, 0.3, 1], ease: [0.36, 0, 0.66, -0.2] as [number, number, number, number] },
 }
 
 // 角色标签组件
@@ -207,10 +226,12 @@ function FAQItem({
           <AnimatePresence mode="wait">
             {isExpanded && (
               <motion.div
-                initial={{ height: 0, opacity: 0, y: -10 }}
-                animate={{ height: 'auto', opacity: 1, y: 0, transition: bezierExpand }}
-                exit={{ height: 0, opacity: 0, y: -10, transition: bezierCollapse }}
-                className="overflow-hidden origin-top"
+                initial={{ height: 0, opacity: 0, scaleY: 0.85, scaleX: 1.015 }}
+                animate={expandAnimation}
+                exit={collapseAnimation}
+                transition={expandTransition}
+                style={{ originY: 0 }}
+                className="overflow-hidden"
               >
                 <div className="pt-4 mt-4 border-t border-white/5">
                   {/* 回答列表 */}
@@ -290,10 +311,12 @@ function FAQItem({
                   <AnimatePresence mode="wait">
                     {isReplying && (
                       <motion.div
-                        initial={{ height: 0, opacity: 0, y: -10 }}
-                        animate={{ height: 'auto', opacity: 1, y: 0, transition: bezierExpand }}
-                        exit={{ height: 0, opacity: 0, y: -10, transition: bezierCollapse }}
-                        className="overflow-hidden origin-top"
+                        initial={{ height: 0, opacity: 0, scaleY: 0.9, scaleX: 1.01 }}
+                        animate={expandAnimation}
+                        exit={collapseAnimation}
+                        transition={expandTransition}
+                        style={{ originY: 0 }}
+                        className="overflow-hidden"
                       >
                         <div className="mt-4 space-y-3">
                           <textarea
@@ -429,12 +452,17 @@ export function FAQSection({
           <AnimatePresence mode="wait">
             {isExpanded && (
               <motion.div
-                initial={{ height: 0, opacity: 0, y: -15 }}
-                animate={{ height: 'auto', opacity: 1, y: 0, transition: { ...bezierExpand, duration: 0.5 } }}
-                exit={{ height: 0, opacity: 0, y: -15, transition: { ...bezierCollapse, duration: 0.38 } }}
-                className="overflow-hidden origin-top"
+                initial={{ height: 0, opacity: 0, scaleY: 0.8, scaleX: 1.02 }}
+                animate={expandAnimation}
+                exit={collapseAnimation}
+                transition={expandTransition}
+                style={{ originY: 0 }}
+                className="overflow-hidden"
               >
-                <div className="pt-6 mt-6 border-t border-white/5">
+                <motion.div 
+                  className="pt-6 mt-6 border-t border-white/5"
+                  exit={{ transition: collapseTransition }}
+                >
                   {/* 提问按钮 */}
                   {isLoggedIn && !isAsking && (
                     <motion.button
@@ -463,10 +491,12 @@ export function FAQSection({
                   <AnimatePresence mode="wait">
                     {isAsking && (
                       <motion.div
-                        initial={{ height: 0, opacity: 0, y: -10 }}
-                        animate={{ height: 'auto', opacity: 1, y: 0, transition: bezierExpand }}
-                        exit={{ height: 0, opacity: 0, y: -10, transition: bezierCollapse }}
-                        className="overflow-hidden origin-top mb-6"
+                        initial={{ height: 0, opacity: 0, scaleY: 0.9, scaleX: 1.01 }}
+                        animate={expandAnimation}
+                        exit={collapseAnimation}
+                        transition={expandTransition}
+                        style={{ originY: 0 }}
+                        className="overflow-hidden mb-6"
                       >
                         <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
                           <textarea
@@ -524,7 +554,7 @@ export function FAQSection({
                       <p className="text-zinc-600 text-xs mt-1">成为第一个提问的人吧</p>
                     </div>
                   )}
-                </div>
+                </motion.div>
               </motion.div>
             )}
           </AnimatePresence>
