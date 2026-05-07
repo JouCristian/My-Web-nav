@@ -15,7 +15,9 @@ import { StatsCards } from "@/components/stats-cards"
 import { Footer } from "@/components/footer"
 import { YsyxIntroSection } from "@/components/ysyx-intro-section"
 import { AchievementGallerySection } from "@/components/achievement-gallery-section"
+import { FAQSection } from "@/components/faq-section"
 import { getStats } from "@/app/actions"
+import { getFAQQuestions } from "@/app/actions/faq"
 
 export const revalidate = 60;
 
@@ -35,6 +37,7 @@ export default async function Home() {
   const session = await auth()
   const links = await prisma.bookmark.findMany({ orderBy: { createdAt: 'desc' } })
   const stats = await getStats()
+  const faqQuestions = await getFAQQuestions()
 
   // @ts-ignore
   const isCaptain = session?.user?.isCaptain
@@ -300,6 +303,18 @@ export default async function Home() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* FAQ 问答区 */}
+      <section className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pb-12">
+        <FAQSection 
+          className="animate-float-up"
+          questions={faqQuestions}
+          isLoggedIn={!!session}
+          canAnswer={isAuthorizedCrew || isCommander || false}
+          isAdmin={isCommander || false}
+          currentUserId={session?.user?.id}
+        />
       </section>
 
       {/* 底部页脚 */}
