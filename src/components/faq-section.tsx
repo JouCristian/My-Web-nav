@@ -55,6 +55,7 @@ const scrollbarStyles = `
 import GlassSurface from './GlassSurface'
 import { submitFAQQuestion, submitFAQAnswer, deleteFAQQuestion, deleteFAQAnswer } from '@/app/actions/faq'
 import { OptimizedAvatar } from './optimized-image'
+import { useConfirmDialog } from './confirm-dialog'
 
 interface FAQAnswer {
   id: string
@@ -192,41 +193,67 @@ function FAQItem({
   const [isReplying, setIsReplying] = useState(false)
   const [replyContent, setReplyContent] = useState('')
   const [isPending, startTransition] = useTransition()
+  const { confirm, DialogComponent } = useConfirmDialog()
+  const scrollPositionRef = useRef<number>(0)
 
   const handleSubmitAnswer = () => {
     if (!replyContent.trim()) return
+    scrollPositionRef.current = window.scrollY
     startTransition(async () => {
       await submitFAQAnswer(question.id, replyContent)
       setReplyContent('')
       setIsReplying(false)
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: scrollPositionRef.current, behavior: 'instant' })
+      })
     })
   }
 
-  const handleDeleteQuestion = () => {
-    if (!confirm('确定要删除这个问题吗？所有回答也会被删除。')) return
+  const handleDeleteQuestion = async () => {
+    const confirmed = await confirm({
+      title: '删除问题',
+      message: '确定要删除这个问题吗？所有回答也会被删除。',
+      variant: 'danger'
+    })
+    if (!confirmed) return
+    scrollPositionRef.current = window.scrollY
     startTransition(async () => {
       await deleteFAQQuestion(question.id)
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: scrollPositionRef.current, behavior: 'instant' })
+      })
     })
   }
 
-  const handleDeleteAnswer = (answerId: string) => {
-    if (!confirm('确定要删除这个回答吗？')) return
+  const handleDeleteAnswer = async (answerId: string) => {
+    const confirmed = await confirm({
+      title: '删除回答',
+      message: '确定要删除这个回答吗？',
+      variant: 'danger'
+    })
+    if (!confirmed) return
+    scrollPositionRef.current = window.scrollY
     startTransition(async () => {
       await deleteFAQAnswer(answerId)
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: scrollPositionRef.current, behavior: 'instant' })
+      })
     })
   }
 
   const canDeleteQuestion = isAdmin || currentUserId === question.authorId
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.4, ease: smoothBezier }}
-      className="relative w-full"
-    >
-      <GlassSurface
+    <>
+      {DialogComponent}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.4, ease: smoothBezier }}
+        className="relative w-full"
+      >
+        <GlassSurface
         width="100%"
         height="auto"
         className="faq-glass-item"
@@ -430,7 +457,8 @@ function FAQItem({
           </CollapsePanel>
         </div>
       </GlassSurface>
-    </motion.div>
+      </motion.div>
+    </>
   )
 }
 
@@ -566,7 +594,7 @@ export function FAQSection({
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                       </svg>
-                      登录后可以提问
+                      登录后���以提问
                     </div>
                   )}
 
