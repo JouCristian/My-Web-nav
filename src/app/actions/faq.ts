@@ -1,12 +1,12 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag, unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { auth } from '@/auth'
 
-// 获取所有FAQ问题及其回答
-export async function getFAQQuestions() {
-  try {
+// 缓存的 FAQ 查询（30秒缓存，带标签用于精确失效）
+const getCachedFAQQuestions = unstable_cache(
+  async () => {
     // @ts-ignore - 模型会在数据库迁移后生成
     const questions = await prisma.fAQQuestion.findMany({
       orderBy: { createdAt: 'desc' },
@@ -17,6 +17,15 @@ export async function getFAQQuestions() {
       }
     })
     return questions
+  },
+  ['faq-questions'],
+  { revalidate: 30, tags: ['faq'] }
+)
+
+// 获取所有FAQ问题及其回答
+export async function getFAQQuestions() {
+  try {
+    return await getCachedFAQQuestions()
   } catch (error) {
     console.error('获取FAQ问题失败:', error)
     return []
@@ -51,6 +60,8 @@ export async function submitFAQQuestion(content: string) {
       }
     })
 
+    // 失效缓存并刷新页面
+    revalidateTag('faq', 'max')
     revalidatePath('/')
     return { success: true }
   } catch (error) {
@@ -108,6 +119,8 @@ export async function submitFAQAnswer(questionId: string, content: string) {
       }
     })
 
+    // 失效缓存并刷新页面
+    revalidateTag('faq', 'max')
     revalidatePath('/')
     return { success: true }
   } catch (error) {
@@ -152,6 +165,8 @@ export async function deleteFAQQuestion(questionId: string) {
       where: { id: questionId }
     })
 
+    // 失效缓存并刷新页面
+    revalidateTag('faq', 'max')
     revalidatePath('/')
     return { success: true }
   } catch (error) {
@@ -196,6 +211,8 @@ export async function deleteFAQAnswer(answerId: string) {
       where: { id: answerId }
     })
 
+    // 失效缓存并刷新页面
+    revalidateTag('faq', 'max')
     revalidatePath('/')
     return { success: true }
   } catch (error) {

@@ -36,15 +36,24 @@ const scrollbarStyles = `
   .faq-glass-item {
     width: 100% !important;
     transition: all 0.45s cubic-bezier(0.32, 0.72, 0, 1) !important;
+    /* 性能优化：隔离渲染 */
+    contain: layout style;
   }
   .faq-glass-item .glass-surface__content {
     align-items: stretch !important;
     justify-content: flex-start !important;
     width: 100% !important;
   }
+  
+  /* 动画元素性能优化 */
+  .faq-animate {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+  }
 `
 import GlassSurface from './GlassSurface'
 import { submitFAQQuestion, submitFAQAnswer, deleteFAQQuestion, deleteFAQAnswer } from '@/app/actions/faq'
+import { OptimizedAvatar } from './optimized-image'
 
 interface FAQAnswer {
   id: string
@@ -139,24 +148,16 @@ function RoleBadge({ role }: { role: string | null }) {
   )
 }
 
-// 头像组件
+// 头像组件 - 使用优化的图片组件
 function Avatar({ src, name, size = 'md' }: { src?: string | null; name?: string | null; size?: 'sm' | 'md' }) {
-  const sizeClass = size === 'sm' ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'
-  
-  if (src) {
-    return (
-      <img 
-        src={src} 
-        alt={name || '用户头像'} 
-        className={`${sizeClass} rounded-full object-cover border border-white/10`}
-      />
-    )
-  }
-  
   return (
-    <div className={`${sizeClass} rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 border border-white/10 flex items-center justify-center font-medium text-zinc-300`}>
-      {name?.charAt(0)?.toUpperCase() || '?'}
-    </div>
+    <OptimizedAvatar 
+      src={src} 
+      alt={name || '用户头像'} 
+      size={size}
+      fallbackText={name || undefined}
+      className="border border-white/10"
+    />
   )
 }
 
