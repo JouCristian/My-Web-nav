@@ -277,7 +277,7 @@ function FAQItem({
                           relative flex items-center gap-2 px-3 py-2 text-sm font-medium 
                           rounded-xl overflow-hidden transition-all duration-400
                           ${isReplying 
-                            ? 'text-cyan-300 bg-cyan-500/20 border-2 border-cyan-500/40' 
+                            ? 'text-cyan-300 bg-cyan-500/20 border border-cyan-500/40' 
                             : 'text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 hover:bg-cyan-500/15 hover:border-cyan-500/30'
                           }
                           group
@@ -515,7 +515,7 @@ export function FAQSection({
                           rounded-2xl font-medium overflow-hidden
                           transition-all duration-500 ease-out
                           ${isAsking 
-                            ? 'bg-amber-500/15 border-2 border-amber-500/40 text-amber-300' 
+                            ? 'bg-amber-500/15 border border-amber-500/40 text-amber-300' 
                             : 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-amber-400 hover:from-amber-500/15 hover:to-orange-500/15 hover:border-amber-500/35'
                           }
                           group
