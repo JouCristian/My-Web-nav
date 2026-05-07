@@ -9,3 +9,15 @@
     cursor: grabbing;
   }
   
+  /* 画廊背景星点动画 */
+  @keyframes gallery-star-pulse {
+    0%, 100% {
+      opacity: 0.2;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(1.5);
+    }
+  }
+  
