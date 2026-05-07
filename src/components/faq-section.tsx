@@ -2,6 +2,47 @@
 
 import { useState, useTransition } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+
+// 自定义滚动条样式 + FAQ专用玻璃项样式
+const scrollbarStyles = `
+  .faq-scrollbar {
+    overflow-y: scroll;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.3s ease;
+  }
+  .faq-scrollbar:hover {
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  }
+  .faq-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .faq-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .faq-scrollbar::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+    transition: background 0.3s ease;
+  }
+  .faq-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+  }
+  .faq-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+  
+  /* FAQ玻璃项 - 内容区撑满，宽度过渡 */
+  .faq-glass-item {
+    width: 100% !important;
+    transition: all 0.45s cubic-bezier(0.32, 0.72, 0, 1) !important;
+  }
+  .faq-glass-item .glass-surface__content {
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+  }
+`
 import GlassSurface from './GlassSurface'
 import { submitFAQQuestion, submitFAQAnswer, deleteFAQQuestion, deleteFAQAnswer } from '@/app/actions/faq'
 
@@ -163,16 +204,16 @@ function FAQItem({
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.4, ease: smoothBezier }}
-      className="relative"
+      className="relative w-full"
     >
       <GlassSurface
         width="100%"
         height="auto"
+        className="faq-glass-item"
         borderRadius={16}
         brightness={120}
         opacity={0.4}
@@ -181,14 +222,14 @@ function FAQItem({
         mixBlendMode="normal"
         backgroundOpacity={0.08}
       >
-        <div className="p-4 sm:p-5">
+        <div className="p-4 sm:p-5 w-full min-w-0">
           {/* 问题头部 */}
           <div 
-            className="flex items-start gap-3 cursor-pointer group"
+            className="flex items-start gap-3 cursor-pointer group w-full min-w-0"
             onClick={() => setIsExpanded(!isExpanded)}
           >
             <Avatar src={question.authorImage} name={question.authorName} />
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 overflow-hidden">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-sm font-medium text-zinc-200 truncate">
                   {question.authorName || '匿名用户'}
@@ -223,16 +264,16 @@ function FAQItem({
 
           {/* 展开内容 */}
           <CollapsePanel isOpen={isExpanded}>
-            <div className="pt-4 mt-4 border-t border-white/5">
-                  {/* 回答列表 */}
+            <div className="pt-4 mt-4 border-t border-white/5 overflow-hidden">
+                  {/* 回答列表 - 带最大高度，滚动条hover时显示 */}
                   {question.answers.length > 0 ? (
-                    <div className="space-y-4 mb-4">
+                    <div className="space-y-4 mb-4 max-h-[280px] pr-2 faq-scrollbar">
                       {question.answers.map((answer) => (
                         <motion.div
                           key={answer.id}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.4, ease: smoothBezier }}
+                          transition={{ duration: 0.35, ease: smoothBezier }}
                           className="flex items-start gap-3 pl-4 border-l-2 border-cyan-500/30"
                         >
                           <Avatar src={answer.authorImage} name={answer.authorName} size="sm" />
@@ -246,7 +287,7 @@ function FAQItem({
                                 {new Date(answer.createdAt).toLocaleDateString('zh-CN')}
                               </span>
                             </div>
-                            <p className="text-sm text-zinc-400 leading-relaxed">
+                            <p className="text-sm text-zinc-400 leading-relaxed break-words overflow-hidden">
                               {answer.content}
                             </p>
                           </div>
@@ -327,16 +368,16 @@ function FAQItem({
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{
-                          height: { duration: 0.5, ease: [0.32, 0.72, 0, 1] },
-                          opacity: { duration: 0.35, ease: [0.32, 0.72, 0, 1] }
+                          height: { duration: 0.4, ease: [0.32, 0.72, 0, 1] },
+                          opacity: { duration: 0.25, ease: [0.32, 0.72, 0, 1] }
                         }}
                         style={{ overflow: 'hidden' }}
                       >
                         <motion.div 
-                          initial={{ y: -15, opacity: 0 }}
+                          initial={{ y: -10, opacity: 0 }}
                           animate={{ y: 0, opacity: 1 }}
-                          exit={{ y: -15, opacity: 0 }}
-                          transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1], delay: 0.05 }}
+                          exit={{ y: -10, opacity: 0 }}
+                          transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1], delay: 0.02 }}
                           className="mt-4 space-y-3"
                         >
                           <textarea
@@ -369,7 +410,7 @@ function FAQItem({
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </div>
+            </div>
           </CollapsePanel>
         </div>
       </GlassSurface>
@@ -401,6 +442,9 @@ export function FAQSection({
 
   return (
     <section className={`relative ${className}`}>
+      {/* 注入滚动条样式 */}
+      <style dangerouslySetInnerHTML={{ __html: scrollbarStyles }} />
+      
       {/* 区块标题 */}
       <div className="flex items-center gap-4 mb-6">
         <div className="flex items-center gap-3">
@@ -412,7 +456,7 @@ export function FAQSection({
         <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent" />
       </div>
 
-      {/* 主容器 - 可折�� */}
+      {/* 主容器 - 可折叠 */}
       <GlassSurface
         width="100%"
         height="auto"
@@ -423,8 +467,9 @@ export function FAQSection({
         displace={1.2}
         mixBlendMode="normal"
         backgroundOpacity={0.1}
+        className="faq-glass-item"
       >
-        <div className="p-5 sm:p-6">
+        <div className="p-5 sm:p-6 w-full">
           {/* 折叠头部 */}
           <div 
             className="flex items-center justify-between cursor-pointer group"
@@ -566,16 +611,16 @@ export function FAQSection({
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             transition={{
-                              height: { duration: 0.5, ease: [0.32, 0.72, 0, 1] },
-                              opacity: { duration: 0.35, ease: [0.32, 0.72, 0, 1] }
+                              height: { duration: 0.4, ease: [0.32, 0.72, 0, 1] },
+                              opacity: { duration: 0.25, ease: [0.32, 0.72, 0, 1] }
                             }}
                             style={{ overflow: 'hidden' }}
                           >
                             <motion.div 
-                              initial={{ y: -20, opacity: 0 }}
+                              initial={{ y: -10, opacity: 0 }}
                               animate={{ y: 0, opacity: 1 }}
-                              exit={{ y: -20, opacity: 0 }}
-                              transition={{ duration: 0.45, ease: [0.32, 0.72, 0, 1], delay: 0.05 }}
+                              exit={{ y: -10, opacity: 0 }}
+                              transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1], delay: 0.02 }}
                               className="mt-3 p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3"
                             >
                               <textarea
@@ -613,9 +658,9 @@ export function FAQSection({
                     </div>
                   )}
 
-                  {/* 问题列表 */}
+                  {/* 问题列表 - 带最大高度，滚动条hover时显示 */}
                   {questions.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="flex flex-col gap-4 max-h-[60vh] faq-scrollbar pr-2 w-full">
                       <AnimatePresence mode="popLayout">
                         {questions.map((question) => (
                           <FAQItem
