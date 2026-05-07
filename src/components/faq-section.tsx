@@ -35,11 +35,8 @@ interface FAQSectionProps {
 }
 
 // 贝塞尔曲线配置
-const smoothBezier = {
-  type: "tween" as const,
-  ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
-  duration: 0.4
-}
+const smoothBezier = [0.22, 1, 0.36, 1] as [number, number, number, number]
+const elasticBezier = [0.34, 1.56, 0.64, 1] as [number, number, number, number]
 
 // 箭头旋转动画 - 更快速响应
 const arrowTransition = {
@@ -48,35 +45,69 @@ const arrowTransition = {
   damping: 30
 }
 
-// 展开动画 - 拉伸变窄再回弹
-const expandAnimation = {
-  height: ['0px', 'auto'],
-  opacity: [0, 1],
-  scaleY: [0.8, 1.03, 0.98, 1],    // 压缩 -> 过度拉伸 -> 轻微回弹 -> 正常
-  scaleX: [1.02, 0.98, 1.01, 1],   // 略宽 -> 变窄 -> 轻微回弹 -> 正常
-}
-
-const expandTransition = {
-  duration: 0.55,
-  ease: [0.34, 1.56, 0.64, 1] as [number, number, number, number],
-  times: [0, 0.5, 0.75, 1],
-  scaleY: { duration: 0.55, ease: [0.34, 1.56, 0.64, 1] as [number, number, number, number] },
-  scaleX: { duration: 0.55, ease: [0.34, 1.56, 0.64, 1] as [number, number, number, number] },
-}
-
-// 收起动画 - 压缩变宽再回弹
-const collapseAnimation = {
-  height: '0px',
-  opacity: 0,
-  scaleY: [1, 1.02, 0.85],        // 正常 -> 轻微拉伸 -> 压缩消失
-  scaleX: [1, 0.99, 1.04],        // 正常 -> 轻微收窄 -> 变宽消失
-}
-
-const collapseTransition = {
-  duration: 0.4,
-  ease: [0.36, 0, 0.66, -0.2] as [number, number, number, number],
-  scaleY: { duration: 0.4, times: [0, 0.3, 1], ease: [0.36, 0, 0.66, -0.2] as [number, number, number, number] },
-  scaleX: { duration: 0.4, times: [0, 0.3, 1], ease: [0.36, 0, 0.66, -0.2] as [number, number, number, number] },
+// 可展开面板组件 - 带弹性形变效果
+function ExpandablePanel({ 
+  isOpen, 
+  children,
+  className = ''
+}: { 
+  isOpen: boolean
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <AnimatePresence mode="wait">
+      {isOpen && (
+        <div className={`relative ${className}`}>
+          {/* 形变装饰层 - 只影响背景 */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent rounded-xl pointer-events-none"
+            initial={{ scaleX: 1.03, scaleY: 0.7, opacity: 0 }}
+            animate={{ 
+              scaleX: [1.03, 0.98, 1.01, 1], 
+              scaleY: [0.7, 1.05, 0.98, 1],
+              opacity: [0, 0.5, 0.3, 0]
+            }}
+            exit={{ 
+              scaleX: [1, 1.02, 1.05], 
+              scaleY: [1, 0.95, 0.6],
+              opacity: [0, 0.3, 0]
+            }}
+            transition={{
+              duration: 0.5,
+              ease: elasticBezier,
+              times: [0, 0.4, 0.7, 1]
+            }}
+            style={{ originY: 0 }}
+          />
+          
+          {/* 内容层 - 只做高度和透明度动画 */}
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ 
+              height: 'auto', 
+              opacity: 1,
+              transition: {
+                height: { duration: 0.45, ease: elasticBezier },
+                opacity: { duration: 0.3, delay: 0.1 }
+              }
+            }}
+            exit={{ 
+              height: 0, 
+              opacity: 0,
+              transition: {
+                height: { duration: 0.35, ease: [0.4, 0, 0.2, 1] },
+                opacity: { duration: 0.2 }
+              }
+            }}
+            className="overflow-hidden"
+          >
+            {children}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  )
 }
 
 // 角色标签组件
@@ -168,7 +199,7 @@ function FAQItem({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      transition={smoothBezier}
+      transition={{ duration: 0.4, ease: smoothBezier }}
       className="relative"
     >
       <GlassSurface
@@ -223,17 +254,8 @@ function FAQItem({
           </div>
 
           {/* 展开内容 */}
-          <AnimatePresence mode="wait">
-            {isExpanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0, scaleY: 0.85, scaleX: 1.015 }}
-                animate={expandAnimation}
-                exit={collapseAnimation}
-                transition={expandTransition}
-                style={{ originY: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="pt-4 mt-4 border-t border-white/5">
+          <ExpandablePanel isOpen={isExpanded}>
+            <div className="pt-4 mt-4 border-t border-white/5">
                   {/* 回答列表 */}
                   {question.answers.length > 0 ? (
                     <div className="space-y-4 mb-4">
@@ -242,7 +264,7 @@ function FAQItem({
                           key={answer.id}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={smoothBezier}
+                          transition={{ duration: 0.4, ease: smoothBezier }}
                           className="flex items-start gap-3 pl-4 border-l-2 border-cyan-500/30"
                         >
                           <Avatar src={answer.authorImage} name={answer.authorName} size="sm" />
@@ -308,17 +330,8 @@ function FAQItem({
                   </div>
 
                   {/* 回答输入框 */}
-                  <AnimatePresence mode="wait">
-                    {isReplying && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0, scaleY: 0.9, scaleX: 1.01 }}
-                        animate={expandAnimation}
-                        exit={collapseAnimation}
-                        transition={expandTransition}
-                        style={{ originY: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="mt-4 space-y-3">
+                  <ExpandablePanel isOpen={isReplying}>
+                    <div className="mt-4 space-y-3">
                           <textarea
                             value={replyContent}
                             onChange={(e) => setReplyContent(e.target.value)}
@@ -343,14 +356,10 @@ function FAQItem({
                               {isPending ? '提交中...' : '提交回答'}
                             </motion.button>
                           </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    </div>
+                  </ExpandablePanel>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          </ExpandablePanel>
         </div>
       </GlassSurface>
     </motion.div>
@@ -449,20 +458,8 @@ export function FAQSection({
           </div>
 
           {/* 展开内容 */}
-          <AnimatePresence mode="wait">
-            {isExpanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0, scaleY: 0.8, scaleX: 1.02 }}
-                animate={expandAnimation}
-                exit={collapseAnimation}
-                transition={expandTransition}
-                style={{ originY: 0 }}
-                className="overflow-hidden"
-              >
-                <motion.div 
-                  className="pt-6 mt-6 border-t border-white/5"
-                  exit={{ transition: collapseTransition }}
-                >
+          <ExpandablePanel isOpen={isExpanded}>
+            <div className="pt-6 mt-6 border-t border-white/5">
                   {/* 提问按钮 */}
                   {isLoggedIn && !isAsking && (
                     <motion.button
@@ -488,17 +485,8 @@ export function FAQSection({
                   )}
 
                   {/* 提问输入框 */}
-                  <AnimatePresence mode="wait">
-                    {isAsking && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0, scaleY: 0.9, scaleX: 1.01 }}
-                        animate={expandAnimation}
-                        exit={collapseAnimation}
-                        transition={expandTransition}
-                        style={{ originY: 0 }}
-                        className="overflow-hidden mb-6"
-                      >
-                        <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
+                  <ExpandablePanel isOpen={isAsking} className="mb-6">
+                    <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
                           <textarea
                             value={questionContent}
                             onChange={(e) => setQuestionContent(e.target.value)}
@@ -523,10 +511,8 @@ export function FAQSection({
                               {isPending ? '提交中...' : '提交问题'}
                             </motion.button>
                           </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    </div>
+                  </ExpandablePanel>
 
                   {/* 问题列表 */}
                   {questions.length > 0 ? (
@@ -554,10 +540,8 @@ export function FAQSection({
                       <p className="text-zinc-600 text-xs mt-1">成为第一个提问的人吧</p>
                     </div>
                   )}
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            </div>
+          </ExpandablePanel>
         </div>
       </GlassSurface>
     </section>
