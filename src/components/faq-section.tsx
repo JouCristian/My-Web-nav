@@ -64,19 +64,21 @@ function CollapsePanel({
           animate={{ height: 'auto', opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
           transition={{
-            height: { duration: 0.35, ease: [0.4, 0, 0.2, 1] },
-            opacity: { duration: 0.2, ease: [0.4, 0, 0.2, 1] }
+            height: { duration: 0.45, ease: [0.32, 0.72, 0, 1] },
+            opacity: { duration: 0.3, ease: [0.32, 0.72, 0, 1] }
           }}
-          style={{ overflow: 'hidden' }}
+          style={{ overflow: 'visible' }}
         >
-          {children}
+          <div style={{ overflow: 'hidden', marginBottom: -1 }}>
+            {children}
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
   )
 }
 
-// 带粒子消散的输入框面板
+// 带粒子消散的输入框面板 - 更有阻尼感的动画
 function InputPanel({ 
   isOpen, 
   onClose,
@@ -93,26 +95,26 @@ function InputPanel({
   
   const handleClose = useCallback(() => {
     // 生成粒子
-    const newParticles = Array.from({ length: 24 }, (_, i) => ({
+    const newParticles = Array.from({ length: 28 }, (_, i) => ({
       id: i,
-      x: (Math.random() - 0.5) * 350,
-      y: Math.random() * -100 - 20,
-      size: 2 + Math.random() * 4,
-      delay: Math.random() * 0.12
+      x: (Math.random() - 0.5) * 400,
+      y: Math.random() * -120 - 25,
+      size: 2 + Math.random() * 5,
+      delay: Math.random() * 0.18
     }))
     setParticles(newParticles)
     setIsClosing(true)
     
-    // 延迟关闭，等粒子动画开始
+    // 延迟关闭，等粒子动画和收起动画同步
     setTimeout(() => {
       onClose()
       setIsClosing(false)
-      setTimeout(() => setParticles([]), 600)
-    }, 80)
+      setTimeout(() => setParticles([]), 800)
+    }, 150)
   }, [onClose])
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} style={{ overflow: 'visible' }}>
       {/* 粒子层 */}
       {particles.length > 0 && (
         <div className="absolute inset-0 pointer-events-none z-50 overflow-visible">
@@ -121,9 +123,9 @@ function InputPanel({
               key={p.id}
               className="absolute left-1/2 top-1/2 rounded-full bg-gradient-to-br from-amber-400 to-orange-400"
               style={{ width: p.size, height: p.size }}
-              initial={{ x: 0, y: 0, scale: 1, opacity: 0.85 }}
+              initial={{ x: 0, y: 0, scale: 1, opacity: 0.9 }}
               animate={{ x: p.x, y: p.y, scale: 0, opacity: 0 }}
-              transition={{ duration: 0.55, delay: p.delay, ease: smoothBezier }}
+              transition={{ duration: 0.7, delay: p.delay, ease: [0.32, 0.72, 0, 1] }}
             />
           ))}
         </div>
@@ -132,14 +134,15 @@ function InputPanel({
       <AnimatePresence>
         {isOpen && !isClosing && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
+            initial={{ height: 0, opacity: 0, scale: 0.97 }}
+            animate={{ height: 'auto', opacity: 1, scale: 1 }}
+            exit={{ height: 0, opacity: 0, scale: 0.97 }}
             transition={{
-              height: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
-              opacity: { duration: 0.2 }
+              height: { duration: 0.5, ease: [0.32, 0.72, 0, 1] },
+              opacity: { duration: 0.4, ease: [0.32, 0.72, 0, 1] },
+              scale: { duration: 0.45, ease: [0.32, 0.72, 0, 1] }
             }}
-            style={{ overflow: 'hidden' }}
+            style={{ overflow: 'hidden', transformOrigin: 'top center' }}
           >
             {typeof children === 'function' 
               ? (children as (close: () => void) => React.ReactNode)(handleClose)
@@ -541,36 +544,36 @@ export function FAQSection({
                     </div>
                   )}
 
-                  {/* 提问按钮和输入框 - 互斥显示，使用 AnimatePresence 协调 */}
+                  {/* 提问按钮和输入框 */}
                   {isLoggedIn && (
-                    <div className="relative mb-6 overflow-visible">
+                    <div className="relative mb-6" style={{ overflow: 'visible', padding: '4px', margin: '-4px' }}>
                       <AnimatePresence mode="wait">
                         {!isAsking ? (
                           <motion.button
                             key="ask-button"
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            whileHover={{ scale: 1.02, y: -3 }}
-                            whileTap={{ scale: 0.98 }}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            whileHover={{ scale: 1.018, y: -2 }}
+                            whileTap={{ scale: 0.985 }}
                             onClick={(e) => {
                               e.stopPropagation()
                               setIsAsking(true)
                             }}
-                            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                            className="w-full p-4 flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-2xl text-amber-400 font-medium hover:from-amber-500/15 hover:to-orange-500/15 hover:border-amber-500/40 hover:shadow-[0_8px_32px_rgba(245,158,11,0.15)] transition-[background,border-color,box-shadow] duration-300 group"
+                            transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+                            className="w-full p-4 flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-2xl text-amber-400 font-medium hover:from-amber-500/15 hover:to-orange-500/15 hover:border-amber-500/40 hover:shadow-[0_8px_32px_rgba(245,158,11,0.15)] transition-[background,border-color,box-shadow] duration-400 group"
                           >
                             <motion.div
                               className="relative"
                               whileHover={{ rotate: 90 }}
-                              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                              transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
                             >
                               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                               </svg>
                             </motion.div>
                             <svg 
-                              className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
+                              className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity duration-400" 
                               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
                             >
                               <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -585,9 +588,9 @@ export function FAQSection({
                           >
                             {(handleClose) => (
                               <motion.div 
-                                initial={{ opacity: 0, y: -10 }}
+                                initial={{ opacity: 0, y: -15 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                                transition={{ duration: 0.45, ease: [0.32, 0.72, 0, 1] }}
                                 className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3"
                               >
                                 <textarea
