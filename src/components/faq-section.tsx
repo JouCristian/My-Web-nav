@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useTransition, useCallback, useMemo } from 'react'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import GlassSurface from './GlassSurface'
 import { submitFAQQuestion, submitFAQAnswer, deleteFAQQuestion, deleteFAQAnswer } from '@/app/actions/faq'
 
@@ -29,38 +29,123 @@ interface FAQSectionProps {
   className?: string
   questions: FAQQuestion[]
   isLoggedIn: boolean
-  canAnswer: boolean // 船员、舰长、管理员可以回答
-  isAdmin: boolean   // 管理员可以删除任何问题/回答
+  canAnswer: boolean
+  isAdmin: boolean
   currentUserId?: string
 }
 
-// 贝塞尔曲线配置
-const smoothBezier = [0.22, 1, 0.36, 1] as [number, number, number, number]
-const elasticBezier = [0.34, 1.56, 0.64, 1] as [number, number, number, number]
+// 超丝滑贝塞尔曲线配置
+const silkyBezier = [0.25, 0.1, 0.25, 1] as [number, number, number, number]
+const smoothBezier = [0.4, 0, 0.2, 1] as [number, number, number, number]
+const gentleElastic = [0.68, -0.15, 0.32, 1.15] as [number, number, number, number]
 
-// 箭头旋转动画 - 更快速响应
+// 箭头旋转动画
 const arrowTransition = {
-  type: "spring" as const,
-  stiffness: 500,
-  damping: 30
+  duration: 0.35,
+  ease: silkyBezier
 }
 
-// 可展开面板组件 - 带弹性形变效果
+// 粒子消散组件
+function ParticleDissolve({ 
+  isVisible, 
+  children, 
+  className = '' 
+}: { 
+  isVisible: boolean
+  children: React.ReactNode
+  className?: string 
+}) {
+  const particles = useMemo(() => 
+    Array.from({ length: 12 }, (_, i) => ({
+      id: i,
+      x: (Math.random() - 0.5) * 200,
+      y: (Math.random() - 0.5) * 100 - 30,
+      rotation: (Math.random() - 0.5) * 180,
+      scale: 0.3 + Math.random() * 0.7,
+      delay: Math.random() * 0.15
+    })), []
+  )
+
+  return (
+    <AnimatePresence mode="wait">
+      {isVisible && (
+        <motion.div
+          className={`relative ${className}`}
+          initial={{ opacity: 0, y: -20, scale: 0.95 }}
+          animate={{ 
+            opacity: 1, 
+            y: 0, 
+            scale: 1,
+          }}
+          exit={{ opacity: 0 }}
+          transition={{
+            duration: 0.4,
+            ease: silkyBezier
+          }}
+        >
+          {/* 粒子效果层 */}
+          <AnimatePresence>
+            {!isVisible && particles.map((p) => (
+              <motion.div
+                key={p.id}
+                className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full bg-amber-400/60 pointer-events-none"
+                initial={{ x: 0, y: 0, scale: 1, opacity: 0.8 }}
+                animate={{
+                  x: p.x,
+                  y: p.y,
+                  scale: 0,
+                  opacity: 0,
+                  rotate: p.rotation
+                }}
+                transition={{
+                  duration: 0.6,
+                  delay: p.delay,
+                  ease: smoothBezier
+                }}
+              />
+            ))}
+          </AnimatePresence>
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
+// 可展开面板组件 - 丝滑动画
 function ExpandablePanel({ 
   isOpen, 
   children,
-  className = ''
+  className = '',
+  withParticles = false
 }: { 
   isOpen: boolean
   children: React.ReactNode
   className?: string
+  withParticles?: boolean
 }) {
+  const prefersReducedMotion = useReducedMotion()
+  
+  // 生成粒子数据
+  const particles = useMemo(() => 
+    Array.from({ length: 16 }, (_, i) => ({
+      id: i,
+      x: (Math.random() - 0.5) * 300,
+      y: Math.random() * -80 - 20,
+      size: 2 + Math.random() * 4,
+      delay: Math.random() * 0.2
+    })), []
+  )
+
   return (
-    <AnimatePresence initial={false} mode="sync">
+    <AnimatePresence mode="wait">
       {isOpen && (
         <motion.div 
           className={`relative ${className}`}
-          initial={{ height: 0, opacity: 0 }}
+          initial={{ 
+            height: 0, 
+            opacity: 0,
+          }}
           animate={{ 
             height: 'auto', 
             opacity: 1,
@@ -71,42 +156,56 @@ function ExpandablePanel({
           }}
           transition={{
             height: { 
-              duration: 0.4, 
-              ease: elasticBezier 
+              duration: prefersReducedMotion ? 0.1 : 0.5, 
+              ease: silkyBezier
             },
             opacity: { 
-              duration: 0.25,
-              ease: smoothBezier
+              duration: prefersReducedMotion ? 0.1 : 0.3,
+              ease: silkyBezier
             }
           }}
-          style={{ overflow: 'hidden' }}
+          style={{ overflow: 'hidden', willChange: 'height, opacity' }}
         >
-          {/* 形变装饰层 - 只影响背景 */}
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent rounded-xl pointer-events-none"
-            initial={{ scaleX: 1.02, scaleY: 0.85, opacity: 0 }}
-            animate={{ 
-              scaleX: [1.02, 0.99, 1.005, 1], 
-              scaleY: [0.85, 1.03, 0.99, 1],
-              opacity: [0, 0.6, 0.3, 0]
-            }}
-            exit={{ 
-              scaleX: [1, 1.01, 1.03], 
-              scaleY: [1, 0.97, 0.85],
-              opacity: [0, 0.4, 0]
-            }}
-            transition={{
-              duration: 0.4,
-              ease: elasticBezier,
-              times: [0, 0.4, 0.7, 1]
-            }}
-            style={{ originY: 0 }}
-          />
-          
           {/* 内容层 */}
-          <div className="relative">
+          <motion.div 
+            className="relative"
+            initial={{ y: -10 }}
+            animate={{ y: 0 }}
+            exit={{ y: -10 }}
+            transition={{ duration: 0.35, ease: silkyBezier }}
+          >
             {children}
-          </div>
+          </motion.div>
+          
+          {/* 粒子消散效果 - 仅在退出时显示 */}
+          {withParticles && (
+            <motion.div
+              className="absolute inset-0 pointer-events-none overflow-visible"
+              initial={{ opacity: 0 }}
+              exit={{ opacity: 1 }}
+              transition={{ duration: 0.1 }}
+            >
+              {particles.map((p) => (
+                <motion.div
+                  key={p.id}
+                  className="absolute left-1/2 top-1/2 rounded-full bg-gradient-to-br from-amber-400/80 to-orange-500/60"
+                  style={{ width: p.size, height: p.size }}
+                  initial={{ x: 0, y: 0, scale: 1, opacity: 0 }}
+                  exit={{
+                    x: p.x,
+                    y: p.y,
+                    scale: 0,
+                    opacity: [0, 0.9, 0],
+                  }}
+                  transition={{
+                    duration: 0.7,
+                    delay: p.delay,
+                    ease: smoothBezier
+                  }}
+                />
+              ))}
+            </motion.div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
@@ -332,8 +431,8 @@ function FAQItem({
                     )}
                   </div>
 
-                  {/* 回答输入框 */}
-                  <ExpandablePanel isOpen={isReplying}>
+                  {/* 回答输入框 - 带粒子消散 */}
+                  <ExpandablePanel isOpen={isReplying} withParticles>
                     <div className="mt-4 space-y-3">
                           <textarea
                             value={replyContent}
@@ -344,14 +443,14 @@ function FAQItem({
                           />
                           <div className="flex items-center gap-2 justify-end">
                             <motion.button
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
+                              whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,255,255,0.08)' }}
+                              whileTap={{ scale: 0.97 }}
                               onClick={(e) => {
                                 e.stopPropagation()
                                 setIsReplying(false)
                               }}
-                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                              className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/5 rounded-lg transition-colors"
+                              transition={{ duration: 0.25, ease: silkyBezier }}
+                              className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 rounded-lg"
                             >
                               取消
                             </motion.button>
@@ -438,8 +537,8 @@ export function FAQSection({
                 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ 
-                  scale: { type: "spring", stiffness: 400, damping: 17 },
-                  rotate: { duration: 0.5, ease: elasticBezier }
+                  scale: { duration: 0.3, ease: silkyBezier },
+                  rotate: { duration: 0.5, ease: gentleElastic }
                 }}
               >
                 <motion.svg 
@@ -492,54 +591,61 @@ export function FAQSection({
                   {/* 提问按钮 */}
                   {isLoggedIn && !isAsking && (
                     <motion.button
-                      whileHover={{ scale: 1.015, y: -2 }}
+                      initial={{ opacity: 1, scale: 1, y: 0 }}
+                      whileHover={{ 
+                        scale: 1.02, 
+                        y: -3,
+                        boxShadow: '0 8px 30px rgba(245, 158, 11, 0.2)'
+                      }}
                       whileTap={{ scale: 0.98, y: 0 }}
                       onClick={(e) => {
                         e.stopPropagation()
                         setIsAsking(true)
                       }}
-                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                      className="relative w-full mb-6 p-4 flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-2xl text-amber-400 font-medium hover:from-amber-500/20 hover:to-orange-500/20 hover:border-amber-500/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] transition-all duration-300 group overflow-visible"
+                      transition={{ 
+                        duration: 0.4, 
+                        ease: silkyBezier
+                      }}
+                      className="relative w-full mb-6 p-4 flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-2xl text-amber-400 font-medium hover:from-amber-500/20 hover:to-orange-500/20 hover:border-amber-500/40 transition-colors duration-500 group"
                     >
-                      {/* 加号图标 + 灯泡图标组合 */}
-                      <div className="relative flex items-center gap-2">
-                        <motion.div
-                          className="relative"
-                          whileHover={{ rotate: 90 }}
-                          transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                        >
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                          </svg>
-                        </motion.div>
-                        <motion.svg 
-                          className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
-                          fill="none" 
-                          viewBox="0 0 24 24" 
-                          stroke="currentColor" 
-                          strokeWidth={2}
-                          initial={{ scale: 0.5, y: 5 }}
-                          whileHover={{ scale: 1.2, y: -2 }}
-                          animate={{ scale: 1, y: 0 }}
-                          transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                        </motion.svg>
-                      </div>
+                      {/* 加号图标 */}
+                      <motion.div
+                        className="relative"
+                        whileHover={{ rotate: 90 }}
+                        transition={{ duration: 0.4, ease: gentleElastic }}
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                      </motion.div>
+                      
+                      {/* 灯泡图标 */}
+                      <motion.svg 
+                        className="w-5 h-5" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor" 
+                        strokeWidth={2}
+                        initial={{ opacity: 0, scale: 0.8, x: -10 }}
+                        whileHover={{ opacity: 1, scale: 1, x: 0 }}
+                        transition={{ duration: 0.35, ease: silkyBezier }}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </motion.svg>
+                      
                       <span>提出新问题</span>
                       
-                      {/* hover 时的光晕效果 */}
+                      {/* hover 光晕 */}
                       <motion.div 
-                        className="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-500/0 via-amber-500/5 to-amber-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                        animate={{ 
-                          backgroundPosition: ['200% 0', '-200% 0']
-                        }}
+                        className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 pointer-events-none"
+                        initial={{ x: '-100%' }}
+                        whileHover={{ x: '100%' }}
                         transition={{ 
-                          duration: 3, 
+                          duration: 1.2, 
+                          ease: silkyBezier,
                           repeat: Infinity,
-                          ease: "linear"
+                          repeatDelay: 0.5
                         }}
-                        style={{ backgroundSize: '200% 100%' }}
                       />
                     </motion.button>
                   )}
@@ -553,8 +659,8 @@ export function FAQSection({
                     </div>
                   )}
 
-                  {/* 提问输入框 */}
-                  <ExpandablePanel isOpen={isAsking} className="mb-6">
+                  {/* 提问输入框 - 带粒子消散 */}
+                  <ExpandablePanel isOpen={isAsking} className="mb-6" withParticles>
                     <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
                           <textarea
                             value={questionContent}
@@ -565,14 +671,14 @@ export function FAQSection({
                           />
                           <div className="flex items-center gap-2 justify-end">
                             <motion.button
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
+                              whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,255,255,0.08)' }}
+                              whileTap={{ scale: 0.97 }}
                               onClick={(e) => {
                                 e.stopPropagation()
                                 setIsAsking(false)
                               }}
-                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                              className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/5 rounded-lg transition-colors"
+                              transition={{ duration: 0.25, ease: silkyBezier }}
+                              className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 rounded-lg"
                             >
                               取消
                             </motion.button>
