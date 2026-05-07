@@ -1,7 +1,28 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+
+// 自定义滚动条样式
+const scrollbarStyles = `
+  .faq-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .faq-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .faq-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+  }
+  .faq-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+  .faq-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  }
+`
 import GlassSurface from './GlassSurface'
 import { submitFAQQuestion, submitFAQAnswer, deleteFAQQuestion, deleteFAQAnswer } from '@/app/actions/faq'
 
@@ -135,6 +156,17 @@ function FAQItem({
   const [isReplying, setIsReplying] = useState(false)
   const [replyContent, setReplyContent] = useState('')
   const [isPending, startTransition] = useTransition()
+  const [showOverflow, setShowOverflow] = useState(false)
+
+  // 动画完成后再显示滚动条，避免闪烁
+  useEffect(() => {
+    if (isExpanded) {
+      const timer = setTimeout(() => setShowOverflow(true), 450)
+      return () => clearTimeout(timer)
+    } else {
+      setShowOverflow(false)
+    }
+  }, [isExpanded])
 
   const handleSubmitAnswer = () => {
     if (!replyContent.trim()) return
@@ -163,15 +195,10 @@ function FAQItem({
 
   return (
     <motion.div
-      layout="position"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      transition={{ 
-        duration: 0.4, 
-        ease: smoothBezier,
-        layout: { duration: 0.4, ease: [0.32, 0.72, 0, 1] }
-      }}
+      transition={{ duration: 0.4, ease: smoothBezier }}
       className="relative"
     >
       <GlassSurface
@@ -227,21 +254,18 @@ function FAQItem({
 
           {/* 展开内容 */}
           <CollapsePanel isOpen={isExpanded}>
-            <motion.div 
-              className="pt-4 mt-4 border-t border-white/5"
-              layout
-              transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
-            >
-                  {/* 回答列表 - 带最大高度 */}
+            <div className="pt-4 mt-4 border-t border-white/5">
+                  {/* 回答列表 - 带最大高度，动画完成后才显示滚动 */}
                   {question.answers.length > 0 ? (
-                    <div className="space-y-4 mb-4 max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent pr-1">
+                    <div 
+                      className={`space-y-4 mb-4 max-h-[280px] pr-2 faq-scrollbar ${showOverflow ? 'overflow-y-auto' : 'overflow-hidden'}`}
+                    >
                       {question.answers.map((answer) => (
                         <motion.div
                           key={answer.id}
-                          layout
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.4, ease: smoothBezier }}
+                          transition={{ duration: 0.35, ease: smoothBezier }}
                           className="flex items-start gap-3 pl-4 border-l-2 border-cyan-500/30"
                         >
                           <Avatar src={answer.authorImage} name={answer.authorName} size="sm" />
@@ -328,27 +352,24 @@ function FAQItem({
                     )}
                   </div>
 
-                  {/* 回答输入框 - 在按钮下方展开，带平滑宽度过渡 */}
+                  {/* 回答输入框 - 在按钮下方展开 */}
                   <AnimatePresence>
                     {isReplying && (
                       <motion.div
-                        layout
-                        initial={{ height: 0, opacity: 0, scale: 0.98 }}
-                        animate={{ height: 'auto', opacity: 1, scale: 1 }}
-                        exit={{ height: 0, opacity: 0, scale: 0.98 }}
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
                         transition={{
-                          height: { duration: 0.45, ease: [0.32, 0.72, 0, 1] },
-                          opacity: { duration: 0.3, ease: [0.32, 0.72, 0, 1] },
-                          scale: { duration: 0.4, ease: [0.32, 0.72, 0, 1] },
-                          layout: { duration: 0.4, ease: [0.32, 0.72, 0, 1] }
+                          height: { duration: 0.4, ease: [0.32, 0.72, 0, 1] },
+                          opacity: { duration: 0.25, ease: [0.32, 0.72, 0, 1] }
                         }}
-                        style={{ overflow: 'hidden', transformOrigin: 'top center' }}
+                        style={{ overflow: 'hidden' }}
                       >
                         <motion.div 
-                          initial={{ y: -12, opacity: 0 }}
+                          initial={{ y: -10, opacity: 0 }}
                           animate={{ y: 0, opacity: 1 }}
-                          exit={{ y: -12, opacity: 0 }}
-                          transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1], delay: 0.03 }}
+                          exit={{ y: -10, opacity: 0 }}
+                          transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1], delay: 0.02 }}
                           className="mt-4 space-y-3"
                         >
                           <textarea
@@ -381,7 +402,7 @@ function FAQItem({
                       </motion.div>
                     )}
                   </AnimatePresence>
-            </motion.div>
+            </div>
           </CollapsePanel>
         </div>
       </GlassSurface>
@@ -413,6 +434,9 @@ export function FAQSection({
 
   return (
     <section className={`relative ${className}`}>
+      {/* 注入滚动条样式 */}
+      <style dangerouslySetInnerHTML={{ __html: scrollbarStyles }} />
+      
       {/* 区块标题 */}
       <div className="flex items-center gap-4 mb-6">
         <div className="flex items-center gap-3">
@@ -502,7 +526,7 @@ export function FAQSection({
 
           {/* 展开内容 */}
           <CollapsePanel isOpen={isExpanded}>
-            <div className="pt-6 mt-6 border-t border-white/5 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+            <div className="pt-6 mt-6 border-t border-white/5">
                   {/* 登录提示 */}
                   {!isLoggedIn && (
                     <div className="mb-6 p-4 flex items-center justify-center gap-3 bg-zinc-800/50 border border-zinc-700/50 rounded-2xl text-zinc-500">
@@ -570,27 +594,24 @@ export function FAQSection({
                         <span>{isAsking ? '收起' : '提出新问题'}</span>
                       </button>
                       
-                      {/* 输入框 - 在按钮下方展开，带平滑过渡 */}
+                      {/* 输入框 - 在按钮下方展开 */}
                       <AnimatePresence>
                         {isAsking && (
                           <motion.div
-                            layout
-                            initial={{ height: 0, opacity: 0, scale: 0.98 }}
-                            animate={{ height: 'auto', opacity: 1, scale: 1 }}
-                            exit={{ height: 0, opacity: 0, scale: 0.98 }}
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
                             transition={{
-                              height: { duration: 0.45, ease: [0.32, 0.72, 0, 1] },
-                              opacity: { duration: 0.3, ease: [0.32, 0.72, 0, 1] },
-                              scale: { duration: 0.4, ease: [0.32, 0.72, 0, 1] },
-                              layout: { duration: 0.4, ease: [0.32, 0.72, 0, 1] }
+                              height: { duration: 0.4, ease: [0.32, 0.72, 0, 1] },
+                              opacity: { duration: 0.25, ease: [0.32, 0.72, 0, 1] }
                             }}
-                            style={{ overflow: 'hidden', transformOrigin: 'top center' }}
+                            style={{ overflow: 'hidden' }}
                           >
                             <motion.div 
-                              initial={{ y: -15, opacity: 0 }}
+                              initial={{ y: -10, opacity: 0 }}
                               animate={{ y: 0, opacity: 1 }}
-                              exit={{ y: -15, opacity: 0 }}
-                              transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1], delay: 0.03 }}
+                              exit={{ y: -10, opacity: 0 }}
+                              transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1], delay: 0.02 }}
                               className="mt-3 p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3"
                             >
                               <textarea
@@ -628,9 +649,9 @@ export function FAQSection({
                     </div>
                   )}
 
-                  {/* 问题列表 */}
+                  {/* 问题列表 - 带最大高度和滚动 */}
                   {questions.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-[60vh] overflow-y-auto faq-scrollbar pr-2">
                       <AnimatePresence mode="popLayout">
                         {questions.map((question) => (
                           <FAQItem
