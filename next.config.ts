@@ -7,9 +7,6 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // 性能优化配置
-  reactCompiler: true, // Next.js 16 React Compiler 自动优化重渲染
-  
   // 图片优化配置
   images: {
     formats: ['image/avif', 'image/webp'], // 优先使用现代图片格式
