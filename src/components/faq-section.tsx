@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useTransition, useCallback, useMemo } from 'react'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { useState, useTransition, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import GlassSurface from './GlassSurface'
 import { submitFAQQuestion, submitFAQAnswer, deleteFAQQuestion, deleteFAQAnswer } from '@/app/actions/faq'
 
@@ -45,66 +45,30 @@ const arrowTransition = {
   ease: silkyBezier
 }
 
-// 粒子消散组件
-function ParticleDissolve({ 
-  isVisible, 
-  children, 
-  className = '' 
+// 简洁的折叠面板 - 无嵌套，无卡顿
+function CollapsePanel({ 
+  isOpen, 
+  children,
+  className = ''
 }: { 
-  isVisible: boolean
+  isOpen: boolean
   children: React.ReactNode
-  className?: string 
+  className?: string
 }) {
-  const particles = useMemo(() => 
-    Array.from({ length: 12 }, (_, i) => ({
-      id: i,
-      x: (Math.random() - 0.5) * 200,
-      y: (Math.random() - 0.5) * 100 - 30,
-      rotation: (Math.random() - 0.5) * 180,
-      scale: 0.3 + Math.random() * 0.7,
-      delay: Math.random() * 0.15
-    })), []
-  )
-
   return (
-    <AnimatePresence mode="wait">
-      {isVisible && (
-        <motion.div
-          className={`relative ${className}`}
-          initial={{ opacity: 0, y: -20, scale: 0.95 }}
-          animate={{ 
-            opacity: 1, 
-            y: 0, 
-            scale: 1,
-          }}
-          exit={{ opacity: 0 }}
+    <AnimatePresence initial={false}>
+      {isOpen && (
+        <motion.div 
+          className={className}
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
           transition={{
-            duration: 0.4,
-            ease: silkyBezier
+            height: { duration: 0.35, ease: [0.4, 0, 0.2, 1] },
+            opacity: { duration: 0.2, ease: [0.4, 0, 0.2, 1] }
           }}
+          style={{ overflow: 'hidden' }}
         >
-          {/* 粒子效果层 */}
-          <AnimatePresence>
-            {!isVisible && particles.map((p) => (
-              <motion.div
-                key={p.id}
-                className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full bg-amber-400/60 pointer-events-none"
-                initial={{ x: 0, y: 0, scale: 1, opacity: 0.8 }}
-                animate={{
-                  x: p.x,
-                  y: p.y,
-                  scale: 0,
-                  opacity: 0,
-                  rotate: p.rotation
-                }}
-                transition={{
-                  duration: 0.6,
-                  delay: p.delay,
-                  ease: smoothBezier
-                }}
-              />
-            ))}
-          </AnimatePresence>
           {children}
         </motion.div>
       )}
@@ -112,106 +76,75 @@ function ParticleDissolve({
   )
 }
 
-// 可展开面板组件 - 超丝滑动画（无卡顿）
-function ExpandablePanel({ 
+// 带粒子消散的输入框面板
+function InputPanel({ 
   isOpen, 
+  onClose,
   children,
-  className = '',
-  withParticles = false
+  className = ''
 }: { 
   isOpen: boolean
-  children: React.ReactNode
+  onClose: () => void
+  children: React.ReactNode | ((handleClose: () => void) => React.ReactNode)
   className?: string
-  withParticles?: boolean
 }) {
-  const prefersReducedMotion = useReducedMotion()
-  const [showParticles, setShowParticles] = useState(false)
+  const [particles, setParticles] = useState<Array<{id: number, x: number, y: number, size: number, delay: number}>>([])
+  const [isClosing, setIsClosing] = useState(false)
   
-  // 生成粒子数据
-  const particles = useMemo(() => 
-    Array.from({ length: 20 }, (_, i) => ({
+  const handleClose = useCallback(() => {
+    // 生成粒子
+    const newParticles = Array.from({ length: 24 }, (_, i) => ({
       id: i,
-      x: (Math.random() - 0.5) * 400,
-      y: Math.random() * -120 - 30,
-      size: 3 + Math.random() * 5,
-      delay: Math.random() * 0.15,
-      duration: 0.5 + Math.random() * 0.3
-    })), []
-  )
-
-  // 触发粒子效果
-  const handleExitStart = useCallback(() => {
-    if (withParticles) {
-      setShowParticles(true)
-      setTimeout(() => setShowParticles(false), 800)
-    }
-  }, [withParticles])
+      x: (Math.random() - 0.5) * 350,
+      y: Math.random() * -100 - 20,
+      size: 2 + Math.random() * 4,
+      delay: Math.random() * 0.12
+    }))
+    setParticles(newParticles)
+    setIsClosing(true)
+    
+    // 延迟关闭，等粒子动画开始
+    setTimeout(() => {
+      onClose()
+      setIsClosing(false)
+      setTimeout(() => setParticles([]), 600)
+    }, 80)
+  }, [onClose])
 
   return (
-    <div className={`relative ${className}`} style={{ overflow: 'visible' }}>
-      {/* 粒子效果层 - 独立于主动画 */}
-      {showParticles && (
-        <div className="absolute inset-0 pointer-events-none z-50" style={{ overflow: 'visible' }}>
+    <div className={`relative ${className}`}>
+      {/* 粒子层 */}
+      {particles.length > 0 && (
+        <div className="absolute inset-0 pointer-events-none z-50 overflow-visible">
           {particles.map((p) => (
             <motion.div
               key={p.id}
-              className="absolute left-1/2 top-1/2 rounded-full bg-gradient-to-br from-amber-400 to-orange-500"
+              className="absolute left-1/2 top-1/2 rounded-full bg-gradient-to-br from-amber-400 to-orange-400"
               style={{ width: p.size, height: p.size }}
-              initial={{ x: 0, y: 0, scale: 1, opacity: 0.9 }}
-              animate={{
-                x: p.x,
-                y: p.y,
-                scale: 0,
-                opacity: 0,
-              }}
-              transition={{
-                duration: p.duration,
-                delay: p.delay,
-                ease: smoothBezier
-              }}
+              initial={{ x: 0, y: 0, scale: 1, opacity: 0.85 }}
+              animate={{ x: p.x, y: p.y, scale: 0, opacity: 0 }}
+              transition={{ duration: 0.55, delay: p.delay, ease: smoothBezier }}
             />
           ))}
         </div>
       )}
       
-      <AnimatePresence 
-        initial={false}
-        onExitComplete={() => {}}
-      >
-        {isOpen && (
-          <motion.div 
+      <AnimatePresence>
+        {isOpen && !isClosing && (
+          <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            onAnimationStart={(definition) => {
-              // 检测是否是退出动画
-              if (definition === 'exit') {
-                handleExitStart()
-              }
-            }}
             transition={{
-              height: { 
-                duration: prefersReducedMotion ? 0.1 : 0.4, 
-                ease: [0.4, 0, 0.2, 1]
-              },
-              opacity: { 
-                duration: prefersReducedMotion ? 0.1 : 0.25,
-                ease: [0.4, 0, 0.2, 1]
-              }
+              height: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
+              opacity: { duration: 0.2 }
             }}
             style={{ overflow: 'hidden' }}
           >
-            <motion.div 
-              initial={{ y: -8, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -8, opacity: 0 }}
-              transition={{ 
-                duration: 0.3, 
-                ease: [0.4, 0, 0.2, 1]
-              }}
-            >
-              {children}
-            </motion.div>
+            {typeof children === 'function' 
+              ? (children as (close: () => void) => React.ReactNode)(handleClose)
+              : children
+            }
           </motion.div>
         )}
       </AnimatePresence>
@@ -363,7 +296,7 @@ function FAQItem({
           </div>
 
           {/* 展开内容 */}
-          <ExpandablePanel isOpen={isExpanded}>
+          <CollapsePanel isOpen={isExpanded}>
             <div className="pt-4 mt-4 border-t border-white/5">
                   {/* 回答列表 */}
                   {question.answers.length > 0 ? (
@@ -439,42 +372,45 @@ function FAQItem({
                   </div>
 
                   {/* 回答输入框 - 带粒子消散 */}
-                  <ExpandablePanel isOpen={isReplying} withParticles>
-                    <div className="mt-4 space-y-3">
-                          <textarea
-                            value={replyContent}
-                            onChange={(e) => setReplyContent(e.target.value)}
-                            placeholder="输入你的回答..."
-                            rows={3}
-                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 resize-none transition-colors"
-                          />
-                          <div className="flex items-center gap-2 justify-end">
-                            <motion.button
-                              whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,255,255,0.08)' }}
-                              whileTap={{ scale: 0.97 }}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setIsReplying(false)
-                              }}
-                              transition={{ duration: 0.25, ease: silkyBezier }}
-                              className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 rounded-lg"
-                            >
-                              取消
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={handleSubmitAnswer}
-                              disabled={isPending || !replyContent.trim()}
-                              className="px-4 py-2 text-sm font-medium text-black bg-cyan-400 rounded-xl hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                            >
-                              {isPending ? '提交中...' : '提交回答'}
-                            </motion.button>
-                          </div>
-                    </div>
-                  </ExpandablePanel>
+                  <InputPanel isOpen={isReplying} onClose={() => setIsReplying(false)}>
+                    {(handleClose) => (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                        className="mt-4 space-y-3"
+                      >
+                        <textarea
+                          value={replyContent}
+                          onChange={(e) => setReplyContent(e.target.value)}
+                          placeholder="输入你的回答..."
+                          rows={3}
+                          autoFocus
+                          className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 resize-none transition-colors"
+                        />
+                        <div className="flex items-center gap-2 justify-end">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleClose()
+                            }}
+                            className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/5 rounded-lg transition-colors"
+                          >
+                            取消
+                          </button>
+                          <button
+                            onClick={handleSubmitAnswer}
+                            disabled={isPending || !replyContent.trim()}
+                            className="px-4 py-2 text-sm font-medium text-black bg-cyan-400 rounded-xl hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                          >
+                            {isPending ? '提交中...' : '提交回答'}
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </InputPanel>
                 </div>
-          </ExpandablePanel>
+          </CollapsePanel>
         </div>
       </GlassSurface>
     </motion.div>
@@ -593,58 +529,9 @@ export function FAQSection({
           </div>
 
           {/* 展开内容 */}
-          <ExpandablePanel isOpen={isExpanded}>
+          <CollapsePanel isOpen={isExpanded}>
             <div className="pt-6 mt-6 border-t border-white/5">
-                  {/* 提问按钮容器 - overflow-visible 防止遮挡 */}
-                  <div className="relative mb-6" style={{ overflow: 'visible' }}>
-                    {isLoggedIn && !isAsking && (
-                      <motion.button
-                        initial={false}
-                        animate={{ scale: 1, y: 0 }}
-                        whileHover={{ 
-                          scale: 1.025, 
-                          y: -4,
-                        }}
-                        whileTap={{ scale: 0.98, y: 0 }}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setIsAsking(true)
-                        }}
-                        transition={{ 
-                          type: "tween",
-                          duration: 0.3, 
-                          ease: [0.4, 0, 0.2, 1]
-                        }}
-                        className="relative w-full p-4 flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-2xl text-amber-400 font-medium hover:from-amber-500/15 hover:to-orange-500/15 hover:border-amber-500/40 hover:shadow-[0_8px_32px_rgba(245,158,11,0.15)] transition-[background,border-color,box-shadow] duration-300 group"
-                        style={{ transformOrigin: 'center center' }}
-                      >
-                        {/* 加号图标 */}
-                        <motion.div
-                          className="relative"
-                          whileHover={{ rotate: 90 }}
-                          transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-                        >
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                          </svg>
-                        </motion.div>
-                        
-                        {/* 灯泡图标 */}
-                        <svg 
-                          className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
-                          fill="none" 
-                          viewBox="0 0 24 24" 
-                          stroke="currentColor" 
-                          strokeWidth={2}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                        </svg>
-                        
-                        <span>提出新问题</span>
-                      </motion.button>
-                    )}
-                  </div>
-
+                  {/* 登录提示 */}
                   {!isLoggedIn && (
                     <div className="mb-6 p-4 flex items-center justify-center gap-3 bg-zinc-800/50 border border-zinc-700/50 rounded-2xl text-zinc-500">
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -654,41 +541,88 @@ export function FAQSection({
                     </div>
                   )}
 
-                  {/* 提问输入框 - 带粒子消散 */}
-                  <ExpandablePanel isOpen={isAsking} className="mb-6 relative z-10" withParticles>
-                    <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
-                          <textarea
-                            value={questionContent}
-                            onChange={(e) => setQuestionContent(e.target.value)}
-                            placeholder="输入你的问题..."
-                            rows={3}
-                            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 resize-none transition-colors"
-                          />
-                          <div className="flex items-center gap-2 justify-end">
-                            <motion.button
-                              whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,255,255,0.08)' }}
-                              whileTap={{ scale: 0.97 }}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setIsAsking(false)
-                              }}
-                              transition={{ duration: 0.25, ease: silkyBezier }}
-                              className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 rounded-lg"
+                  {/* 提问按钮和输入框 - 互斥显示，使用 AnimatePresence 协调 */}
+                  {isLoggedIn && (
+                    <div className="relative mb-6 overflow-visible">
+                      <AnimatePresence mode="wait">
+                        {!isAsking ? (
+                          <motion.button
+                            key="ask-button"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            whileHover={{ scale: 1.02, y: -3 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setIsAsking(true)
+                            }}
+                            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                            className="w-full p-4 flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-2xl text-amber-400 font-medium hover:from-amber-500/15 hover:to-orange-500/15 hover:border-amber-500/40 hover:shadow-[0_8px_32px_rgba(245,158,11,0.15)] transition-[background,border-color,box-shadow] duration-300 group"
+                          >
+                            <motion.div
+                              className="relative"
+                              whileHover={{ rotate: 90 }}
+                              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                             >
-                              取消
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={handleSubmitQuestion}
-                              disabled={isPending || !questionContent.trim()}
-                              className="px-4 py-2 text-sm font-medium text-black bg-amber-400 rounded-xl hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                              </svg>
+                            </motion.div>
+                            <svg 
+                              className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
+                              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
                             >
-                              {isPending ? '提交中...' : '提交问题'}
-                            </motion.button>
-                          </div>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                            <span>提出新问题</span>
+                          </motion.button>
+                        ) : (
+                          <InputPanel 
+                            key="input-panel"
+                            isOpen={isAsking} 
+                            onClose={() => setIsAsking(false)}
+                          >
+                            {(handleClose) => (
+                              <motion.div 
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                                className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3"
+                              >
+                                <textarea
+                                  value={questionContent}
+                                  onChange={(e) => setQuestionContent(e.target.value)}
+                                  placeholder="输入你的问题..."
+                                  rows={3}
+                                  autoFocus
+                                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-amber-500/50 resize-none transition-colors"
+                                />
+                                <div className="flex items-center gap-2 justify-end">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleClose()
+                                    }}
+                                    className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/5 rounded-lg transition-colors"
+                                  >
+                                    取消
+                                  </button>
+                                  <button
+                                    onClick={handleSubmitQuestion}
+                                    disabled={isPending || !questionContent.trim()}
+                                    className="px-4 py-2 text-sm font-medium text-black bg-amber-400 rounded-xl hover:bg-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                  >
+                                    {isPending ? '提交中...' : '提交问题'}
+                                  </button>
+                                </div>
+                              </motion.div>
+                            )}
+                          </InputPanel>
+                        )}
+                      </AnimatePresence>
                     </div>
-                  </ExpandablePanel>
+                  )}
 
                   {/* 问题列表 */}
                   {questions.length > 0 ? (
@@ -717,7 +651,7 @@ export function FAQSection({
                     </div>
                   )}
             </div>
-          </ExpandablePanel>
+          </CollapsePanel>
         </div>
       </GlassSurface>
     </section>
