@@ -235,7 +235,7 @@ export function AchievementGallerySection({
       </div>
       <div className="space-y-2">
         <p className="text-zinc-300 text-lg sm:text-xl font-medium">
-          成果���案馆
+          成果展示档案馆
         </p>
         <p className="text-zinc-500 text-sm sm:text-base max-w-md">
           这里将展示小组的精彩成果与里程碑时刻
