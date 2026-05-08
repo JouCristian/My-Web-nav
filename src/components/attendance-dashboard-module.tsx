@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import Link from "next/link"
 // 🚀 核心修复：引入最新云端历史查询协议
 import { getLeaveRequestsAction, getRollCallHistoryAction } from "@/app/actions"
 
@@ -14,6 +15,7 @@ type CrewStats = {
 }
 
 export type ManagerData = {
+  id: string;
   name: string;
   role: string;
   image: string | null;
@@ -182,6 +184,7 @@ export function AttendanceDashboardModule({
             <div className="flex-1 overflow-y-auto matrix-scrollbar space-y-3 pr-2 min-h-0 pb-4">
               {managers.length > 0 ? managers.map((m, idx) => {
                 const isObj = typeof m === 'object' && m !== null;
+                const userId = isObj ? m.id : null;
                 const name = isObj ? (m.name || "Unknown") : String(m);
                 const role = isObj ? (m.role || "ADMIN") : "ADMIN";
                 const image = isObj ? m.image : null;
@@ -190,14 +193,25 @@ export function AttendanceDashboardModule({
                   <div key={idx} className="bg-[#02040a]/60 border border-emerald-500/20 p-3 rounded-2xl flex items-center gap-3 relative overflow-hidden group hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all shadow-[inset_0_0_15px_rgba(0,0,0,0.8)]">
                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-transparent -translate-x-full group-hover:animate-[shimmer-seamless_2s_infinite] pointer-events-none" />
                     
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 overflow-hidden shadow-[0_0_10px_rgba(16,185,129,0.2)]">
-                      {image ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img src={image} alt={name} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-emerald-500 font-bold text-sm">{name.charAt(0).toUpperCase()}</span>
-                      )}
-                    </div>
+                    {userId ? (
+                      <Link href={`/profile/${userId}`} className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 overflow-hidden shadow-[0_0_10px_rgba(16,185,129,0.2)] hover:opacity-80 transition-opacity cursor-pointer">
+                        {image ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img src={image} alt={name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-emerald-500 font-bold text-sm">{name.charAt(0).toUpperCase()}</span>
+                        )}
+                      </Link>
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 overflow-hidden shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                        {image ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img src={image} alt={name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-emerald-500 font-bold text-sm">{name.charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                    )}
 
                     <div className="flex flex-col items-start overflow-hidden relative z-10">
                       <span className="text-sm font-bold text-white tracking-wider truncate w-full text-left">{name}</span>
