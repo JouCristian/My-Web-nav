@@ -384,11 +384,14 @@ interface AppConfig {
   font?: string;
   scrollSpeed?: number;
   scrollEase?: number;
+  mobileScrollMultiplier?: number;
 }
 
 class App {
   container: HTMLElement;
   scrollSpeed: number;
+  mobileScrollMultiplier: number;
+  isMobile: boolean;
   scroll: {
     ease: number;
     current: number;
@@ -426,12 +429,15 @@ class App {
       borderRadius = 0,
       font = 'bold 30px sans-serif',
       scrollSpeed = 2,
-      scrollEase = 0.05
+      scrollEase = 0.05,
+      mobileScrollMultiplier = 3
     }: AppConfig
   ) {
     document.documentElement.classList.remove('no-js');
     this.container = container;
     this.scrollSpeed = scrollSpeed;
+    this.mobileScrollMultiplier = mobileScrollMultiplier;
+    this.isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0 };
     this.onCheckDebounce = debounce(this.onCheck.bind(this), 200);
     this.createRenderer();
@@ -518,7 +524,9 @@ class App {
   onTouchMove(e: MouseEvent | TouchEvent) {
     if (!this.isDown) return;
     const x = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const distance = (this.start - x) * (this.scrollSpeed * 0.025);
+    // 移动端使用更高的灵敏度系数
+    const multiplier = this.isMobile ? this.mobileScrollMultiplier : 1;
+    const distance = (this.start - x) * (this.scrollSpeed * 0.025 * multiplier);
     this.scroll.target = (this.scroll.position ?? 0) + distance;
   }
 
@@ -615,6 +623,7 @@ interface CircularGalleryProps {
   font?: string;
   scrollSpeed?: number;
   scrollEase?: number;
+  mobileScrollMultiplier?: number;
 }
 
 export default function CircularGallery({
@@ -624,7 +633,8 @@ export default function CircularGallery({
   borderRadius = 0.11,
   font = 'bold 30px sans-serif',
   scrollSpeed = 1.7,
-  scrollEase = 0.04
+  scrollEase = 0.04,
+  mobileScrollMultiplier = 3
 }: CircularGalleryProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -636,11 +646,12 @@ export default function CircularGallery({
       borderRadius,
       font,
       scrollSpeed,
-      scrollEase
+      scrollEase,
+      mobileScrollMultiplier
     });
     return () => {
       app.destroy();
     };
-  }, [items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase]);
+  }, [items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase, mobileScrollMultiplier]);
   return <div className="circular-gallery" ref={containerRef} />;
 }
