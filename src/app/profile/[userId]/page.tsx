@@ -152,7 +152,7 @@ export default async function PublicProfilePage({
                 )}
                 {/* 角色徽章 */}
                 {ui.roleBadge && (
-                  <span className={`absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 text-[10px] font-bold rounded-full border ${ui.roleBadge.color}`}>
+                  <span className={`absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 text-[10px] font-bold rounded-full border whitespace-nowrap ${ui.roleBadge.color}`}>
                     {ui.roleBadge.label}
                   </span>
                 )}
