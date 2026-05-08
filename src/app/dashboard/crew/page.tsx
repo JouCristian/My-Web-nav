@@ -3,6 +3,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import Link from "next/link"
+import Link from "next/link"
 import { CrewActionButtons } from "@/components/crew-action-buttons"
 import { RemoveCrewButton } from "@/components/remove-crew-button"
 // 🚀 引入舰长专属授权组件
@@ -118,13 +119,13 @@ export default async function CrewArchivesPage() {
                 className={`group relative flex flex-col md:flex-row items-start md:items-center justify-between p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border backdrop-blur-md transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-[1.015] gap-4 ${roleStyles}`}
               >
                 <div className="flex items-center gap-4 sm:gap-6 w-full md:w-auto min-w-0">
-                  <div className="relative shrink-0">
+                  <Link href={`/profile/${user.id}`} className="relative shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
                     <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 overflow-hidden transition-transform duration-700 group-hover:rotate-[360deg] ${isOwner ? 'border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.4)]' : isAdmin ? 'border-purple-500' : 'border-zinc-700'}`}>
                       <img src={avatarFallback} alt="avatar" className="w-full h-full object-cover" />
                     </div>
                     {isOwner && <div className="absolute -top-3 -right-3 text-xl sm:text-2xl drop-shadow-[0_0_10px_rgba(234,179,8,1)] animate-bounce">👑</div>}
                     {isAdmin && <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-purple-600 rounded-full border-2 border-black flex items-center justify-center text-[9px] sm:text-[10px]">⭐</div>}
-                  </div>
+                  </Link>
                   
                   <div className="flex flex-col min-w-0 flex-1">
                     <div className="flex items-baseline gap-2 sm:gap-4 flex-wrap">

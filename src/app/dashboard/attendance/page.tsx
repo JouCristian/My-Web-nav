@@ -25,6 +25,7 @@ export default async function AttendancePage() {
   const managersData = allUsers
     .filter(u => u.role === "ADMIN" || u.role === "OWNER")
     .map(u => ({
+      id: u.id,
       name: (u.realName || u.name || u.nickname || u.githubName || "Commander") as string,
       role: u.role as string,
       image: (u.image || u.customAvatar || null) as string | null
