@@ -163,7 +163,7 @@ export function NotificationBell() {
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.95 }}
         transition={{ duration: 0.3, ease: smoothEase }}
-        className="relative w-10 h-10 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 border border-white/15 backdrop-blur-md shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.15),0_0_20px_rgba(6,182,212,0.15)] hover:border-cyan-500/30 transition-all duration-500 group overflow-hidden"
+        className="relative w-10 h-10 rounded-2xl bg-[#12171f] border border-white/20 backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] hover:shadow-[0_6px_28px_rgba(0,0,0,0.6),0_0_24px_rgba(6,182,212,0.15)] hover:border-cyan-500/40 hover:bg-[#161d28] transition-all duration-500 group overflow-hidden"
       >
         {/* 背景光效 */}
         <motion.div
