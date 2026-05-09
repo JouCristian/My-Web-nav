@@ -539,6 +539,58 @@ export function FeedbackSection({
   const [isSearching, setIsSearching] = useState(false)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Portal 挂载状态（SSR 安全）
+  const [isSectionMounted, setIsSectionMounted] = useState(false)
+  useEffect(() => { setIsSectionMounted(true) }, [])
+
+  // 筛选下拉框开关状态
+  const [typeDropOpen, setTypeDropOpen]     = useState(false)
+  const [statusDropOpen, setStatusDropOpen] = useState(false)
+  const [timeDropOpen, setTimeDropOpen]     = useState(false)
+  const typeDropRef   = useRef<HTMLButtonElement>(null)
+  const statusDropRef = useRef<HTMLButtonElement>(null)
+  const timeDropRef   = useRef<HTMLButtonElement>(null)
+  const [typeDropPos,   setTypeDropPos]   = useState({ top: 0, left: 0 })
+  const [statusDropPos, setStatusDropPos] = useState({ top: 0, left: 0 })
+  const [timeDropPos,   setTimeDropPos]   = useState({ top: 0, left: 0 })
+
+  const openDrop = (
+    ref: React.RefObject<HTMLButtonElement | null>,
+    setPos: (p: { top: number; left: number }) => void,
+    setOpen: (v: boolean) => void,
+    closeOthers: () => void
+  ) => {
+    closeOthers()
+    if (ref.current) {
+      const r = ref.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 6, left: r.left })
+    }
+    setOpen(v => !v)
+  }
+
+  const TYPE_OPTIONS = [
+    { value: null,       label: '全部类型' },
+    { value: 'BUG',     label: 'BUG',     color: 'text-red-400',    dot: 'bg-red-400'    },
+    { value: 'DESIGN',  label: '设计建议', color: 'text-purple-400', dot: 'bg-purple-400' },
+    { value: 'FEATURE', label: '功能建议', color: 'text-cyan-400',   dot: 'bg-cyan-400'   },
+  ]
+  const STATUS_FILTER_OPTIONS = [
+    { value: null,        label: '全部状态' },
+    { value: 'PENDING',   label: '待处理', color: 'text-zinc-400',    dot: 'bg-zinc-400'    },
+    { value: 'REVIEWING', label: '处理中', color: 'text-cyan-400',    dot: 'bg-cyan-400'    },
+    { value: 'RESOLVED',  label: '已解决', color: 'text-emerald-400', dot: 'bg-emerald-400' },
+    { value: 'REJECTED',  label: '已关闭', color: 'text-red-400',     dot: 'bg-red-400'     },
+  ]
+  const TIME_OPTIONS = [
+    { value: 'all',   label: '全部时间' },
+    { value: 'week',  label: '最近 7 天' },
+    { value: 'month', label: '最近 30 天' },
+  ]
+
+  const currentTypeLabel   = TYPE_OPTIONS.find(o => o.value === filterType)?.label   ?? '全部类型'
+  const currentStatusLabel = STATUS_FILTER_OPTIONS.find(o => o.value === filterStatus)?.label ?? '全部状态'
+  const currentTimeLabel   = TIME_OPTIONS.find(o => o.value === (filterTime ?? 'all'))?.label ?? '全部时间'
+
   // 搜索和筛选逻辑
   const performSearch = async () => {
     setIsSearching(true)
@@ -832,43 +884,128 @@ export function FeedbackSection({
                   </div>
 
                   {/* 类型筛选 */}
-                  <select
-                    value={filterType || ''}
-                    onChange={(e) => setFilterType(e.target.value as any || null)}
-                    className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-zinc-300 focus:outline-none focus:border-cyan-500/50 cursor-pointer appearance-none"
-                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2371717a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', backgroundSize: '16px', paddingRight: '32px' }}
-                  >
-                    <option value="">全部类型</option>
-                    <option value="BUG">BUG</option>
-                    <option value="DESIGN">设计建议</option>
-                    <option value="FEATURE">功能建议</option>
-                  </select>
+                  <div className="relative">
+                    <button
+                      ref={typeDropRef}
+                      onClick={() => openDrop(typeDropRef, setTypeDropPos, setTypeDropOpen, () => { setStatusDropOpen(false); setTimeDropOpen(false) })}
+                      className={`flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border transition-colors duration-200 ${filterType ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400' : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10 hover:text-zinc-200'}`}
+                    >
+                      {filterType && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${TYPE_OPTIONS.find(o => o.value === filterType)?.dot}`} />}
+                      {currentTypeLabel}
+                      <motion.svg animate={{ rotate: typeDropOpen ? 180 : 0 }} transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }} className="w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </motion.svg>
+                    </button>
+                    {isSectionMounted && createPortal(
+                      <AnimatePresence>
+                        {typeDropOpen && (
+                          <>
+                            <div className="fixed inset-0 z-[9998]" onClick={() => setTypeDropOpen(false)} />
+                            <motion.div
+                              initial={{ opacity: 0, y: -8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                              transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+                              style={{ position: 'fixed', top: typeDropPos.top, left: typeDropPos.left, transformOrigin: 'top left', zIndex: 99999 }}
+                              className="min-w-[130px] rounded-xl border border-white/10 bg-[#0d1117]/98 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.04)] overflow-hidden"
+                            >
+                              {TYPE_OPTIONS.map((opt, i) => (
+                                <motion.button key={String(opt.value)} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.28, delay: i * 0.05, ease: [0.32, 0.72, 0, 1] }}
+                                  onClick={() => { setFilterType(opt.value as any); setTypeDropOpen(false) }}
+                                  className={`w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium transition-all duration-150 ${filterType === opt.value ? 'bg-cyan-500/10 text-cyan-400' : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5'}`}
+                                >
+                                  {'dot' in opt && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${opt.dot}`} />}
+                                  {opt.label}
+                                  {filterType === opt.value && <svg className="w-3 h-3 ml-auto text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                                </motion.button>
+                              ))}
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>,
+                      document.body
+                    )}
+                  </div>
 
                   {/* 状态筛选 */}
-                  <select
-                    value={filterStatus || ''}
-                    onChange={(e) => setFilterStatus(e.target.value as any || null)}
-                    className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-zinc-300 focus:outline-none focus:border-cyan-500/50 cursor-pointer appearance-none"
-                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2371717a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', backgroundSize: '16px', paddingRight: '32px' }}
-                  >
-                    <option value="">全部状态</option>
-                    <option value="PENDING">待处理</option>
-                    <option value="REVIEWING">处理中</option>
-                    <option value="RESOLVED">已解决</option>
-                    <option value="REJECTED">已关闭</option>
-                  </select>
+                  <div className="relative">
+                    <button
+                      ref={statusDropRef}
+                      onClick={() => openDrop(statusDropRef, setStatusDropPos, setStatusDropOpen, () => { setTypeDropOpen(false); setTimeDropOpen(false) })}
+                      className={`flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border transition-colors duration-200 ${filterStatus ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400' : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10 hover:text-zinc-200'}`}
+                    >
+                      {filterStatus && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_FILTER_OPTIONS.find(o => o.value === filterStatus)?.dot}`} />}
+                      {currentStatusLabel}
+                      <motion.svg animate={{ rotate: statusDropOpen ? 180 : 0 }} transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }} className="w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </motion.svg>
+                    </button>
+                    {isSectionMounted && createPortal(
+                      <AnimatePresence>
+                        {statusDropOpen && (
+                          <>
+                            <div className="fixed inset-0 z-[9998]" onClick={() => setStatusDropOpen(false)} />
+                            <motion.div
+                              initial={{ opacity: 0, y: -8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                              transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+                              style={{ position: 'fixed', top: statusDropPos.top, left: statusDropPos.left, transformOrigin: 'top left', zIndex: 99999 }}
+                              className="min-w-[130px] rounded-xl border border-white/10 bg-[#0d1117]/98 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.04)] overflow-hidden"
+                            >
+                              {STATUS_FILTER_OPTIONS.map((opt, i) => (
+                                <motion.button key={String(opt.value)} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.28, delay: i * 0.05, ease: [0.32, 0.72, 0, 1] }}
+                                  onClick={() => { setFilterStatus(opt.value as any); setStatusDropOpen(false) }}
+                                  className={`w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium transition-all duration-150 ${filterStatus === opt.value ? 'bg-cyan-500/10 text-cyan-400' : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5'}`}
+                                >
+                                  {'dot' in opt && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${opt.dot}`} />}
+                                  {opt.label}
+                                  {filterStatus === opt.value && <svg className="w-3 h-3 ml-auto text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                                </motion.button>
+                              ))}
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>,
+                      document.body
+                    )}
+                  </div>
 
                   {/* 时间筛选 */}
-                  <select
-                    value={filterTime || 'all'}
-                    onChange={(e) => setFilterTime(e.target.value as any)}
-                    className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-zinc-300 focus:outline-none focus:border-cyan-500/50 cursor-pointer appearance-none"
-                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2371717a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', backgroundSize: '16px', paddingRight: '32px' }}
-                  >
-                    <option value="all">全部时间</option>
-                    <option value="week">最近7天</option>
-                    <option value="month">最近30天</option>
-                  </select>
+                  <div className="relative">
+                    <button
+                      ref={timeDropRef}
+                      onClick={() => openDrop(timeDropRef, setTimeDropPos, setTimeDropOpen, () => { setTypeDropOpen(false); setStatusDropOpen(false) })}
+                      className={`flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border transition-colors duration-200 ${filterTime && filterTime !== 'all' ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400' : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10 hover:text-zinc-200'}`}
+                    >
+                      {currentTimeLabel}
+                      <motion.svg animate={{ rotate: timeDropOpen ? 180 : 0 }} transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }} className="w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </motion.svg>
+                    </button>
+                    {isSectionMounted && createPortal(
+                      <AnimatePresence>
+                        {timeDropOpen && (
+                          <>
+                            <div className="fixed inset-0 z-[9998]" onClick={() => setTimeDropOpen(false)} />
+                            <motion.div
+                              initial={{ opacity: 0, y: -8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                              transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+                              style={{ position: 'fixed', top: timeDropPos.top, left: timeDropPos.left, transformOrigin: 'top left', zIndex: 99999 }}
+                              className="min-w-[130px] rounded-xl border border-white/10 bg-[#0d1117]/98 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.04)] overflow-hidden"
+                            >
+                              {TIME_OPTIONS.map((opt, i) => (
+                                <motion.button key={opt.value} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.28, delay: i * 0.05, ease: [0.32, 0.72, 0, 1] }}
+                                  onClick={() => { setFilterTime(opt.value as any); setTimeDropOpen(false) }}
+                                  className={`w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium transition-all duration-150 ${(filterTime ?? 'all') === opt.value ? 'bg-cyan-500/10 text-cyan-400' : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5'}`}
+                                >
+                                  {opt.label}
+                                  {(filterTime ?? 'all') === opt.value && <svg className="w-3 h-3 ml-auto text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                                </motion.button>
+                              ))}
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>,
+                      document.body
+                    )}
+                  </div>
 
                   {/* 我的反馈 */}
                   {isLoggedIn && (
