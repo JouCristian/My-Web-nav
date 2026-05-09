@@ -194,7 +194,6 @@ export default async function Home() {
 </GlassSurface>
 </div>
 </div>
-</div>
 
       {/* Hero 区 - 核心内容垂��居中 */}
       <section className="relative z-10 w-full min-h-[55vh] sm:min-h-[58vh] flex flex-col items-center justify-center text-center px-5 sm:px-4 pt-28 sm:pt-32 pb-8 pointer-events-none">
