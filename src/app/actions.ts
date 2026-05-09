@@ -218,14 +218,28 @@ export async function startGlobalRollCall(durationSeconds: number) {
   const user = await prisma.user.findUnique({ where: { id: session.user.id } })
   if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("Permission Denied")
 
-  await prisma.rollCallSession.updateMany({
-    where: { isActive: true },
-    data: { isActive: false }
-  })
+  // 使用事务确保原子性，防止并发创建多个 session
+  const newSession = await prisma.$transaction(async (tx) => {
+    // 检查是否已有活跃的 session（防止并发重复创建）
+    const existingActive = await tx.rollCallSession.findFirst({
+      where: { isActive: true, endTime: { gt: new Date() } }
+    })
+    
+    if (existingActive) {
+      // 如果已有活跃 session，直接返回它而不是创建新的
+      return existingActive
+    }
+    
+    // 将所有旧的 session 设为 inactive
+    await tx.rollCallSession.updateMany({
+      where: { isActive: true },
+      data: { isActive: false }
+    })
 
-  const endTime = new Date(Date.now() + durationSeconds * 1000)
-  const newSession = await prisma.rollCallSession.create({
-    data: { creatorId: user.id, endTime: endTime, isActive: true }
+    const endTime = new Date(Date.now() + durationSeconds * 1000)
+    return await tx.rollCallSession.create({
+      data: { creatorId: user.id, endTime: endTime, isActive: true }
+    })
   })
 
   revalidatePath("/dashboard/attendance")

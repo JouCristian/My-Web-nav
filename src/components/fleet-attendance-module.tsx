@@ -61,6 +61,9 @@ export function FleetAttendanceModule({
   
   // 用于阻止定时刷新覆盖乐观更新
   const [isUpdating, setIsUpdating] = useState(false)
+  
+  // 防止重复点击发起集结
+  const [isStartingRollCall, setIsStartingRollCall] = useState(false)
 
   const isManager = userRole === "OWNER" || userRole === "ADMIN"
   const allCrew = useMemo(() => isManager ? [...crewMembers] : Array.from(new Set([userName, ...crewMembers])).filter(Boolean), [isManager, crewMembers, userName])
@@ -181,8 +184,13 @@ export function FleetAttendanceModule({
   }, [isRollCallActive, countdown, activeSessionId])
 
   const handleStartRollCall = async () => {
+    // 防止重复点击
+    if (isStartingRollCall) return
+    
     const totalSecs = (parseInt(inputMins) || 0) * 60 + (parseInt(inputSecs) || 0)
     if (totalSecs <= 0) return
+    
+    setIsStartingRollCall(true)
     try {
       await startGlobalRollCall(totalSecs)
       setCountdown(totalSecs)
@@ -190,6 +198,8 @@ export function FleetAttendanceModule({
       setIsRollCallActive(true)
     } catch (e) {
       console.error("Failed to initiate roll call", e)
+    } finally {
+      setIsStartingRollCall(false)
     }
   }
 
@@ -461,9 +471,25 @@ export function FleetAttendanceModule({
 
                       </div>
                     </div>
-                    <button onClick={handleStartRollCall} className="relative group w-full py-5 rounded-2xl bg-amber-500/10 border border-amber-500/40 text-amber-400 font-bold tracking-[0.3em] text-lg transition-all duration-500 ease-out hover:bg-amber-500 hover:text-black hover:scale-[1.02] shadow-[0_0_30px_rgba(245,158,11,0.2)] active:scale-95 z-10 overflow-hidden">
-                      <div className="absolute inset-0 rounded-2xl border-2 border-amber-400 opacity-0 group-hover:animate-ping pointer-events-none"></div>
-                      <span className="relative z-10">发起全舰集结指令</span>
+                    <button 
+                      onClick={handleStartRollCall} 
+                      disabled={isStartingRollCall}
+                      className={`relative group w-full py-5 rounded-2xl border font-bold tracking-[0.3em] text-lg transition-all duration-500 ease-out shadow-[0_0_30px_rgba(245,158,11,0.2)] z-10 overflow-hidden ${
+                        isStartingRollCall 
+                          ? 'bg-amber-500/5 border-amber-500/20 text-amber-400/50 cursor-not-allowed' 
+                          : 'bg-amber-500/10 border-amber-500/40 text-amber-400 hover:bg-amber-500 hover:text-black hover:scale-[1.02] active:scale-95'
+                      }`}
+                    >
+                      {!isStartingRollCall && <div className="absolute inset-0 rounded-2xl border-2 border-amber-400 opacity-0 group-hover:animate-ping pointer-events-none"></div>}
+                      <span className="relative z-10 flex items-center justify-center gap-3">
+                        {isStartingRollCall && (
+                          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        )}
+                        {isStartingRollCall ? '正在发起集结...' : '发起全舰集结指令'}
+                      </span>
                     </button>
                   </>
                 ) : (
