@@ -16,8 +16,10 @@ import { Footer } from "@/components/footer"
 import { YsyxIntroSection } from "@/components/ysyx-intro-section"
 import { AchievementGallerySection } from "@/components/achievement-gallery-section"
 import { FAQSection } from "@/components/faq-section"
+import { FeedbackSection } from "@/components/feedback-section"
 import { getStats } from "@/app/actions"
 import { getFAQQuestions } from "@/app/actions/faq"
+import { getFeedbacks } from "@/app/actions/feedback"
 
 export const revalidate = 60;
 
@@ -35,11 +37,12 @@ interface Bookmark {
 
 export default async function Home() {
   // 并行获取所有数据，减少瀑布式请求延迟
-  const [session, links, stats, faqQuestions] = await Promise.all([
+  const [session, links, stats, faqQuestions, feedbacks] = await Promise.all([
     auth(),
     prisma.bookmark.findMany({ orderBy: { createdAt: 'desc' } }),
     getStats(),
-    getFAQQuestions()
+    getFAQQuestions(),
+    getFeedbacks()
   ])
 
   // @ts-ignore
@@ -313,6 +316,17 @@ export default async function Home() {
           questions={faqQuestions}
           isLoggedIn={!!session}
           canAnswer={isAuthorizedCrew || isCommander || false}
+          isAdmin={isCommander || false}
+          currentUserId={session?.user?.id}
+        />
+      </section>
+
+      {/* BUG反馈 & 设计建议区 */}
+      <section className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pb-16">
+        <FeedbackSection
+          className="animate-float-up"
+          feedbacks={feedbacks}
+          isLoggedIn={!!session}
           isAdmin={isCommander || false}
           currentUserId={session?.user?.id}
         />
