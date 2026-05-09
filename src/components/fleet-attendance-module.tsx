@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { createPortal } from "react-dom"
-import { startGlobalRollCall, submitAttendance, checkLiveRollCall, getLeaveRequestsAction, getRollCallHistoryAction, deleteRollCallSessionAction, markCrewPresentAction } from "@/app/actions"
+import { startGlobalRollCall, submitAttendance, checkLiveRollCall, getLeaveRequestsAction, getRollCallHistoryAction, deleteRollCallSessionAction, markCrewPresentAction, endRollCallEarlyAction } from "@/app/actions"
 
 type RollCallLog = {
   id: string;
@@ -64,6 +64,9 @@ export function FleetAttendanceModule({
   
   // 防止重复点击发起集结
   const [isStartingRollCall, setIsStartingRollCall] = useState(false)
+
+  // 提前终止集结
+  const [isEndingEarly, setIsEndingEarly] = useState(false)
 
   const isManager = userRole === "OWNER" || userRole === "ADMIN"
   const allCrew = useMemo(() => isManager ? [...crewMembers] : Array.from(new Set([userName, ...crewMembers])).filter(Boolean), [isManager, crewMembers, userName])
@@ -200,6 +203,22 @@ export function FleetAttendanceModule({
       console.error("Failed to initiate roll call", e)
     } finally {
       setIsStartingRollCall(false)
+    }
+  }
+
+  const handleEndEarly = async () => {
+    if (!activeSessionId || isEndingEarly) return
+    setIsEndingEarly(true)
+    try {
+      await endRollCallEarlyAction(activeSessionId)
+      setIsRollCallActive(false)
+      setActiveSessionId(null)
+      setCountdown(0)
+      setIsSummaryOpen(true)
+    } catch (e) {
+      console.error("Failed to end roll call early", e)
+    } finally {
+      setIsEndingEarly(false)
     }
   }
 
@@ -522,6 +541,35 @@ export function FleetAttendanceModule({
                     <div className={`absolute left-0 top-0 bottom-0 bg-gradient-to-r from-amber-600 to-amber-400 transition-all ${isHolding ? 'w-full duration-[1500ms] ease-linear' : 'w-0 duration-300 ease-out'}`} />
                     <div className="absolute inset-0 flex items-center justify-center mix-blend-difference pointer-events-none z-10"><span className="text-white font-bold tracking-[0.4em] font-mono drop-shadow-md">{presentCrew.includes(userName) ? '✓ 已成功连接' : '长按完成签到'}</span></div>
                     {!presentCrew.includes(userName) && !isHolding && (<div className="absolute inset-0 flex items-center justify-center pointer-events-none"><span className="text-zinc-500 font-bold tracking-[0.4em] font-mono transition-opacity duration-300 group-hover:text-amber-500/50">长按完成签到</span></div>)}
+                  </button>
+                )}
+
+                {isManager && (
+                  <button
+                    onClick={handleEndEarly}
+                    disabled={isEndingEarly}
+                    className={`mt-2 flex items-center gap-2 px-6 py-2.5 rounded-xl border font-mono text-xs tracking-[0.2em] uppercase transition-all duration-300 ${
+                      isEndingEarly
+                        ? 'bg-red-500/5 border-red-500/20 text-red-400/40 cursor-not-allowed'
+                        : 'bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-500/60 active:scale-95'
+                    }`}
+                  >
+                    {isEndingEarly ? (
+                      <>
+                        <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        正在终止...
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                          <rect x="4" y="4" width="16" height="16" rx="2"/>
+                        </svg>
+                        提前终止集结
+                      </>
+                    )}
                   </button>
                 )}
               </div>
