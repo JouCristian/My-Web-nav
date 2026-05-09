@@ -81,7 +81,7 @@ export function AdminAuthModal({ users }: { users: any[] }) {
                     const avatar = user.customAvatar || user.image || user.avatarUrl || "https://github.com/ghost.png"
                     
                     return (
-                      <div key={user.id} className="group relative flex items-center justify-between gap-3 p-3 sm:p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-colors duration-500 overflow-hidden">
+                      <div key={user.id} className="group relative flex items-center justify-between gap-3 p-3 sm:p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-colors duration-500 overflow-hidden shrink-0 min-h-[60px] sm:min-h-[72px]">
                         <div className="flex items-center gap-3 sm:gap-4 relative z-10 min-w-0">
                           <img src={avatar} alt="avatar" className={`w-10 h-10 rounded-full border-2 transition-all duration-500 shrink-0 ${isAdmin ? 'border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'border-zinc-700'}`} />
                           <div className="flex flex-col min-w-0">
