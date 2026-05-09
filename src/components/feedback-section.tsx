@@ -415,12 +415,9 @@ function FeedbackItem({
                                   }}
                                   className="min-w-[130px] rounded-xl border border-white/10 bg-[#0d1117]/98 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.05)] overflow-hidden"
                                 >
-                                  {STATUS_OPTIONS.map((opt, i) => (
-                                    <motion.button
+                                  {STATUS_OPTIONS.map((opt) => (
+                                    <button
                                       key={opt.value}
-                                      initial={{ opacity: 0, x: -12 }}
-                                      animate={{ opacity: 1, x: 0 }}
-                                      transition={{ duration: 0.3, delay: i * 0.06, ease: [0.32, 0.72, 0, 1] }}
                                       onClick={(e) => {
                                         e.stopPropagation()
                                         handleStatusChange(opt.value as any)
@@ -445,7 +442,7 @@ function FeedbackItem({
                                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                         </motion.svg>
                                       )}
-                                    </motion.button>
+                                    </button>
                                   ))}
                                 </motion.div>
                               </>
@@ -907,15 +904,15 @@ export function FeedbackSection({
                               style={{ position: 'fixed', top: typeDropPos.top, left: typeDropPos.left, transformOrigin: 'top left', zIndex: 99999 }}
                               className="min-w-[130px] rounded-xl border border-white/10 bg-[#0d1117]/98 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.04)] overflow-hidden"
                             >
-                              {TYPE_OPTIONS.map((opt, i) => (
-                                <motion.button key={String(opt.value)} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.28, delay: i * 0.05, ease: [0.32, 0.72, 0, 1] }}
+                              {TYPE_OPTIONS.map((opt) => (
+                                <button key={String(opt.value)}
                                   onClick={() => { setFilterType(opt.value as any); setTypeDropOpen(false) }}
                                   className={`w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium transition-all duration-150 ${filterType === opt.value ? 'bg-cyan-500/10 text-cyan-400' : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5'}`}
                                 >
                                   {'dot' in opt && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${opt.dot}`} />}
                                   {opt.label}
                                   {filterType === opt.value && <svg className="w-3 h-3 ml-auto text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-                                </motion.button>
+                                </button>
                               ))}
                             </motion.div>
                           </>
@@ -949,15 +946,15 @@ export function FeedbackSection({
                               style={{ position: 'fixed', top: statusDropPos.top, left: statusDropPos.left, transformOrigin: 'top left', zIndex: 99999 }}
                               className="min-w-[130px] rounded-xl border border-white/10 bg-[#0d1117]/98 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.04)] overflow-hidden"
                             >
-                              {STATUS_FILTER_OPTIONS.map((opt, i) => (
-                                <motion.button key={String(opt.value)} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.28, delay: i * 0.05, ease: [0.32, 0.72, 0, 1] }}
+                              {STATUS_FILTER_OPTIONS.map((opt) => (
+                                <button key={String(opt.value)}
                                   onClick={() => { setFilterStatus(opt.value as any); setStatusDropOpen(false) }}
                                   className={`w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium transition-all duration-150 ${filterStatus === opt.value ? 'bg-cyan-500/10 text-cyan-400' : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5'}`}
                                 >
                                   {'dot' in opt && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${opt.dot}`} />}
                                   {opt.label}
                                   {filterStatus === opt.value && <svg className="w-3 h-3 ml-auto text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-                                </motion.button>
+                                </button>
                               ))}
                             </motion.div>
                           </>
@@ -990,14 +987,14 @@ export function FeedbackSection({
                               style={{ position: 'fixed', top: timeDropPos.top, left: timeDropPos.left, transformOrigin: 'top left', zIndex: 99999 }}
                               className="min-w-[130px] rounded-xl border border-white/10 bg-[#0d1117]/98 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.04)] overflow-hidden"
                             >
-                              {TIME_OPTIONS.map((opt, i) => (
-                                <motion.button key={opt.value} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.28, delay: i * 0.05, ease: [0.32, 0.72, 0, 1] }}
+                              {TIME_OPTIONS.map((opt) => (
+                                <button key={opt.value}
                                   onClick={() => { setFilterTime(opt.value as any); setTimeDropOpen(false) }}
                                   className={`w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium transition-all duration-150 ${(filterTime ?? 'all') === opt.value ? 'bg-cyan-500/10 text-cyan-400' : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5'}`}
                                 >
                                   {opt.label}
                                   {(filterTime ?? 'all') === opt.value && <svg className="w-3 h-3 ml-auto text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-                                </motion.button>
+                                </button>
                               ))}
                             </motion.div>
                           </>
