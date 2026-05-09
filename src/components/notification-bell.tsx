@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useTransition } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { getNotifications, markAsRead, markAllAsRead } from '@/app/actions/notification'
+import { getNotifications, markAsRead, markAllAsRead, deleteNotification } from '@/app/actions/notification'
 
 // 贝塞尔曲线配置
 const smoothEase = [0.32, 0.72, 0, 1]
@@ -141,6 +141,19 @@ export function NotificationBell() {
       await markAllAsRead()
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
       setUnreadCount(0)
+    })
+  }
+
+  const handleDelete = (id: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const notif = notifications.find(n => n.id === id)
+    startTransition(async () => {
+      await deleteNotification(id)
+      setNotifications(prev => prev.filter(n => n.id !== id))
+      if (notif && !notif.isRead) {
+        setUnreadCount(prev => Math.max(0, prev - 1))
+      }
     })
   }
 
@@ -320,7 +333,7 @@ export function NotificationBell() {
                             <NotificationWrapper
                               {...wrapperProps as any}
                               onClick={() => handleNotificationClick(notification)}
-                              className={`flex gap-3 p-4 cursor-pointer transition-all duration-300 hover:bg-white/5 ${
+                              className={`group flex gap-3 p-4 cursor-pointer transition-all duration-300 hover:bg-white/5 ${
                                 !notification.isRead ? 'bg-white/[0.02]' : ''
                               }`}
                             >
@@ -346,6 +359,17 @@ export function NotificationBell() {
                                   {formatTimeAgo(notification.createdAt)}
                                 </span>
                               </div>
+                              {/* 删除按钮 */}
+                              <button
+                                onClick={(e) => handleDelete(notification.id, e)}
+                                disabled={isPending}
+                                className="shrink-0 p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all duration-200 disabled:opacity-50"
+                                title="删除"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
                             </NotificationWrapper>
                           </motion.div>
                         )
