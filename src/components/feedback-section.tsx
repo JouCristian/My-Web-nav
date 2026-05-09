@@ -91,22 +91,9 @@ function CollapsePanel({ isOpen, children }: { isOpen: boolean; children: React.
       {isOpen && (
         <motion.div
           initial={{ height: 0, opacity: 0 }}
-          animate={{ 
-            height: 'auto', 
-            opacity: 1,
-            transition: {
-              height: { duration: 0.5, ease: smoothBezier },
-              opacity: { duration: 0.4, delay: 0.1, ease: smoothBezier }
-            }
-          }}
-          exit={{ 
-            height: 0, 
-            opacity: 0,
-            transition: {
-              height: { duration: 0.4, ease: smoothBezier },
-              opacity: { duration: 0.25, ease: smoothBezier }
-            }
-          }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.3 }}
           style={{ overflow: 'hidden' }}
         >
           {children}
@@ -172,10 +159,19 @@ function FeedbackItem({
 }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isReplying, setIsReplying] = useState(false)
+  const [isStatusOpen, setIsStatusOpen] = useState(false)
   const [replyContent, setReplyContent] = useState('')
   const [isPending, startTransition] = useTransition()
   const { confirm, DialogComponent } = useConfirmDialog()
   const scrollPositionRef = useRef<number>(0)
+
+  const STATUS_OPTIONS = [
+    { value: 'PENDING',   label: '待处理', color: 'text-zinc-400',  bg: 'bg-zinc-500/10',  border: 'border-zinc-500/30',  dot: 'bg-zinc-400'  },
+    { value: 'REVIEWING', label: '处理中', color: 'text-cyan-400',  bg: 'bg-cyan-500/10',  border: 'border-cyan-500/30',  dot: 'bg-cyan-400'  },
+    { value: 'RESOLVED',  label: '已解决', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', dot: 'bg-emerald-400' },
+    { value: 'REJECTED',  label: '已关闭', color: 'text-red-400',   bg: 'bg-red-500/10',   border: 'border-red-500/30',   dot: 'bg-red-400'   },
+  ]
+  const currentStatus = STATUS_OPTIONS.find(s => s.value === feedback.status) ?? STATUS_OPTIONS[0]
 
   const canDelete = isAdmin || feedback.authorId === currentUserId
 
@@ -244,7 +240,7 @@ function FeedbackItem({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.4, ease: smoothBezier }}
+        transition={{ duration: 0.3 }}
         className="relative w-full"
       >
         <GlassSurface
@@ -360,17 +356,66 @@ function FeedbackItem({
                         回复
                       </button>
                       
-                      {/* 状态切换 */}
-                      <select
-                        value={feedback.status}
-                        onChange={(e) => handleStatusChange(e.target.value as any)}
-                        className="px-2 py-1.5 text-xs font-medium rounded-lg bg-white/5 border border-white/10 text-zinc-300 cursor-pointer hover:bg-white/10 transition-colors"
-                      >
-                        <option value="PENDING">待处理</option>
-                        <option value="REVIEWING">处理中</option>
-                        <option value="RESOLVED">已解决</option>
-                        <option value="REJECTED">已关闭</option>
-                      </select>
+  {/* 状态切换 - 自定义下拉 */}
+  <div className="relative">
+    <button
+      onClick={(e) => { e.stopPropagation(); setIsStatusOpen(v => !v) }}
+      className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors duration-200 ${currentStatus.bg} ${currentStatus.border} ${currentStatus.color} hover:brightness-125`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${currentStatus.dot}`} />
+      {currentStatus.label}
+      <motion.svg
+        animate={{ rotate: isStatusOpen ? 180 : 0 }}
+        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+        className="w-3 h-3 opacity-70"
+        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+      </motion.svg>
+    </button>
+
+    <AnimatePresence>
+      {isStatusOpen && (
+        <>
+          {/* 点击外部关闭 */}
+          <div className="fixed inset-0 z-40" onClick={() => setIsStatusOpen(false)} />
+          <motion.div
+            initial={{ opacity: 0, y: -6, scaleY: 0.88 }}
+            animate={{ opacity: 1, y: 0, scaleY: 1 }}
+            exit={{ opacity: 0, y: -6, scaleY: 0.88 }}
+            transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+            style={{ originY: 0 }}
+            className="absolute left-0 top-[calc(100%+6px)] z-50 min-w-[120px] rounded-xl border border-white/10 bg-[#0d1117]/95 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden"
+          >
+            {STATUS_OPTIONS.map((opt, i) => (
+              <motion.button
+                key={opt.value}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.22, delay: i * 0.05, ease: [0.32, 0.72, 0, 1] }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleStatusChange(opt.value as any)
+                  setIsStatusOpen(false)
+                }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-medium transition-colors duration-150 hover:bg-white/8 ${
+                  feedback.status === opt.value ? `${opt.bg} ${opt.color}` : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${opt.dot}`} />
+                {opt.label}
+                {feedback.status === opt.value && (
+                  <svg className={`w-3 h-3 ml-auto ${opt.color}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </motion.button>
+            ))}
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  </div>
                     </>
                   )}
                   
@@ -503,20 +548,17 @@ export function FeedbackSection({
                   borderColor: 'rgba(6, 182, 212, 0.5)'
                 }}
                 whileTap={{ scale: 0.95 }}
-                transition={{ 
-                  scale: { duration: 0.3, ease: silkyBezier },
-                  rotate: { duration: 0.5, ease: gentleElastic }
-                }}
+                transition={{ duration: 0.4 }}
               >
-                <motion.svg 
-                  className="w-6 h-6 text-cyan-400" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor" 
-                  strokeWidth={2}
-                  whileHover={{ scale: 1.1 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                >
+                  <motion.svg
+                    className="w-6 h-6"
+                    animate={{ scale: 1 }}
+                    whileHover={{ scale: 1.2 }}
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor" 
+                    strokeWidth={2}
+                  >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                 </motion.svg>
               </motion.div>
@@ -579,7 +621,7 @@ export function FeedbackSection({
                     
                     <motion.div
                       animate={{ rotate: isSubmitting ? 45 : 0 }}
-                      transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+                      transition={{ duration: 0.4 }}
                     >
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -595,7 +637,7 @@ export function FeedbackSection({
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.4, ease: smoothBezier }}
+                        transition={{ duration: 0.3 }}
                         className="overflow-hidden"
                       >
                         <div className="mt-4 p-4 bg-white/5 border border-white/10 rounded-2xl space-y-4">
