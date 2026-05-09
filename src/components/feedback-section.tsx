@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import GlassSurface from './GlassSurface'
@@ -166,6 +167,11 @@ function FeedbackItem({
   const scrollPositionRef = useRef<number>(0)
   const statusButtonRef = useRef<HTMLButtonElement>(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
+  const [isMounted, setIsMounted] = useState(false)
+  
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const STATUS_OPTIONS = [
     { value: 'PENDING',   label: '待处理', color: 'text-zinc-400',  bg: 'bg-zinc-500/10',  border: 'border-zinc-500/30',  dot: 'bg-zinc-400'  },
@@ -384,60 +390,69 @@ function FeedbackItem({
                           </motion.svg>
                         </button>
 
-                        <AnimatePresence>
-                          {isStatusOpen && (
-                            <>
-                              {/* 点击外部关闭 */}
-                              <div className="fixed inset-0 z-[9998]" onClick={() => setIsStatusOpen(false)} />
-                              <motion.div
-                                initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                                transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
-                                style={{ 
-                                  position: 'fixed',
-                                  top: dropdownPos.top,
-                                  left: dropdownPos.left,
-                                  transformOrigin: 'top left'
-                                }}
-                                className="z-[9999] min-w-[130px] rounded-xl border border-white/10 bg-[#0d1117]/98 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.05)] overflow-hidden"
-                              >
-                                {STATUS_OPTIONS.map((opt, i) => (
-                                  <motion.button
-                                    key={opt.value}
-                                    initial={{ opacity: 0, x: -12 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ duration: 0.3, delay: i * 0.06, ease: [0.32, 0.72, 0, 1] }}
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleStatusChange(opt.value as any)
-                                      setIsStatusOpen(false)
-                                    }}
-                                    className={`w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium transition-all duration-200 ${
-                                      feedback.status === opt.value 
-                                        ? `${opt.bg} ${opt.color}` 
-                                        : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5'
-                                    }`}
-                                  >
-                                    <span className={`w-2 h-2 rounded-full shrink-0 ${opt.dot} ${feedback.status === opt.value ? 'ring-2 ring-offset-1 ring-offset-transparent ring-current/30' : ''}`} />
-                                    {opt.label}
-                                    {feedback.status === opt.value && (
-                                      <motion.svg 
-                                        initial={{ scale: 0 }}
-                                        animate={{ scale: 1 }}
-                                        transition={{ duration: 0.25, delay: 0.1 }}
-                                        className={`w-3.5 h-3.5 ml-auto ${opt.color}`} 
-                                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
-                                      >
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                      </motion.svg>
-                                    )}
-                                  </motion.button>
-                                ))}
-                              </motion.div>
-                            </>
-                          )}
-                        </AnimatePresence>
+                        {/* Portal渲染下拉菜单到body */}
+                        {isMounted && createPortal(
+                          <AnimatePresence>
+                            {isStatusOpen && (
+                              <>
+                                {/* 点击外部关闭 */}
+                                <div 
+                                  className="fixed inset-0" 
+                                  style={{ zIndex: 99998 }}
+                                  onClick={() => setIsStatusOpen(false)} 
+                                />
+                                <motion.div
+                                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                                  transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+                                  style={{ 
+                                    position: 'fixed',
+                                    top: dropdownPos.top,
+                                    left: dropdownPos.left,
+                                    transformOrigin: 'top left',
+                                    zIndex: 99999
+                                  }}
+                                  className="min-w-[130px] rounded-xl border border-white/10 bg-[#0d1117]/98 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.05)] overflow-hidden"
+                                >
+                                  {STATUS_OPTIONS.map((opt, i) => (
+                                    <motion.button
+                                      key={opt.value}
+                                      initial={{ opacity: 0, x: -12 }}
+                                      animate={{ opacity: 1, x: 0 }}
+                                      transition={{ duration: 0.3, delay: i * 0.06, ease: [0.32, 0.72, 0, 1] }}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleStatusChange(opt.value as any)
+                                        setIsStatusOpen(false)
+                                      }}
+                                      className={`w-full flex items-center gap-2.5 px-4 py-3 text-xs font-medium transition-all duration-200 ${
+                                        feedback.status === opt.value 
+                                          ? `${opt.bg} ${opt.color}` 
+                                          : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/5'
+                                      }`}
+                                    >
+                                      <span className={`w-2 h-2 rounded-full shrink-0 ${opt.dot} ${feedback.status === opt.value ? 'ring-2 ring-offset-1 ring-offset-transparent ring-current/30' : ''}`} />
+                                      {opt.label}
+                                      {feedback.status === opt.value && (
+                                        <motion.svg 
+                                          initial={{ scale: 0 }}
+                                          animate={{ scale: 1 }}
+                                          transition={{ duration: 0.25, delay: 0.1 }}
+                                          className={`w-3.5 h-3.5 ml-auto ${opt.color}`} 
+                                          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+                                        >
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                        </motion.svg>
+                                      )}
+                                    </motion.button>
+                                  ))}
+                                </motion.div>
+                              </>
+                            )}
+                          </AnimatePresence>,
+                          document.body
+                        )}
                       </div>
                     </>
                   )}
