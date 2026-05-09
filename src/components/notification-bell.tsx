@@ -153,40 +153,59 @@ export function NotificationBell() {
 
   return (
     <>
-      {/* 铃铛按钮 - 玻璃拟态设计 */}
+      {/* 铃铛按钮 - Dock风格 */}
       <motion.button
         ref={buttonRef}
         onClick={handleOpen}
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.95 }}
-        transition={{ duration: 0.3, ease: smoothEase }}
-        className="relative w-10 h-10 rounded-2xl bg-[#12171f] border border-white/20 backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] hover:shadow-[0_6px_28px_rgba(0,0,0,0.6),0_0_24px_rgba(6,182,212,0.15)] hover:border-cyan-500/40 hover:bg-[#161d28] transition-all duration-500 group overflow-hidden"
+        className="relative inline-flex items-center justify-center w-[42px] h-[42px] rounded-full"
+        style={{
+          backgroundColor: 'rgba(6, 8, 15, 0.75)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderTop: '1px solid rgba(255, 255, 255, 0.25)',
+          borderBottom: '1px solid rgba(0, 0, 0, 0.5)',
+          boxShadow: '0 10px 20px rgba(0, 0, 0, 0.8), inset 0 2px 5px rgba(255, 255, 255, 0.05)',
+          backdropFilter: 'blur(8px)',
+          transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          cursor: 'pointer',
+          outline: 'none'
+        }}
+        onMouseEnter={(e) => {
+          const btn = e.currentTarget as HTMLButtonElement
+          btn.style.backgroundColor = 'rgba(34, 211, 238, 0.15)'
+          btn.style.borderTop = '1px solid rgba(34, 211, 238, 0.6)'
+          btn.style.color = '#ffffff'
+          btn.style.boxShadow = '0 12px 25px rgba(0, 0, 0, 0.9), 0 0 25px rgba(34, 211, 238, 0.25), inset 0 2px 5px rgba(255, 255, 255, 0.15)'
+        }}
+        onMouseLeave={(e) => {
+          const btn = e.currentTarget as HTMLButtonElement
+          btn.style.backgroundColor = 'rgba(6, 8, 15, 0.75)'
+          btn.style.borderTop = '1px solid rgba(255, 255, 255, 0.25)'
+          btn.style.color = 'rgba(255, 255, 255, 0.95)'
+          btn.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.8), inset 0 2px 5px rgba(255, 255, 255, 0.05)'
+        }}
+        tabIndex={0}
+        role="button"
       >
-        {/* 背景光效 */}
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 via-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-        />
-        
         {/* 铃铛图标 */}
         <motion.div
           animate={unreadCount > 0 ? { 
             rotate: [0, -12, 12, -8, 8, -4, 4, 0],
-            y: [0, -1, 1, -1, 0]
           } : {}}
           transition={{ 
             duration: 0.8, 
-            ease: smoothEase, 
+            ease: [0.34, 1.56, 0.64, 1], 
             repeat: unreadCount > 0 ? Infinity : 0, 
             repeatDelay: 4 
           }}
-          className="relative z-10 flex items-center justify-center w-full h-full"
+          className="flex items-center justify-center w-[45%] h-[45%]"
         >
           <svg
-            className="w-[18px] h-[18px] text-zinc-400 group-hover:text-cyan-300 transition-colors duration-300"
+            className="w-full h-full text-zinc-300"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
-            strokeWidth={1.8}
+            strokeWidth={1.5}
+            style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 1))' }}
           >
             <path 
               strokeLinecap="round" 
@@ -200,11 +219,11 @@ export function NotificationBell() {
         <AnimatePresence>
           {unreadCount > 0 && (
             <motion.div
-              initial={{ scale: 0, opacity: 0, y: 4 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0, opacity: 0, y: 4 }}
-              transition={{ duration: 0.35, ease: smoothEase }}
-              className="absolute -top-1.5 -right-1.5 z-20"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+              className="absolute -top-2 -right-2"
             >
               {/* 呼吸光圈 */}
               <motion.div
@@ -219,11 +238,6 @@ export function NotificationBell() {
             </motion.div>
           )}
         </AnimatePresence>
-        
-        {/* Hover 闪光效果 */}
-        <motion.div
-          className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 pointer-events-none"
-        />
       </motion.button>
 
       {/* Portal 渲染下拉面板 */}
