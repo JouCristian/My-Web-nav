@@ -257,3 +257,46 @@ model FAQAnswer {
   
   question     FAQQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 }
+
+// ==========================================
+// 🐛 BUG反馈与设计建议 (Feedback System)
+// ==========================================
+enum FeedbackType {
+  BUG        // BUG反馈
+  DESIGN     // 设计建议
+  FEATURE    // 功能建议
+}
+
+enum FeedbackStatus {
+  PENDING    // 待处理
+  REVIEWING  // 审核中
+  RESOLVED   // 已解决
+  REJECTED   // 已拒绝
+}
+
+model Feedback {
+  id          String         @id @default(cuid())
+  type        FeedbackType   // 反馈类型
+  title       String         // 反馈标题
+  content     String         @db.Text   // 反馈内容
+  status      FeedbackStatus @default(PENDING) // 处理状态
+  authorId    String                 // 提交者ID
+  authorName  String?                // 提交者昵称
+  authorImage String?                // 提交者头像
+  createdAt   DateTime       @default(now())
+  
+  replies     FeedbackReply[]
+}
+
+model FeedbackReply {
+  id           String      @id @default(cuid())
+  content      String      @db.Text   // 回复内容
+  feedbackId   String                 // 关联反馈ID
+  authorId     String                 // 回复者ID
+  authorName   String?                // 回复者昵称
+  authorImage  String?                // 回复者头像
+  authorRole   String?                // 回复者角色标识
+  createdAt    DateTime    @default(now())
+  
+  feedback     Feedback    @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+}
