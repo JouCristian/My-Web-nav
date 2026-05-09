@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { createRoot } from "react-dom/client"
 import { motion, AnimatePresence } from "framer-motion"
 import Dock, { DockItemData } from "./dock"
+import { NotificationBell } from "./notification-bell"
 
 // 🚀 脱离态独立渲染层
 const StandaloneOverlay = ({ onSignOut, onComplete }: { onSignOut: () => Promise<void>, onComplete: () => void }) => {
@@ -172,9 +173,12 @@ export function TopNavDock({ session, dbUser, isCaptain, onSignOut }: any) {
 
   /* Dock 已通过 CSS 设置为透明背景，GlassSurface 提供玻璃效果 */
   return (
-    <Dock 
-      items={items} 
-      className="w-full flex justify-center" 
-    />
+    <div className="flex items-center gap-3 justify-center w-full">
+      {session && <NotificationBell />}
+      <Dock 
+        items={items} 
+        className="w-full flex justify-center" 
+      />
+    </div>
   );
 }
