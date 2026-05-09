@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import GlassSurface from './GlassSurface'
-import { submitFeedback, submitFeedbackReply, deleteFeedback, deleteFeedbackReply, updateFeedbackStatus } from '@/app/actions/feedback'
+import { submitFeedback, submitFeedbackReply, deleteFeedback, deleteFeedbackReply, updateFeedbackStatus, searchFeedbacks } from '@/app/actions/feedback'
 import { OptimizedAvatar } from './optimized-image'
 import { useConfirmDialog } from './confirm-dialog'
 
@@ -528,6 +528,70 @@ export function FeedbackSection({
   const [content, setContent] = useState('')
   const [isPending, startTransition] = useTransition()
   const scrollPositionRef = useRef<number>(0)
+  
+  // 搜索和筛选状态
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterType, setFilterType] = useState<'BUG' | 'DESIGN' | 'FEATURE' | null>(null)
+  const [filterStatus, setFilterStatus] = useState<'PENDING' | 'REVIEWING' | 'RESOLVED' | 'REJECTED' | null>(null)
+  const [filterTime, setFilterTime] = useState<'all' | 'week' | 'month' | null>(null)
+  const [filterMine, setFilterMine] = useState(false)
+  const [filteredFeedbacks, setFilteredFeedbacks] = useState<Feedback[]>(feedbacks)
+  const [isSearching, setIsSearching] = useState(false)
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // 搜索和筛选逻辑
+  const performSearch = async () => {
+    setIsSearching(true)
+    try {
+      const results = await searchFeedbacks({
+        query: searchQuery || undefined,
+        type: filterType,
+        status: filterStatus,
+        timeRange: filterTime,
+        authorId: filterMine ? currentUserId : null
+      })
+      setFilteredFeedbacks(results as Feedback[])
+    } catch (e) {
+      console.error('Search failed', e)
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  // 监听筛选条件变化
+  useEffect(() => {
+    // 如果没有任何筛选条件，使用原始数据
+    if (!searchQuery && !filterType && !filterStatus && !filterTime && !filterMine) {
+      setFilteredFeedbacks(feedbacks)
+      return
+    }
+
+    // 防抖搜索
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch()
+    }, 300)
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+    }
+  }, [searchQuery, filterType, filterStatus, filterTime, filterMine, feedbacks])
+
+  // 清除所有筛选
+  const clearFilters = () => {
+    setSearchQuery('')
+    setFilterType(null)
+    setFilterStatus(null)
+    setFilterTime(null)
+    setFilterMine(false)
+    setFilteredFeedbacks(feedbacks)
+  }
+
+  const hasActiveFilters = searchQuery || filterType || filterStatus || filterTime || filterMine
 
   const handleSubmit = () => {
     if (!title.trim() || !content.trim()) return
@@ -736,11 +800,131 @@ export function FeedbackSection({
                 </div>
               )}
 
+              {/* 搜索和筛选栏 */}
+              <div className="mb-5 space-y-3">
+                {/* 搜索框 + 筛选下拉 */}
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* 搜索框 */}
+                  <div className="relative flex-1 min-w-[200px]">
+                    <svg 
+                      className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors duration-300 ${isSearching ? 'text-cyan-400' : 'text-zinc-500'}`}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="搜索标题或内容..."
+                      className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 类型筛选 */}
+                  <select
+                    value={filterType || ''}
+                    onChange={(e) => setFilterType(e.target.value as any || null)}
+                    className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-zinc-300 focus:outline-none focus:border-cyan-500/50 cursor-pointer appearance-none"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2371717a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', backgroundSize: '16px', paddingRight: '32px' }}
+                  >
+                    <option value="">全部类型</option>
+                    <option value="BUG">BUG</option>
+                    <option value="DESIGN">设计建议</option>
+                    <option value="FEATURE">功能建议</option>
+                  </select>
+
+                  {/* 状态筛选 */}
+                  <select
+                    value={filterStatus || ''}
+                    onChange={(e) => setFilterStatus(e.target.value as any || null)}
+                    className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-zinc-300 focus:outline-none focus:border-cyan-500/50 cursor-pointer appearance-none"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2371717a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', backgroundSize: '16px', paddingRight: '32px' }}
+                  >
+                    <option value="">全部状态</option>
+                    <option value="PENDING">待处理</option>
+                    <option value="REVIEWING">处理中</option>
+                    <option value="RESOLVED">已解决</option>
+                    <option value="REJECTED">已关闭</option>
+                  </select>
+
+                  {/* 时间筛选 */}
+                  <select
+                    value={filterTime || 'all'}
+                    onChange={(e) => setFilterTime(e.target.value as any)}
+                    className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-zinc-300 focus:outline-none focus:border-cyan-500/50 cursor-pointer appearance-none"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2371717a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', backgroundSize: '16px', paddingRight: '32px' }}
+                  >
+                    <option value="all">全部时间</option>
+                    <option value="week">最近7天</option>
+                    <option value="month">最近30天</option>
+                  </select>
+
+                  {/* 我的反馈 */}
+                  {isLoggedIn && (
+                    <button
+                      onClick={() => setFilterMine(!filterMine)}
+                      className={`px-3 py-2.5 rounded-xl text-sm font-medium border transition-all duration-300 ${
+                        filterMine 
+                          ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400' 
+                          : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10'
+                      }`}
+                    >
+                      我的反馈
+                    </button>
+                  )}
+
+                  {/* 清除筛选 */}
+                  {hasActiveFilters && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      onClick={clearFilters}
+                      className="px-3 py-2.5 rounded-xl text-sm font-medium bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors"
+                    >
+                      清除筛选
+                    </motion.button>
+                  )}
+                </div>
+
+                {/* 搜索结果统计 */}
+                {hasActiveFilters && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-2 text-xs text-zinc-500"
+                  >
+                    {isSearching ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        搜索中...
+                      </span>
+                    ) : (
+                      <span>找到 {filteredFeedbacks.length} 条结果</span>
+                    )}
+                  </motion.div>
+                )}
+              </div>
+
               {/* 反馈列表 */}
               <div className="space-y-4 max-h-[500px] overflow-y-auto feedback-scrollbar pr-2">
                 <AnimatePresence>
-                  {feedbacks.length > 0 ? (
-                    feedbacks.map(feedback => (
+                  {filteredFeedbacks.length > 0 ? (
+                    filteredFeedbacks.map(feedback => (
                       <FeedbackItem
                         key={feedback.id}
                         feedback={feedback}
@@ -758,7 +942,15 @@ export function FeedbackSection({
                       <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                       </svg>
-                      <p>暂无反馈，成为第一个提交的人吧</p>
+                      <p>{hasActiveFilters ? '没有找到匹配的反馈' : '暂无反馈，成为第一个提交的人吧'}</p>
+                      {hasActiveFilters && (
+                        <button
+                          onClick={clearFilters}
+                          className="mt-3 text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+                        >
+                          清除筛选条件
+                        </button>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>

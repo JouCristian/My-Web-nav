@@ -1,6 +1,6 @@
 "use server"
 
-import { prisma } from "@/lib/prisma"
+import { prisma } from "@/lib/db"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import type { NotificationType } from "@prisma/client"
@@ -8,7 +8,7 @@ import type { NotificationType } from "@prisma/client"
 // 获取当前用户的通知列表
 export async function getNotifications(limit: number = 20) {
   const session = await auth()
-  if (!session?.user?.id) return []
+  if (!session?.user?.id) return { success: false, notifications: [] }
 
   const notifications = await prisma.notification.findMany({
     where: { userId: session.user.id },
@@ -16,7 +16,7 @@ export async function getNotifications(limit: number = 20) {
     take: limit,
   })
 
-  return notifications
+  return { success: true, notifications }
 }
 
 // 获取未读通知数量
@@ -159,6 +159,27 @@ export async function notifyRollCall(creatorName: string) {
       content: `${creatorName} 发起了全舰集结，请立即签到！`,
       targetUrl: '/dashboard/attendance',
     }
+  )
+}
+
+// 通知所有船员（通用函数）
+export async function notifyAllCrew(notification: {
+  type: 'ROLL_CALL' | 'FEEDBACK_REPLY' | 'LEAVE_APPROVED' | 'LEAVE_REJECTED'
+  title: string
+  content: string
+  targetUrl?: string
+}) {
+  // 获取所有正式船员（非PENDING）
+  const members = await prisma.user.findMany({
+    where: { 
+      role: { in: ['MEMBER', 'ADMIN', 'OWNER'] }
+    },
+    select: { id: true }
+  })
+
+  await createBulkNotifications(
+    members.map(m => m.id),
+    notification
   )
 }
 
