@@ -1,3 +1,68 @@
+// Manager card shared renderer
+function ManagerCard({ m, idx }: { m: any; idx: number }) {
+  const isObj = typeof m === 'object' && m !== null
+  const userId = isObj ? m.id : null
+  const name = isObj ? (m.name || "Unknown") : String(m)
+  const role = isObj ? (m.role || "ADMIN") : "ADMIN"
+  const image = isObj ? m.image : null
+
+  const avatar = (
+    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 overflow-hidden shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+      {image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={image} alt={name} className="w-full h-full object-cover" />
+      ) : (
+        <span className="text-emerald-500 font-bold text-sm">{name.charAt(0).toUpperCase()}</span>
+      )}
+    </div>
+  )
+
+  return (
+    <div key={idx} className="bg-[#02040a]/60 border border-emerald-500/20 p-3 rounded-2xl flex items-center gap-3 relative overflow-hidden group hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all shadow-[inset_0_0_15px_rgba(0,0,0,0.8)]">
+      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-transparent -translate-x-full group-hover:animate-[shimmer-seamless_2s_infinite] pointer-events-none" />
+      {userId ? (
+        <Link href={`/profile/${userId}`} className="hover:opacity-80 transition-opacity cursor-pointer shrink-0">
+          {avatar}
+        </Link>
+      ) : avatar}
+      <div className="flex flex-col items-start overflow-hidden relative z-10">
+        <span className="text-sm font-bold text-white tracking-wider truncate w-full text-left">{name}</span>
+        <div className="flex items-center mt-1">
+          {role === 'OWNER' ? (
+            <span className="text-[9px] text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md font-mono flex items-center gap-1 whitespace-nowrap shadow-[0_0_5px_rgba(245,158,11,0.2)]">
+              👑 CAPTAIN
+            </span>
+          ) : (
+            <span className="text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-md font-mono flex items-center gap-1 whitespace-nowrap shadow-[0_0_5px_rgba(16,185,129,0.2)]">
+              🛡️ ADMIN
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// 纵向列表（PC端）
+function ManagerList({ managers }: { managers: any[] }) {
+  if (!managers.length) return <div className="text-center py-6 text-zinc-600 font-mono text-[10px] tracking-widest">NO COMMANDERS</div>
+  return <>{managers.map((m, idx) => <ManagerCard key={idx} m={m} idx={idx} />)}</>
+}
+
+// 横向滚动列表（移动端）
+function ManagerListHorizontal({ managers }: { managers: any[] }) {
+  if (!managers.length) return <div className="text-zinc-600 font-mono text-[10px] tracking-widest py-2">NO COMMANDERS</div>
+  return (
+    <>
+      {managers.map((m, idx) => (
+        <div key={idx} className="shrink-0 w-44">
+          <ManagerCard m={m} idx={idx} />
+        </div>
+      ))}
+    </>
+  )
+}
+
 // src/components/attendance-dashboard-module.tsx
 "use client"
 
@@ -173,96 +238,63 @@ export function AttendanceDashboardModule({
           </div>
         </div>
 
-        {/* 核心防爆层：固定高度 350px */}
-        <div className="flex-1 flex gap-6 bg-[#02040a]/80 border border-white/5 rounded-[2rem] p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] relative z-10 h-[350px] min-h-[350px] max-h-[350px]">
-          
-          <div className="w-40 md:w-48 border-r border-white/10 flex flex-col pr-4 shrink-0 min-h-0">
-            <div className="text-[10px] font-mono text-emerald-500/60 uppercase tracking-widest flex items-center gap-2 mb-4 shrink-0">
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
-              Commanders
+        {/* 主内容区：PC端横向，移动端纵向 */}
+        <div className="flex-1 flex flex-col gap-4 relative z-10">
+
+          {/* 柱状图区域：移动端全宽在上，PC端在右侧 */}
+          <div className="flex gap-6 bg-[#02040a]/80 border border-white/5 rounded-[2rem] p-6 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)] h-[320px] min-h-[320px] max-h-[320px]">
+
+            {/* COMMANDERS 左侧纵列 - 仅 md 以上显示 */}
+            <div className="hidden md:flex w-40 lg:w-48 border-r border-white/10 flex-col pr-4 shrink-0 min-h-0">
+              <div className="text-[10px] font-mono text-emerald-500/60 uppercase tracking-widest flex items-center gap-2 mb-4 shrink-0">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
+                Commanders
+              </div>
+              <div className="flex-1 overflow-y-auto matrix-scrollbar space-y-3 pr-2 min-h-0 pb-4">
+                <ManagerList managers={managers} />
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto matrix-scrollbar space-y-3 pr-2 min-h-0 pb-4">
-              {managers.length > 0 ? managers.map((m, idx) => {
-                const isObj = typeof m === 'object' && m !== null;
-                const userId = isObj ? m.id : null;
-                const name = isObj ? (m.name || "Unknown") : String(m);
-                const role = isObj ? (m.role || "ADMIN") : "ADMIN";
-                const image = isObj ? m.image : null;
 
-                return (
-                  <div key={idx} className="bg-[#02040a]/60 border border-emerald-500/20 p-3 rounded-2xl flex items-center gap-3 relative overflow-hidden group hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all shadow-[inset_0_0_15px_rgba(0,0,0,0.8)]">
-                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-transparent -translate-x-full group-hover:animate-[shimmer-seamless_2s_infinite] pointer-events-none" />
-                    
-                    {userId ? (
-                      <Link href={`/profile/${userId}`} className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 overflow-hidden shadow-[0_0_10px_rgba(16,185,129,0.2)] hover:opacity-80 transition-opacity cursor-pointer">
-                        {image ? (
-                          /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={image} alt={name} className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-emerald-500 font-bold text-sm">{name.charAt(0).toUpperCase()}</span>
-                        )}
-                      </Link>
-                    ) : (
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 overflow-hidden shadow-[0_0_10px_rgba(16,185,129,0.2)]">
-                        {image ? (
-                          /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={image} alt={name} className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-emerald-500 font-bold text-sm">{name.charAt(0).toUpperCase()}</span>
-                        )}
+            {/* 柱状图 */}
+            <div className="flex-1 flex flex-col relative overflow-hidden min-w-0">
+              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20 py-8 z-0">
+                {[...Array(5)].map((_, i) => <div key={i} className="border-b border-white/20 w-full flex-1" />)}
+              </div>
+              <div className="flex-1 overflow-x-auto matrix-scrollbar flex items-end gap-8 pb-2 pt-10 px-4 relative z-10 min-w-0">
+                <AnimatePresence>
+                  {stats.length > 0 ? stats.map(s => (
+                    <motion.div
+                      layout
+                      key={s.name}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex flex-col items-center gap-4 shrink-0 hover:bg-white/5 p-2 rounded-xl transition-colors duration-300"
+                    >
+                      <div className="flex items-end gap-1.5 h-48 border-b border-white/10 pb-1 w-full justify-center">
+                        <Cylinder3D type="green" value={s.present} max={maxVal} />
+                        <Cylinder3D type="red" value={s.missing} max={maxVal} />
+                        <Cylinder3D type="amber" value={s.leave} max={maxVal} />
                       </div>
-                    )}
-
-                    <div className="flex flex-col items-start overflow-hidden relative z-10">
-                      <span className="text-sm font-bold text-white tracking-wider truncate w-full text-left">{name}</span>
-                      <div className="flex items-center mt-1">
-                        {role === 'OWNER' ? (
-                          <span className="text-[9px] text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md font-mono flex items-center gap-1 shadow-[0_0_5px_rgba(245,158,11,0.2)]">
-                            👑 CAPTAIN
-                          </span>
-                        ) : (
-                          <span className="text-[9px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-md font-mono flex items-center gap-1 shadow-[0_0_5px_rgba(16,185,129,0.2)]">
-                            🛡️ ADMIN
-                          </span>
-                        )}
-                      </div>
+                      <span className="text-[10px] font-bold text-zinc-400 font-mono text-center w-16 truncate" title={s.name}>{s.name}</span>
+                    </motion.div>
+                  )) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-zinc-600 font-mono text-xs tracking-widest">
+                      NO CREW TELEMETRY FOUND
                     </div>
-                  </div>
-                )
-              }) : (
-                <div className="text-center py-6 text-zinc-600 font-mono text-[10px] tracking-widest">NO COMMANDERS</div>
-              )}
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col relative overflow-hidden min-w-0">
-            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20 py-8 z-0">
-               {[...Array(5)].map((_, i) => <div key={i} className="border-b border-white/20 w-full flex-1" />)}
+          {/* COMMANDERS 横向滚动 - 仅移动端显示（md 以下） */}
+          <div className="md:hidden bg-[#02040a]/80 border border-white/5 rounded-[2rem] p-4 shadow-[inset_0_0_50px_rgba(0,0,0,0.6)]">
+            <div className="text-[10px] font-mono text-emerald-500/60 uppercase tracking-widest flex items-center gap-2 mb-3">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
+              Commanders
             </div>
-            
-            <div className="flex-1 overflow-x-auto matrix-scrollbar flex items-end gap-8 pb-2 pt-10 px-4 relative z-10 min-w-0">
-              <AnimatePresence>
-                {stats.length > 0 ? stats.map(s => (
-                  <motion.div 
-                    layout 
-                    key={s.name} 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col items-center gap-4 shrink-0 hover:bg-white/5 p-2 rounded-xl transition-colors duration-300"
-                  >
-                    <div className="flex items-end gap-1.5 h-48 border-b border-white/10 pb-1 w-full justify-center">
-                      <Cylinder3D type="green" value={s.present} max={maxVal} />
-                      <Cylinder3D type="red" value={s.missing} max={maxVal} />
-                      <Cylinder3D type="amber" value={s.leave} max={maxVal} />
-                    </div>
-                    <span className="text-[10px] font-bold text-zinc-400 font-mono text-center w-16 truncate" title={s.name}>{s.name}</span>
-                  </motion.div>
-                )) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-zinc-600 font-mono text-xs tracking-widest">
-                    NO CREW TELEMETRY FOUND
-                  </div>
-                )}
-              </AnimatePresence>
+            <div className="flex gap-3 overflow-x-auto matrix-scrollbar pb-2">
+              <ManagerListHorizontal managers={managers} />
             </div>
           </div>
 
