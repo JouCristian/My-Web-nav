@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { getNotifications, markAsRead, markAllAsRead } from '@/app/actions/notification'
-import { usePushNotification } from '@/hooks/use-push-notification'
 
 // 贝塞尔曲线配置
 const smoothEase = [0.32, 0.72, 0, 1]
@@ -83,8 +82,6 @@ export function NotificationBell() {
   const [isMounted, setIsMounted] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
-  const { isSupported: pushSupported, isSubscribed: pushSubscribed, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotification()
-  const [isPushToggling, setIsPushToggling] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
@@ -344,41 +341,8 @@ export function NotificationBell() {
                 </div>
 
                 {/* 底部 */}
-                <div className="px-4 py-3 border-t border-white/5 shrink-0 space-y-3">
-                  {/* 推送通知开关 */}
-                  {pushSupported && (
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-                        </svg>
-                        <span className="text-xs text-zinc-400">浏览器推送</span>
-                      </div>
-                      <button
-                        onClick={async () => {
-                          setIsPushToggling(true)
-                          if (pushSubscribed) {
-                            await pushUnsubscribe()
-                          } else {
-                            await pushSubscribe()
-                          }
-                          setIsPushToggling(false)
-                        }}
-                        disabled={isPushToggling}
-                        className={`relative w-10 h-5 rounded-full transition-all duration-300 ${
-                          pushSubscribed ? 'bg-cyan-500' : 'bg-zinc-700'
-                        } ${isPushToggling ? 'opacity-50' : ''}`}
-                      >
-                        <motion.div
-                          animate={{ x: pushSubscribed ? 20 : 0 }}
-                          transition={{ duration: 0.3, ease: smoothEase }}
-                          className="absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-sm"
-                        />
-                      </button>
-                    </div>
-                  )}
-                  
-                  {notifications.length > 0 && (
+                {notifications.length > 0 && (
+                  <div className="px-4 py-3 border-t border-white/5 shrink-0">
                     <Link
                       href="/dashboard/notifications"
                       onClick={() => setIsOpen(false)}
@@ -386,8 +350,8 @@ export function NotificationBell() {
                     >
                       查看全部通知
                     </Link>
-                  )}
-                </div>
+                  </div>
+                )}
               </motion.div>
             </>
           )}
