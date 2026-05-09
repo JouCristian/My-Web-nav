@@ -246,6 +246,26 @@ export async function startGlobalRollCall(durationSeconds: number) {
   return newSession
 }
 
+export async function endRollCallEarlyAction(sessionId: string) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } })
+  if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("Permission Denied")
+
+  // 将 endTime 设为当前时间，isActive 设为 false，标记为提前终止
+  await prisma.rollCallSession.update({
+    where: { id: sessionId },
+    data: {
+      isActive: false,
+      endTime: new Date(),
+    }
+  })
+
+  revalidatePath("/dashboard/attendance")
+  return { success: true }
+}
+
 export async function submitAttendance(sessionId: string) {
   const session = await auth()
   if (!session?.user?.id) throw new Error("Unauthorized")
