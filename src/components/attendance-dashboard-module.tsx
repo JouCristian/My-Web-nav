@@ -1,3 +1,5 @@
+"use client"
+
 // Manager card shared renderer
 function ManagerCard({ m, idx }: { m: any; idx: number }) {
   const isObj = typeof m === 'object' && m !== null
@@ -64,8 +66,6 @@ function ManagerListHorizontal({ managers }: { managers: any[] }) {
 }
 
 // src/components/attendance-dashboard-module.tsx
-"use client"
-
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
