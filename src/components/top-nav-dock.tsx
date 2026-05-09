@@ -173,11 +173,15 @@ export function TopNavDock({ session, dbUser, isCaptain, onSignOut }: any) {
 
   /* Dock 已通过 CSS 设置为透明背景，GlassSurface 提供玻璃效果 */
   return (
-    <div className="flex items-center gap-3 justify-center w-full">
-      {session && <NotificationBell />}
+    <div className="flex items-center gap-2 justify-center w-full px-2">
+      {session && (
+        <div className="shrink-0">
+          <NotificationBell />
+        </div>
+      )}
       <Dock 
         items={items} 
-        className="w-full flex justify-center" 
+        className="flex justify-center" 
       />
     </div>
   );

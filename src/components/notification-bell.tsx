@@ -157,7 +157,7 @@ export function NotificationBell() {
       <motion.button
         ref={buttonRef}
         onClick={handleOpen}
-        className="relative inline-flex items-center justify-center w-14 h-14 rounded-full"
+        className="relative inline-flex items-center justify-center w-[42px] h-[42px] rounded-full"
         style={{
           backgroundColor: 'rgba(6, 8, 15, 0.75)',
           border: '1px solid rgba(255, 255, 255, 0.08)',
