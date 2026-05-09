@@ -102,6 +102,8 @@ model User {
   rollCallRecords  AttendanceRecord[] 
   flightLogs       FlightLog[]        // 关联航行日志
   faqQuestions     FAQQuestion[]      // 关联FAQ提问
+  notifications    Notification[]     // 通知列表
+  pushSubscriptions PushSubscription[] // 推送订阅
 }
 
 // ==========================================
@@ -299,4 +301,41 @@ model FeedbackReply {
   createdAt    DateTime    @default(now())
   
   feedback     Feedback    @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// 通知系统 (Notification System)
+// ==========================================
+enum NotificationType {
+  ROLL_CALL        // 集结通知
+  FEEDBACK_REPLY   // 反馈被回复
+  LEAVE_APPROVED   // 请假已批准
+  LEAVE_REJECTED   // 请假被拒绝
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  type        NotificationType // 通知类型
+  title       String           // 通知标题
+  content     String           // 通知内容
+  targetUrl   String?          // 点击跳转的URL
+  isRead      Boolean          @default(false) // 是否已读
+  userId      String           // 接收者ID
+  createdAt   DateTime         @default(now())
+  
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// 浏览器推送订阅
+model PushSubscription {
+  id           String   @id @default(cuid())
+  userId       String   // 用户ID
+  endpoint     String   @db.Text // 推送服务端点
+  p256dh       String   // 公钥
+  auth         String   // 认证密钥
+  createdAt    DateTime @default(now())
+  
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, endpoint])
 }

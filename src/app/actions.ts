@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import * as cheerio from 'cheerio'
 import { auth, signIn} from "@/auth"
+import { createNotification, notifyAllCrew } from "@/app/actions/notification"
 
 /**
  * ==========================================
@@ -242,6 +243,17 @@ export async function startGlobalRollCall(durationSeconds: number) {
     })
   })
 
+  // 发送通知给所有船员
+  const minutes = Math.floor(durationSeconds / 60)
+  const seconds = durationSeconds % 60
+  const timeStr = minutes > 0 ? `${minutes}分${seconds}秒` : `${seconds}秒`
+  await notifyAllCrew({
+    type: 'ROLL_CALL',
+    title: '全舰集结令',
+    content: `${user.realName || user.name || '指挥官'}发起了集结，请在${timeStr}内完成签到`,
+    targetUrl: '/dashboard/attendance'
+  })
+
   revalidatePath("/dashboard/attendance")
   return newSession
 }
@@ -425,10 +437,30 @@ export async function updateLeaveStatusAction(id: string, status: "APPROVED" | "
   const user = await prisma.user.findUnique({ where: { id: session?.user?.id || "" } })
   if (user?.role !== "OWNER" && user?.role !== "ADMIN") throw new Error("Permission Denied")
 
+  // 获取请假申请信息
+  const leaveRequest = await prisma.leaveRequest.findUnique({
+    where: { id },
+    include: { user: true }
+  })
+
   await prisma.leaveRequest.update({
     where: { id },
     data: { status, handledBy: user.id }
   })
+
+  // 发送通知给申请者
+  if (leaveRequest) {
+    await createNotification({
+      userId: leaveRequest.userId,
+      type: status === 'APPROVED' ? 'LEAVE_APPROVED' : 'LEAVE_REJECTED',
+      title: status === 'APPROVED' ? '请假申请已通过' : '请假申请被拒绝',
+      content: status === 'APPROVED' 
+        ? `您的请假申请已被${user.realName || user.name || '管理员'}批准` 
+        : `您的请假申请被${user.realName || user.name || '管理员'}拒绝`,
+      targetUrl: '/dashboard/attendance?tab=leave'
+    })
+  }
+
   revalidatePath("/dashboard/attendance")
 }
 

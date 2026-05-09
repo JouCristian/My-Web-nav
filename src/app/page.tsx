@@ -17,6 +17,7 @@ import { YsyxIntroSection } from "@/components/ysyx-intro-section"
 import { AchievementGallerySection } from "@/components/achievement-gallery-section"
 import { FAQSection } from "@/components/faq-section"
 import { FeedbackSection } from "@/components/feedback-section"
+import { NotificationBell } from "@/components/notification-bell"
 import { getStats } from "@/app/actions"
 import { getFAQQuestions } from "@/app/actions/faq"
 import { getFeedbacks } from "@/app/actions/feedback"
@@ -167,10 +168,17 @@ export default async function Home() {
         <HeroBackground />
       </div>
 
-      {/* 🚀 修复核心：双层嵌套方案！外层负责顶部绝对居中，内层负责入场动画，再配合液态玻璃底座 */}
-      <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] pointer-events-none">
-        <div className="animate-dock-entry pointer-events-auto" style={{ animationDelay: '0.1s' }}>
-          <GlassSurface 
+{/* 顶部导航区域 */}
+<div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] pointer-events-none flex items-center gap-4">
+{/* 通知铃铛 - 仅登录用户可见 */}
+{session && (
+<div className="animate-dock-entry pointer-events-auto" style={{ animationDelay: '0s' }}>
+<NotificationBell />
+</div>
+)}
+{/* Dock 导航 */}
+<div className="animate-dock-entry pointer-events-auto" style={{ animationDelay: '0.1s' }}>
+<GlassSurface
             width="auto"
             height="auto"
             borderRadius={35}
@@ -182,10 +190,10 @@ export default async function Home() {
             backgroundOpacity={0.15}
             className="min-w-[320px]"
           >
-            <TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
-          </GlassSurface>
-        </div>
-      </div>
+<TopNavDock session={session} dbUser={dbUser} isCaptain={isCaptain} onSignOut={handleSignOutAction} />
+</GlassSurface>
+</div>
+</div>
 
       {/* Hero 区 - 核心内容垂��居中 */}
       <section className="relative z-10 w-full min-h-[55vh] sm:min-h-[58vh] flex flex-col items-center justify-center text-center px-5 sm:px-4 pt-28 sm:pt-32 pb-8 pointer-events-none">
