@@ -156,39 +156,78 @@ export function NotificationBell() {
 
   return (
     <>
-      {/* 铃铛按钮 */}
-      <button
+      {/* 铃铛按钮 - 玻璃拟态设计 */}
+      <motion.button
         ref={buttonRef}
         onClick={handleOpen}
-        className="relative p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 group"
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.95 }}
+        transition={{ duration: 0.3, ease: smoothEase }}
+        className="relative w-10 h-10 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 border border-white/15 backdrop-blur-md shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.15),0_0_20px_rgba(6,182,212,0.15)] hover:border-cyan-500/30 transition-all duration-500 group overflow-hidden"
       >
-        <motion.svg
-          animate={unreadCount > 0 ? { rotate: [0, -15, 15, -10, 10, 0] } : {}}
-          transition={{ duration: 0.6, ease: gentleEase, repeat: unreadCount > 0 ? Infinity : 0, repeatDelay: 3 }}
-          className="w-5 h-5 text-zinc-400 group-hover:text-white transition-colors"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={1.5}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-        </motion.svg>
+        {/* 背景光效 */}
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 via-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        />
         
-        {/* 未读红点 */}
+        {/* 铃铛图标 */}
+        <motion.div
+          animate={unreadCount > 0 ? { 
+            rotate: [0, -12, 12, -8, 8, -4, 4, 0],
+            y: [0, -1, 1, -1, 0]
+          } : {}}
+          transition={{ 
+            duration: 0.8, 
+            ease: smoothEase, 
+            repeat: unreadCount > 0 ? Infinity : 0, 
+            repeatDelay: 4 
+          }}
+          className="relative z-10 flex items-center justify-center w-full h-full"
+        >
+          <svg
+            className="w-[18px] h-[18px] text-zinc-400 group-hover:text-cyan-300 transition-colors duration-300"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.8}
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" 
+            />
+          </svg>
+        </motion.div>
+        
+        {/* 未读徽章 */}
         <AnimatePresence>
           {unreadCount > 0 && (
             <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: smoothEase }}
-              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold shadow-[0_0_8px_rgba(239,68,68,0.5)]"
+              initial={{ scale: 0, opacity: 0, y: 4 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0, opacity: 0, y: 4 }}
+              transition={{ duration: 0.35, ease: smoothEase }}
+              className="absolute -top-1.5 -right-1.5 z-20"
             >
-              {unreadCount > 99 ? '99+' : unreadCount}
+              {/* 呼吸光圈 */}
+              <motion.div
+                animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0, 0.6] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute inset-0 rounded-full bg-red-500"
+              />
+              {/* 徽章主体 */}
+              <div className="relative min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-gradient-to-br from-red-400 to-red-600 text-white text-[10px] font-bold shadow-[0_2px_8px_rgba(239,68,68,0.6),0_0_0_2px_rgba(0,0,0,0.3)]">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
-      </button>
+        
+        {/* Hover 闪光效果 */}
+        <motion.div
+          className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 pointer-events-none"
+        />
+      </motion.button>
 
       {/* Portal 渲染下拉面板 */}
       {isMounted && createPortal(
