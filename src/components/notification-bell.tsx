@@ -82,7 +82,7 @@ export function NotificationBell() {
   const [isPending, startTransition] = useTransition()
   const [isMounted, setIsMounted] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 })
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
   const { isSupported: pushSupported, isSubscribed: pushSubscribed, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotification()
   const [isPushToggling, setIsPushToggling] = useState(false)
 
@@ -109,9 +109,21 @@ export function NotificationBell() {
   const handleOpen = () => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
+      const panelWidth = 320 // 面板宽度
+      const padding = 12 // 屏幕边距
+      
+      // 计算 left 位置，确保面板不超出屏幕
+      let left = rect.left
+      // 如果面板会超出右边界，改为右对齐
+      if (left + panelWidth > window.innerWidth - padding) {
+        left = window.innerWidth - panelWidth - padding
+      }
+      // 确保不超出左边界
+      left = Math.max(padding, left)
+      
       setDropdownPos({ 
         top: rect.bottom + 8, 
-        right: window.innerWidth - rect.right 
+        left
       })
     }
     setIsOpen(true)
@@ -203,8 +215,8 @@ export function NotificationBell() {
                 style={{
                   position: 'fixed',
                   top: dropdownPos.top,
-                  right: dropdownPos.right,
-                  transformOrigin: 'top right',
+                  left: dropdownPos.left,
+                  transformOrigin: 'top left',
                   zIndex: 99999
                 }}
                 className="w-[340px] sm:w-[380px] max-h-[70vh] rounded-2xl border border-white/10 bg-[#0a0e14]/98 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.05)] overflow-hidden flex flex-col"
