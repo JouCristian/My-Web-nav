@@ -60,6 +60,15 @@ body {
   color: white;
 }
 
+@keyframes fade-in-bg {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.animate-bg-fade {
+  animation: fade-in-bg 1.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @layer utilities {
   /* ==========================================
      🚀 滚动条隐藏工具类
