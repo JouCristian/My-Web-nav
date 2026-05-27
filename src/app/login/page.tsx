@@ -3,8 +3,6 @@ import { auth, signIn } from "@/auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { HideSpacetime } from "@/components/hide-spacetime" 
-// 🚀 引入全新的网格扫描背景组件
-import { GridScan } from "@/components/GridScan"
 
 export default async function LoginPage({ searchParams }: { searchParams: { error?: string } }) {
   const session = await auth()
@@ -14,7 +12,7 @@ export default async function LoginPage({ searchParams }: { searchParams: { erro
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#020205] p-6 relative overflow-hidden perspective-[1000px]">
+    <main className="min-h-screen flex items-center justify-center bg-transparent p-6 relative overflow-hidden perspective-[1000px]">
       
       <HideSpacetime />
 
@@ -58,28 +56,6 @@ export default async function LoginPage({ searchParams }: { searchParams: { erro
         .spring-physics:hover { transform: scale(1.05) translateY(-5px); }
         .spring-physics:active { transform: scale(0.95) translateY(2px); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
       `}} />
-
-      {/* 🚀 替换为全新的 GridScan 雷达背景，注入了参数提取的值 */}
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-0 animate-bg-smooth">
-        <GridScan
-          linesColor="#2f293a"
-          scanColor="#9fe5ff"
-          lineThickness={1.4}
-          gridScale={0.07}
-          lineJitter={0.1}
-          scanGlow={0.4}
-          scanSoftness={2}
-          enablePost={true}
-          chromaticAberration={0.002}
-          noiseIntensity={0.01}
-          enableWebcam={false}
-          showPreview={false}
-        />
-      </div>
-
-      <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,transparent_0%,#020205_80%)] pointer-events-none opacity-90"></div>
-
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-blue-500/10 rounded-full blur-[150px] pointer-events-none"></div>
 
       <div className="fixed top-4 left-4 sm:top-10 sm:left-10 z-[100] animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
         <Link href="/" className="group flex items-center gap-2 sm:gap-4 bg-black/25 px-3 sm:px-5 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-white/10 backdrop-blur-md transition-all duration-500 hover:bg-white/10 active:scale-95 shadow-[0_0_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:border-blue-500/30">

@@ -1,0 +1,31 @@
+export type JouJouToolStatus = "available" | "beta" | "planned"
+
+export interface JouJouTool {
+  slug: string
+  title: string
+  subtitle: string
+  description: string
+  status: JouJouToolStatus
+  tags: string[]
+  href: string
+  repoUrl?: string
+  accent: "cyan" | "emerald" | "amber" | "violet"
+}
+
+export const joujouTools: JouJouTool[] = [
+  {
+    slug: "csp-review-doc-generator",
+    title: "CSP 题解文档可视化生成器",
+    subtitle: "从刷题对话到复盘文档的可视化工作台",
+    description:
+      "用输入模板和 AI 补全指令整理题目、思路、错误分析和 AC 代码，再在网页工作台里预览并导出 Word/PDF 复盘文档。",
+    status: "beta",
+    tags: ["CSP", "题解复盘", "文档生成", "C++"],
+    href: "/joujou-tools/csp-review-doc-generator",
+    accent: "cyan",
+  },
+]
+
+export function getJouJouTool(slug: string) {
+  return joujouTools.find((tool) => tool.slug === slug)
+}

@@ -9,12 +9,12 @@ import { HideSpacetime } from "@/components/hide-spacetime"
 import RotatingText from "@/components/RotatingText" 
 import ShinyText from "@/components/ShinyText" 
 import LogoLoop from "@/components/LogoLoop" 
-import { HeroBackground } from "@/components/hero-background"
 import GlassSurface from "@/components/GlassSurface"
 import { StatsCards } from "@/components/stats-cards"
 import { Footer } from "@/components/footer"
 import { YsyxIntroSection } from "@/components/ysyx-intro-section"
 import { AchievementGallerySection } from "@/components/achievement-gallery-section"
+import { JouJouToolsSection } from "@/components/joujou-tools-section"
 import { FAQSection } from "@/components/faq-section"
 import { FeedbackSection } from "@/components/feedback-section"
 import { getStats } from "@/app/actions"
@@ -45,7 +45,7 @@ export default async function Home() {
     getFeedbacks()
   ])
 
-  // @ts-ignore
+  // @ts-expect-error next-auth session is extended with isCaptain in auth callbacks
   const isCaptain = session?.user?.isCaptain
 
   // 用户信息查询（依赖 session，无法并行）
@@ -90,7 +90,7 @@ export default async function Home() {
   }));
 
   return (
-    <main className="min-h-screen bg-[#020205] text-white selection:bg-blue-500/30 relative overflow-x-hidden">
+    <main className="min-h-screen bg-transparent text-white selection:bg-blue-500/30 relative overflow-x-hidden">
       
       <HideSpacetime />
 
@@ -161,11 +161,6 @@ export default async function Home() {
             inset 0 2px 5px rgba(255, 255, 255, 0.15);
         }
       `}} />
-
-      {/* 背景：极度纯净平滑淡入 */}
-      <div className="fixed inset-0 z-0 pointer-events-none animate-bg-fade bg-[#020205]">
-        <HeroBackground />
-      </div>
 
 {/* 顶部导航区域 */}
 <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] pointer-events-none flex items-center gap-4">
@@ -286,6 +281,8 @@ export default async function Home() {
           isCaptain={isCaptain}
           isAdmin={isCommander}
         />
+
+        <JouJouToolsSection className="animate-float-up mb-12 sm:mb-16" />
 
         {isCaptain && (
           <div className="mb-8 sm:mb-12 animate-spring-scale" style={{ animationDelay: '0.55s' }}>

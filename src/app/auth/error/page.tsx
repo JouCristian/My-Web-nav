@@ -67,7 +67,7 @@ export default async function AuthErrorPage({
   const detail = ERROR_DESCRIPTIONS[code] ?? ERROR_DESCRIPTIONS.Default
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#020205] px-4">
+    <main className="min-h-screen flex items-center justify-center bg-transparent px-4">
       <div className="max-w-lg w-full rounded-xl border border-white/10 bg-white/5 backdrop-blur-md p-8">
         <div className="mb-6">
           <p className="text-xs uppercase tracking-widest text-red-400/80 font-mono">Auth Error</p>
