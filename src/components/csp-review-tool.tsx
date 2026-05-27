@@ -435,15 +435,39 @@ export function CSPReviewTool() {
     setExportError(null)
 
     try {
-      const response = await fetch("/api/joujou-tools/csp-review-doc-generator/export", {
+      const request = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ input, format }),
-      })
+      }
+      const endpoints = [
+        "/api/joujou-csp-export",
+        "/api/joujou-tools/csp-review-doc-generator/export",
+      ]
+      let response: Response | null = null
+      let lastError: Error | null = null
 
-      if (!response.ok) {
-        const data = (await response.json().catch(() => null)) as { error?: string; details?: string } | null
-        throw new Error(data?.error || "文档生成失败")
+      for (const endpoint of endpoints) {
+        const current = await fetch(endpoint, request)
+
+        if (current.status === 404 && endpoint !== endpoints[endpoints.length - 1]) {
+          continue
+        }
+
+        if (current.ok) {
+          response = current
+          break
+        }
+
+        const data = (await current.json().catch(() => null)) as { error?: string; details?: string } | null
+        lastError = new Error(data?.error || "文档生成失败")
+        if (current.status !== 404) {
+          break
+        }
+      }
+
+      if (!response) {
+        throw lastError || new Error("文档生成失败")
       }
 
       const blob = await response.blob()
