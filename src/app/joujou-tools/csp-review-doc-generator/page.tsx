@@ -10,9 +10,9 @@ export default function CSPReviewDocGeneratorPage() {
       <HideSpacetime />
 
       <div className="relative z-10 mx-auto flex w-full max-w-[1500px] flex-col gap-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex min-w-0 flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <AnimatedContent distance={80} direction="horizontal" reverse duration={0.9} ease="power3.out">
-          <div>
+          <div className="min-w-0">
             <Link
               href="/joujou-tools"
               className="group mb-8 inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-bold tracking-widest text-zinc-300 backdrop-blur-xl transition-all hover:border-cyan-500/30 hover:text-white active:scale-95"
@@ -28,17 +28,17 @@ export default function CSPReviewDocGeneratorPage() {
               </span>
             </div>
 
-            <h1 className="max-w-5xl text-4xl font-black leading-[1.08] tracking-tight text-white sm:text-5xl xl:text-6xl">
+            <h1 className="max-w-5xl break-words text-3xl font-black leading-[1.08] tracking-tight text-white sm:text-5xl xl:text-6xl">
               CSP 题解文档生成器
             </h1>
             <p className="mt-5 max-w-4xl text-sm leading-relaxed text-zinc-400 sm:text-base">
-              面向刷题复盘的文档工作台。先在自己的 AI 窗口生成规范内容，再粘贴到这里完成结构检查、Word 草稿导出和 PDF 保存。
+              面向刷题复盘的文档工作台。先在自己的 AI 窗口生成规范内容，再粘贴到这里完成结构检查和 Word 草稿导出。
             </p>
           </div>
           </AnimatedContent>
 
           <AnimatedContent distance={80} direction="horizontal" duration={0.9} ease="power3.out" delay={0.1}>
-          <div className="grid gap-3 sm:grid-cols-3 lg:w-[620px]">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-3 lg:w-[620px]">
             <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.07] p-4 backdrop-blur-xl">
               <FileDown className="mb-3 h-5 w-5 text-cyan-300" />
               <div className="text-sm font-bold text-white">结构化检查</div>
@@ -47,7 +47,7 @@ export default function CSPReviewDocGeneratorPage() {
             <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.07] p-4 backdrop-blur-xl">
               <ShieldCheck className="mb-3 h-5 w-5 text-emerald-300" />
               <div className="text-sm font-bold text-white">网页端生成</div>
-              <div className="mt-1 text-xs leading-relaxed text-emerald-100/60">直接导出 Word 草稿，或打印保存为 PDF。</div>
+              <div className="mt-1 text-xs leading-relaxed text-emerald-100/60">直接导出可继续修改的 Word 草稿。</div>
             </div>
             <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.07] p-4 backdrop-blur-xl">
               <Code2 className="mb-3 h-5 w-5 text-amber-300" />
