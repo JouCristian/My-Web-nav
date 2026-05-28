@@ -3,6 +3,7 @@ import { ArrowLeft, Code2, FileDown, ShieldCheck } from "lucide-react"
 import AnimatedContent from "@/components/animated-content"
 import { HideSpacetime } from "@/components/hide-spacetime"
 import { CSPReviewTool } from "@/components/csp-review-tool"
+import ShinyText from "@/components/ShinyText"
 
 export default function CSPReviewDocGeneratorPage() {
   return (
@@ -29,7 +30,16 @@ export default function CSPReviewDocGeneratorPage() {
             </div>
 
             <h1 className="max-w-5xl break-words text-3xl font-black leading-[1.08] tracking-tight text-white sm:text-5xl xl:text-6xl">
-              CSP 题解文档生成器
+              <ShinyText
+                text="CSP 题解文档生成器"
+                speed={1.35}
+                delay={0.2}
+                color="#f8fafc"
+                shineColor="#67e8f9"
+                spread={105}
+                direction="left"
+                className="drop-shadow-[0_0_22px_rgba(34,211,238,0.24)]"
+              />
             </h1>
             <p className="mt-5 max-w-4xl text-sm leading-relaxed text-zinc-400 sm:text-base">
               面向刷题复盘的文档工作台。先在自己的 AI 窗口生成规范内容，再粘贴到这里完成结构检查和 Word 草稿导出。
