@@ -1,7 +1,8 @@
 "use client"
 
 import type { ComponentType } from "react"
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
+import { AnimatePresence, motion } from "framer-motion"
 import {
   AlertCircle,
   BookOpenCheck,
@@ -227,6 +228,8 @@ const INPUT_PLACEHOLDER = `这里先不用手动写题解，建议按下面流�
 interface ParsedSection {
   name: string
   content: string
+  headerStart: number
+  contentStart: number
 }
 
 interface FigureBlock {
@@ -261,9 +264,10 @@ function parseSections(text: string): ParsedSection[] {
 
   return matches.map((match, index) => {
     const name = match[1].trim()
-    const start = (match.index ?? 0) + match[0].length
+    const headerStart = match.index ?? 0
+    const start = headerStart + match[0].length
     const end = index + 1 < matches.length ? matches[index + 1].index ?? text.length : text.length
-    return { name, content: text.slice(start, end).trim() }
+    return { name, content: text.slice(start, end).trim(), headerStart, contentStart: start }
   })
 }
 
@@ -310,7 +314,15 @@ function filenameFromDisposition(disposition: string | null, fallback: string) {
   return plain ? decodeURIComponent(plain) : fallback
 }
 
-function SectionPreview({ section }: { section: ParsedSection }) {
+function SectionPreview({
+  section,
+  active = false,
+  onSelect,
+}: {
+  section: ParsedSection
+  active?: boolean
+  onSelect?: (section: ParsedSection) => void
+}) {
   const figures = getFigures(section.content)
   const codeBlocks = getCodeBlocks(section.content)
   const contentWithoutSpecialBlocks = section.content
@@ -319,7 +331,17 @@ function SectionPreview({ section }: { section: ParsedSection }) {
     .trim()
 
   return (
-    <article className="min-w-0 rounded-2xl border border-white/10 bg-black/25 p-4 sm:p-5">
+    <motion.article
+      layout
+      onClick={() => onSelect?.(section)}
+      whileHover={{ y: -2 }}
+      transition={{ type: "spring", stiffness: 340, damping: 26 }}
+      className={`group min-w-0 cursor-pointer rounded-2xl border p-4 transition-colors duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] sm:p-5 ${
+        active
+          ? "border-cyan-300/45 bg-cyan-400/[0.075] shadow-[0_0_34px_rgba(34,211,238,0.12)]"
+          : "border-white/10 bg-black/25 hover:border-cyan-400/25 hover:bg-cyan-400/[0.04]"
+      }`}
+    >
       <div className="mb-4 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
         <h3 className="min-w-0 break-words text-base font-bold tracking-wide text-white sm:text-lg">{section.name}</h3>
         <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-[10px] text-zinc-500">
@@ -386,7 +408,7 @@ function SectionPreview({ section }: { section: ParsedSection }) {
           ))}
         </div>
       )}
-    </article>
+    </motion.article>
   )
 }
 
@@ -395,6 +417,11 @@ export function CSPReviewTool() {
   const [copied, setCopied] = useState<"prompt" | null>(null)
   const [exporting, setExporting] = useState<"docx" | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
+  const [activeSection, setActiveSection] = useState<string | null>(null)
+  const [actionFeedback, setActionFeedback] = useState<"template" | "clear" | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const previewScrollRef = useRef<HTMLDivElement>(null)
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
   const sections = useMemo(() => parseSections(input), [input])
   const sectionMap = useMemo(() => new Map(sections.map((section) => [section.name, section.content])), [sections])
   const missingSections = REQUIRED_SECTIONS.filter((name) => !sectionMap.get(name)?.trim())
@@ -418,6 +445,51 @@ export function CSPReviewTool() {
     await navigator.clipboard.writeText(text)
     setCopied(kind)
     window.setTimeout(() => setCopied(null), 1800)
+  }
+
+  const showActionFeedback = (kind: "template" | "clear") => {
+    setActionFeedback(kind)
+    window.setTimeout(() => {
+      setActionFeedback((current) => (current === kind ? null : current))
+    }, 1200)
+  }
+
+  const keepPageScrollStable = (action: () => void) => {
+    const pageX = window.scrollX
+    const pageY = window.scrollY
+
+    action()
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo(pageX, pageY)
+    })
+  }
+
+  const selectInputSection = (section: ParsedSection) => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    textarea.focus({ preventScroll: true })
+    keepPageScrollStable(() => {
+      textarea.setSelectionRange(section.headerStart, Math.min(input.length, section.contentStart + section.content.length))
+    })
+
+    const beforeSection = input.slice(0, section.headerStart)
+    const lineHeight = 22
+    const approximateScrollTop = Math.max(0, beforeSection.split(/\r?\n/).length * lineHeight - textarea.clientHeight * 0.22)
+    textarea.scrollTo({ top: approximateScrollTop, behavior: "smooth" })
+  }
+
+  const selectPreviewSection = (section: ParsedSection) => {
+    setActiveSection(section.name)
+    selectInputSection(section)
+
+    const target = sectionRefs.current[section.name]
+    const container = previewScrollRef.current
+    if (target && container) {
+      const targetTop = target.offsetTop - container.offsetTop - 14
+      container.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" })
+    }
   }
 
   const exportGeneratedDocument = async () => {
@@ -536,7 +608,7 @@ export function CSPReviewTool() {
       </AnimatedContent>
 
       <div className="grid min-w-0 items-stretch gap-6 xl:h-[1280px] xl:grid-cols-[0.95fr_1.05fr] xl:overflow-hidden">
-        <AnimatedContent className="h-full min-h-0" distance={90} direction="horizontal" reverse duration={0.9} ease="power3.out" threshold={0.2} delay={0.05}>
+        <AnimatedContent className="h-full min-h-0 min-w-0" distance={90} direction="horizontal" reverse duration={0.9} ease="power3.out" threshold={0.2} delay={0.05}>
         <section className="flex h-full min-h-[720px] flex-col rounded-[2rem] border border-white/10 bg-[#05070d]/90 p-4 shadow-[0_20px_90px_rgba(0,0,0,0.35)] sm:min-h-[900px] sm:p-6 xl:min-h-0 xl:overflow-hidden">
           <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -552,21 +624,35 @@ export function CSPReviewTool() {
             <div className="grid w-full grid-cols-2 gap-2 sm:w-[420px]">
               <ActionButton
                 icon={RefreshCw}
+                active={actionFeedback === "template"}
+                iconEffect="template"
                 label="使用模板"
-                onClick={() => setInput(TEMPLATE_TEXT)}
+                onClick={() => {
+                  setInput(TEMPLATE_TEXT)
+                  setActiveSection(null)
+                  showActionFeedback("template")
+                }}
                 size="sm"
                 tone="neutral"
               />
               <ActionButton
                 icon={Trash2}
+                active={actionFeedback === "clear"}
+                iconEffect="clear"
                 label="清空内容"
-                onClick={() => setInput("")}
+                onClick={() => {
+                  setInput("")
+                  setActiveSection(null)
+                  showActionFeedback("clear")
+                }}
                 disabled={input.length === 0}
                 size="sm"
                 tone="danger"
               />
               <ActionButton
                 icon={Clipboard}
+                active={copied === "prompt"}
+                iconEffect="copy"
                 label={copied === "prompt" ? "已复制" : "复制 AI 补全指令"}
                 onClick={() => copyText("prompt", AI_PROMPT)}
                 size="sm"
@@ -577,8 +663,12 @@ export function CSPReviewTool() {
           </div>
 
           <textarea
+            ref={textareaRef}
             value={input}
-            onChange={(event) => setInput(event.target.value)}
+            onChange={(event) => {
+              setInput(event.target.value)
+              setActiveSection(null)
+            }}
             spellCheck={false}
             className="tool-scrollbar min-h-[520px] w-full flex-1 resize-none rounded-2xl border border-white/10 bg-black/45 p-4 font-mono text-sm leading-relaxed text-zinc-200 outline-none transition placeholder:whitespace-pre-line placeholder:text-zinc-500 focus:border-cyan-500/40 focus:ring-2 focus:ring-cyan-500/10 sm:min-h-[680px] xl:min-h-0"
             placeholder={INPUT_PLACEHOLDER}
@@ -586,9 +676,9 @@ export function CSPReviewTool() {
         </section>
         </AnimatedContent>
 
-        <AnimatedContent className="h-full min-h-0" distance={90} direction="horizontal" duration={0.9} ease="power3.out" threshold={0.2} delay={0.12}>
-        <section className="flex h-full min-h-[860px] min-w-0 flex-col gap-5 sm:min-h-[1040px] xl:min-h-0 xl:overflow-hidden">
-          <div className="rounded-[2rem] border border-white/10 bg-[#05070d]/90 p-5 shadow-[0_20px_90px_rgba(0,0,0,0.35)] sm:p-6">
+        <AnimatedContent className="h-full min-h-0 min-w-0" distance={90} direction="horizontal" duration={0.9} ease="power3.out" threshold={0.2} delay={0.12}>
+        <section className="flex h-full min-h-[860px] min-w-0 max-w-full flex-col gap-5 overflow-hidden sm:min-h-[1040px] xl:min-h-0">
+          <div className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#05070d]/90 p-5 shadow-[0_20px_90px_rgba(0,0,0,0.35)] sm:p-6">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-500/25 bg-cyan-500/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-cyan-300">
@@ -600,7 +690,7 @@ export function CSPReviewTool() {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="mt-6 grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-[repeat(4,minmax(0,1fr))]">
               <StatCard label="章节" value={stats.sections} icon={LayoutList} tone="text-cyan-300" />
               <StatCard label="代码块" value={stats.codeBlocks} icon={Code2} tone="text-emerald-300" />
               <StatCard label="图块" value={stats.figures} icon={Wand2} tone="text-amber-300" />
@@ -623,9 +713,40 @@ export function CSPReviewTool() {
                 </div>
               )}
             </div>
+
+            {orderedSections.length > 0 ? (
+              <div className="mt-5 min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/10 bg-black/20 p-3">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-cyan-300">章节导航</span>
+                  <span className="text-[11px] text-zinc-600">点击章节可联动定位</span>
+                </div>
+                <div className="tool-scrollbar flex min-w-0 max-w-full gap-2 overflow-x-auto overscroll-x-contain px-0.5 pb-1.5 pt-1.5">
+                  {orderedSections.map((section) => {
+                    const active = activeSection === section.name
+
+                    return (
+                      <button
+                        key={section.name}
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => selectPreviewSection(section)}
+                        className={`group/nav relative shrink-0 overflow-hidden rounded-full border px-3 py-2 text-xs font-bold transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-0.5 ${
+                          active
+                            ? "border-cyan-300/45 bg-cyan-400/15 text-cyan-50 shadow-[0_0_24px_rgba(34,211,238,0.12)]"
+                            : "border-white/10 bg-white/[0.035] text-zinc-400 hover:border-cyan-400/25 hover:bg-cyan-400/[0.08] hover:text-cyan-100"
+                        }`}
+                      >
+                        <span className="pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-[140%] skew-x-[-18deg] bg-gradient-to-r from-transparent via-cyan-100/12 to-transparent transition-transform duration-700 ease-out group-hover/nav:translate-x-[260%]" />
+                        <span className="relative">{section.name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : null}
           </div>
 
-          <div className="rounded-[2rem] border border-emerald-500/20 bg-emerald-500/[0.06] p-5">
+          <div className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-emerald-500/20 bg-emerald-500/[0.06] p-5">
             <div className="mb-4 flex items-center gap-3">
               <Download className="h-5 w-5 text-emerald-300" />
               <h2 className="text-xl font-black text-white">导出与生成</h2>
@@ -654,10 +775,23 @@ export function CSPReviewTool() {
             ) : null}
           </div>
 
-          <div className="tool-scrollbar min-h-[520px] flex-1 overflow-y-auto rounded-[2rem] border border-white/10 bg-[#05070d]/80 p-4 sm:min-h-[640px] sm:p-5 xl:min-h-0">
+          <div ref={previewScrollRef} className="tool-scrollbar min-h-[520px] min-w-0 max-w-full flex-1 overflow-y-auto overflow-x-hidden overscroll-contain rounded-[2rem] border border-white/10 bg-[#05070d]/80 p-4 sm:min-h-[640px] sm:p-5 xl:min-h-0">
             <div className="grid gap-4">
               {orderedSections.length > 0 ? (
-                orderedSections.map((section) => <SectionPreview key={section.name} section={section} />)
+                orderedSections.map((section) => (
+                  <div
+                    key={section.name}
+                    ref={(node) => {
+                      sectionRefs.current[section.name] = node
+                    }}
+                  >
+                    <SectionPreview
+                      section={section}
+                      active={activeSection === section.name}
+                      onSelect={selectPreviewSection}
+                    />
+                  </div>
+                ))
               ) : (
                 <div className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 text-center">
                   <FileText className="h-10 w-10 text-zinc-600" />
@@ -677,6 +811,8 @@ export function CSPReviewTool() {
 
 function ActionButton({
   icon: Icon,
+  active = false,
+  iconEffect,
   label,
   onClick,
   disabled = false,
@@ -685,6 +821,8 @@ function ActionButton({
   className = "",
 }: {
   icon: ComponentType<{ className?: string }>
+  active?: boolean
+  iconEffect?: "copy" | "template" | "clear"
   label: string
   onClick: () => void | Promise<void>
   disabled?: boolean
@@ -706,16 +844,275 @@ function ActionButton({
   const sizeClass = size === "sm" ? "min-h-10 px-3 py-2" : "min-h-11 px-4 py-3"
 
   return (
-    <button
+    <motion.button
+      layout
       type="button"
       onClick={onClick}
       disabled={disabled}
+      transition={{ layout: { type: "spring", stiffness: 420, damping: 30, mass: 0.75 } }}
       className={`tool-action-button group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl border text-xs font-bold disabled:cursor-not-allowed disabled:opacity-45 ${sizeClass} ${toneClass} ${className}`}
     >
       <span className={`pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-[140%] skew-x-[-18deg] bg-gradient-to-r from-transparent ${shineClass} to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[260%] group-disabled:translate-x-[-140%]`} />
-      <Icon className="relative h-4 w-4 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:-translate-y-0.5 group-hover:scale-110 group-disabled:translate-y-0 group-disabled:scale-100" />
-      <span className="relative">{label}</span>
-    </button>
+      <motion.span
+        layout
+        className="relative flex h-4 w-4 items-center justify-center transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:-translate-y-0.5 group-hover:scale-110 group-disabled:translate-y-0 group-disabled:scale-100"
+        transition={{ layout: { type: "spring", stiffness: 520, damping: 32, mass: 0.7 } }}
+      >
+        {active ? (
+          <motion.span
+            aria-hidden="true"
+            className="absolute inset-[-8px] rounded-full border border-cyan-200/20 bg-cyan-200/10"
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1.45, opacity: 0 }}
+            transition={{ duration: 0.82, ease: [0.32, 0.72, 0, 1] }}
+          />
+        ) : null}
+        {iconEffect === "copy" ? <CopyMorphIcon active={active} /> : null}
+        {iconEffect === "template" ? <TemplateMorphIcon active={active} /> : null}
+        {iconEffect === "clear" ? <ClearMorphIcon active={active} /> : null}
+        {!iconEffect ? <Icon className="h-4 w-4" /> : null}
+      </motion.span>
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.span
+          key={label}
+          layout
+          className="relative whitespace-nowrap"
+          initial={{ opacity: 0, x: active ? 7 : -7, filter: "blur(6px)" }}
+          animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+          exit={{ opacity: 0, x: active ? -7 : 7, filter: "blur(6px)" }}
+          transition={{
+            opacity: { duration: 0.22, ease: [0.32, 0.72, 0, 1] },
+            filter: { duration: 0.22, ease: [0.32, 0.72, 0, 1] },
+            x: { type: "spring", stiffness: 430, damping: 30, mass: 0.75 },
+            layout: { type: "spring", stiffness: 430, damping: 30, mass: 0.75 },
+          }}
+        >
+          {label}
+        </motion.span>
+      </AnimatePresence>
+    </motion.button>
+  )
+}
+
+function CopyMorphIcon({ active }: { active: boolean }) {
+  return (
+    <svg className="h-4 w-4 overflow-visible" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <motion.path
+        d="M9 5.5H8.2C7.1 5.5 6.2 6.4 6.2 7.5V19C6.2 20.1 7.1 21 8.2 21H17C18.1 21 19 20.1 19 19V7.5C19 6.4 18.1 5.5 17 5.5H16.2"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={false}
+        animate={{ pathLength: active ? 0 : 1, opacity: active ? 0 : 1, y: active ? -1.5 : 0 }}
+        transition={{
+          pathLength: { duration: 0.32, ease: [0.7, 0, 0.84, 0] },
+          opacity: { duration: 0.2, ease: [0.32, 0.72, 0, 1] },
+          y: { type: "spring", stiffness: 420, damping: 26 },
+        }}
+      />
+      <motion.path
+        d="M9.2 4H15.8C16.25 4 16.6 4.35 16.6 4.8V6.2C16.6 6.65 16.25 7 15.8 7H9.2C8.75 7 8.4 6.65 8.4 6.2V4.8C8.4 4.35 8.75 4 9.2 4Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={false}
+        animate={{ pathLength: active ? 0 : 1, opacity: active ? 0 : 1, y: active ? -2 : 0 }}
+        transition={{
+          pathLength: { duration: 0.24, ease: [0.7, 0, 0.84, 0] },
+          opacity: { duration: 0.18, ease: [0.32, 0.72, 0, 1] },
+          y: { type: "spring", stiffness: 420, damping: 26 },
+        }}
+      />
+      <motion.path
+        d="M5.8 12.4L10.2 16.8L18.8 8.2"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={false}
+        animate={{ pathLength: active ? 1 : 0, opacity: active ? 1 : 0, scale: active ? 1 : 0.86 }}
+        transition={{
+          pathLength: { duration: 0.46, delay: active ? 0.16 : 0, ease: [0.22, 1, 0.36, 1] },
+          opacity: { duration: 0.18, delay: active ? 0.12 : 0, ease: [0.32, 0.72, 0, 1] },
+          scale: { type: "spring", stiffness: 520, damping: 24, mass: 0.65 },
+        }}
+        style={{ originX: "50%", originY: "50%" }}
+      />
+      <motion.path
+        d="M20.5 6.8C21.6 9.1 21.25 11.9 19.45 13.95C17.45 16.25 14.15 16.9 11.45 15.75"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        initial={false}
+        animate={{ pathLength: active ? 1 : 0, opacity: active ? 0.36 : 0 }}
+        transition={{
+          pathLength: { duration: 0.58, delay: active ? 0.08 : 0, ease: [0.32, 0.72, 0, 1] },
+          opacity: { duration: 0.22, delay: active ? 0.1 : 0, ease: [0.32, 0.72, 0, 1] },
+        }}
+      />
+    </svg>
+  )
+}
+
+function TemplateMorphIcon({ active }: { active: boolean }) {
+  return (
+    <motion.svg
+      className="h-4 w-4 overflow-visible"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      animate={{ rotate: active ? 360 : 0 }}
+      transition={{ rotate: { duration: 0.74, ease: [0.32, 0.72, 0, 1] } }}
+    >
+      <motion.path
+        d="M20 11.2A7.8 7.8 0 0 0 6.7 5.7L5 7.4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={false}
+        animate={{ pathLength: active ? 0.38 : 1, opacity: active ? 0.45 : 1 }}
+        transition={{ duration: 0.34, ease: [0.7, 0, 0.84, 0] }}
+      />
+      <motion.path
+        d="M5 3.8V7.4H8.6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={false}
+        animate={{ pathLength: active ? 0 : 1, opacity: active ? 0 : 1 }}
+        transition={{ duration: 0.22, ease: [0.7, 0, 0.84, 0] }}
+      />
+      <motion.path
+        d="M4 12.8A7.8 7.8 0 0 0 17.3 18.3L19 16.6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={false}
+        animate={{ pathLength: active ? 0.38 : 1, opacity: active ? 0.45 : 1 }}
+        transition={{ duration: 0.34, ease: [0.7, 0, 0.84, 0] }}
+      />
+      <motion.path
+        d="M19 20.2V16.6H15.4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={false}
+        animate={{ pathLength: active ? 0 : 1, opacity: active ? 0 : 1 }}
+        transition={{ duration: 0.22, ease: [0.7, 0, 0.84, 0] }}
+      />
+      <motion.path
+        d="M7.4 12.2L10.5 15.3L17.1 8.7"
+        stroke="currentColor"
+        strokeWidth="2.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={false}
+        animate={{ pathLength: active ? 1 : 0, opacity: active ? 1 : 0, scale: active ? 1 : 0.86 }}
+        transition={{
+          pathLength: { duration: 0.42, delay: active ? 0.18 : 0, ease: [0.22, 1, 0.36, 1] },
+          opacity: { duration: 0.18, delay: active ? 0.13 : 0, ease: [0.32, 0.72, 0, 1] },
+          scale: { type: "spring", stiffness: 540, damping: 24, mass: 0.65 },
+        }}
+        style={{ originX: "50%", originY: "50%" }}
+      />
+    </motion.svg>
+  )
+}
+
+function ClearMorphIcon({ active }: { active: boolean }) {
+  return (
+    <svg className="h-4 w-4 overflow-visible" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <motion.path
+        d="M4 7H20"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        initial={false}
+        animate={{ rotate: active ? -18 : 0, x: active ? 1.5 : 0, y: active ? -2.4 : 0, opacity: active ? 0.42 : 1 }}
+        transition={{ type: "spring", stiffness: 480, damping: 24, mass: 0.7 }}
+        style={{ originX: "50%", originY: "50%" }}
+      />
+      <motion.path
+        d="M9.5 7V5.5C9.5 4.7 10.2 4 11 4H13C13.8 4 14.5 4.7 14.5 5.5V7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={false}
+        animate={{ pathLength: active ? 0 : 1, opacity: active ? 0 : 1, y: active ? -2 : 0 }}
+        transition={{
+          pathLength: { duration: 0.24, ease: [0.7, 0, 0.84, 0] },
+          opacity: { duration: 0.18, ease: [0.32, 0.72, 0, 1] },
+          y: { type: "spring", stiffness: 420, damping: 26 },
+        }}
+      />
+      <motion.path
+        d="M6.4 7.5L7.3 19C7.4 20.1 8.3 21 9.4 21H14.6C15.7 21 16.6 20.1 16.7 19L17.6 7.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={false}
+        animate={{ pathLength: active ? 0.18 : 1, opacity: active ? 0.28 : 1, y: active ? 2 : 0 }}
+        transition={{
+          pathLength: { duration: 0.36, ease: [0.7, 0, 0.84, 0] },
+          opacity: { duration: 0.22, ease: [0.32, 0.72, 0, 1] },
+          y: { type: "spring", stiffness: 420, damping: 28 },
+        }}
+      />
+      <motion.path
+        d="M10 11V17"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        initial={false}
+        animate={{ pathLength: active ? 0 : 1, opacity: active ? 0 : 1 }}
+        transition={{ duration: 0.2, ease: [0.7, 0, 0.84, 0] }}
+      />
+      <motion.path
+        d="M14 11V17"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        initial={false}
+        animate={{ pathLength: active ? 0 : 1, opacity: active ? 0 : 1 }}
+        transition={{ duration: 0.2, ease: [0.7, 0, 0.84, 0] }}
+      />
+      <motion.path
+        d="M5.3 17.2C8.6 19.2 15.2 19.2 18.7 16.9"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        initial={false}
+        animate={{ pathLength: active ? 1 : 0, opacity: active ? 1 : 0, y: active ? 0 : 3 }}
+        transition={{
+          pathLength: { duration: 0.42, delay: active ? 0.08 : 0, ease: [0.22, 1, 0.36, 1] },
+          opacity: { duration: 0.18, delay: active ? 0.08 : 0, ease: [0.32, 0.72, 0, 1] },
+          y: { type: "spring", stiffness: 500, damping: 26 },
+        }}
+      />
+      <motion.path
+        d="M7.8 12.3L11 15.5L17.2 9.3"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={false}
+        animate={{ pathLength: active ? 1 : 0, opacity: active ? 0.9 : 0, scale: active ? 1 : 0.9 }}
+        transition={{
+          pathLength: { duration: 0.36, delay: active ? 0.2 : 0, ease: [0.22, 1, 0.36, 1] },
+          opacity: { duration: 0.18, delay: active ? 0.16 : 0, ease: [0.32, 0.72, 0, 1] },
+          scale: { type: "spring", stiffness: 520, damping: 24, mass: 0.65 },
+        }}
+        style={{ originX: "50%", originY: "50%" }}
+      />
+    </svg>
   )
 }
 
