@@ -1,8 +1,8 @@
 "use client"
 
-import type { ComponentType } from "react"
-import { useMemo, useRef, useState } from "react"
-import { AnimatePresence, motion } from "framer-motion"
+import type { ComponentType, CSSProperties } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { AnimatePresence, motion, useSpring, useTransform, type MotionValue } from "framer-motion"
 import {
   AlertCircle,
   BookOpenCheck,
@@ -15,7 +15,6 @@ import {
   FileText,
   Gauge,
   LayoutList,
-  Loader2,
   RefreshCw,
   Trash2,
   Wand2,
@@ -680,6 +679,7 @@ export function CSPReviewTool() {
                 onClick={() => copyText("prompt", AI_PROMPT)}
                 size="sm"
                 tone="cyan"
+                enableLayoutAnimation
                 className="col-span-2"
               />
             </div>
@@ -702,79 +702,97 @@ export function CSPReviewTool() {
         <AnimatedContent className="h-full min-h-0 min-w-0" distance={90} direction="horizontal" duration={0.9} ease="power3.out" threshold={0.2} delay={0.12}>
         <section className="flex h-full min-h-[860px] min-w-0 max-w-full flex-col gap-5 overflow-hidden sm:min-h-[1040px] xl:min-h-0">
           <div className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#05070d]/90 p-5 shadow-[0_20px_90px_rgba(0,0,0,0.35)] sm:p-6">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-              <div className="min-w-0">
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-500/25 bg-cyan-500/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-cyan-300">
-                  <Eye className="h-3.5 w-3.5" />
-                  Live Preview
-                </div>
-                <h1 className="break-words text-2xl font-black leading-tight text-white sm:text-4xl">{title}</h1>
-                <p className="mt-3 break-words text-sm leading-relaxed text-zinc-500">{subtitle}</p>
-              </div>
-            </div>
-
-            <div className="mt-6 grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-[repeat(4,minmax(0,1fr))]">
-              <StatCard label="章节" value={stats.sections} icon={LayoutList} tone="text-cyan-300" />
-              <StatCard label="代码块" value={stats.codeBlocks} icon={Code2} tone="text-emerald-300" />
-              <StatCard label="图块" value={stats.figures} icon={Wand2} tone="text-amber-300" />
-              <StatCard label="表格" value={stats.tables} icon={Gauge} tone="text-violet-300" />
-            </div>
-
-            <div className="mt-5 rounded-2xl border border-white/10 bg-black/25 p-4">
-              {isScanning ? (
-                <div className="flex items-center gap-3 text-sm text-cyan-200">
-                  <ScanningGlyph />
-                  正在扫描章节结构与关键内容...
-                </div>
-              ) : missingSections.length === 0 ? (
-                <div className="flex items-center gap-3 text-sm text-emerald-300">
-                  <CheckCircle2 className="h-5 w-5" />
-                  核心章节已齐全，可以导出 Word 草稿。
-                </div>
-              ) : (
-                <div className="flex items-start gap-3 text-sm text-amber-200">
-                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-                  <div>
-                    缺少核心章节：
-                    <span className="ml-2 text-amber-100">{missingSections.join("、")}</span>
+            <motion.div
+              initial={false}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.42, ease: [0.32, 0.72, 0, 1] }}
+            >
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-500/25 bg-cyan-500/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-cyan-300">
+                    <Eye className="h-3.5 w-3.5" />
+                    Live Preview
                   </div>
-                </div>
-              )}
-            </div>
-
-            {orderedSections.length > 0 ? (
-              <div className="mt-5 min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/10 bg-black/20 p-3">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-cyan-300">章节导航</span>
-                  <span className="text-[11px] text-zinc-600">点击章节可联动定位</span>
-                </div>
-                <div className="tool-scrollbar flex min-w-0 max-w-full gap-2 overflow-x-auto overscroll-x-contain px-0.5 pb-1.5 pt-1.5">
-                  {orderedSections.map((section) => {
-                    const active = activeSection === section.name
-
-                    return (
-                      <button
-                        key={section.name}
-                        type="button"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => selectPreviewSection(section)}
-                        className={`group/nav relative shrink-0 overflow-hidden rounded-full border px-3 py-2 text-xs font-bold transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-0.5 ${
-                          active
-                            ? "border-cyan-300/45 bg-cyan-400/15 text-cyan-50 shadow-[0_0_24px_rgba(34,211,238,0.12)]"
-                            : "border-white/10 bg-white/[0.035] text-zinc-400 hover:border-cyan-400/25 hover:bg-cyan-400/[0.08] hover:text-cyan-100"
-                        }`}
-                      >
-                        <span className="pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-[140%] skew-x-[-18deg] bg-gradient-to-r from-transparent via-cyan-100/12 to-transparent transition-transform duration-700 ease-out group-hover/nav:translate-x-[260%]" />
-                        <span className="relative">{section.name}</span>
-                      </button>
-                    )
-                  })}
+                  <h1 className="break-words text-2xl font-black leading-tight text-white sm:text-4xl">{title}</h1>
+                  <p className="mt-3 break-words text-sm leading-relaxed text-zinc-500">{subtitle}</p>
                 </div>
               </div>
-            ) : null}
+
+              <div className="mt-6 grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-[repeat(4,minmax(0,1fr))]">
+                <StatCard label="章节" value={stats.sections} icon={LayoutList} tone="text-cyan-300" />
+                <StatCard label="代码块" value={stats.codeBlocks} icon={Code2} tone="text-emerald-300" />
+                <StatCard label="图块" value={stats.figures} icon={Wand2} tone="text-amber-300" />
+                <StatCard label="表格" value={stats.tables} icon={Gauge} tone="text-violet-300" />
+              </div>
+            </motion.div>
+
+            <ValidationStatusCard
+              visible={input.trim().length > 0}
+              isScanning={isScanning}
+              isComplete={missingSections.length === 0}
+              missingSections={missingSections}
+            />
+
+            <AnimatePresence initial={false}>
+              {orderedSections.length > 0 ? (
+                <motion.div
+                  key="chapter-nav"
+                  initial={{ maxHeight: 0, marginTop: 0, opacity: 0, filter: "blur(8px)" }}
+                  animate={{ maxHeight: 112, marginTop: 20, opacity: 1, filter: "blur(0px)" }}
+                  exit={{
+                    maxHeight: 0,
+                    marginTop: 0,
+                    opacity: 0,
+                    filter: "blur(8px)",
+                    transition: {
+                      maxHeight: { type: "spring", stiffness: 155, damping: 24, mass: 1, delay: 0.16 },
+                      marginTop: { type: "spring", stiffness: 155, damping: 24, mass: 1, delay: 0.16 },
+                      opacity: { duration: 0.34, ease: [0.32, 0.72, 0, 1] },
+                      filter: { duration: 0.34, ease: [0.32, 0.72, 0, 1] },
+                    },
+                  }}
+                  transition={{
+                    maxHeight: { type: "spring", stiffness: 135, damping: 23, mass: 1.05 },
+                    marginTop: { type: "spring", stiffness: 145, damping: 23, mass: 1 },
+                    opacity: { duration: 0.38, delay: 0.16, ease: [0.32, 0.72, 0, 1] },
+                    filter: { duration: 0.4, delay: 0.14, ease: [0.32, 0.72, 0, 1] },
+                  }}
+                  className="min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/10 bg-black/20"
+                >
+                  <div className="p-3">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-cyan-300">章节导航</span>
+                      <span className="text-[11px] text-zinc-600">点击章节可联动定位</span>
+                    </div>
+                    <div className="tool-scrollbar flex min-w-0 max-w-full gap-2 overflow-x-auto overscroll-x-contain px-0.5 pb-1.5 pt-1.5">
+                      {orderedSections.map((section) => {
+                        const active = activeSection === section.name
+
+                        return (
+                          <button
+                            key={section.name}
+                            type="button"
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => selectPreviewSection(section)}
+                            className={`group/nav relative shrink-0 overflow-hidden rounded-full border px-3 py-2 text-xs font-bold transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-0.5 ${
+                              active
+                                ? "border-cyan-300/45 bg-cyan-400/15 text-cyan-50 shadow-[0_0_24px_rgba(34,211,238,0.12)]"
+                                : "border-white/10 bg-white/[0.035] text-zinc-400 hover:border-cyan-400/25 hover:bg-cyan-400/[0.08] hover:text-cyan-100"
+                            }`}
+                          >
+                            <span className="pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-[140%] skew-x-[-18deg] bg-gradient-to-r from-transparent via-cyan-100/12 to-transparent transition-transform duration-700 ease-out group-hover/nav:translate-x-[260%]" />
+                            <span className="relative">{section.name}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
           </div>
 
-          <div className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-emerald-500/20 bg-emerald-500/[0.06] p-5">
+          <div className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-emerald-500/25 bg-[#06150f]/85 p-5 shadow-[0_18px_70px_rgba(0,0,0,0.28)]">
             <div className="mb-5 flex items-center gap-3">
               <Download className="h-5 w-5 text-emerald-300" />
               <h2 className="text-xl font-black text-white">导出状态</h2>
@@ -782,19 +800,27 @@ export function CSPReviewTool() {
 
             <div className="grid min-w-0 items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
               <div className="min-w-0">
-                <ExportState
-                  isScanning={isScanning}
-                  isExporting={exporting === "docx"}
-                  isReady={canExport}
-                  isSuccess={exportSuccess}
-                  error={exportError}
-                  missingCount={missingSections.length}
-                  hasInput={input.trim().length > 0}
-                />
+                <AnimatePresence mode="wait" initial={false}>
+                  <ExportState
+                    isScanning={isScanning}
+                    isExporting={exporting === "docx"}
+                    isReady={canExport}
+                    isSuccess={exportSuccess}
+                    error={exportError}
+                    missingCount={missingSections.length}
+                    hasInput={input.trim().length > 0}
+                  />
+                </AnimatePresence>
               </div>
 
               <div className="grid min-w-0 grid-rows-2 gap-3">
-                <ActionButton icon={FileCode2} label="下载模板" onClick={() => downloadText("csp_input_template_v13.txt", TEMPLATE_TEXT)} tone="emerald" className="h-full w-full" />
+                <ActionButton
+                  icon={FileCode2}
+                  label="下载模板"
+                  onClick={() => downloadText("csp_input_template_v13.txt", TEMPLATE_TEXT)}
+                  tone="emerald"
+                  className="h-full w-full"
+                />
                 <ActionButton
                   icon={FileText}
                   active={exporting === "docx"}
@@ -804,16 +830,17 @@ export function CSPReviewTool() {
                   disabled={exporting !== null || !canExport}
                   tone="emerald"
                   hideLabel={exporting === "docx"}
+                  enableLayoutAnimation
                   className="h-full w-full"
                 />
               </div>
             </div>
 
             <div className="mt-5 grid gap-3 md:grid-cols-2">
-              <div className="rounded-2xl border border-emerald-500/15 bg-black/20 px-4 py-3 text-xs leading-relaxed text-emerald-100/65">
+              <div className="rounded-2xl border border-emerald-500/20 bg-black/35 px-4 py-3 text-xs leading-relaxed text-emerald-50/75">
                 网页端会调用原始 Python 生成器，根据左侧内容输出可继续编辑的 Word 草稿。
               </div>
-              <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-xs leading-relaxed text-cyan-100/75">
+              <div className="rounded-2xl border border-cyan-500/25 bg-cyan-500/[0.16] px-4 py-3 text-xs leading-relaxed text-cyan-50/80">
                 如需生成 PDF，请先导出 Word 文档，再在 Word 或 WPS 中使用 PDF 工具箱导出，版式更稳定。
               </div>
             </div>
@@ -859,6 +886,7 @@ function ActionButton({
   iconEffect,
   label,
   hideLabel = false,
+  enableLayoutAnimation = false,
   onClick,
   disabled = false,
   tone = "emerald",
@@ -870,6 +898,7 @@ function ActionButton({
   iconEffect?: "copy" | "template" | "clear" | "loading"
   label: string
   hideLabel?: boolean
+  enableLayoutAnimation?: boolean
   onClick: () => void | Promise<void>
   disabled?: boolean
   tone?: "neutral" | "cyan" | "emerald" | "danger"
@@ -891,7 +920,7 @@ function ActionButton({
 
   return (
     <motion.button
-      layout
+      layout={enableLayoutAnimation}
       type="button"
       onClick={onClick}
       disabled={disabled}
@@ -900,7 +929,7 @@ function ActionButton({
     >
       <span className={`pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-[140%] skew-x-[-18deg] bg-gradient-to-r from-transparent ${shineClass} to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[260%] group-disabled:translate-x-[-140%]`} />
       <motion.span
-        layout
+        layout={enableLayoutAnimation}
         className="relative flex h-4 w-4 items-center justify-center transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:-translate-y-0.5 group-hover:scale-110 group-disabled:translate-y-0 group-disabled:scale-100"
         transition={{ layout: { type: "spring", stiffness: 520, damping: 32, mass: 0.7 } }}
       >
@@ -923,7 +952,7 @@ function ActionButton({
         {!hideLabel ? (
           <motion.span
             key={label}
-            layout
+            layout={enableLayoutAnimation}
             className="relative whitespace-nowrap"
             initial={{ opacity: 0, x: active ? 7 : -7, filter: "blur(6px)" }}
             animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
@@ -1197,6 +1226,101 @@ function ClearMorphIcon({ active }: { active: boolean }) {
   )
 }
 
+function ValidationStatusCard({
+  visible,
+  isScanning,
+  isComplete,
+  missingSections,
+}: {
+  visible: boolean
+  isScanning: boolean
+  isComplete: boolean
+  missingSections: string[]
+}) {
+  const state = isScanning
+    ? {
+        key: "scanning",
+        className: "items-center text-cyan-200",
+        icon: <ScanningGlyph />,
+        body: "正在扫描章节结构与关键内容...",
+      }
+    : isComplete
+      ? {
+          key: "complete",
+          className: "items-center text-emerald-300",
+          icon: <CheckCircle2 className="h-5 w-5" />,
+          body: "核心章节已齐全，可以导出 Word 草稿。",
+        }
+      : {
+          key: "missing",
+          className: "items-start text-amber-200",
+          icon: <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />,
+          body: (
+            <div>
+              缺少核心章节：
+              <span className="ml-2 text-amber-100">{missingSections.join("、")}</span>
+            </div>
+          ),
+        }
+
+  return (
+    <motion.div
+      initial={false}
+      animate={{
+        maxHeight: visible ? 86 : 0,
+        marginTop: visible ? 20 : 0,
+        opacity: visible ? 1 : 0,
+      }}
+      transition={{
+        maxHeight: visible
+          ? { type: "spring", stiffness: 135, damping: 23, mass: 1.05 }
+          : { type: "spring", stiffness: 160, damping: 24, mass: 0.98, delay: 0.18 },
+        marginTop: {
+          type: "spring",
+          stiffness: 160,
+          damping: 24,
+          mass: 0.98,
+          delay: visible ? 0 : 0.18,
+        },
+        opacity: { duration: visible ? 0.22 : 0.42, delay: visible ? 0.04 : 0, ease: [0.32, 0.72, 0, 1] },
+      }}
+      className="overflow-hidden rounded-2xl border border-white/10 bg-black/30"
+      style={{ pointerEvents: visible ? "auto" : "none" }}
+    >
+      <div className="p-4">
+        <AnimatePresence mode="wait" initial={false}>
+          {visible ? (
+            <motion.div
+              key={state.key}
+              initial={{ opacity: 0, filter: "blur(8px)", clipPath: "inset(0 100% 0 0)" }}
+              animate={{ opacity: 1, filter: "blur(0px)", clipPath: "inset(0 0% 0 0)" }}
+              exit={{
+                opacity: 0,
+                filter: "blur(6px)",
+                clipPath: "inset(0 100% 0 0)",
+                transition: {
+                  opacity: { duration: 0.3, ease: [0.32, 0.72, 0, 1] },
+                  filter: { duration: 0.32, ease: [0.32, 0.72, 0, 1] },
+                  clipPath: { duration: 0.38, ease: [0.65, 0, 0.35, 1] },
+                },
+              }}
+              transition={{
+                opacity: { duration: 0.38, delay: 0.26, ease: [0.32, 0.72, 0, 1] },
+                filter: { duration: 0.4, delay: 0.24, ease: [0.32, 0.72, 0, 1] },
+                clipPath: { duration: 0.48, delay: 0.24, ease: [0.22, 1, 0.36, 1] },
+              }}
+              className={`flex gap-3 text-sm ${state.className}`}
+            >
+              {state.icon}
+              {state.body}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  )
+}
+
 function ScanningGlyph() {
   return (
     <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
@@ -1233,81 +1357,247 @@ function ExportState({
 }) {
   const state = error
     ? {
-        icon: AlertCircle,
+        kind: "error" as const,
         label: "生成失败",
         text: error,
-        tone: "border-red-400/25 bg-red-500/10 text-red-100",
-        iconTone: "text-red-200",
+        theme: EXPORT_STATE_THEMES.error,
       }
     : isExporting
       ? {
-          icon: Loader2,
+          kind: "exporting" as const,
           label: "正在生成 Word 草稿",
           text: "正在调用网页端生成器，请保持页面打开。",
-          tone: "border-cyan-400/25 bg-cyan-500/10 text-cyan-100",
-          iconTone: "text-cyan-200 [&_svg]:animate-spin",
+          theme: EXPORT_STATE_THEMES.exporting,
         }
       : isSuccess
         ? {
-            icon: CheckCircle2,
+            kind: "success" as const,
             label: "Word 草稿已下载",
             text: "可以继续在 Word 或 WPS 中修改内容，需要 PDF 时再从文档工具箱导出。",
-            tone: "border-emerald-400/25 bg-emerald-500/10 text-emerald-100",
-            iconTone: "text-emerald-200",
+            theme: EXPORT_STATE_THEMES.success,
           }
         : isScanning
           ? {
-              icon: null,
+              kind: "scanning" as const,
               label: "正在扫描内容结构",
               text: "正在识别章节、代码块、图块和表格。",
-              tone: "border-cyan-400/25 bg-cyan-500/10 text-cyan-100",
-              iconTone: "text-cyan-200",
+              theme: EXPORT_STATE_THEMES.scanning,
             }
           : isReady
             ? {
-                icon: CheckCircle2,
+                kind: "ready" as const,
                 label: "Word 草稿已就绪",
                 text: "核心章节齐全，可以进入导出阶段。",
-                tone: "border-emerald-400/25 bg-emerald-500/10 text-emerald-100",
-                iconTone: "text-emerald-200",
+                theme: EXPORT_STATE_THEMES.ready,
               }
             : hasInput
               ? {
-                  icon: AlertCircle,
+                  kind: "missing" as const,
                   label: "等待补齐核心章节",
                   text: `还缺少 ${missingCount} 个核心章节，补齐后即可导出。`,
-                  tone: "border-amber-400/25 bg-amber-500/10 text-amber-100",
-                  iconTone: "text-amber-200",
+                  theme: EXPORT_STATE_THEMES.missing,
                 }
               : {
-                  icon: FileText,
+                  kind: "idle" as const,
                   label: "等待粘贴内容",
                   text: "先复制 AI 补全指令并粘贴生成内容，系统会自动检查结构。",
-                  tone: "border-white/10 bg-white/[0.035] text-zinc-300",
-                  iconTone: "text-zinc-400",
+                  theme: EXPORT_STATE_THEMES.idle,
                 }
-  const Icon = state.icon
 
   return (
     <motion.div
-      key={state.label}
-      initial={{ opacity: 0, y: 8, filter: "blur(8px)" }}
-      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
-      className={`relative flex min-h-[112px] overflow-hidden rounded-2xl border px-5 py-4 ${state.tone}`}
+      initial={false}
+      animate={{
+        backgroundColor: state.theme.background,
+        borderColor: state.theme.border,
+        boxShadow: state.theme.shadow,
+      }}
+      transition={{
+        backgroundColor: { duration: 0.56, ease: [0.32, 0.72, 0, 1] },
+        borderColor: { duration: 0.56, ease: [0.32, 0.72, 0, 1] },
+        boxShadow: { duration: 0.56, ease: [0.32, 0.72, 0, 1] },
+      }}
+      className="relative flex min-h-[112px] overflow-hidden rounded-2xl border px-5 py-4"
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.10),transparent_34%)]" />
+      <motion.div
+        className="pointer-events-none absolute inset-0"
+        animate={{ opacity: state.theme.glowOpacity }}
+        transition={{ duration: 0.56, ease: [0.32, 0.72, 0, 1] }}
+        style={{ background: `radial-gradient(circle at 18% 0%, ${state.theme.glow}, transparent 38%)` }}
+      />
       <div className="relative flex items-center gap-4">
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-black/20 ${state.iconTone}`}>
-          {isScanning && !Icon ? <ScanningGlyph /> : Icon ? <Icon className="h-4 w-4" /> : null}
-        </div>
+        <motion.div
+          animate={{ backgroundColor: state.theme.iconBackground, color: state.theme.iconColor }}
+          transition={{ duration: 0.46, ease: [0.32, 0.72, 0, 1] }}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+        >
+          <ExportStatusIcon kind={state.kind} color={state.theme.iconColor} />
+        </motion.div>
         <div className="min-w-0">
-          <div className="text-sm font-black text-white">{state.label}</div>
-          <p className="mt-1 text-xs leading-relaxed opacity-75">{state.text}</p>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={state.kind}
+              initial={{ opacity: 0, y: 5, filter: "blur(6px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -4, filter: "blur(6px)" }}
+              transition={{
+                opacity: { duration: 0.24, ease: [0.32, 0.72, 0, 1] },
+                y: { type: "spring", stiffness: 260, damping: 26, mass: 0.8 },
+                filter: { duration: 0.26, ease: [0.32, 0.72, 0, 1] },
+              }}
+            >
+              <div className="text-sm font-black text-white">{state.label}</div>
+              <p className="mt-1 text-xs leading-relaxed text-white/70">{state.text}</p>
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     </motion.div>
   )
+}
+
+type ExportStateKind = "idle" | "scanning" | "ready" | "missing" | "exporting" | "success" | "error"
+
+const EXPORT_STATE_THEMES = {
+  idle: {
+    background: "rgba(255,255,255,0.08)",
+    border: "rgba(255,255,255,0.15)",
+    glow: "rgba(255,255,255,0.12)",
+    glowOpacity: 0.7,
+    iconBackground: "rgba(0,0,0,0.24)",
+    iconColor: "rgb(161,161,170)",
+    shadow: "inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 rgba(255,255,255,0)",
+  },
+  scanning: {
+    background: "rgba(8,145,178,0.18)",
+    border: "rgba(34,211,238,0.30)",
+    glow: "rgba(34,211,238,0.18)",
+    glowOpacity: 1,
+    iconBackground: "rgba(8,47,73,0.48)",
+    iconColor: "rgb(165,243,252)",
+    shadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 18px 44px rgba(34,211,238,0.08)",
+  },
+  ready: {
+    background: "rgba(16,185,129,0.18)",
+    border: "rgba(52,211,153,0.30)",
+    glow: "rgba(52,211,153,0.18)",
+    glowOpacity: 1,
+    iconBackground: "rgba(6,78,59,0.42)",
+    iconColor: "rgb(167,243,208)",
+    shadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 18px 48px rgba(16,185,129,0.10)",
+  },
+  success: {
+    background: "rgba(16,185,129,0.20)",
+    border: "rgba(52,211,153,0.34)",
+    glow: "rgba(110,231,183,0.20)",
+    glowOpacity: 1,
+    iconBackground: "rgba(6,78,59,0.44)",
+    iconColor: "rgb(187,247,208)",
+    shadow: "inset 0 1px 0 rgba(255,255,255,0.08), 0 18px 50px rgba(16,185,129,0.12)",
+  },
+  missing: {
+    background: "rgba(245,158,11,0.18)",
+    border: "rgba(251,191,36,0.30)",
+    glow: "rgba(251,191,36,0.18)",
+    glowOpacity: 1,
+    iconBackground: "rgba(120,53,15,0.40)",
+    iconColor: "rgb(253,230,138)",
+    shadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 18px 44px rgba(245,158,11,0.08)",
+  },
+  exporting: {
+    background: "rgba(8,145,178,0.18)",
+    border: "rgba(34,211,238,0.32)",
+    glow: "rgba(103,232,249,0.20)",
+    glowOpacity: 1,
+    iconBackground: "rgba(8,47,73,0.50)",
+    iconColor: "rgb(207,250,254)",
+    shadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 18px 48px rgba(34,211,238,0.10)",
+  },
+  error: {
+    background: "rgba(244,63,94,0.18)",
+    border: "rgba(251,113,133,0.30)",
+    glow: "rgba(251,113,133,0.18)",
+    glowOpacity: 1,
+    iconBackground: "rgba(127,29,29,0.42)",
+    iconColor: "rgb(254,205,211)",
+    shadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 18px 44px rgba(244,63,94,0.08)",
+  },
+} satisfies Record<
+  ExportStateKind,
+  {
+    background: string
+    border: string
+    glow: string
+    glowOpacity: number
+    iconBackground: string
+    iconColor: string
+    shadow: string
+  }
+>
+
+function ExportStatusIcon({ kind, color }: { kind: ExportStateKind; color: string }) {
+  const paths = getExportIconPaths(kind)
+  const spinning = kind === "scanning" || kind === "exporting"
+
+  return (
+    <motion.svg
+      className="h-5 w-5 overflow-visible"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2.1"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      animate={{ rotate: spinning ? 360 : 0 }}
+      transition={{
+        rotate: spinning
+          ? { duration: 1.15, repeat: Infinity, ease: [0.65, 0, 0.35, 1] }
+          : { type: "spring", stiffness: 280, damping: 24, mass: 0.8 },
+      }}
+    >
+      <AnimatePresence initial={false}>
+        <motion.g
+          key={kind}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ opacity: { duration: 0.24, ease: [0.32, 0.72, 0, 1] } }}
+        >
+        {paths.map((path, index) => (
+          <motion.path
+            key={`${kind}-${index}`}
+            d={path}
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            exit={{ pathLength: 0, opacity: 0 }}
+            transition={{
+              pathLength: { duration: 0.5, delay: index * 0.06, ease: [0.22, 1, 0.36, 1] },
+              opacity: { duration: 0.2, delay: index * 0.04, ease: [0.32, 0.72, 0, 1] },
+            }}
+          />
+        ))}
+        </motion.g>
+      </AnimatePresence>
+    </motion.svg>
+  )
+}
+
+function getExportIconPaths(kind: ExportStateKind) {
+  switch (kind) {
+    case "ready":
+    case "success":
+      return ["M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9Z", "M7.8 12.3l2.8 2.8 5.8-6.2"]
+    case "missing":
+    case "error":
+      return ["M12 3.3 21 19H3L12 3.3Z", "M12 8.4v5.1", "M12 17.1h.01"]
+    case "scanning":
+      return ["M20.2 12A8.2 8.2 0 0 1 12 20.2", "M3.8 12A8.2 8.2 0 0 1 12 3.8", "M12 8v4l2.6 1.8"]
+    case "exporting":
+      return ["M12 3v10", "M8.4 9.6 12 13.2l3.6-3.6", "M5 17.5h14"]
+    case "idle":
+    default:
+      return ["M7 3.5h7l3 3v14H7V3.5Z", "M14 3.5v4h4", "M9.5 12h5", "M9.5 16h3.5"]
+  }
 }
 
 function StatCard({
@@ -1326,8 +1616,145 @@ function StatCard({
       <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-black/25 ${tone}`}>
         <Icon className="h-4 w-4" />
       </div>
-      <div className="text-2xl font-black text-white">{value}</div>
+      <div className="text-2xl font-black text-white">
+        <Counter value={value} fontSize={28} padding={2} gap={1} textColor="white" fontWeight={900} />
+      </div>
       <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.24em] text-zinc-600">{label}</div>
     </div>
+  )
+}
+
+type CounterPlace = number | "."
+
+function CounterNumber({ mv, number, height }: { mv: MotionValue<number>; number: number; height: number }) {
+  const y = useTransform(mv, (latest) => {
+    const placeValue = latest % 10
+    const offset = (10 + number - placeValue) % 10
+    let memo = offset * height
+    if (offset > 5) memo -= 10 * height
+    return memo
+  })
+
+  return (
+    <motion.span className="absolute inset-0 flex items-center justify-center" style={{ y }}>
+      {number}
+    </motion.span>
+  )
+}
+
+function normalizeNearInteger(num: number) {
+  const nearest = Math.round(num)
+  const tolerance = 1e-9 * Math.max(1, Math.abs(num))
+  return Math.abs(num - nearest) < tolerance ? nearest : num
+}
+
+function getValueRoundedToPlace(value: number, place: number) {
+  const scaled = value / place
+  return Math.floor(normalizeNearInteger(scaled))
+}
+
+function CounterDigit({
+  place,
+  value,
+  height,
+  digitStyle,
+}: {
+  place: CounterPlace
+  value: number
+  height: number
+  digitStyle?: CSSProperties
+}) {
+  if (place === ".") return <CounterDot height={height} digitStyle={digitStyle} />
+
+  return <CounterNumericDigit place={place} value={value} height={height} digitStyle={digitStyle} />
+}
+
+function CounterDot({ height, digitStyle }: { height: number; digitStyle?: CSSProperties }) {
+  return (
+    <span className="relative w-fit" style={{ height, fontVariantNumeric: "tabular-nums", ...digitStyle }}>
+      .
+    </span>
+  )
+}
+
+function CounterNumericDigit({
+  place,
+  value,
+  height,
+  digitStyle,
+}: {
+  place: number
+  value: number
+  height: number
+  digitStyle?: CSSProperties
+}) {
+  const valueRoundedToPlace = getValueRoundedToPlace(value, place)
+  const animatedValue = useSpring(0, {
+    stiffness: 170,
+    damping: 24,
+    mass: 0.9,
+  })
+
+  useEffect(() => {
+    animatedValue.set(valueRoundedToPlace)
+  }, [animatedValue, valueRoundedToPlace])
+
+  return (
+    <span className="relative w-[1ch] overflow-hidden" style={{ height, fontVariantNumeric: "tabular-nums", ...digitStyle }}>
+      {Array.from({ length: 10 }, (_, index) => (
+        <CounterNumber key={index} mv={animatedValue} number={index} height={height} />
+      ))}
+    </span>
+  )
+}
+
+function getCounterPlaces(value: number): CounterPlace[] {
+  const normalizedValue = Math.max(0, Math.floor(Math.abs(value)))
+  return String(normalizedValue)
+    .split("")
+    .map((_, index, array) => 10 ** (array.length - index - 1))
+}
+
+function Counter({
+  value,
+  fontSize = 100,
+  padding = 0,
+  places,
+  gap = 8,
+  textColor = "inherit",
+  fontWeight = "inherit",
+}: {
+  value: number
+  fontSize?: number
+  padding?: number
+  places?: CounterPlace[]
+  gap?: number
+  textColor?: string
+  fontWeight?: CSSProperties["fontWeight"]
+}) {
+  const height = fontSize + padding
+  const counterPlaces = places ?? getCounterPlaces(value)
+
+  return (
+    <span className="relative inline-block">
+      <span
+        className="flex overflow-hidden leading-none"
+        style={{
+          fontSize,
+          gap,
+          color: textColor,
+          fontWeight,
+          direction: "ltr",
+        }}
+      >
+        {counterPlaces.map((place) => (
+          <CounterDigit key={place} place={place} value={value} height={height} />
+        ))}
+      </span>
+      <span className="pointer-events-none absolute inset-0">
+        <span className="absolute top-0 h-2 w-full bg-gradient-to-b from-[#141821] to-transparent" />
+        <span className="absolute bottom-0 h-2 w-full bg-gradient-to-t from-[#141821] to-transparent" />
+      </span>
+    </span>
   )
 }
