@@ -1,6 +1,6 @@
 "use client"
 
-import { ExternalLink, Sparkles, UserRound } from "lucide-react"
+import { Code2, ExternalLink, GitBranch, Sparkles, UserRound } from "lucide-react"
 import { motion } from "framer-motion"
 
 const repoUrl = "https://github.com/JouCristian/Generating-reviewFile"
@@ -17,6 +17,8 @@ const iconSpring = {
   stiffness: 420,
   damping: 22,
 }
+
+const projectTags = ["Python", "Word Generator", "网页端集成", "复盘工作流"]
 
 function GitHubMark({ className }: { className?: string }) {
   return (
@@ -72,6 +74,17 @@ export function OpenSourceInfoCard() {
             <span className="truncate">JouCristian/Generating-reviewFile</span>
           </div>
 
+          <div className="mt-4 flex flex-wrap gap-2">
+            {projectTags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full border border-cyan-400/15 bg-cyan-400/[0.06] px-3 py-1.5 text-[11px] font-bold text-cyan-100/75"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+
           <p className="mt-4 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
             这个工具开源在 GitHub 仓库中，核心目标是把刷题复盘流程整理成可复用的文档生成工作台，帮助小组成员更快完成学习记录、资料整理和复盘归档。
           </p>
@@ -88,6 +101,26 @@ export function OpenSourceInfoCard() {
               <p className="mt-2 text-sm leading-relaxed text-zinc-400">
                 关注算法学习、自动化文档生成与小组协作工具建设，希望把重复操作沉淀成更顺手的开源小工具。
               </p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-black/25 p-4 font-mono text-[11px] text-zinc-400">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-2 text-cyan-200">
+                <GitBranch className="h-3.5 w-3.5" />
+                repository
+              </span>
+              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-1 text-[10px] text-emerald-200">
+                open
+              </span>
+            </div>
+            <div className="grid gap-2">
+              <div className="flex items-center gap-2">
+                <Code2 className="h-3.5 w-3.5 text-violet-200" />
+                <span>source / template / generator</span>
+              </div>
+              <div className="h-px bg-gradient-to-r from-cyan-400/25 via-violet-400/20 to-transparent" />
+              <div className="text-zinc-500">小组成员可以查看源码、理解生成逻辑，并按自己的复盘风格继续改造。</div>
             </div>
           </div>
 

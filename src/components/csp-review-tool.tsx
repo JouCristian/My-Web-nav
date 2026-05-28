@@ -417,11 +417,14 @@ export function CSPReviewTool() {
   const [copied, setCopied] = useState<"prompt" | null>(null)
   const [exporting, setExporting] = useState<"docx" | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
+  const [exportSuccess, setExportSuccess] = useState(false)
   const [activeSection, setActiveSection] = useState<string | null>(null)
   const [actionFeedback, setActionFeedback] = useState<"template" | "clear" | null>(null)
+  const [isScanning, setIsScanning] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const previewScrollRef = useRef<HTMLDivElement>(null)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
+  const scanTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null)
   const sections = useMemo(() => parseSections(input), [input])
   const sectionMap = useMemo(() => new Map(sections.map((section) => [section.name, section.content])), [sections])
   const missingSections = REQUIRED_SECTIONS.filter((name) => !sectionMap.get(name)?.trim())
@@ -440,6 +443,24 @@ export function CSPReviewTool() {
 
   const title = sectionMap.get("标题") || "等待粘贴 AI 内容"
   const subtitle = sectionMap.get("副标题") || "先使用模板和 AI 补全指令生成规范内容，再粘贴到左侧工作台。"
+  const canExport = input.trim().length > 0 && missingSections.length === 0 && !isScanning
+
+  const updateInputContent = (nextInput: string) => {
+    setInput(nextInput)
+    setExportSuccess(false)
+
+    if (scanTimerRef.current) {
+      window.clearTimeout(scanTimerRef.current)
+    }
+
+    if (!nextInput.trim()) {
+      setIsScanning(false)
+      return
+    }
+
+    setIsScanning(true)
+    scanTimerRef.current = window.setTimeout(() => setIsScanning(false), 720)
+  }
 
   const copyText = async (kind: "prompt", text: string) => {
     await navigator.clipboard.writeText(text)
@@ -495,6 +516,7 @@ export function CSPReviewTool() {
   const exportGeneratedDocument = async () => {
     setExporting("docx")
     setExportError(null)
+    setExportSuccess(false)
 
     try {
       const request = {
@@ -543,6 +565,7 @@ export function CSPReviewTool() {
       link.download = filename
       link.click()
       URL.revokeObjectURL(url)
+      setExportSuccess(true)
     } catch (error) {
       setExportError(error instanceof Error ? error.message : "文档生成失败")
     } finally {
@@ -628,7 +651,7 @@ export function CSPReviewTool() {
                 iconEffect="template"
                 label="使用模板"
                 onClick={() => {
-                  setInput(TEMPLATE_TEXT)
+                  updateInputContent(TEMPLATE_TEXT)
                   setActiveSection(null)
                   showActionFeedback("template")
                 }}
@@ -641,7 +664,7 @@ export function CSPReviewTool() {
                 iconEffect="clear"
                 label="清空内容"
                 onClick={() => {
-                  setInput("")
+                  updateInputContent("")
                   setActiveSection(null)
                   showActionFeedback("clear")
                 }}
@@ -666,7 +689,7 @@ export function CSPReviewTool() {
             ref={textareaRef}
             value={input}
             onChange={(event) => {
-              setInput(event.target.value)
+              updateInputContent(event.target.value)
               setActiveSection(null)
             }}
             spellCheck={false}
@@ -698,7 +721,12 @@ export function CSPReviewTool() {
             </div>
 
             <div className="mt-5 rounded-2xl border border-white/10 bg-black/25 p-4">
-              {missingSections.length === 0 ? (
+              {isScanning ? (
+                <div className="flex items-center gap-3 text-sm text-cyan-200">
+                  <ScanningGlyph />
+                  正在扫描章节结构与关键内容...
+                </div>
+              ) : missingSections.length === 0 ? (
                 <div className="flex items-center gap-3 text-sm text-emerald-300">
                   <CheckCircle2 className="h-5 w-5" />
                   核心章节已齐全，可以导出 Word 草稿。
@@ -747,32 +775,48 @@ export function CSPReviewTool() {
           </div>
 
           <div className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-emerald-500/20 bg-emerald-500/[0.06] p-5">
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-5 flex items-center gap-3">
               <Download className="h-5 w-5 text-emerald-300" />
-              <h2 className="text-xl font-black text-white">导出与生成</h2>
+              <h2 className="text-xl font-black text-white">导出状态</h2>
             </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <ActionButton icon={FileCode2} label="下载模板" onClick={() => downloadText("csp_input_template_v13.txt", TEMPLATE_TEXT)} tone="emerald" />
-              <ActionButton
-                icon={exporting === "docx" ? Loader2 : FileText}
-                label={exporting === "docx" ? "生成 Word 中..." : "导出 Word 文档"}
-                onClick={exportGeneratedDocument}
-                disabled={exporting !== null}
-                tone="emerald"
-                className={exporting === "docx" ? "[&_svg]:animate-spin" : ""}
-              />
-            </div>
-            <p className="mt-4 text-xs leading-relaxed text-emerald-100/65">
-              网页端会调用原始 Python 生成器，根据左侧内容输出可继续编辑的 Word 草稿。下载模板用于发给 AI，让它按固定章节生成可粘贴到工作台的内容。
-            </p>
-            <div className="mt-4 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-xs leading-relaxed text-cyan-100/75">
-              如需生成 PDF，请先导出 Word 文档，再在 Word 或 WPS 中使用 PDF 工具箱导出。这样版式更稳定，也方便你先修改 Word 草稿内容。
-            </div>
-            {exportError ? (
-              <div className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs leading-relaxed text-red-100">
-                {exportError}
+
+            <div className="grid min-w-0 items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
+              <div className="min-w-0">
+                <ExportState
+                  isScanning={isScanning}
+                  isExporting={exporting === "docx"}
+                  isReady={canExport}
+                  isSuccess={exportSuccess}
+                  error={exportError}
+                  missingCount={missingSections.length}
+                  hasInput={input.trim().length > 0}
+                />
               </div>
-            ) : null}
+
+              <div className="grid min-w-0 grid-rows-2 gap-3">
+                <ActionButton icon={FileCode2} label="下载模板" onClick={() => downloadText("csp_input_template_v13.txt", TEMPLATE_TEXT)} tone="emerald" className="h-full w-full" />
+                <ActionButton
+                  icon={FileText}
+                  active={exporting === "docx"}
+                  iconEffect={exporting === "docx" ? "loading" : undefined}
+                  label="导出 Word 文档"
+                  onClick={exportGeneratedDocument}
+                  disabled={exporting !== null || !canExport}
+                  tone="emerald"
+                  hideLabel={exporting === "docx"}
+                  className="h-full w-full"
+                />
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              <div className="rounded-2xl border border-emerald-500/15 bg-black/20 px-4 py-3 text-xs leading-relaxed text-emerald-100/65">
+                网页端会调用原始 Python 生成器，根据左侧内容输出可继续编辑的 Word 草稿。
+              </div>
+              <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-xs leading-relaxed text-cyan-100/75">
+                如需生成 PDF，请先导出 Word 文档，再在 Word 或 WPS 中使用 PDF 工具箱导出，版式更稳定。
+              </div>
+            </div>
           </div>
 
           <div ref={previewScrollRef} className="tool-scrollbar min-h-[520px] min-w-0 max-w-full flex-1 overflow-y-auto overflow-x-hidden overscroll-contain rounded-[2rem] border border-white/10 bg-[#05070d]/80 p-4 sm:min-h-[640px] sm:p-5 xl:min-h-0">
@@ -814,6 +858,7 @@ function ActionButton({
   active = false,
   iconEffect,
   label,
+  hideLabel = false,
   onClick,
   disabled = false,
   tone = "emerald",
@@ -822,8 +867,9 @@ function ActionButton({
 }: {
   icon: ComponentType<{ className?: string }>
   active?: boolean
-  iconEffect?: "copy" | "template" | "clear"
+  iconEffect?: "copy" | "template" | "clear" | "loading"
   label: string
+  hideLabel?: boolean
   onClick: () => void | Promise<void>
   disabled?: boolean
   tone?: "neutral" | "cyan" | "emerald" | "danger"
@@ -870,27 +916,62 @@ function ActionButton({
         {iconEffect === "copy" ? <CopyMorphIcon active={active} /> : null}
         {iconEffect === "template" ? <TemplateMorphIcon active={active} /> : null}
         {iconEffect === "clear" ? <ClearMorphIcon active={active} /> : null}
+        {iconEffect === "loading" ? <LoadingLoopIcon active={active} /> : null}
         {!iconEffect ? <Icon className="h-4 w-4" /> : null}
       </motion.span>
       <AnimatePresence mode="popLayout" initial={false}>
-        <motion.span
-          key={label}
-          layout
-          className="relative whitespace-nowrap"
-          initial={{ opacity: 0, x: active ? 7 : -7, filter: "blur(6px)" }}
-          animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-          exit={{ opacity: 0, x: active ? -7 : 7, filter: "blur(6px)" }}
-          transition={{
-            opacity: { duration: 0.22, ease: [0.32, 0.72, 0, 1] },
-            filter: { duration: 0.22, ease: [0.32, 0.72, 0, 1] },
-            x: { type: "spring", stiffness: 430, damping: 30, mass: 0.75 },
-            layout: { type: "spring", stiffness: 430, damping: 30, mass: 0.75 },
-          }}
-        >
-          {label}
-        </motion.span>
+        {!hideLabel ? (
+          <motion.span
+            key={label}
+            layout
+            className="relative whitespace-nowrap"
+            initial={{ opacity: 0, x: active ? 7 : -7, filter: "blur(6px)" }}
+            animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, x: active ? -7 : 7, filter: "blur(6px)" }}
+            transition={{
+              opacity: { duration: 0.24, ease: [0.32, 0.72, 0, 1] },
+              filter: { duration: 0.24, ease: [0.32, 0.72, 0, 1] },
+              x: { type: "spring", stiffness: 430, damping: 30, mass: 0.75 },
+              layout: { type: "spring", stiffness: 430, damping: 30, mass: 0.75 },
+            }}
+          >
+            {label}
+          </motion.span>
+        ) : null}
       </AnimatePresence>
     </motion.button>
+  )
+}
+
+function LoadingLoopIcon({ active }: { active: boolean }) {
+  return (
+    <motion.svg
+      className="h-4 w-4 overflow-visible"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      animate={active ? { rotate: 360 } : { rotate: 0 }}
+      transition={{ duration: 1.05, repeat: active ? Infinity : 0, ease: [0.65, 0, 0.35, 1] }}
+    >
+      <motion.path
+        d="M20 12A8 8 0 0 0 7.2 5.6"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        initial={false}
+        animate={{ pathLength: active ? [0.28, 0.78, 0.28] : 1, opacity: active ? 1 : 0 }}
+        transition={{ duration: 1.05, repeat: active ? Infinity : 0, ease: [0.32, 0.72, 0, 1] }}
+      />
+      <motion.path
+        d="M4 12A8 8 0 0 0 16.8 18.4"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        initial={false}
+        animate={{ pathLength: active ? [0.58, 0.24, 0.58] : 0, opacity: active ? 0.52 : 0 }}
+        transition={{ duration: 1.05, repeat: active ? Infinity : 0, ease: [0.32, 0.72, 0, 1] }}
+      />
+    </motion.svg>
   )
 }
 
@@ -1113,6 +1194,119 @@ function ClearMorphIcon({ active }: { active: boolean }) {
         style={{ originX: "50%", originY: "50%" }}
       />
     </svg>
+  )
+}
+
+function ScanningGlyph() {
+  return (
+    <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
+      <motion.span
+        className="absolute h-5 w-5 rounded-full border border-cyan-300/25"
+        animate={{ scale: [0.82, 1.18, 0.82], opacity: [0.35, 0.85, 0.35] }}
+        transition={{ duration: 1.1, repeat: Infinity, ease: [0.32, 0.72, 0, 1] }}
+      />
+      <motion.span
+        className="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(103,232,249,0.75)]"
+        animate={{ scale: [0.75, 1, 0.75] }}
+        transition={{ duration: 1.1, repeat: Infinity, ease: [0.32, 0.72, 0, 1] }}
+      />
+    </span>
+  )
+}
+
+function ExportState({
+  isScanning,
+  isExporting,
+  isReady,
+  isSuccess,
+  error,
+  missingCount,
+  hasInput,
+}: {
+  isScanning: boolean
+  isExporting: boolean
+  isReady: boolean
+  isSuccess: boolean
+  error: string | null
+  missingCount: number
+  hasInput: boolean
+}) {
+  const state = error
+    ? {
+        icon: AlertCircle,
+        label: "生成失败",
+        text: error,
+        tone: "border-red-400/25 bg-red-500/10 text-red-100",
+        iconTone: "text-red-200",
+      }
+    : isExporting
+      ? {
+          icon: Loader2,
+          label: "正在生成 Word 草稿",
+          text: "正在调用网页端生成器，请保持页面打开。",
+          tone: "border-cyan-400/25 bg-cyan-500/10 text-cyan-100",
+          iconTone: "text-cyan-200 [&_svg]:animate-spin",
+        }
+      : isSuccess
+        ? {
+            icon: CheckCircle2,
+            label: "Word 草稿已下载",
+            text: "可以继续在 Word 或 WPS 中修改内容，需要 PDF 时再从文档工具箱导出。",
+            tone: "border-emerald-400/25 bg-emerald-500/10 text-emerald-100",
+            iconTone: "text-emerald-200",
+          }
+        : isScanning
+          ? {
+              icon: null,
+              label: "正在扫描内容结构",
+              text: "正在识别章节、代码块、图块和表格。",
+              tone: "border-cyan-400/25 bg-cyan-500/10 text-cyan-100",
+              iconTone: "text-cyan-200",
+            }
+          : isReady
+            ? {
+                icon: CheckCircle2,
+                label: "Word 草稿已就绪",
+                text: "核心章节齐全，可以进入导出阶段。",
+                tone: "border-emerald-400/25 bg-emerald-500/10 text-emerald-100",
+                iconTone: "text-emerald-200",
+              }
+            : hasInput
+              ? {
+                  icon: AlertCircle,
+                  label: "等待补齐核心章节",
+                  text: `还缺少 ${missingCount} 个核心章节，补齐后即可导出。`,
+                  tone: "border-amber-400/25 bg-amber-500/10 text-amber-100",
+                  iconTone: "text-amber-200",
+                }
+              : {
+                  icon: FileText,
+                  label: "等待粘贴内容",
+                  text: "先复制 AI 补全指令并粘贴生成内容，系统会自动检查结构。",
+                  tone: "border-white/10 bg-white/[0.035] text-zinc-300",
+                  iconTone: "text-zinc-400",
+                }
+  const Icon = state.icon
+
+  return (
+    <motion.div
+      key={state.label}
+      initial={{ opacity: 0, y: 8, filter: "blur(8px)" }}
+      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+      className={`relative flex min-h-[112px] overflow-hidden rounded-2xl border px-5 py-4 ${state.tone}`}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.10),transparent_34%)]" />
+      <div className="relative flex items-center gap-4">
+        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-black/20 ${state.iconTone}`}>
+          {isScanning && !Icon ? <ScanningGlyph /> : Icon ? <Icon className="h-4 w-4" /> : null}
+        </div>
+        <div className="min-w-0">
+          <div className="text-sm font-black text-white">{state.label}</div>
+          <p className="mt-1 text-xs leading-relaxed opacity-75">{state.text}</p>
+        </div>
+      </div>
+    </motion.div>
   )
 }
 
