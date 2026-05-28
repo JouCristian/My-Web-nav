@@ -16,6 +16,7 @@ import {
   LayoutList,
   Loader2,
   RefreshCw,
+  Trash2,
   Wand2,
 } from "lucide-react"
 import AnimatedContent from "@/components/animated-content"
@@ -497,6 +498,23 @@ export function CSPReviewTool() {
           border-radius: 999px;
           border: 2px solid rgba(5, 7, 13, 0.9);
         }
+        .tool-action-button {
+          transition:
+            transform 0.42s cubic-bezier(0.32, 0.72, 0, 1),
+            border-color 0.42s cubic-bezier(0.32, 0.72, 0, 1),
+            background-color 0.42s cubic-bezier(0.32, 0.72, 0, 1),
+            box-shadow 0.42s cubic-bezier(0.32, 0.72, 0, 1),
+            color 0.42s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+        .tool-action-button:hover {
+          transform: translateY(-2px);
+        }
+        .tool-action-button:active {
+          transform: translateY(0) scale(0.98);
+        }
+        .tool-action-button:disabled {
+          transform: none;
+        }
       `}</style>
 
       <AnimatedContent distance={70} duration={0.9} ease="power3.out" threshold={0.2}>
@@ -531,23 +549,30 @@ export function CSPReviewTool() {
                 把 AI 根据模板补全后的纯文本粘贴到这里，右侧会实时预览和检查。
               </p>
             </div>
-            <div className="grid gap-2 sm:flex sm:flex-wrap">
-              <button
-                type="button"
+            <div className="grid w-full grid-cols-2 gap-2 sm:w-[420px]">
+              <ActionButton
+                icon={RefreshCw}
+                label="使用模板"
                 onClick={() => setInput(TEMPLATE_TEXT)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold text-zinc-300 transition hover:border-white/25 hover:text-white active:scale-95"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                使用模板
-              </button>
-              <button
-                type="button"
+                size="sm"
+                tone="neutral"
+              />
+              <ActionButton
+                icon={Trash2}
+                label="清空内容"
+                onClick={() => setInput("")}
+                disabled={input.length === 0}
+                size="sm"
+                tone="danger"
+              />
+              <ActionButton
+                icon={Clipboard}
+                label={copied === "prompt" ? "已复制" : "复制 AI 补全指令"}
                 onClick={() => copyText("prompt", AI_PROMPT)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-500/25 bg-cyan-500/10 px-3 py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-500/15 active:scale-95"
-              >
-                <Clipboard className="h-3.5 w-3.5" />
-                {copied === "prompt" ? "已复制" : "复制 AI 补全指令"}
-              </button>
+                size="sm"
+                tone="cyan"
+                className="col-span-2"
+              />
             </div>
           </div>
 
@@ -606,12 +631,13 @@ export function CSPReviewTool() {
               <h2 className="text-xl font-black text-white">导出与生成</h2>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
-              <ActionButton icon={FileCode2} label="下载模板" onClick={() => downloadText("csp_input_template_v13.txt", TEMPLATE_TEXT)} />
+              <ActionButton icon={FileCode2} label="下载模板" onClick={() => downloadText("csp_input_template_v13.txt", TEMPLATE_TEXT)} tone="emerald" />
               <ActionButton
                 icon={exporting === "docx" ? Loader2 : FileText}
                 label={exporting === "docx" ? "生成 Word 中..." : "导出 Word 文档"}
                 onClick={exportGeneratedDocument}
                 disabled={exporting !== null}
+                tone="emerald"
                 className={exporting === "docx" ? "[&_svg]:animate-spin" : ""}
               />
             </div>
@@ -654,23 +680,41 @@ function ActionButton({
   label,
   onClick,
   disabled = false,
+  tone = "emerald",
+  size = "md",
   className = "",
 }: {
   icon: ComponentType<{ className?: string }>
   label: string
   onClick: () => void | Promise<void>
   disabled?: boolean
+  tone?: "neutral" | "cyan" | "emerald" | "danger"
+  size?: "sm" | "md"
   className?: string
 }) {
+  const toneClass = {
+    neutral:
+      "border-white/10 bg-white/[0.045] text-zinc-300 shadow-[0_0_0_rgba(255,255,255,0)] hover:border-white/25 hover:bg-white/[0.075] hover:text-white hover:shadow-[0_14px_34px_rgba(255,255,255,0.045)]",
+    cyan:
+      "border-cyan-400/25 bg-cyan-400/10 text-cyan-100 shadow-[0_0_24px_rgba(34,211,238,0.08)] hover:border-cyan-300/45 hover:bg-cyan-400/[0.16] hover:text-cyan-50 hover:shadow-[0_16px_38px_rgba(34,211,238,0.14)]",
+    emerald:
+      "border-emerald-400/20 bg-white/[0.04] text-zinc-200 shadow-[0_0_0_rgba(16,185,129,0)] hover:border-emerald-400/35 hover:bg-emerald-400/10 hover:text-emerald-50 hover:shadow-[0_16px_38px_rgba(16,185,129,0.12)]",
+    danger:
+      "border-rose-400/25 bg-[radial-gradient(circle_at_20%_0%,rgba(251,113,133,0.18),transparent_38%),rgba(127,29,29,0.16)] text-rose-100 shadow-[0_0_28px_rgba(244,63,94,0.10)] hover:border-rose-300/50 hover:bg-[radial-gradient(circle_at_20%_0%,rgba(251,113,133,0.26),transparent_40%),rgba(127,29,29,0.22)] hover:text-white hover:shadow-[0_18px_42px_rgba(244,63,94,0.18)]",
+  }[tone]
+  const shineClass = tone === "danger" ? "via-rose-100/18" : "via-cyan-100/14"
+  const sizeClass = size === "sm" ? "min-h-10 px-3 py-2" : "min-h-11 px-4 py-3"
+
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-bold text-zinc-200 transition hover:border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`tool-action-button group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl border text-xs font-bold disabled:cursor-not-allowed disabled:opacity-45 ${sizeClass} ${toneClass} ${className}`}
     >
-      <Icon className="h-4 w-4" />
-      {label}
+      <span className={`pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-[140%] skew-x-[-18deg] bg-gradient-to-r from-transparent ${shineClass} to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[260%] group-disabled:translate-x-[-140%]`} />
+      <Icon className="relative h-4 w-4 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:-translate-y-0.5 group-hover:scale-110 group-disabled:translate-y-0 group-disabled:scale-100" />
+      <span className="relative">{label}</span>
     </button>
   )
 }
