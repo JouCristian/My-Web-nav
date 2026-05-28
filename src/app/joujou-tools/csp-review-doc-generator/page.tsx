@@ -3,6 +3,7 @@ import { ArrowLeft, Code2, FileDown, ShieldCheck } from "lucide-react"
 import AnimatedContent from "@/components/animated-content"
 import { HideSpacetime } from "@/components/hide-spacetime"
 import { CSPReviewTool } from "@/components/csp-review-tool"
+import { OpenSourceInfoCard } from "@/components/open-source-info-card"
 import ShinyText from "@/components/ShinyText"
 
 export default function CSPReviewDocGeneratorPage() {
@@ -69,6 +70,7 @@ export default function CSPReviewDocGeneratorPage() {
         </div>
 
         <CSPReviewTool />
+        <OpenSourceInfoCard />
       </div>
     </main>
   )
