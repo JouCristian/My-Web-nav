@@ -419,11 +419,13 @@ export function CSPReviewTool() {
   const [exportSuccess, setExportSuccess] = useState(false)
   const [activeSection, setActiveSection] = useState<string | null>(null)
   const [actionFeedback, setActionFeedback] = useState<"template" | "clear" | null>(null)
+  const [copyToastVisible, setCopyToastVisible] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const previewScrollRef = useRef<HTMLDivElement>(null)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
   const scanTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null)
+  const copyToastTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null)
   const sections = useMemo(() => parseSections(input), [input])
   const sectionMap = useMemo(() => new Map(sections.map((section) => [section.name, section.content])), [sections])
   const missingSections = REQUIRED_SECTIONS.filter((name) => !sectionMap.get(name)?.trim())
@@ -464,6 +466,11 @@ export function CSPReviewTool() {
   const copyText = async (kind: "prompt", text: string) => {
     await navigator.clipboard.writeText(text)
     setCopied(kind)
+    setCopyToastVisible(true)
+    if (copyToastTimerRef.current) {
+      window.clearTimeout(copyToastTimerRef.current)
+    }
+    copyToastTimerRef.current = window.setTimeout(() => setCopyToastVisible(false), 1200)
     window.setTimeout(() => setCopied(null), 1800)
   }
 
@@ -671,17 +678,22 @@ export function CSPReviewTool() {
                 size="sm"
                 tone="danger"
               />
-              <ActionButton
-                icon={Clipboard}
-                active={copied === "prompt"}
-                iconEffect="copy"
-                label={copied === "prompt" ? "已复制" : "复制 AI 补全指令"}
-                onClick={() => copyText("prompt", AI_PROMPT)}
-                size="sm"
-                tone="cyan"
-                enableLayoutAnimation
-                className="col-span-2"
-              />
+              <div className="relative col-span-2">
+                <ActionButton
+                  icon={Clipboard}
+                  active={copied === "prompt"}
+                  iconEffect="copy"
+                  label={copied === "prompt" ? "已复制" : "复制 AI 补全指令"}
+                  onClick={() => copyText("prompt", AI_PROMPT)}
+                  size="sm"
+                  tone="cyan"
+                  enableLayoutAnimation
+                  className="w-full"
+                />
+                <AnimatePresence>
+                  {copyToastVisible ? <CopyPromptToast /> : null}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
 
@@ -865,7 +877,7 @@ export function CSPReviewTool() {
                 ))
               ) : (
                 <div className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 text-center">
-                  <FileText className="h-10 w-10 text-zinc-600" />
+                  <DocumentTraceIllustration />
                   <p className="mt-4 max-w-xs px-4 text-sm leading-relaxed text-zinc-500">
                     还没有识别到【章节】格式。请先点击左侧「使用模板」查看格式，或把 AI 生成的纯文本粘贴进输入工作台。
                   </p>
@@ -969,6 +981,65 @@ function ActionButton({
         ) : null}
       </AnimatePresence>
     </motion.button>
+  )
+}
+
+function CopyPromptToast() {
+  return (
+    <motion.div
+      className="pointer-events-none absolute left-1/2 top-full z-20 mt-3 h-[72px] w-[360px] max-w-[calc(100vw-3rem)] -translate-x-1/2"
+      initial={{ opacity: 0, y: 12, scale: 0.7, filter: "blur(10px)" }}
+      animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+      exit={{ opacity: 0, y: -8, scale: 0.82, filter: "blur(9px)" }}
+      transition={{
+        opacity: { type: "spring", stiffness: 420, damping: 22, mass: 0.6 },
+        y: { type: "spring", stiffness: 430, damping: 20, mass: 0.6 },
+        scale: { type: "spring", stiffness: 460, damping: 19, mass: 0.6 },
+        filter: { type: "spring", stiffness: 380, damping: 24, mass: 0.6 },
+      }}
+    >
+      <div className="absolute inset-x-8 bottom-1 h-8 rounded-full bg-black/35 blur-2xl" />
+      <svg className="absolute inset-0 h-full w-full overflow-visible" viewBox="0 0 360 72" fill="none" aria-hidden="true" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="copy-toast-glass" x1="52" y1="8" x2="309" y2="66" gradientUnits="userSpaceOnUse">
+            <stop stopColor="rgba(255,255,255,0.16)" />
+            <stop offset="0.42" stopColor="rgba(20,38,44,0.82)" />
+            <stop offset="1" stopColor="rgba(7,14,18,0.9)" />
+          </linearGradient>
+          <linearGradient id="copy-toast-edge" x1="54" y1="7" x2="315" y2="66" gradientUnits="userSpaceOnUse">
+            <stop stopColor="rgba(255,255,255,0.38)" />
+            <stop offset="0.4" stopColor="rgba(255,255,255,0.10)" />
+            <stop offset="1" stopColor="rgba(255,255,255,0.24)" />
+          </linearGradient>
+          <radialGradient id="copy-toast-glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(151 17) rotate(32) scale(156 64)">
+            <stop stopColor="rgba(255,255,255,0.18)" />
+            <stop offset="1" stopColor="rgba(255,255,255,0)" />
+          </radialGradient>
+        </defs>
+        <path
+          d="M30.5 26.4C35.3 14.2 50.4 10.2 66.5 13.5C77.9 4.9 101.1 5.2 114.8 15.2C132.1 6.9 158.8 8.2 174.6 19.1C193.4 7.2 221.1 9.4 234.4 20.9C249.3 11.1 275.3 13 286.7 25.5C308.1 21.2 330.2 29.1 332.6 43.8C335.4 60.4 315.7 67.8 295.7 62.8C280.8 72.4 257.4 70.3 243.2 62.7C223.5 69.3 198.6 68.6 181.4 60.3C163.2 70.1 134.6 68.6 118.4 59.1C99.9 66.9 76.9 65.5 62.4 57.1C44.9 62.1 26.8 57.4 24.2 44.2C22.8 37.2 24.8 30.9 30.5 26.4Z"
+          fill="url(#copy-toast-glass)"
+        />
+        <path
+          d="M30.5 26.4C35.3 14.2 50.4 10.2 66.5 13.5C77.9 4.9 101.1 5.2 114.8 15.2C132.1 6.9 158.8 8.2 174.6 19.1C193.4 7.2 221.1 9.4 234.4 20.9C249.3 11.1 275.3 13 286.7 25.5C308.1 21.2 330.2 29.1 332.6 43.8C335.4 60.4 315.7 67.8 295.7 62.8C280.8 72.4 257.4 70.3 243.2 62.7C223.5 69.3 198.6 68.6 181.4 60.3C163.2 70.1 134.6 68.6 118.4 59.1C99.9 66.9 76.9 65.5 62.4 57.1C44.9 62.1 26.8 57.4 24.2 44.2C22.8 37.2 24.8 30.9 30.5 26.4Z"
+          stroke="url(#copy-toast-edge)"
+          strokeWidth="1.15"
+        />
+        <path
+          d="M45 22.8C82.5 11.2 101.8 22.5 123 18.4C149.5 13.2 166 15.1 184 25.3"
+          stroke="rgba(255,255,255,0.28)"
+          strokeWidth="1"
+          strokeLinecap="round"
+        />
+        <path
+          d="M30.5 26.4C35.3 14.2 50.4 10.2 66.5 13.5C77.9 4.9 101.1 5.2 114.8 15.2C132.1 6.9 158.8 8.2 174.6 19.1C193.4 7.2 221.1 9.4 234.4 20.9C249.3 11.1 275.3 13 286.7 25.5C308.1 21.2 330.2 29.1 332.6 43.8C335.4 60.4 315.7 67.8 295.7 62.8C280.8 72.4 257.4 70.3 243.2 62.7C223.5 69.3 198.6 68.6 181.4 60.3C163.2 70.1 134.6 68.6 118.4 59.1C99.9 66.9 76.9 65.5 62.4 57.1C44.9 62.1 26.8 57.4 24.2 44.2C22.8 37.2 24.8 30.9 30.5 26.4Z"
+          fill="url(#copy-toast-glow)"
+        />
+      </svg>
+      <div className="relative flex h-full items-center justify-center px-7 text-center text-[11px] font-bold tracking-wide text-zinc-100/95 drop-shadow-[0_1px_8px_rgba(255,255,255,0.08)]">
+        已复制，去 AI 窗口粘贴模板和指令即可
+      </div>
+    </motion.div>
   )
 }
 
@@ -1335,6 +1406,102 @@ function ScanningGlyph() {
         transition={{ duration: 1.1, repeat: Infinity, ease: [0.32, 0.72, 0, 1] }}
       />
     </span>
+  )
+}
+
+function DocumentTraceIllustration() {
+  return (
+    <motion.svg
+      className="h-24 w-24 overflow-visible text-zinc-500"
+      viewBox="0 0 96 96"
+      fill="none"
+      aria-hidden="true"
+    >
+      <motion.g
+        animate={{ opacity: [0.34, 0.5, 0.34] }}
+        transition={{ duration: 4.6, repeat: Infinity, ease: [0.32, 0.72, 0, 1] }}
+      >
+        <motion.path
+          d="M30 14H57L69 26V74H30V14Z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeDasharray="4 7"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: [0, 1, 1, 0], opacity: [0, 0.62, 0.62, 0] }}
+          transition={{
+            duration: 4.6,
+            times: [0, 0.34, 0.76, 1],
+            repeat: Infinity,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+        />
+        <motion.path
+          d="M57 14V27H69"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeDasharray="4 7"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: [0, 1, 1, 0], opacity: [0, 0.48, 0.48, 0] }}
+          transition={{
+            duration: 4.6,
+            times: [0, 0.34, 0.76, 1],
+            delay: 0.14,
+            repeat: Infinity,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+        />
+      </motion.g>
+
+      {[36, 45, 54].map((y, index) => (
+        <motion.path
+          key={y}
+          d={`M38 ${y}H${index === 1 ? 61 : 55}`}
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{
+            pathLength: [0, 1, 1, 0],
+            opacity: [0, 0.66, 0.66, 0],
+          }}
+          transition={{
+            duration: 4.6,
+            times: [0, 0.28, 0.7, 1],
+            delay: 0.56 + index * 0.18,
+            repeat: Infinity,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+        />
+      ))}
+
+      <motion.g
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{
+          opacity: [0, 0, 0.52, 0.52, 0],
+          scale: [0.96, 0.96, 1, 1, 0.98],
+        }}
+        transition={{
+          duration: 4.6,
+          times: [0, 0.42, 0.58, 0.78, 1],
+          repeat: Infinity,
+          ease: [0.16, 1, 0.3, 1],
+        }}
+        style={{ originX: "50%", originY: "50%" }}
+      >
+        <rect x="38" y="63" width="20" height="14" rx="4" fill="currentColor" opacity="0.12" />
+        <path
+          d="M42 67.5L43.7 73L46 68.6L48.3 73L50 67.5"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </motion.g>
+    </motion.svg>
   )
 }
 
