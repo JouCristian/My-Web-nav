@@ -1343,6 +1343,7 @@ function getInputHealth(input: string, sectionMap: Map<string, string>, missingS
 }
 
 function InputHealthPanel({ health }: { health: InputHealth }) {
+  const isPerfect = health.status === "ready" && health.score >= 100
   const tone =
     health.status === "ready"
       ? "border-emerald-400/20 bg-emerald-500/[0.08] text-emerald-100"
@@ -1369,13 +1370,21 @@ function InputHealthPanel({ health }: { health: InputHealth }) {
         </div>
         <Counter value={health.score} fontSize={14} padding={2} gap={0} textColor="white" fontWeight={900} places={health.score >= 100 ? [100, 10, 1] : [10, 1]} />
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-black/30">
+      <div className="relative h-1.5 overflow-hidden rounded-full bg-black/30">
         <motion.div
-          className={`h-full rounded-full bg-gradient-to-r ${bar}`}
+          className={`relative h-full overflow-hidden rounded-full bg-gradient-to-r ${bar}`}
           initial={false}
           animate={{ width: `${health.score}%` }}
           transition={{ type: "spring", stiffness: 180, damping: 24, mass: 0.7 }}
-        />
+        >
+          {isPerfect ? (
+            <motion.span
+              className="absolute inset-y-[-2px] w-1/3 -translate-x-full skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/65 to-transparent blur-[1px]"
+              animate={{ x: ["-120%", "340%"] }}
+              transition={{ duration: 1.75, repeat: Infinity, ease: [0.22, 1, 0.36, 1], repeatDelay: 0.35 }}
+            />
+          ) : null}
+        </motion.div>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <span className="mr-1 text-[11px] font-semibold text-zinc-400">{health.message}</span>
@@ -1984,7 +1993,7 @@ function ValidationStatusCard({
         },
         opacity: { duration: visible ? 0.22 : 0.42, delay: visible ? 0.04 : 0, ease: [0.32, 0.72, 0, 1] },
       }}
-      className="overflow-hidden rounded-2xl border border-white/10 bg-black/30"
+      className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/30"
       style={{ pointerEvents: visible ? "auto" : "none" }}
     >
       <div className="flex h-full items-center p-4">
@@ -2197,8 +2206,9 @@ function ExportState({
                   kind: "idle" as const,
                   label: "等待粘贴内容",
                   text: "先复制 AI 补全指令并粘贴生成内容，系统会自动检查结构。",
-                  theme: EXPORT_STATE_THEMES.idle,
+                theme: EXPORT_STATE_THEMES.idle,
                 }
+  const hasReadyCurrent = state.kind === "ready" || state.kind === "success"
 
   return (
     <motion.div
@@ -2221,6 +2231,14 @@ function ExportState({
         transition={{ duration: 0.56, ease: [0.32, 0.72, 0, 1] }}
         style={{ background: `radial-gradient(circle at 18% 0%, ${state.theme.glow}, transparent 38%)` }}
       />
+      {hasReadyCurrent ? (
+        <motion.div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_48%,rgba(52,211,153,0.18),transparent_34%),linear-gradient(105deg,transparent_0%,rgba(20,184,166,0.05)_28%,rgba(110,231,183,0.16)_48%,rgba(34,211,238,0.06)_64%,transparent_100%)]"
+          animate={{ backgroundPosition: ["-90% 50%", "190% 50%"], opacity: [0.28, 0.68, 0.28] }}
+          transition={{ duration: 2.9, repeat: Infinity, ease: [0.22, 1, 0.36, 1], repeatDelay: 0.18 }}
+          style={{ backgroundSize: "230% 100%" }}
+        />
+      ) : null}
       <div className="relative flex items-center gap-4">
         <motion.div
           animate={{ backgroundColor: state.theme.iconBackground, color: state.theme.iconColor }}
