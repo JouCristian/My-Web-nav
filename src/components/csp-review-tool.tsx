@@ -1,8 +1,8 @@
 "use client"
 
 import type { ComponentType, CSSProperties } from "react"
-import { useEffect, useMemo, useRef, useState } from "react"
-import { AnimatePresence, motion, useSpring, useTransform, type MotionValue } from "framer-motion"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { AnimatePresence, motion, useMotionValue, useSpring, useTransform, type MotionValue } from "framer-motion"
 import {
   AlertCircle,
   BookOpenCheck,
@@ -24,6 +24,8 @@ import {
 import AnimatedContent from "@/components/animated-content"
 
 const DRAFT_STORAGE_KEY = "joujou-csp-review-draft-v1"
+const FALLBACK_EDITOR_LINE_HEIGHT = 22.75
+const FALLBACK_EDITOR_PADDING_TOP = 16
 
 const SECTION_ORDER = [
   "标题",
@@ -235,6 +237,14 @@ interface ParsedSection {
   contentStart: number
 }
 
+interface EditorLayout {
+  lineHeight: number
+  paddingTop: number
+  scrollHeight: number
+  caretTop: number
+  visualLineCount: number
+}
+
 interface FigureBlock {
   kind: string
   data: Record<string, string>
@@ -297,6 +307,92 @@ function getFigures(text: string): FigureBlock[] {
 function hasMarkdownTable(text: string) {
   const lines = text.split(/\r?\n/)
   return lines.some((line, index) => line.trim().startsWith("|") && lines[index + 1]?.match(/^\s*\|[\s:-]+\|/))
+}
+
+function getLineFromIndex(text: string, index: number) {
+  return text.slice(0, Math.max(0, index)).split(/\r?\n/).length
+}
+
+function measureTextareaLayout(textarea: HTMLTextAreaElement): EditorLayout {
+  const styles = window.getComputedStyle(textarea)
+  const parsedLineHeight = Number.parseFloat(styles.lineHeight)
+  const parsedPaddingTop = Number.parseFloat(styles.paddingTop)
+  const parsedPaddingBottom = Number.parseFloat(styles.paddingBottom)
+  const lineHeight = Number.isFinite(parsedLineHeight) ? parsedLineHeight : FALLBACK_EDITOR_LINE_HEIGHT
+  const paddingTop = Number.isFinite(parsedPaddingTop) ? parsedPaddingTop : FALLBACK_EDITOR_PADDING_TOP
+  const paddingBottom = Number.isFinite(parsedPaddingBottom) ? parsedPaddingBottom : 0
+  const value = textarea.value
+  const caretIndex = Math.max(0, Math.min(value.length, textarea.selectionStart ?? 0))
+  const mirror = document.createElement("div")
+  let caretMarker: HTMLSpanElement | null = null
+
+  mirror.setAttribute("aria-hidden", "true")
+  Object.assign(mirror.style, {
+    position: "absolute",
+    top: "0",
+    left: "-10000px",
+    visibility: "hidden",
+    pointerEvents: "none",
+    overflow: "hidden",
+    whiteSpace: "pre-wrap",
+    overflowWrap: "break-word",
+    wordBreak: styles.wordBreak as CSSProperties["wordBreak"],
+    boxSizing: "border-box",
+    width: `${textarea.clientWidth}px`,
+    minHeight: "0",
+    paddingTop: styles.paddingTop,
+    paddingRight: styles.paddingRight,
+    paddingBottom: styles.paddingBottom,
+    paddingLeft: styles.paddingLeft,
+    borderTopWidth: "0",
+    borderRightWidth: "0",
+    borderBottomWidth: "0",
+    borderLeftWidth: "0",
+    fontFamily: styles.fontFamily,
+    fontSize: styles.fontSize,
+    fontWeight: styles.fontWeight,
+    fontStyle: styles.fontStyle,
+    letterSpacing: styles.letterSpacing,
+    lineHeight: styles.lineHeight,
+    textTransform: styles.textTransform,
+    tabSize: styles.tabSize,
+  } satisfies CSSProperties)
+
+  const createMarker = () => {
+    const marker = document.createElement("span")
+    Object.assign(marker.style, {
+      display: "inline-block",
+      width: "0",
+      height: `${lineHeight}px`,
+      verticalAlign: "top",
+      overflow: "hidden",
+    } satisfies CSSProperties)
+    return marker
+  }
+
+  mirror.appendChild(document.createTextNode(value.slice(0, caretIndex)))
+  caretMarker = createMarker()
+  mirror.appendChild(caretMarker)
+  mirror.appendChild(document.createTextNode(value.slice(caretIndex)))
+
+  document.body.appendChild(mirror)
+  const mirrorRect = mirror.getBoundingClientRect()
+  const measuredCaretMarker = caretMarker as HTMLSpanElement | null
+  const rawCaretTop = measuredCaretMarker
+    ? measuredCaretMarker.getBoundingClientRect().top - mirrorRect.top
+    : paddingTop
+  mirror.remove()
+  const visualLineCount = Math.max(1, Math.round((textarea.scrollHeight - paddingTop - paddingBottom) / lineHeight))
+  const caretRow = Math.max(0, Math.round((rawCaretTop - paddingTop) / lineHeight))
+  const caretTop = paddingTop + Math.min(caretRow, visualLineCount - 1) * lineHeight
+
+  return {
+    lineHeight,
+    paddingTop,
+    scrollHeight: textarea.scrollHeight,
+    caretTop,
+    visualLineCount,
+  }
 }
 
 function downloadText(filename: string, content: string, type = "text/plain;charset=utf-8") {
@@ -427,13 +523,20 @@ export function CSPReviewTool() {
   const [promptPreviewOpen, setPromptPreviewOpen] = useState(false)
   const [restorableDraft, setRestorableDraft] = useState<string | null>(null)
   const [isScanning, setIsScanning] = useState(false)
-  const [lineNumberScrollTop, setLineNumberScrollTop] = useState(0)
+  const editorScrollY = useMotionValue(0)
+  const [editorLayout, setEditorLayout] = useState<EditorLayout>({
+    lineHeight: FALLBACK_EDITOR_LINE_HEIGHT,
+    paddingTop: FALLBACK_EDITOR_PADDING_TOP,
+    scrollHeight: FALLBACK_EDITOR_PADDING_TOP + FALLBACK_EDITOR_LINE_HEIGHT,
+    caretTop: FALLBACK_EDITOR_PADDING_TOP,
+    visualLineCount: 1,
+  })
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const previewScrollRef = useRef<HTMLDivElement>(null)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
-  const scanTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null)
-  const copyToastTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null)
-  const draftSaveTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null)
+  const scanTimerRef = useRef<number | null>(null)
+  const copyToastTimerRef = useRef<number | null>(null)
+  const draftSaveTimerRef = useRef<number | null>(null)
   const sections = useMemo(() => parseSections(input), [input])
   const sectionMap = useMemo(() => new Map(sections.map((section) => [section.name, section.content])), [sections])
   const missingSections = REQUIRED_SECTIONS.filter((name) => !sectionMap.get(name)?.trim())
@@ -451,15 +554,17 @@ export function CSPReviewTool() {
     figures: getFigures(input).length,
     tables: hasMarkdownTable(input) ? 1 : 0,
   }
-  const lineNumbers = useMemo(() => {
-    const lineCount = Math.max(1, input.split(/\r?\n/).length)
-    return Array.from({ length: lineCount }, (_, index) => index + 1)
-  }, [input])
   const health = useMemo(() => getInputHealth(input, sectionMap, missingSections, structureIssues), [input, sectionMap, missingSections, structureIssues])
 
   const title = sectionMap.get("标题") || "等待粘贴 AI 内容"
   const subtitle = sectionMap.get("副标题") || "先使用模板和 AI 补全指令生成规范内容，再粘贴到左侧工作台。"
   const canExport = input.trim().length > 0 && blockingIssues.length === 0 && !isScanning
+
+  const measureEditorLayout = useCallback((textarea = textareaRef.current) => {
+    if (!textarea) return
+    editorScrollY.set(textarea.scrollTop)
+    setEditorLayout(measureTextareaLayout(textarea))
+  }, [editorScrollY])
 
   useEffect(() => {
     const restoreTimer = window.setTimeout(() => {
@@ -499,6 +604,20 @@ export function CSPReviewTool() {
       }
     }
   }, [input])
+
+  useLayoutEffect(() => {
+    measureEditorLayout()
+  }, [input, measureEditorLayout])
+
+  useEffect(() => {
+    const textarea = textareaRef.current
+    if (!textarea || typeof ResizeObserver === "undefined") return
+
+    const observer = new ResizeObserver(() => measureEditorLayout(textarea))
+    observer.observe(textarea)
+
+    return () => observer.disconnect()
+  }, [measureEditorLayout])
 
   const updateInputContent = (nextInput: string) => {
     setInput(nextInput)
@@ -562,6 +681,7 @@ export function CSPReviewTool() {
     const lineHeight = 22
     const approximateScrollTop = Math.max(0, beforeSection.split(/\r?\n/).length * lineHeight - textarea.clientHeight * 0.22)
     textarea.scrollTo({ top: approximateScrollTop, behavior: "smooth" })
+    window.requestAnimationFrame(() => measureEditorLayout(textarea))
   }
 
   const selectPreviewSection = (section: ParsedSection) => {
@@ -784,30 +904,33 @@ export function CSPReviewTool() {
           <div className="min-h-[520px] w-full flex-1 overflow-hidden rounded-2xl border border-white/10 bg-black/45 transition focus-within:border-cyan-500/40 focus-within:ring-2 focus-within:ring-cyan-500/10 sm:min-h-[680px] xl:min-h-0">
             <div className="grid h-full min-h-[520px] grid-cols-[48px_minmax(0,1fr)] sm:min-h-[680px] xl:min-h-0">
               <div className="pointer-events-none relative overflow-hidden border-r border-white/10 bg-white/[0.025]">
-                <div
-                  className="absolute left-0 right-0 top-0 px-2 py-4 text-right font-mono text-sm leading-relaxed text-zinc-600"
-                  style={{ transform: `translateY(-${lineNumberScrollTop}px)` }}
-                >
-                  {lineNumbers.map((line) => (
-                    <div key={line} className="h-[1.625em] select-none tabular-nums">
-                      {line}
-                    </div>
-                  ))}
-                </div>
+                <EditorVisualLineNumbers layout={editorLayout} scrollY={editorScrollY} />
                 <div className="pointer-events-none absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-cyan-300/20 to-transparent" />
               </div>
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(event) => {
-                  updateInputContent(event.target.value)
-                  setActiveSection(null)
-                }}
-                onScroll={(event) => setLineNumberScrollTop(event.currentTarget.scrollTop)}
-                spellCheck={false}
-                className="tool-scrollbar h-full min-h-0 w-full resize-none border-0 bg-transparent p-4 font-mono text-sm leading-relaxed text-zinc-200 outline-none placeholder:whitespace-pre-line placeholder:text-zinc-500"
-                placeholder={INPUT_PLACEHOLDER}
-              />
+              <div className="relative min-w-0 overflow-hidden">
+                <EditorLineHighlight layout={editorLayout} scrollY={editorScrollY} />
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(event) => {
+                    const textarea = event.currentTarget
+                    updateInputContent(event.target.value)
+                    setActiveSection(null)
+                    window.requestAnimationFrame(() => measureEditorLayout(textarea))
+                  }}
+                  onScroll={(event) => {
+                    const nextScrollTop = event.currentTarget.scrollTop
+                    editorScrollY.set(nextScrollTop)
+                  }}
+                  onSelect={(event) => measureEditorLayout(event.currentTarget)}
+                  onKeyUp={(event) => measureEditorLayout(event.currentTarget)}
+                  onClick={(event) => measureEditorLayout(event.currentTarget)}
+                  onFocus={(event) => measureEditorLayout(event.currentTarget)}
+                  spellCheck={false}
+                  className="tool-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent p-4 font-mono text-sm leading-relaxed text-zinc-200 outline-none placeholder:whitespace-pre-line placeholder:text-zinc-500"
+                  placeholder={INPUT_PLACEHOLDER}
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -1099,6 +1222,7 @@ type StructureIssue = {
   severity: "error" | "warning"
   title: string
   detail: string
+  line?: number
 }
 
 function getStructureIssues(input: string, sectionMap: Map<string, string>, missingSections: string[]): StructureIssue[] {
@@ -1117,27 +1241,32 @@ function getStructureIssues(input: string, sectionMap: Map<string, string>, miss
       severity: "error",
       title: "标题为空",
       detail: "请补全【标题】章节，导出的 Word 会使用它作为文档主标题。",
+      line: 1,
     })
   }
 
   const codeFenceCount = input.match(/```/g)?.length ?? 0
   if (codeFenceCount % 2 !== 0) {
+    const lastFenceIndex = input.lastIndexOf("```")
     issues.push({
       id: "code-fence-open",
       severity: "error",
       title: "代码块没有闭合",
       detail: "检测到 ``` 数量为奇数，请补上缺失的结束代码围栏。",
+      line: getLineFromIndex(input, lastFenceIndex),
     })
   }
 
   const figureOpenCount = input.match(/\[\[图[:：\s]/g)?.length ?? 0
   const figureCloseCount = input.match(/\[\[\/图\]\]/g)?.length ?? 0
   if (figureOpenCount !== figureCloseCount) {
+    const firstFigureIndex = input.search(/\[\[图[:：\s]/)
     issues.push({
       id: "figure-block-open",
       severity: "error",
       title: "图块标签没有闭合",
       detail: `检测到 ${figureOpenCount} 个图块开始标签、${figureCloseCount} 个结束标签，请检查 [[图:...]] 与 [[/图]]。`,
+      line: firstFigureIndex >= 0 ? getLineFromIndex(input, firstFigureIndex) : 1,
     })
   }
 
@@ -1153,6 +1282,7 @@ function getStructureIssues(input: string, sectionMap: Map<string, string>, miss
       severity: "warning",
       title: "表格分隔行可能异常",
       detail: `第 ${brokenTableIndex + 2} 行附近像是 Markdown 表格，但分隔行格式不完整。`,
+      line: brokenTableIndex + 2,
     })
   }
 
@@ -1304,6 +1434,62 @@ function InputHealthPanel({ health }: { health: InputHealth }) {
         ) : null}
       </AnimatePresence>
     </motion.div>
+  )
+}
+
+function EditorVisualLineNumbers({ layout, scrollY }: { layout: EditorLayout; scrollY: MotionValue<number> }) {
+  const top = useTransform(scrollY, (latest) => -Math.round(latest))
+
+  return (
+    <motion.div className="absolute left-0 right-0 px-2 text-right font-mono text-sm text-zinc-600" style={{ top }}>
+      <div className="relative" style={{ height: layout.scrollHeight }}>
+        {Array.from({ length: layout.visualLineCount }, (_, index) => (
+          <div
+            key={index + 1}
+            className="absolute left-0 right-0 select-none tabular-nums"
+            style={{
+              top: layout.paddingTop + index * layout.lineHeight,
+              height: layout.lineHeight,
+              lineHeight: `${layout.lineHeight}px`,
+            }}
+          >
+            {index + 1}
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  )
+}
+
+function EditorLineHighlight({
+  layout,
+  scrollY,
+}: {
+  layout: EditorLayout
+  scrollY: MotionValue<number>
+}) {
+  const caretY = useSpring(layout.caretTop, {
+    stiffness: 440,
+    damping: 36,
+    mass: 0.68,
+    restDelta: 0.01,
+  })
+  const top = useTransform([caretY, scrollY], ([caret, scroll]) => Math.round(Number(caret) - Number(scroll)))
+  const opacity = useTransform(top, (latest) => (latest >= -layout.lineHeight && latest <= 1200 ? 1 : 0))
+
+  useEffect(() => {
+    caretY.set(layout.caretTop)
+  }, [caretY, layout.caretTop])
+
+  return (
+    <motion.div
+      className="pointer-events-none absolute left-2 right-3 z-0 rounded-lg border border-cyan-200/[0.06] bg-cyan-300/[0.055] shadow-[0_0_22px_rgba(34,211,238,0.035)]"
+      style={{
+        top,
+        height: layout.lineHeight,
+        opacity,
+      }}
+    />
   )
 }
 
