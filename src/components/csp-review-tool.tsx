@@ -1,6 +1,6 @@
 "use client"
 
-import type { ComponentType, CSSProperties } from "react"
+import type { ComponentType, CSSProperties, Dispatch, MouseEvent, ReactNode, SetStateAction } from "react"
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion, useMotionValue, useSpring, useTransform, type MotionValue } from "framer-motion"
 import {
@@ -11,12 +11,16 @@ import {
   Code2,
   Download,
   Eye,
+  FileCog,
   FileCode2,
   FileText,
   Gauge,
   Info,
   LayoutList,
   RefreshCw,
+  RotateCcw,
+  Save,
+  SlidersHorizontal,
   Trash2,
   X,
   Wand2,
@@ -24,8 +28,32 @@ import {
 import AnimatedContent from "@/components/animated-content"
 
 const DRAFT_STORAGE_KEY = "joujou-csp-review-draft-v1"
+const DOCUMENT_SETTINGS_STORAGE_KEY = "algorithm-review-document-settings"
 const FALLBACK_EDITOR_LINE_HEIGHT = 22.75
 const FALLBACK_EDITOR_PADDING_TOP = 16
+
+const DEFAULT_DOCUMENT_SETTINGS = {
+  documentType: "CSP",
+  customDocumentType: "",
+  outputFilename: "",
+  language: "C++",
+  customLanguage: "",
+  includeTypePrefix: true,
+  titleStyle: "simple",
+  customTitleTemplate: "{title}——完整题解复盘（{language}）",
+  headerEnabled: true,
+  headerStyle: "type-language",
+  customHeaderText: "{type} 题解复盘 · {language}",
+  footerEnabled: true,
+  footerStyle: "algorithm-review",
+  showPageNumber: true,
+  customFooterText: "Algorithm Review Generator · 第 {page} 页",
+}
+
+type DocumentSettings = typeof DEFAULT_DOCUMENT_SETTINGS
+
+const DOCUMENT_TYPE_OPTIONS = ["CSP", "蓝桥杯", "洛谷", "LeetCode", "ACM", "算法题", "自定义"]
+const LANGUAGE_OPTIONS = ["C++", "Python", "Java", "JavaScript", "Go", "Rust", "自定义"]
 
 const SECTION_ORDER = [
   "标题",
@@ -56,7 +84,7 @@ const SECTION_ORDER = [
 const REQUIRED_SECTIONS = ["标题", "题目背景", "完整题目要求", "输入格式", "输出格式", "AC代码", "复杂度分析", "总结"]
 
 const TEMPLATE_TEXT = `【标题】
-CSP真题：题名——完整题解复盘（C++）
+算法题：题名——完整题解复盘（C++）
 
 【副标题】
 关键词1；关键词2；关键词3；关键词4
@@ -202,12 +230,12 @@ int main() {
 | 总空间复杂度 | O(N) | 使用一维数组保存元素 |
 
 【题解关键词】
-CSP真题；模拟题；vector；一维数组；二维数组；下标映射；输出格式控制
+算法题；模拟题；vector；一维数组；二维数组；下标映射；输出格式控制
 
 【总结】
 这里写最终总结。建议 1～2 个自然段，重点写这题真正考察什么，以及以后遇到类似题怎么迁移。`
 
-const AI_PROMPT = `请严格按照我提供的 csp_input_template 模板生成可粘贴到网页工作台的复盘内容。
+const AI_PROMPT = `请严格按照我提供的 algorithm_review_input_template 模板生成可粘贴到网页工作台的算法题解复盘内容。
 
 要求：
 1. 只输出纯文本，不要整体包 Markdown 代码块。
@@ -220,13 +248,13 @@ const AI_PROMPT = `请严格按照我提供的 csp_input_template 模板生成�
 8. 普通公式、变量、关键词直接写在自然段里，不要单独代码块。
 9. 每个阶段控制在 1～2 个自然段，不要拆得太碎。
 10. 图块最多放 1～2 个，不要过多。
-11. 标题格式写成：题名——完整题解复盘（C++）。`
+11. 标题格式建议写成：算法题：题名——完整题解复盘（语言），也可以根据导出设置里的文档类型与语言调整。`
 
 const INPUT_PLACEHOLDER = `这里先不用手动写题解，建议按下面流程来：
 
 1. 点击右上角「使用模板」，先看清楚系统需要的章节格式。
 2. 点击「复制 AI 补全指令」，把指令发到你自己的 AI 对话窗口。
-3. 同时把下载的 csp_input_template_v13.txt、题目原文、你的思考过程、错误代码和 AC 代码一起发给 AI。
+3. 同时把下载的 algorithm_review_input_template_v13.txt、题目原文、你的思考过程、错误代码和 AC 代码一起发给 AI。
 4. 要求 AI 只输出纯文本，不要整体包 Markdown 代码块。
 5. 把 AI 生成的完整内容粘贴回这里，右侧会自动预览章节、代码块、图块和复杂度表格。
 6. 确认内容没问题后，点击「导出 Word 文档」生成可继续修改的复盘草稿。
@@ -416,6 +444,140 @@ function filenameFromDisposition(disposition: string | null, fallback: string) {
   return plain ? decodeURIComponent(plain) : fallback
 }
 
+function sanitizeDocumentFilename(value: string) {
+  return value.replace(/[\\/:*?"<>|]/g, "_").replace(/\s+/g, " ").trim()
+}
+
+function isDocumentTitleStyle(value: unknown): value is DocumentSettings["titleStyle"] {
+  return value === "simple" || value === "typed" || value === "custom"
+}
+
+function isHeaderStyle(value: unknown): value is DocumentSettings["headerStyle"] {
+  return value === "type-language" || value === "type-only" || value === "custom"
+}
+
+function isFooterStyle(value: unknown): value is DocumentSettings["footerStyle"] {
+  return value === "algorithm-review" || value === "chinese-generator" || value === "custom"
+}
+
+function normalizeDocumentSettings(value: unknown): DocumentSettings {
+  const source = typeof value === "object" && value !== null ? (value as Partial<DocumentSettings>) : {}
+  const documentType = DOCUMENT_TYPE_OPTIONS.includes(String(source.documentType)) ? String(source.documentType) : DEFAULT_DOCUMENT_SETTINGS.documentType
+  const language = LANGUAGE_OPTIONS.includes(String(source.language)) ? String(source.language) : DEFAULT_DOCUMENT_SETTINGS.language
+  const legacyTitleTemplate = typeof (source as { titleTemplate?: unknown }).titleTemplate === "string" ? (source as { titleTemplate: string }).titleTemplate : ""
+  const legacyHeaderText = typeof (source as { headerText?: unknown }).headerText === "string" ? (source as { headerText: string }).headerText : ""
+  const legacyFooterText = typeof (source as { footerText?: unknown }).footerText === "string" ? (source as { footerText: string }).footerText : ""
+
+  return {
+    documentType,
+    customDocumentType: typeof source.customDocumentType === "string" ? source.customDocumentType.trim() : "",
+    outputFilename: typeof source.outputFilename === "string" ? sanitizeDocumentFilename(source.outputFilename) : "",
+    language,
+    customLanguage: typeof source.customLanguage === "string" ? source.customLanguage.trim() : "",
+    includeTypePrefix: typeof source.includeTypePrefix === "boolean" ? source.includeTypePrefix : DEFAULT_DOCUMENT_SETTINGS.includeTypePrefix,
+    titleStyle: isDocumentTitleStyle(source.titleStyle) ? source.titleStyle : legacyTitleTemplate.includes("{type}") ? "typed" : DEFAULT_DOCUMENT_SETTINGS.titleStyle,
+    customTitleTemplate: typeof source.customTitleTemplate === "string" && source.customTitleTemplate.trim() ? source.customTitleTemplate : legacyTitleTemplate || DEFAULT_DOCUMENT_SETTINGS.customTitleTemplate,
+    headerEnabled: typeof source.headerEnabled === "boolean" ? source.headerEnabled : true,
+    headerStyle: isHeaderStyle(source.headerStyle) ? source.headerStyle : legacyHeaderText && !legacyHeaderText.includes("{language}") ? "type-only" : DEFAULT_DOCUMENT_SETTINGS.headerStyle,
+    customHeaderText: typeof source.customHeaderText === "string" ? source.customHeaderText : legacyHeaderText || DEFAULT_DOCUMENT_SETTINGS.customHeaderText,
+    footerEnabled: typeof source.footerEnabled === "boolean" ? source.footerEnabled : true,
+    footerStyle: isFooterStyle(source.footerStyle) ? source.footerStyle : legacyFooterText.includes("算法题解文档生成器") ? "chinese-generator" : DEFAULT_DOCUMENT_SETTINGS.footerStyle,
+    showPageNumber: typeof source.showPageNumber === "boolean" ? source.showPageNumber : true,
+    customFooterText: typeof source.customFooterText === "string" ? source.customFooterText : legacyFooterText || DEFAULT_DOCUMENT_SETTINGS.customFooterText,
+  }
+}
+
+function getEffectiveDocumentType(settings: DocumentSettings) {
+  return settings.documentType === "自定义" ? settings.customDocumentType.trim() || "算法题" : settings.documentType
+}
+
+function getEffectiveLanguage(settings: DocumentSettings) {
+  return settings.language === "自定义" ? settings.customLanguage.trim() || "C++" : settings.language
+}
+
+function getExportDocumentSettings(settings: DocumentSettings) {
+  const documentType = getEffectiveDocumentType(settings)
+  const language = getEffectiveLanguage(settings)
+  const titleTemplate =
+    settings.titleStyle === "typed"
+      ? "{type}：{title}——完整题解复盘（{language}）"
+      : settings.titleStyle === "custom" && settings.customTitleTemplate.trim()
+        ? settings.customTitleTemplate
+        : "{title}——完整题解复盘（{language}）"
+  const headerText = !settings.headerEnabled
+    ? ""
+    : settings.headerStyle === "type-only"
+      ? "{type} 题解复盘"
+      : settings.headerStyle === "custom"
+        ? settings.customHeaderText
+        : "{type} 题解复盘 · {language}"
+  const footerBase =
+    settings.footerStyle === "chinese-generator"
+      ? "算法题解文档生成器"
+      : settings.footerStyle === "custom"
+        ? settings.customFooterText.replace(/\s*·?\s*第\s*\{page\}\s*页/g, "").trim() || settings.customFooterText
+        : "Algorithm Review Generator"
+  const footerText = !settings.footerEnabled ? "" : settings.showPageNumber ? `${footerBase} · 第 {page} 页` : footerBase
+
+  return {
+    documentType,
+    outputFilename: sanitizeDocumentFilename(settings.outputFilename),
+    titleTemplate,
+    headerText,
+    footerText,
+    language,
+    includeTypePrefix: settings.includeTypePrefix,
+  }
+}
+
+function getFallbackDownloadFilename(settings: DocumentSettings, currentTitle: string) {
+  const cleanTitle = sanitizeDocumentFilename(currentTitle || "未命名题目") || "未命名题目"
+  const custom = sanitizeDocumentFilename(settings.outputFilename)
+  if (custom) return custom.toLowerCase().endsWith(".docx") ? custom : `${custom}.docx`
+  const prefix = settings.includeTypePrefix ? `${getEffectiveDocumentType(settings)}-` : ""
+  return `${prefix}${cleanTitle}-完整题解复盘.docx`
+}
+
+function getPreviewProblemTitle(currentTitle: string) {
+  const cleaned = currentTitle
+    .replace(/^(CSP真题|CSP|蓝桥杯|洛谷|LeetCode|ACM|算法题)\s*[：:]\s*/i, "")
+    .replace(/——完整题解复盘（[^）]+）/g, "")
+    .trim()
+  return cleaned && cleaned !== "等待粘贴 AI 内容" ? cleaned : "矩阵重塑"
+}
+
+function renderDocumentTemplatePreview(template: string, settings: DocumentSettings, problemTitle: string, page = "1") {
+  return template
+    .replaceAll("{title}", problemTitle)
+    .replaceAll("{type}", getEffectiveDocumentType(settings))
+    .replaceAll("{language}", getEffectiveLanguage(settings))
+    .replaceAll("{page}", page)
+}
+
+function getTitlePreview(settings: DocumentSettings, problemTitle: string) {
+  return renderDocumentTemplatePreview(getExportDocumentSettings(settings).titleTemplate, settings, problemTitle)
+}
+
+function getHeaderPreview(settings: DocumentSettings) {
+  if (!settings.headerEnabled) return "不显示页眉"
+  return renderDocumentTemplatePreview(getExportDocumentSettings(settings).headerText, settings, "矩阵重塑")
+}
+
+function getFooterPreview(settings: DocumentSettings) {
+  if (!settings.footerEnabled) return "不显示页脚"
+  return renderDocumentTemplatePreview(getExportDocumentSettings(settings).footerText, settings, "矩阵重塑")
+}
+
+function loadInitialDocumentSettings() {
+  if (typeof window === "undefined") return DEFAULT_DOCUMENT_SETTINGS
+  try {
+    const savedSettings = window.localStorage.getItem(DOCUMENT_SETTINGS_STORAGE_KEY)
+    return savedSettings ? normalizeDocumentSettings(JSON.parse(savedSettings)) : DEFAULT_DOCUMENT_SETTINGS
+  } catch {
+    return DEFAULT_DOCUMENT_SETTINGS
+  }
+}
+
 function SectionPreview({
   section,
   active = false,
@@ -523,7 +685,15 @@ export function CSPReviewTool() {
   const [activeSection, setActiveSection] = useState<string | null>(null)
   const [actionFeedback, setActionFeedback] = useState<"template" | "clear" | null>(null)
   const [copyToastVisible, setCopyToastVisible] = useState(false)
+  const [settingsToastVisible, setSettingsToastVisible] = useState(false)
   const [promptPreviewOpen, setPromptPreviewOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [isClosingSettingsModal, setIsClosingSettingsModal] = useState(false)
+  const [settingsSaveState, setSettingsSaveState] = useState<"idle" | "saved">("idle")
+  const [settingsOrigin, setSettingsOrigin] = useState<{ x: number; y: number } | null>(null)
+  const [previewTitleFontSize, setPreviewTitleFontSize] = useState(48)
+  const [documentSettings, setDocumentSettings] = useState<DocumentSettings>(() => loadInitialDocumentSettings())
+  const [settingsDraft, setSettingsDraft] = useState<DocumentSettings>(() => loadInitialDocumentSettings())
   const [restorableDraft, setRestorableDraft] = useState<string | null>(null)
   const [isScanning, setIsScanning] = useState(false)
   const editorScrollY = useMotionValue(0)
@@ -536,9 +706,13 @@ export function CSPReviewTool() {
   })
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const previewScrollRef = useRef<HTMLDivElement>(null)
+  const previewTitleMeasureRef = useRef<HTMLDivElement>(null)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
   const scanTimerRef = useRef<number | null>(null)
   const copyToastTimerRef = useRef<number | null>(null)
+  const settingsToastTimerRef = useRef<number | null>(null)
+  const settingsSaveTimerRef = useRef<number | null>(null)
+  const settingsCloseTimerRef = useRef<number | null>(null)
   const draftSaveTimerRef = useRef<number | null>(null)
   const sections = useMemo(() => parseSections(input), [input])
   const sectionMap = useMemo(() => new Map(sections.map((section) => [section.name, section.content])), [sections])
@@ -559,9 +733,42 @@ export function CSPReviewTool() {
   }
   const health = useMemo(() => getInputHealth(input, sectionMap, missingSections, structureIssues), [input, sectionMap, missingSections, structureIssues])
 
-  const title = sectionMap.get("标题") || "等待粘贴 AI 内容"
+  const rawTitle = sectionMap.get("标题") || ""
+  const problemTitle = getPreviewProblemTitle(rawTitle)
+  const title = rawTitle ? getTitlePreview(documentSettings, problemTitle) : "等待粘贴 AI 内容"
   const subtitle = sectionMap.get("副标题") || "先使用模板和 AI 补全指令生成规范内容，再粘贴到左侧工作台。"
   const canExport = input.trim().length > 0 && blockingIssues.length === 0 && !isScanning
+  const hasUnsavedSettings = settingsOpen && JSON.stringify(normalizeDocumentSettings(settingsDraft)) !== JSON.stringify(normalizeDocumentSettings(documentSettings))
+
+  useLayoutEffect(() => {
+    const element = previewTitleMeasureRef.current
+    if (!element) return
+
+    const calculateTitleSize = () => {
+      const availableWidth = element.clientWidth
+      if (!availableWidth) return
+
+      const titleUnits = Array.from(title).reduce((sum, character) => {
+        if (/[\w\s+()[\]{}.,:;'"-]/.test(character)) return sum + 0.56
+        return sum + 1
+      }, 0)
+      const maxSize = window.innerWidth < 640 ? 34 : 48
+      const minSize = window.innerWidth < 640 ? 22 : 28
+      const nextSize = Math.max(minSize, Math.min(maxSize, availableWidth / Math.max(titleUnits, 1) * 0.92))
+
+      setPreviewTitleFontSize((current) => (Math.abs(current - nextSize) < 0.5 ? current : nextSize))
+    }
+
+    calculateTitleSize()
+    const resizeObserver = typeof ResizeObserver !== "undefined" ? new ResizeObserver(calculateTitleSize) : null
+    resizeObserver?.observe(element)
+    window.addEventListener("resize", calculateTitleSize)
+
+    return () => {
+      resizeObserver?.disconnect()
+      window.removeEventListener("resize", calculateTitleSize)
+    }
+  }, [title])
 
   const measureEditorLayout = useCallback((textarea = textareaRef.current) => {
     if (!textarea) return
@@ -653,6 +860,85 @@ export function CSPReviewTool() {
     window.setTimeout(() => setCopied(null), 1800)
   }
 
+  const openDocumentSettings = (event?: MouseEvent<HTMLButtonElement>) => {
+    if (settingsCloseTimerRef.current) {
+      window.clearTimeout(settingsCloseTimerRef.current)
+      settingsCloseTimerRef.current = null
+    }
+    if (event?.currentTarget) {
+      const rect = event.currentTarget.getBoundingClientRect()
+      setSettingsOrigin({
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      })
+    } else {
+      setSettingsOrigin(null)
+    }
+    setSettingsDraft(documentSettings)
+    setSettingsSaveState("idle")
+    setIsClosingSettingsModal(false)
+    setSettingsOpen(true)
+  }
+
+  const showSavedSettingsToast = useCallback(() => {
+    setSettingsToastVisible(true)
+    if (settingsToastTimerRef.current) window.clearTimeout(settingsToastTimerRef.current)
+    settingsToastTimerRef.current = window.setTimeout(() => setSettingsToastVisible(false), 1400)
+  }, [])
+
+  const closeSettingsModal = useCallback((options?: { keepDraft?: boolean; showSavedToast?: boolean }) => {
+    if (isClosingSettingsModal) return
+
+    setIsClosingSettingsModal(true)
+    if (settingsCloseTimerRef.current) {
+      window.clearTimeout(settingsCloseTimerRef.current)
+    }
+
+    settingsCloseTimerRef.current = window.setTimeout(() => {
+      setSettingsOpen(false)
+      setIsClosingSettingsModal(false)
+      setSettingsSaveState("idle")
+      if (!options?.keepDraft) {
+        setSettingsDraft(documentSettings)
+      }
+      if (options?.showSavedToast) {
+        showSavedSettingsToast()
+      }
+      settingsCloseTimerRef.current = null
+    }, 680)
+  }, [documentSettings, isClosingSettingsModal, showSavedSettingsToast])
+
+  const resetDocumentSettings = () => {
+    setSettingsDraft(DEFAULT_DOCUMENT_SETTINGS)
+    setSettingsSaveState("idle")
+  }
+
+  const saveDocumentSettings = () => {
+    const normalized = normalizeDocumentSettings(settingsDraft)
+    setSettingsDraft(normalized)
+    setDocumentSettings(normalized)
+    try {
+      window.localStorage.setItem(DOCUMENT_SETTINGS_STORAGE_KEY, JSON.stringify(normalized))
+    } catch {
+      // The export still uses in-memory settings if localStorage is unavailable.
+    }
+
+    setSettingsSaveState("saved")
+    if (settingsSaveTimerRef.current) window.clearTimeout(settingsSaveTimerRef.current)
+    settingsSaveTimerRef.current = window.setTimeout(() => {
+      closeSettingsModal({ keepDraft: true, showSavedToast: true })
+    }, 160)
+  }
+
+  useEffect(() => {
+    if (!settingsOpen) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeSettingsModal()
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [settingsOpen, closeSettingsModal])
+
   const showActionFeedback = (kind: "template" | "clear") => {
     setActionFeedback(kind)
     window.setTimeout(() => {
@@ -708,7 +994,11 @@ export function CSPReviewTool() {
       const request = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input, format: "docx" }),
+        body: JSON.stringify({
+          input,
+          format: "docx",
+          documentSettings: getExportDocumentSettings(documentSettings),
+        }),
       }
       const endpoints = [
         "/api/joujou-csp-export",
@@ -743,7 +1033,7 @@ export function CSPReviewTool() {
       const blob = await response.blob()
       const filename = filenameFromDisposition(
         response.headers.get("Content-Disposition"),
-        `${title.replace(/[\\/:*?"<>|]/g, "_")}.docx`,
+        getFallbackDownloadFilename(documentSettings, problemTitle),
       )
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
@@ -948,13 +1238,30 @@ export function CSPReviewTool() {
               transition={{ duration: 0.42, ease: [0.32, 0.72, 0, 1] }}
             >
               <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                <div className="min-w-0">
+                <div ref={previewTitleMeasureRef} className="min-w-0 flex-1">
                   <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-500/25 bg-cyan-500/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-cyan-300">
                     <Eye className="h-3.5 w-3.5" />
                     Live Preview
                   </div>
-                  <h1 className="break-words text-2xl font-black leading-tight text-white sm:text-4xl">{title}</h1>
+                  <div className="flex h-[3.1rem] max-w-full items-center overflow-hidden sm:h-[3.75rem]">
+                    <h1
+                      className="max-w-full whitespace-nowrap font-black leading-none text-white"
+                      style={{ fontSize: `${previewTitleFontSize}px`, letterSpacing: 0 }}
+                    >
+                      {title}
+                    </h1>
+                  </div>
                   <p className="mt-3 break-words text-sm leading-relaxed text-zinc-500">{subtitle}</p>
+                </div>
+                <div className="relative shrink-0 self-start">
+                  <DocumentSettingsButton
+                    active={settingsOpen}
+                    hasUnsavedChanges={hasUnsavedSettings}
+                    onClick={openDocumentSettings}
+                  />
+                  <AnimatePresence>
+                    {settingsToastVisible ? <LiquidMiniToast text="文档设置已保存" /> : null}
+                  </AnimatePresence>
                 </div>
               </div>
 
@@ -1057,7 +1364,7 @@ export function CSPReviewTool() {
                 <ActionButton
                   icon={FileCode2}
                   label="下载模板"
-                  onClick={() => downloadText("csp_input_template_v13.txt", TEMPLATE_TEXT)}
+                  onClick={() => downloadText("algorithm_review_input_template_v13.txt", TEMPLATE_TEXT)}
                   tone="emerald"
                   className="h-full w-full"
                 />
@@ -1116,7 +1423,907 @@ export function CSPReviewTool() {
         </section>
         </AnimatedContent>
       </div>
+
+      <AnimatePresence>
+        {settingsOpen ? (
+          <DocumentSettingsModal
+            draft={settingsDraft}
+            hasUnsavedChanges={hasUnsavedSettings}
+            saveState={settingsSaveState}
+            isClosing={isClosingSettingsModal}
+            onChange={setSettingsDraft}
+            onReset={resetDocumentSettings}
+            onCancel={() => closeSettingsModal()}
+            onSave={saveDocumentSettings}
+            origin={settingsOrigin}
+            problemTitle={problemTitle}
+          />
+        ) : null}
+      </AnimatePresence>
     </div>
+  )
+}
+
+function DocumentSettingsButton({
+  active,
+  hasUnsavedChanges,
+  onClick,
+}: {
+  active: boolean
+  hasUnsavedChanges: boolean
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void
+}) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileHover={{ y: -2, scale: 1.025 }}
+      whileTap={{ scale: 0.97 }}
+      transition={{ type: "spring", stiffness: 420, damping: 24, mass: 0.7 }}
+      className={`group/settings relative inline-flex min-h-10 items-center justify-center gap-2 overflow-hidden rounded-xl border px-3 py-2 text-xs font-black tracking-wide backdrop-blur-xl ${
+        active ? "border-cyan-300/45 bg-cyan-400/[0.16] text-cyan-50" : "border-cyan-400/25 bg-cyan-400/10 text-cyan-100"
+      }`}
+    >
+      <span className="pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-[140%] skew-x-[-18deg] bg-gradient-to-r from-transparent via-cyan-100/16 to-transparent transition-transform duration-700 ease-out group-hover/settings:translate-x-[260%]" />
+      <motion.span
+        className="relative flex h-5 w-5 items-center justify-center"
+        animate={active ? { rotate: 8 } : { rotate: 0 }}
+        whileHover={{ rotate: 12 }}
+        transition={{ type: "spring", stiffness: 420, damping: 24, mass: 0.7 }}
+      >
+        <FileCog className="h-4 w-4" />
+      </motion.span>
+      <span className="relative whitespace-nowrap">导出设置</span>
+      {hasUnsavedChanges ? (
+        <motion.span
+          className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-cyan-200 shadow-[0_0_14px_rgba(103,232,249,0.9)]"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          exit={{ scale: 0 }}
+          transition={{ type: "spring", stiffness: 520, damping: 22, mass: 0.55 }}
+        />
+      ) : null}
+    </motion.button>
+  )
+}
+
+function DocumentSettingsModal({
+  draft,
+  hasUnsavedChanges,
+  saveState,
+  isClosing,
+  onChange,
+  onReset,
+  onCancel,
+  onSave,
+  origin,
+  problemTitle,
+}: {
+  draft: DocumentSettings
+  hasUnsavedChanges: boolean
+  saveState: "idle" | "saved"
+  isClosing: boolean
+  onChange: Dispatch<SetStateAction<DocumentSettings>>
+  onReset: () => void
+  onCancel: () => void
+  onSave: () => void
+  origin: { x: number; y: number } | null
+  problemTitle: string
+}) {
+  const update = <K extends keyof DocumentSettings>(key: K, value: DocumentSettings[K]) => {
+    onChange((current) => normalizeDocumentSettings({ ...current, [key]: value }))
+  }
+  const filenamePreview = getFallbackDownloadFilename(draft, problemTitle)
+  const titlePreview = getTitlePreview(draft, problemTitle)
+  const headerPreview = getHeaderPreview(draft)
+  const footerPreview = getFooterPreview(draft)
+  const viewportWidth = typeof window === "undefined" ? 1440 : window.innerWidth
+  const viewportHeight = typeof window === "undefined" ? 900 : window.innerHeight
+  const modalWidth = Math.min(640, Math.max(288, viewportWidth - 32))
+  const modalHeight = Math.min(760, Math.max(360, viewportHeight - 32))
+  const modalLeft = (viewportWidth - modalWidth) / 2
+  const modalTop = (viewportHeight - modalHeight) / 2
+  const modalRight = modalLeft + modalWidth
+  const modalBottom = modalTop + modalHeight
+  const modalRadius = Math.min(30, modalWidth / 8, modalHeight / 8)
+  const meteorEntry = { x: modalLeft + modalWidth * 0.5, y: modalTop }
+  const beamStart = meteorEntry
+  const panelNudge = {
+    x: origin ? (origin.x - viewportWidth / 2) * 0.1 : 0,
+    y: origin ? (origin.y - viewportHeight / 2) * 0.1 : -10,
+  }
+  const meteorPath = [
+    `M ${beamStart.x} ${beamStart.y}`,
+    `H ${modalRight - modalRadius}`,
+    `Q ${modalRight} ${modalTop} ${modalRight} ${modalTop + modalRadius}`,
+    `V ${modalBottom - modalRadius}`,
+    `Q ${modalRight} ${modalBottom} ${modalRight - modalRadius} ${modalBottom}`,
+    `H ${modalLeft + modalRadius}`,
+    `Q ${modalLeft} ${modalBottom} ${modalLeft} ${modalBottom - modalRadius}`,
+    `V ${modalTop + modalRadius}`,
+    `Q ${modalLeft} ${modalTop} ${modalLeft + modalRadius} ${modalTop}`,
+    `H ${meteorEntry.x}`,
+  ].join(" ")
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+    >
+      <motion.button
+        type="button"
+        aria-label="关闭文档设置"
+        className="absolute inset-0 cursor-default bg-black/42"
+        disabled={isClosing}
+        onClick={onCancel}
+        initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+        animate={isClosing ? { opacity: 0, backdropFilter: "blur(0px)" } : { opacity: 1, backdropFilter: "blur(22px)" }}
+        exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+        transition={{
+          opacity: { duration: isClosing ? 0.42 : 1.08, ease: [0.32, 0.72, 0, 1] },
+          backdropFilter: { duration: isClosing ? 0.52 : 1.08, ease: [0.32, 0.72, 0, 1] },
+        }}
+      />
+
+      <svg className="pointer-events-none absolute inset-0 z-40 h-full w-full" viewBox={`0 0 ${viewportWidth} ${viewportHeight}`} aria-hidden="true">
+        <defs>
+          <filter id="document-settings-beam-glow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="2.4" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <motion.path
+          d={meteorPath}
+          fill="none"
+          stroke="rgba(103,232,249,0.075)"
+          strokeWidth="10"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          filter="url(#document-settings-beam-glow)"
+          initial={{ pathLength: 0, opacity: 0.32 }}
+          animate={{ pathLength: 1, opacity: 0 }}
+          exit={{ pathLength: 0, opacity: 0 }}
+          transition={{
+            pathLength: { duration: 1.08, ease: [0.32, 0.72, 0, 1] },
+            opacity: { delay: 1.08, duration: 0.84, ease: [0.16, 1, 0.3, 1] },
+          }}
+        />
+        <motion.path
+          d={meteorPath}
+          fill="none"
+          stroke="rgba(125,249,255,0.68)"
+          strokeWidth="3.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          filter="url(#document-settings-beam-glow)"
+          initial={{ pathLength: 0, opacity: 0.76 }}
+          animate={{ pathLength: 1, opacity: 0 }}
+          exit={{ pathLength: 0, opacity: 0 }}
+          transition={{
+            pathLength: { duration: 1.08, ease: [0.32, 0.72, 0, 1] },
+            opacity: { delay: 1.08, duration: 0.84, ease: [0.16, 1, 0.3, 1] },
+          }}
+        />
+        <motion.path
+          d={meteorPath}
+          fill="none"
+          stroke="rgba(240,253,250,0.34)"
+          strokeWidth="1.1"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          filter="url(#document-settings-beam-glow)"
+          initial={{ pathLength: 0, opacity: 0.46 }}
+          animate={{ pathLength: 1, opacity: 0 }}
+          exit={{ pathLength: 0, opacity: 0 }}
+          transition={{
+            pathLength: { duration: 1.08, ease: [0.32, 0.72, 0, 1] },
+            opacity: { delay: 1.08, duration: 0.84, ease: [0.16, 1, 0.3, 1] },
+          }}
+        />
+      </svg>
+
+      {isClosing ? (
+        <div className="pointer-events-none absolute left-1/2 top-1/2 z-[60] h-[min(760px,calc(100dvh-32px))] w-[min(640px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2">
+          <ParticleDissolve />
+        </div>
+      ) : null}
+
+      <motion.div
+        className="relative flex h-[min(760px,calc(100dvh-32px))] w-[min(640px,calc(100vw-32px))] origin-center flex-col overflow-visible rounded-[30px] border border-cyan-200/14 bg-[rgba(5,7,13,0.86)] p-5 shadow-[0_28px_120px_rgba(0,0,0,0.56),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl sm:p-6"
+        style={{ pointerEvents: isClosing ? "none" : "auto" }}
+        initial={{ opacity: 0, x: panelNudge.x, y: panelNudge.y, scale: 0.82, filter: "blur(16px)" }}
+        animate={isClosing ? { opacity: 0, x: 0, y: -10, scale: 0.94, filter: "blur(18px)" } : { opacity: 1, x: 0, y: 0, scale: 1, filter: "blur(0px)" }}
+        exit={{
+          opacity: 0,
+          x: panelNudge.x * 0.7,
+          y: panelNudge.y * 0.7,
+          scale: 0.88,
+          filter: "blur(14px)",
+          transition: {
+            opacity: { duration: 0.22, ease: [0.32, 0.72, 0, 1] },
+            x: { type: "spring", stiffness: 420, damping: 26, mass: 0.7 },
+            y: { type: "spring", stiffness: 420, damping: 26, mass: 0.7 },
+            scale: { type: "spring", stiffness: 420, damping: 26, mass: 0.7 },
+            filter: { duration: 0.24, ease: [0.32, 0.72, 0, 1] },
+          },
+        }}
+        transition={{
+          x: { type: "spring", stiffness: 420, damping: 24, mass: 0.7 },
+          y: { type: "spring", stiffness: isClosing ? 420 : 420, damping: isClosing ? 30 : 24, mass: 0.72 },
+          scale: { type: "spring", stiffness: isClosing ? 430 : 420, damping: isClosing ? 28 : 24, mass: 0.72 },
+          opacity: { duration: isClosing ? 0.34 : 0.34, delay: isClosing ? 0 : 0.24, ease: [0.32, 0.72, 0, 1] },
+          filter: { duration: isClosing ? 0.42 : 0.3, ease: [0.32, 0.72, 0, 1] },
+        }}
+      >
+        <motion.div
+          className="pointer-events-none absolute inset-0 rounded-[30px] border border-cyan-200/40"
+          initial={false}
+          animate={isClosing ? { opacity: [0.7, 1, 0], boxShadow: ["0 0 0 rgba(34,211,238,0)", "0 0 34px rgba(34,211,238,0.22)", "0 0 70px rgba(34,211,238,0)"] } : { opacity: 0, boxShadow: "0 0 0 rgba(34,211,238,0)" }}
+          transition={{ duration: 0.58, ease: [0.32, 0.72, 0, 1] }}
+        />
+        <motion.div
+          className="relative flex min-h-0 flex-1 flex-col"
+          initial={{ opacity: 0, y: 14, scale: 0.98, filter: "blur(10px)" }}
+          animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+          exit={{
+            opacity: 0,
+            y: -8,
+            scale: 0.98,
+            filter: "blur(8px)",
+            transition: {
+              opacity: { duration: 0.16, ease: [0.32, 0.72, 0, 1] },
+              y: { type: "spring", stiffness: 420, damping: 28, mass: 0.7 },
+              scale: { type: "spring", stiffness: 420, damping: 28, mass: 0.7 },
+              filter: { duration: 0.18, ease: [0.32, 0.72, 0, 1] },
+            },
+          }}
+          transition={{
+            opacity: { duration: 0.36, delay: 1.16, ease: [0.32, 0.72, 0, 1] },
+            y: { type: "spring", stiffness: 330, damping: 25, mass: 0.72, delay: 1.1 },
+            scale: { type: "spring", stiffness: 330, damping: 25, mass: 0.72, delay: 1.1 },
+            filter: { duration: 0.4, delay: 1.12, ease: [0.32, 0.72, 0, 1] },
+          }}
+        >
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div>
+              <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.28em] text-cyan-300">
+                <SlidersHorizontal className="h-4 w-4" />
+                Algorithm Review
+              </div>
+              <h2 className="text-2xl font-black text-white">文档个性化设置</h2>
+              <p className="mt-2 text-xs leading-relaxed text-zinc-400">自定义导出 Word 的文件名、标题、页眉页脚和代码语言。</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasUnsavedChanges ? (
+                <motion.span
+                  className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(103,232,249,0.9)]"
+                  animate={isClosing ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                />
+              ) : null}
+              <motion.button
+                type="button"
+                onClick={onCancel}
+                whileTap={{ scale: 0.92 }}
+                animate={isClosing ? { scale: 0.92 } : { scale: 1 }}
+                transition={{ type: "spring", stiffness: 520, damping: 26, mass: 0.6 }}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-400 transition hover:border-white/20 hover:text-white"
+                aria-label="关闭设置"
+              >
+                <motion.span animate={isClosing ? { rotate: 90 } : { rotate: 0 }} transition={{ type: "spring", stiffness: 520, damping: 26, mass: 0.6 }}>
+                  <X className="h-4 w-4" />
+                </motion.span>
+              </motion.button>
+            </div>
+          </div>
+
+          <div className="tool-scrollbar -mx-2 min-h-0 flex-1 overflow-y-auto px-2 py-2">
+            <div className="flex flex-col">
+              <SettingsGroup eyebrow="基础信息">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <PillField
+                    label="题解类型"
+                    description="用于标题、页眉和文件名前缀。"
+                    options={DOCUMENT_TYPE_OPTIONS}
+                    value={draft.documentType}
+                    onChange={(value) => update("documentType", value)}
+                  />
+                  <PillField
+                    label="代码语言"
+                    description="用于代码块标签和标题语言。"
+                    options={LANGUAGE_OPTIONS}
+                    value={draft.language}
+                    onChange={(value) => update("language", value)}
+                  />
+                </div>
+
+                <SettingsCollapsibleField visible={draft.documentType === "自定义"}>
+                  <SettingsTextField label="自定义题解类型" value={draft.customDocumentType} onChange={(value) => update("customDocumentType", value)} placeholder="例如：校赛 / 训练营" />
+                </SettingsCollapsibleField>
+                <SettingsCollapsibleField visible={draft.language === "自定义"}>
+                  <SettingsTextField label="自定义代码语言" value={draft.customLanguage} onChange={(value) => update("customLanguage", value)} placeholder="例如：Kotlin / TypeScript" />
+                </SettingsCollapsibleField>
+              </SettingsGroup>
+
+              <SettingsGroup eyebrow="Word 文件名">
+                <SettingsTextField
+                  label="自定义文件名"
+                  description="不填写时自动生成；填写时会过滤 Windows 非法字符，并自动补 .docx。"
+                  value={draft.outputFilename}
+                  onChange={(value) => update("outputFilename", value)}
+                  placeholder="自动生成"
+                />
+                <div className="rounded-2xl border border-cyan-300/20 bg-cyan-400/[0.06] px-4 py-3">
+                  <div className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-300/80">最终文件名预览</div>
+                  <div className="mt-2 break-all font-mono text-sm font-bold text-cyan-50">{filenamePreview}</div>
+                </div>
+                <SettingsToggle
+                  label="保留题型前缀"
+                  description={`开启后文件名形如：${getEffectiveDocumentType(draft)}-${problemTitle}-完整题解复盘.docx`}
+                  checked={draft.includeTypePrefix}
+                  onChange={() => update("includeTypePrefix", !draft.includeTypePrefix)}
+                />
+              </SettingsGroup>
+
+              <SettingsGroup eyebrow="文档标题样式">
+                <SettingsRadioField
+                  value={draft.titleStyle}
+                  onChange={(value) => update("titleStyle", value)}
+                  options={[
+                    { value: "simple", label: "简洁标题", preview: `${problemTitle}——完整题解复盘（${getEffectiveLanguage(draft)}）` },
+                    { value: "typed", label: "带题解类型", preview: `${getEffectiveDocumentType(draft)}：${problemTitle}——完整题解复盘（${getEffectiveLanguage(draft)}）` },
+                    { value: "custom", label: "自定义标题", preview: titlePreview },
+                  ]}
+                />
+                <SettingsCollapsibleField visible={draft.titleStyle === "custom"}>
+                  <SettingsTemplateField
+                    label="自定义标题"
+                    value={draft.customTitleTemplate}
+                    onChange={(value) => update("customTitleTemplate", value)}
+                    preview={titlePreview}
+                    chips={[
+                      { label: "题名", value: "{title}" },
+                      { label: "题解类型", value: "{type}" },
+                      { label: "代码语言", value: "{language}" },
+                    ]}
+                  />
+                </SettingsCollapsibleField>
+              </SettingsGroup>
+
+              <SettingsGroup eyebrow="页眉设置">
+                <SettingsToggle
+                  label="页眉"
+                  description={headerPreview}
+                  checked={draft.headerEnabled}
+                  onChange={() => update("headerEnabled", !draft.headerEnabled)}
+                />
+                <SettingsCollapsibleField visible={draft.headerEnabled} allowOverflow>
+                  <SettingsRadioField
+                    value={draft.headerStyle}
+                    onChange={(value) => update("headerStyle", value)}
+                    options={[
+                      { value: "type-language", label: "题解类型 + 代码语言", preview: `${getEffectiveDocumentType(draft)} 题解复盘 · ${getEffectiveLanguage(draft)}` },
+                      { value: "type-only", label: "仅题解类型", preview: `${getEffectiveDocumentType(draft)} 题解复盘` },
+                      { value: "custom", label: "自定义页眉", preview: headerPreview },
+                    ]}
+                  />
+                  <SettingsCollapsibleField visible={draft.headerStyle === "custom"}>
+                    <SettingsTemplateField
+                      label="自定义页眉"
+                      value={draft.customHeaderText}
+                      onChange={(value) => update("customHeaderText", value)}
+                      preview={headerPreview}
+                      chips={[
+                        { label: "题解类型", value: "{type}" },
+                        { label: "代码语言", value: "{language}" },
+                      ]}
+                    />
+                  </SettingsCollapsibleField>
+                </SettingsCollapsibleField>
+              </SettingsGroup>
+
+              <SettingsGroup eyebrow="页脚设置">
+                <SettingsToggle
+                  label="页脚"
+                  description={footerPreview}
+                  checked={draft.footerEnabled}
+                  onChange={() => update("footerEnabled", !draft.footerEnabled)}
+                />
+                <SettingsCollapsibleField visible={draft.footerEnabled} allowOverflow>
+                  <SettingsToggle
+                    label="显示页码"
+                    description="开启后会在页脚对应位置插入 Word 页码字段。"
+                    checked={draft.showPageNumber}
+                    onChange={() => update("showPageNumber", !draft.showPageNumber)}
+                  />
+                  <SettingsRadioField
+                    value={draft.footerStyle}
+                    onChange={(value) => update("footerStyle", value)}
+                    options={[
+                      { value: "algorithm-review", label: "Algorithm Review", preview: draft.showPageNumber ? "Algorithm Review Generator · 第 1 页" : "Algorithm Review Generator" },
+                      { value: "chinese-generator", label: "中文工具名", preview: draft.showPageNumber ? "算法题解文档生成器 · 第 1 页" : "算法题解文档生成器" },
+                      { value: "custom", label: "自定义页脚", preview: footerPreview },
+                    ]}
+                  />
+                  <SettingsCollapsibleField visible={draft.footerStyle === "custom"}>
+                    <SettingsTemplateField
+                      label="自定义页脚"
+                      value={draft.customFooterText}
+                      onChange={(value) => update("customFooterText", value)}
+                      preview={footerPreview}
+                      chips={[{ label: "页码", value: "{page}" }]}
+                    />
+                  </SettingsCollapsibleField>
+                </SettingsCollapsibleField>
+              </SettingsGroup>
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+            <SettingsFooterButton icon={RotateCcw} label="恢复默认" onClick={onReset} tone="neutral" />
+            <SettingsFooterButton icon={X} label="取消" onClick={onCancel} tone="neutral" />
+            <SettingsFooterButton icon={Save} label={saveState === "saved" ? "已保存" : "保存设置"} onClick={onSave} tone="cyan" />
+          </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+function PillField({
+  label,
+  description,
+  options,
+  value,
+  onChange,
+}: {
+  label: string
+  description: string
+  options: string[]
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
+      <div className="mb-1 text-sm font-black text-white">{label}</div>
+      <p className="mb-3 text-xs leading-relaxed text-zinc-500">{description}</p>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => {
+          const active = value === option
+          return (
+            <button
+              type="button"
+              key={option}
+              onClick={() => onChange(option)}
+              className={`rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
+                active ? "border-cyan-300/45 bg-cyan-400/15 text-cyan-50" : "border-white/10 bg-black/20 text-zinc-400 hover:border-cyan-400/25 hover:text-cyan-100"
+              }`}
+            >
+              {option}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function SettingsGroup({ eyebrow, children }: { eyebrow: string; children: ReactNode }) {
+  return (
+    <section className="mb-4 rounded-[1.4rem] border border-white/10 bg-white/[0.025] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <div className="mb-3 font-mono text-[10px] font-black uppercase tracking-[0.22em] text-cyan-300">{eyebrow}</div>
+      <div className="grid gap-3">{children}</div>
+    </section>
+  )
+}
+
+function SettingsRadioField<T extends string>({
+  value,
+  onChange,
+  options,
+}: {
+  value: T
+  onChange: (value: T) => void
+  options: Array<{ value: T; label: string; preview?: string }>
+}) {
+  return (
+    <div className="-mx-2 grid gap-4 overflow-visible px-2 py-3">
+      {options.map((option) => {
+        const active = value === option.value
+        return (
+          <motion.button
+            type="button"
+            key={option.value}
+            onClick={() => onChange(option.value)}
+            whileHover={{ y: -1.5, scale: 1.006 }}
+            whileTap={{ scale: 0.985 }}
+            transition={{ type: "spring", stiffness: 420, damping: 26, mass: 0.68 }}
+            className={`group/radio relative z-0 flex min-h-[4.65rem] min-w-0 items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-colors duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:z-10 ${
+              active ? "border-cyan-300/45 bg-cyan-400/[0.10] text-cyan-50" : "border-white/10 bg-black/20 text-zinc-300 hover:border-cyan-300/24 hover:bg-white/[0.04]"
+            }`}
+          >
+            <span className={`relative mt-0 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${active ? "border-cyan-200 bg-cyan-300/18" : "border-white/18 bg-black/20"}`}>
+              <motion.span
+                className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-100"
+                initial={false}
+                animate={{ scale: active ? 1 : 0, opacity: active ? 1 : 0 }}
+                transition={{ type: "spring", stiffness: 520, damping: 24, mass: 0.55 }}
+              />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-black">{option.label}</span>
+              {option.preview ? <span className="mt-1 block truncate text-xs leading-relaxed text-zinc-500 group-hover/radio:text-zinc-400">{option.preview}</span> : null}
+            </span>
+          </motion.button>
+        )
+      })}
+    </div>
+  )
+}
+
+function SettingsToggle({
+  label,
+  description,
+  checked,
+  onChange,
+}: {
+  label: string
+  description: string
+  checked: boolean
+  onChange: () => void
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <span className="min-w-0">
+        <span className="block text-sm font-black text-white">{label}</span>
+        <span className="mt-1 block break-words text-xs leading-relaxed text-zinc-500">{description}</span>
+      </span>
+      <motion.button
+        type="button"
+        aria-pressed={checked}
+        onClick={onChange}
+        whileHover={{ scale: 1.035 }}
+        whileTap={{ scale: 0.95 }}
+        transition={{ type: "spring", stiffness: 470, damping: 22, mass: 0.62 }}
+        className={`group/toggle relative h-9 w-[4.25rem] shrink-0 overflow-hidden rounded-full border p-1 backdrop-blur-2xl transition-colors duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          checked
+            ? "border-cyan-200/45 bg-cyan-300/18 shadow-[0_0_26px_rgba(34,211,238,0.14),inset_0_1px_0_rgba(255,255,255,0.12)]"
+            : "border-white/12 bg-white/[0.045] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+        }`}
+      >
+        <motion.span
+          className="absolute inset-0 rounded-full"
+          animate={{
+            background: checked
+              ? "radial-gradient(circle at 28% 35%, rgba(236,254,255,0.24), transparent 28%), linear-gradient(135deg, rgba(34,211,238,0.30), rgba(45,212,191,0.16))"
+              : "radial-gradient(circle at 70% 40%, rgba(255,255,255,0.10), transparent 30%), linear-gradient(135deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015))",
+          }}
+          transition={{ type: "spring", stiffness: 360, damping: 30, mass: 0.7 }}
+        />
+        <span className="pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-[150%] skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/16 to-transparent transition-transform duration-700 ease-out group-hover/toggle:translate-x-[260%]" />
+        <motion.span
+          className="absolute left-1 top-1 h-7 w-7 rounded-full bg-[rgba(245,250,255,0.94)] shadow-[0_8px_22px_rgba(0,0,0,0.32),0_0_18px_rgba(236,254,255,0.20),inset_0_1px_0_rgba(255,255,255,0.95)]"
+          animate={{ x: checked ? 32 : 0 }}
+          transition={{ type: "spring", stiffness: 520, damping: 25, mass: 0.58 }}
+        />
+        <motion.span
+          className="absolute left-[0.92rem] top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-cyan-100"
+          animate={{ opacity: checked ? 0.9 : 0.22, scale: checked ? 1 : 0.72 }}
+          transition={{ type: "spring", stiffness: 420, damping: 26, mass: 0.6 }}
+        />
+        <motion.span
+          className="absolute right-[0.92rem] top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-white/55"
+          animate={{ opacity: checked ? 0.22 : 0.52, scale: checked ? 0.72 : 1 }}
+          transition={{ type: "spring", stiffness: 420, damping: 26, mass: 0.6 }}
+        />
+      </motion.button>
+    </div>
+  )
+}
+
+function ParticleDissolve() {
+  const particles = useMemo(() => {
+    const colors = [
+      "rgba(34, 211, 238, 0.85)",
+      "rgba(255, 255, 255, 0.72)",
+      "rgba(125, 249, 255, 0.5)",
+    ]
+    const edgeCounts = [
+      { edge: "top", count: 13 },
+      { edge: "right", count: 13 },
+      { edge: "bottom", count: 8 },
+      { edge: "left", count: 6 },
+      { edge: "corner", count: 6 },
+    ]
+    let index = 0
+    const pseudoRandom = (seed: number) => {
+      const value = Math.sin(seed * 12.9898) * 43758.5453
+      return value - Math.floor(value)
+    }
+
+    return edgeCounts.flatMap(({ edge, count }) =>
+      Array.from({ length: count }, () => {
+        index += 1
+        const a = pseudoRandom(index)
+        const b = pseudoRandom(index + 21)
+        const c = pseudoRandom(index + 43)
+        const size = 1.5 + pseudoRandom(index + 7) * 2.5
+        const isLine = pseudoRandom(index + 15) > 0.84
+        const top =
+          edge === "top"
+            ? -1 + b * 3
+            : edge === "bottom"
+              ? 98 + b * 3
+              : edge === "corner"
+                ? -1 + b * 11
+                : 8 + a * 84
+        const left =
+          edge === "left"
+            ? -1 + b * 3
+            : edge === "right"
+              ? 98 + b * 3
+              : edge === "corner"
+                ? 86 + a * 13
+                : 8 + a * 84
+        const edgeDirectionX = edge === "left" ? -1 : edge === "right" || edge === "corner" ? 1 : a > 0.5 ? 1 : -1
+        const edgeDirectionY = edge === "top" || edge === "corner" ? -1 : edge === "bottom" ? 1 : b > 0.5 ? 1 : -1
+
+        return {
+          id: index,
+          top,
+          left,
+          dx: edgeDirectionX * (8 + c * 22),
+          dy: edgeDirectionY * (8 + pseudoRandom(index + 5) * 18) - 8,
+          size,
+          width: isLine ? size * (2.2 + pseudoRandom(index + 2)) : size,
+          height: isLine ? Math.max(1, size * 0.45) : size,
+          radius: isLine ? 999 : "50%",
+          rotate: -30 + pseudoRandom(index + 9) * 70,
+          color: colors[index % colors.length],
+          delay: pseudoRandom(index + 11) * 0.08,
+          duration: 0.48 + pseudoRandom(index + 13) * 0.2,
+        }
+      }),
+    )
+  }, [])
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-30 overflow-visible rounded-[30px]" aria-hidden="true">
+      {particles.map((particle) => (
+        <motion.span
+          key={particle.id}
+          className="absolute shadow-[0_0_14px_rgba(34,211,238,0.35)]"
+          style={{
+            top: `${particle.top}%`,
+            left: `${particle.left}%`,
+            width: particle.width,
+            height: particle.height,
+            borderRadius: particle.radius,
+            background: particle.color,
+            rotate: `${particle.rotate}deg`,
+          }}
+          initial={{ opacity: 0, scale: 0.6, x: 0, y: 0, filter: "blur(0px)" }}
+          animate={{
+            opacity: [0, 1, 0],
+            scale: [0.6, 1, 0.25],
+            x: particle.dx,
+            y: particle.dy,
+            filter: ["blur(0px)", "blur(0.5px)", "blur(3px)"],
+          }}
+          transition={{
+            duration: particle.duration,
+            delay: particle.delay,
+            ease: [0.32, 0.72, 0, 1],
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+function SettingsTemplateField({
+  label,
+  value,
+  onChange,
+  preview,
+  chips,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  preview: string
+  chips: Array<{ label: string; value: string }>
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
+      <div className="mb-2 text-sm font-black text-white">{label}</div>
+      <div className="mb-3 flex flex-wrap gap-2">
+        {chips.map((chip) => (
+          <button
+            type="button"
+            key={chip.value}
+            onClick={() => onChange(`${value}${chip.value}`)}
+            className="rounded-full border border-cyan-300/20 bg-cyan-400/[0.08] px-3 py-1 text-[11px] font-bold text-cyan-100 transition hover:border-cyan-200/40 hover:bg-cyan-400/[0.14]"
+          >
+            插入{chip.label}
+          </button>
+        ))}
+      </div>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-2xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-600 focus:border-cyan-300/45 focus:ring-2 focus:ring-cyan-300/10"
+      />
+      <div className="mt-3 rounded-2xl border border-cyan-300/16 bg-cyan-400/[0.05] px-3 py-2">
+        <span className="font-mono text-[10px] font-black uppercase tracking-[0.18em] text-cyan-300/70">预览</span>
+        <span className="mt-1 block break-words text-xs font-bold leading-relaxed text-cyan-50">{preview}</span>
+      </div>
+    </div>
+  )
+}
+
+function SettingsCollapsibleField({
+  children,
+  visible,
+  allowOverflow = false,
+}: {
+  children: ReactNode
+  visible: boolean
+  allowOverflow?: boolean
+}) {
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [height, setHeight] = useState(0)
+  const updateHeight = useCallback(() => {
+    const nextHeight = contentRef.current?.scrollHeight ?? 0
+    setHeight((current) => (Math.abs(current - nextHeight) < 0.5 ? current : nextHeight))
+  }, [])
+
+  useLayoutEffect(() => {
+    updateHeight()
+  }, [children, updateHeight, visible])
+
+  useEffect(() => {
+    const element = contentRef.current
+    if (!element || typeof ResizeObserver === "undefined") return
+
+    const observer = new ResizeObserver(updateHeight)
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [updateHeight])
+
+  return (
+    <motion.div
+      className={visible && allowOverflow ? "overflow-visible" : "overflow-hidden"}
+      style={{ pointerEvents: visible ? "auto" : "none" }}
+      initial={false}
+      animate={{ height: visible ? height : 0, marginBottom: visible ? 12 : 0 }}
+      transition={{
+        height: { type: "spring", stiffness: 280, damping: 32, mass: 0.86 },
+        marginBottom: { type: "spring", stiffness: 280, damping: 32, mass: 0.86 },
+      }}
+    >
+      <motion.div
+        ref={contentRef}
+        aria-hidden={!visible}
+        className={visible ? "py-2" : "pointer-events-none py-2"}
+        initial={false}
+        animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : -8, filter: visible ? "blur(0px)" : "blur(8px)" }}
+        transition={{
+          opacity: { duration: visible ? 0.28 : 0.18, ease: [0.32, 0.72, 0, 1] },
+          y: { type: "spring", stiffness: 360, damping: 30, mass: 0.72 },
+          filter: { duration: 0.22, ease: [0.32, 0.72, 0, 1] },
+        }}
+      >
+        {children}
+      </motion.div>
+    </motion.div>
+  )
+}
+
+function SettingsTextField({
+  label,
+  description,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string
+  description?: string
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+}) {
+  return (
+    <label className="block rounded-2xl border border-white/10 bg-white/[0.035] p-3">
+      <span className="text-sm font-black text-white">{label}</span>
+      {description ? <span className="mt-1 block text-xs leading-relaxed text-zinc-500">{description}</span> : null}
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="mt-3 w-full rounded-2xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-600 focus:border-cyan-300/45 focus:ring-2 focus:ring-cyan-300/10"
+      />
+    </label>
+  )
+}
+
+function SettingsFooterButton({
+  icon: Icon,
+  label,
+  onClick,
+  tone,
+}: {
+  icon: ComponentType<{ className?: string }>
+  label: string
+  onClick: () => void
+  tone: "neutral" | "cyan"
+}) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileHover="hover"
+      initial="rest"
+      animate="rest"
+      variants={{
+        rest: { y: 0, scale: 1 },
+        hover: { y: -2, scale: 1.025 },
+      }}
+      whileTap={{ scale: 0.97 }}
+      transition={{ type: "spring", stiffness: 420, damping: 24, mass: 0.7 }}
+      className={`group/settings-footer relative inline-flex min-h-10 items-center justify-center gap-2 overflow-hidden rounded-xl border px-4 py-2 text-xs font-black backdrop-blur-xl ${
+        tone === "cyan"
+          ? "border-cyan-300/35 bg-cyan-400/15 text-cyan-50 shadow-[0_0_24px_rgba(34,211,238,0.10)]"
+          : "border-white/10 bg-white/[0.04] text-zinc-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-white/20 hover:text-white"
+      }`}
+    >
+      <span className="pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-[150%] skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/14 to-transparent transition-transform duration-700 ease-out group-hover/settings-footer:translate-x-[260%]" />
+      <motion.span
+        className="relative flex h-4 w-4 items-center justify-center"
+        variants={{
+          rest: { y: 0, scale: 1, rotate: 0 },
+          hover: { y: -1, scale: 1.08, rotate: tone === "cyan" ? 3 : -3 },
+        }}
+        transition={{ type: "spring", stiffness: 460, damping: 23, mass: 0.62 }}
+      >
+        <Icon className="h-4 w-4" />
+      </motion.span>
+      <motion.span
+        className="relative"
+        variants={{
+          rest: { y: 0 },
+          hover: { y: -0.5 },
+        }}
+        transition={{ type: "spring", stiffness: 460, damping: 24, mass: 0.62 }}
+      >
+        {label}
+      </motion.span>
+    </motion.button>
+  )
+}
+
+function LiquidMiniToast({ text }: { text: string }) {
+  return (
+    <motion.div
+      className="pointer-events-none absolute right-0 top-full z-30 mt-3 whitespace-nowrap rounded-[1.4rem] border border-white/10 bg-[#071015]/72 px-4 py-2 text-xs font-black text-cyan-50 shadow-[0_18px_54px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl"
+      initial={{ opacity: 0, y: -4, scale: 0.72, filter: "blur(10px)" }}
+      animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+      exit={{ opacity: 0, y: -8, scale: 0.82, filter: "blur(9px)" }}
+      transition={{
+        opacity: { type: "spring", stiffness: 420, damping: 22, mass: 0.6 },
+        y: { type: "spring", stiffness: 430, damping: 20, mass: 0.6 },
+        scale: { type: "spring", stiffness: 460, damping: 19, mass: 0.6 },
+        filter: { type: "spring", stiffness: 380, damping: 24, mass: 0.6 },
+      }}
+    >
+      {text}
+    </motion.div>
   )
 }
 

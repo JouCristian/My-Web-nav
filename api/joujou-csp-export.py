@@ -9,6 +9,7 @@ import tempfile
 import traceback
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
+from typing import Optional
 from urllib.parse import quote
 
 
@@ -28,7 +29,7 @@ def _json(handler: BaseHTTPRequestHandler, status: int, payload: dict):
 def _load_generator():
     spec = importlib.util.spec_from_file_location("csp_word_generator_v13", GENERATOR_PATH)
     if spec is None or spec.loader is None:
-        raise RuntimeError("无法加载 CSP 文档生成脚本。")
+        raise RuntimeError("无法加载算法题解文档生成脚本。")
 
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -40,7 +41,7 @@ def _find_generated_file(work_dir: Path, suffix: str):
     return files[0] if files else None
 
 
-def _build_document(input_text: str):
+def _build_document(input_text: str, settings: Optional[dict] = None):
     with tempfile.TemporaryDirectory(prefix="joujou-csp-") as temp_dir:
         work_dir = Path(temp_dir)
         input_path = work_dir / "input.txt"
@@ -50,7 +51,7 @@ def _build_document(input_text: str):
         stdout = io.StringIO()
 
         with contextlib.redirect_stdout(stdout):
-            generator.build(input_path)
+            generator.build(input_path, settings)
 
         file_path = _find_generated_file(work_dir, "docx")
         if file_path is None:
@@ -69,6 +70,7 @@ class handler(BaseHTTPRequestHandler):
 
             input_text = str(body.get("input") or "").strip()
             export_format = str(body.get("format") or "docx")
+            document_settings = body.get("documentSettings") if isinstance(body.get("documentSettings"), dict) else {}
 
             if not input_text:
                 _json(self, 400, {"error": "请输入需要生成文档的内容。"})
@@ -78,7 +80,7 @@ class handler(BaseHTTPRequestHandler):
                 _json(self, 410, {"error": "网页端已停止生成 PDF，请先导出 Word，再在 Word/WPS 中使用 PDF 工具箱导出 PDF。"})
                 return
 
-            filename, file_bytes = _build_document(input_text)
+            filename, file_bytes = _build_document(input_text, document_settings)
             content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
             self.send_response(200)
@@ -89,6 +91,7 @@ class handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(file_bytes)
         except Exception as error:
+            message = str(error)
             _json(
                 self,
                 500,

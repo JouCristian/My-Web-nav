@@ -15,12 +15,12 @@ export interface JouJouTool {
 export const joujouTools: JouJouTool[] = [
   {
     slug: "csp-review-doc-generator",
-    title: "CSP 题解文档可视化生成器",
-    subtitle: "从刷题对话到复盘文档的可视化工作台",
+    title: "算法题解文档可视化生成器",
+    subtitle: "从算法题对话到题解复盘文档的可视化工作台",
     description:
-      "用输入模板和 AI 补全指令整理题目、思路、错误分析和 AC 代码，再在网页工作台里预览并导出 Word/PDF 复盘文档。",
+      "用输入模板和 AI 补全指令整理题目、思路、错误分析和 AC 代码，再在网页工作台里预览并导出 Word 题解复盘文档。",
     status: "beta",
-    tags: ["CSP", "题解复盘", "文档生成", "C++"],
+    tags: ["算法题", "题解复盘", "文档生成", "多语言"],
     href: "/joujou-tools/csp-review-doc-generator",
     accent: "cyan",
   },

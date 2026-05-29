@@ -17,12 +17,12 @@ function safeDownloadName(filename: string) {
   return encodeURIComponent(filename).replace(/[()]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`)
 }
 
-async function runGenerator(inputPath: string, cwd: string) {
+async function runGenerator(inputPath: string, cwd: string, settingsPath: string) {
   let lastError: unknown
 
   for (const command of pythonCandidates) {
     try {
-      return await execFileAsync(command, [generatorPath, inputPath], {
+      return await execFileAsync(command, [generatorPath, inputPath, settingsPath], {
         cwd,
         timeout: 120_000,
         windowsHide: true,
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
   const workDir = path.join(tmpdir(), `joujou-csp-${randomUUID()}`)
 
   try {
-    const body = (await request.json()) as { input?: string; format?: string }
+    const body = (await request.json()) as { input?: string; format?: string; documentSettings?: unknown }
     const input = body.input?.trim()
 
     if (!input) {
@@ -67,9 +67,11 @@ export async function POST(request: NextRequest) {
 
     await mkdir(workDir, { recursive: true })
     const inputPath = path.join(workDir, "input.txt")
+    const settingsPath = path.join(workDir, "document-settings.json")
     await writeFile(inputPath, input, "utf8")
+    await writeFile(settingsPath, JSON.stringify(body.documentSettings ?? {}), "utf8")
 
-    const result = await runGenerator(inputPath, workDir)
+    const result = await runGenerator(inputPath, workDir, settingsPath)
     const filePath = await findGeneratedFile(workDir)
 
     if (!filePath) {

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import re
 import sys
+import json
 import shutil
 import subprocess
 from pathlib import Path
@@ -39,6 +40,17 @@ COLOR_GRAY = "F3F4F6"
 COLOR_GREEN_LIGHT = "EAF4EA"
 COLOR_YELLOW_LIGHT = "FFF7D6"
 COLOR_RED_LIGHT = "FDECEC"
+
+
+DEFAULT_SETTINGS = {
+    "documentType": "CSP",
+    "outputFilename": "",
+    "titleTemplate": "{title}——完整题解复盘（{language}）",
+    "headerText": "{type} 题解复盘 · {language}",
+    "footerText": "Algorithm Review Generator · 第 {page} 页",
+    "language": "C++",
+    "includeTypePrefix": True,
+}
 
 
 CPP_KEYWORDS = {
@@ -72,11 +84,63 @@ def parse_sections(text: str) -> Dict[str, str]:
 
 def sanitize_filename(s: str) -> str:
     s = re.sub(r"[\\/:*?\"<>|]", "_", s)
-    s = s.replace("CSP真题：", "")
-    s = s.replace("——完整题解复盘（C++）", "")
-    s = s.replace("完整题解复盘（C++）", "")
     s = re.sub(r"\s+", "", s)
     return s.strip("_-— ") or "未命名题目"
+
+
+def normalize_settings(settings: Optional[dict] = None) -> dict:
+    merged = dict(DEFAULT_SETTINGS)
+    if isinstance(settings, dict):
+        for key in DEFAULT_SETTINGS:
+            value = settings.get(key)
+            if isinstance(DEFAULT_SETTINGS[key], bool):
+                if isinstance(value, bool):
+                    merged[key] = value
+            elif isinstance(value, str):
+                merged[key] = value.strip()
+
+    if not merged["documentType"]:
+        merged["documentType"] = DEFAULT_SETTINGS["documentType"]
+    if not merged["language"]:
+        merged["language"] = DEFAULT_SETTINGS["language"]
+    if not merged["titleTemplate"]:
+        merged["titleTemplate"] = DEFAULT_SETTINGS["titleTemplate"]
+    return merged
+
+
+def clean_problem_title(raw_title: str, settings: dict) -> str:
+    title = (raw_title or "未命名题目").strip()
+    known_types = ["CSP真题", "CSP", "蓝桥杯", "洛谷", "LeetCode", "ACM", "算法题", settings.get("documentType", "")]
+    known_types = [item for item in known_types if item]
+    prefix_pattern = "|".join(re.escape(item) for item in sorted(set(known_types), key=len, reverse=True))
+    if prefix_pattern:
+        title = re.sub(rf"^\s*(?:{prefix_pattern})\s*[：:]\s*", "", title, flags=re.I)
+
+    title = re.sub(r"——?\s*完整题解复盘\s*[（(][^）)]*[）)]\s*$", "", title)
+    title = re.sub(r"\s*完整题解复盘\s*[（(][^）)]*[）)]\s*$", "", title)
+    title = re.sub(r"\s+", " ", title).strip(" _-—")
+    return title or "未命名题目"
+
+
+def render_template(template: str, title: str, settings: dict) -> str:
+    return (template or "").replace("{title}", title).replace("{type}", settings["documentType"]).replace("{language}", settings["language"])
+
+
+def ensure_docx_suffix(filename: str) -> str:
+    name = sanitize_filename(filename)
+    if not name.lower().endswith(".docx"):
+        name += ".docx"
+    return name
+
+
+def get_output_filename(raw_title: str, settings: dict) -> str:
+    custom = settings.get("outputFilename", "").strip()
+    if custom:
+        return ensure_docx_suffix(custom)
+
+    pure_title = clean_problem_title(raw_title, settings)
+    prefix = f"{settings['documentType']}-" if settings.get("includeTypePrefix", True) else ""
+    return ensure_docx_suffix(f"{prefix}{pure_title}-完整题解复盘")
 
 
 def cn_num(n: int) -> str:
@@ -157,25 +221,35 @@ def add_page_number(paragraph):
     run._r.append(fld_char2)
 
 
-def add_header_footer(doc, title: str):
+def add_footer_with_page(paragraph, footer_text: str):
+    parts = footer_text.split("{page}")
+    for index, part in enumerate(parts):
+        if part:
+            run = paragraph.add_run(part)
+            set_font(run, FONT_CN, 9, False, "9CA3AF")
+        if index < len(parts) - 1:
+            add_page_number(paragraph)
+
+
+def add_header_footer(doc, title: str, settings: dict):
     section = doc.sections[0]
     header_p = section.header.paragraphs[0]
     header_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     set_spacing(header_p, after=0)
-    hr = header_p.add_run("CSP 真题复盘 · C++")
+    pure_title = clean_problem_title(title, settings)
+    header_text = render_template(settings.get("headerText", ""), pure_title, settings)
+    hr = header_p.add_run(header_text)
     set_font(hr, FONT_CN, 9, False, "6B7280")
 
     footer_p = section.footer.paragraphs[0]
     footer_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     set_spacing(footer_p, after=0)
-    r1 = footer_p.add_run("CSP Review Generator · 第 ")
-    set_font(r1, FONT_CN, 9, False, "9CA3AF")
-    add_page_number(footer_p)
-    r2 = footer_p.add_run(" 页")
-    set_font(r2, FONT_CN, 9, False, "9CA3AF")
+    footer_text = render_template(settings.get("footerText", ""), pure_title, settings)
+    add_footer_with_page(footer_p, footer_text)
 
 
-def add_cover_page(doc, title: str, subtitle: str):
+def add_cover_page(doc, title: str, subtitle: str, settings: Optional[dict] = None):
+    settings = normalize_settings(settings)
     # 轻量封面：标题、关键词标签、生成日期、语言信息
     spacer = doc.add_paragraph()
     set_spacing(spacer, before=30, after=12)
@@ -205,7 +279,7 @@ def add_cover_page(doc, title: str, subtitle: str):
     info = doc.add_paragraph()
     info.alignment = WD_ALIGN_PARAGRAPH.CENTER
     set_spacing(info, before=18, after=4)
-    r2 = info.add_run("C++ · Word / PDF · 自动题解复盘")
+    r2 = info.add_run(f"{settings['language']} · Word · 自动题解复盘")
     set_font(r2, FONT_CN, 10.5, False, "4B5563")
 
     date_p = doc.add_paragraph()
@@ -362,7 +436,7 @@ def compact_text(text: str) -> str:
     return "\n".join(final).strip()
 
 
-def add_code_block(doc, code: str, label: str = "C++"):
+def add_code_block(doc, code: str, label: str = "代码"):
     table = doc.add_table(rows=2, cols=1)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
@@ -653,7 +727,7 @@ def add_keywords(doc, text):
     doc.add_paragraph()
 
 
-def add_rich_text(doc, text, code_label: str = 'C++'):
+def add_rich_text(doc, text, code_label: str = "代码"):
     text = compact_text(text)
     lines = text.splitlines()
     i = 0
@@ -747,7 +821,8 @@ def convert_to_pdf(docx_path: Path):
         print("未找到 Microsoft Word/docx2pdf 或 LibreOffice，已跳过 PDF 生成。")
 
 
-def build(input_path: Path):
+def build(input_path: Path, settings: Optional[dict] = None):
+    settings = normalize_settings(settings)
     raw = read_text(input_path)
     sections = parse_sections(raw)
 
@@ -758,15 +833,17 @@ def build(input_path: Path):
         if alias in sections and "原始代码" not in sections:
             sections["原始代码"] = sections[alias]
 
-    title = sections.get("标题", "CSP真题：未命名——完整题解复盘（C++）")
+    raw_title = sections.get("标题", "算法题：未命名——完整题解复盘（C++）")
     subtitle = sections.get("副标题", "")
+    pure_title = clean_problem_title(raw_title, settings)
+    title = render_template(settings["titleTemplate"], pure_title, settings)
 
-    output = input_path.parent / f"CSP-{sanitize_filename(title)}-完整题解复盘.docx"
+    output = input_path.parent / get_output_filename(raw_title, settings)
 
     doc = Document()
     setup_doc(doc)
-    add_header_footer(doc, title)
-    # add_cover_page(doc, title, subtitle)
+    add_header_footer(doc, raw_title, settings)
+    # add_cover_page(doc, title, subtitle, settings)
     # doc.add_page_break()
     add_title(doc, title, subtitle)
 
@@ -788,7 +865,7 @@ def build(input_path: Path):
     for sec in ("题目背景", "完整题目要求", "输入格式", "输出格式"):
         if sections.get(sec, "").strip():
             h(sec)
-            add_rich_text(doc, sections[sec])
+            add_rich_text(doc, sections[sec], settings["language"])
 
     if any(sections.get(f"样例{n}输入", "").strip() for n in ("1", "2")):
         h("输入输出样例")
@@ -805,7 +882,7 @@ def build(input_path: Path):
                     set_spacing(p, before=4, after=1)
                     r = p.add_run("解释：")
                     set_font(r, FONT_CN, 10.5, True, COLOR_BLUE)
-                    add_rich_text(doc, exp)
+                    add_rich_text(doc, exp, settings["language"])
 
     combined_error_opt = bool(sections.get("错误分析", "").strip() and sections.get("优化过程", "").strip())
 
@@ -840,11 +917,11 @@ def build(input_path: Path):
         elif sec == "优化过程":
             add_note_box(doc, sec, compact_text(text), COLOR_GREEN_LIGHT)
         elif sec == "原始代码":
-            add_rich_text(doc, text, "C++ · 原始代码")
+            add_rich_text(doc, text, f"{settings['language']} · 原始代码")
         elif sec == "AC代码":
-            add_rich_text(doc, text, "C++ · AC代码")
+            add_rich_text(doc, text, f"{settings['language']} · AC代码")
         else:
-            add_rich_text(doc, text)
+            add_rich_text(doc, text, settings["language"])
 
     doc.save(output)
     print(f"Word 已生成：{output}")
@@ -856,7 +933,15 @@ def main():
     if not input_path.exists():
         print(f"找不到输入文件：{input_path}")
         return
-    build(input_path)
+    settings = None
+    if len(sys.argv) > 2:
+        settings_path = Path(sys.argv[2])
+        if settings_path.exists():
+            try:
+                settings = json.loads(settings_path.read_text(encoding="utf-8-sig"))
+            except Exception as exc:
+                print(f"读取文档设置失败，已使用默认设置：{exc}")
+    build(input_path, settings)
 
 
 if __name__ == "__main__":

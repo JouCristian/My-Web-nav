@@ -26,13 +26,13 @@ export default function CSPReviewDocGeneratorPage() {
             <div className="mb-4 flex items-center gap-3">
               <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_16px_rgba(34,211,238,0.9)]" />
               <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-cyan-300">
-                CSP Review Generator
+                Algorithm Review Generator
               </span>
             </div>
 
             <h1 className="max-w-5xl break-words text-3xl font-black leading-[1.08] tracking-tight text-white sm:text-5xl xl:text-6xl">
               <ShinyText
-                text="CSP 题解文档生成器"
+                text="算法题解文档生成器"
                 speed={1.35}
                 delay={0.2}
                 color="#f8fafc"
@@ -43,7 +43,7 @@ export default function CSPReviewDocGeneratorPage() {
               />
             </h1>
             <p className="mt-5 max-w-4xl text-sm leading-relaxed text-zinc-400 sm:text-base">
-              面向刷题复盘的文档工作台。先在自己的 AI 窗口生成规范内容，再粘贴到这里完成结构检查和 Word 草稿导出。
+              面向算法题解复盘的文档工作台。先在自己的 AI 窗口生成规范内容，再粘贴到这里完成结构检查和 Word 草稿导出。
             </p>
           </div>
           </AnimatedContent>
