@@ -14,12 +14,16 @@ import {
   FileCode2,
   FileText,
   Gauge,
+  Info,
   LayoutList,
   RefreshCw,
   Trash2,
+  X,
   Wand2,
 } from "lucide-react"
 import AnimatedContent from "@/components/animated-content"
+
+const DRAFT_STORAGE_KEY = "joujou-csp-review-draft-v1"
 
 const SECTION_ORDER = [
   "标题",
@@ -420,12 +424,15 @@ export function CSPReviewTool() {
   const [activeSection, setActiveSection] = useState<string | null>(null)
   const [actionFeedback, setActionFeedback] = useState<"template" | "clear" | null>(null)
   const [copyToastVisible, setCopyToastVisible] = useState(false)
+  const [promptPreviewOpen, setPromptPreviewOpen] = useState(false)
+  const [restorableDraft, setRestorableDraft] = useState<string | null>(null)
   const [isScanning, setIsScanning] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const previewScrollRef = useRef<HTMLDivElement>(null)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
   const scanTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null)
   const copyToastTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null)
+  const draftSaveTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null)
   const sections = useMemo(() => parseSections(input), [input])
   const sectionMap = useMemo(() => new Map(sections.map((section) => [section.name, section.content])), [sections])
   const missingSections = REQUIRED_SECTIONS.filter((name) => !sectionMap.get(name)?.trim())
@@ -441,14 +448,57 @@ export function CSPReviewTool() {
     figures: getFigures(input).length,
     tables: hasMarkdownTable(input) ? 1 : 0,
   }
+  const health = useMemo(() => getInputHealth(input, sectionMap, missingSections), [input, sectionMap, missingSections])
 
   const title = sectionMap.get("标题") || "等待粘贴 AI 内容"
   const subtitle = sectionMap.get("副标题") || "先使用模板和 AI 补全指令生成规范内容，再粘贴到左侧工作台。"
   const canExport = input.trim().length > 0 && missingSections.length === 0 && !isScanning
 
+  useEffect(() => {
+    const restoreTimer = window.setTimeout(() => {
+      try {
+        const savedDraft = window.localStorage.getItem(DRAFT_STORAGE_KEY)
+        if (savedDraft?.trim()) {
+          setRestorableDraft(savedDraft)
+        }
+      } catch {
+        setRestorableDraft(null)
+      }
+    }, 0)
+
+    return () => window.clearTimeout(restoreTimer)
+  }, [])
+
+  useEffect(() => {
+    if (draftSaveTimerRef.current) {
+      window.clearTimeout(draftSaveTimerRef.current)
+    }
+
+    draftSaveTimerRef.current = window.setTimeout(() => {
+      try {
+        if (input.trim()) {
+          window.localStorage.setItem(DRAFT_STORAGE_KEY, input)
+        } else {
+          window.localStorage.removeItem(DRAFT_STORAGE_KEY)
+        }
+      } catch {
+        // localStorage may be unavailable in private browsing; the tool still works without drafts.
+      }
+    }, 420)
+
+    return () => {
+      if (draftSaveTimerRef.current) {
+        window.clearTimeout(draftSaveTimerRef.current)
+      }
+    }
+  }, [input])
+
   const updateInputContent = (nextInput: string) => {
     setInput(nextInput)
     setExportSuccess(false)
+    if (nextInput.trim()) {
+      setRestorableDraft(null)
+    }
 
     if (scanTimerRef.current) {
       window.clearTimeout(scanTimerRef.current)
@@ -678,24 +728,51 @@ export function CSPReviewTool() {
                 size="sm"
                 tone="danger"
               />
-              <div className="relative col-span-2">
-                <ActionButton
-                  icon={Clipboard}
-                  active={copied === "prompt"}
-                  iconEffect="copy"
-                  label={copied === "prompt" ? "已复制" : "复制 AI 补全指令"}
-                  onClick={() => copyText("prompt", AI_PROMPT)}
-                  size="sm"
-                  tone="cyan"
-                  enableLayoutAnimation
-                  className="w-full"
-                />
+              <div className="relative col-span-2 grid grid-cols-[minmax(0,1fr)_44px] gap-2">
+                <div className="relative min-w-0">
+                  <ActionButton
+                    icon={Clipboard}
+                    active={copied === "prompt"}
+                    iconEffect="copy"
+                    label={copied === "prompt" ? "已复制" : "复制 AI 补全指令"}
+                    onClick={() => copyText("prompt", AI_PROMPT)}
+                    size="sm"
+                    tone="cyan"
+                    enableLayoutAnimation
+                    className="w-full"
+                  />
+                  <AnimatePresence>
+                    {copyToastVisible ? <CopyPromptToast /> : null}
+                  </AnimatePresence>
+                </div>
+                <PromptPreviewButton active={promptPreviewOpen} onClick={() => setPromptPreviewOpen((open) => !open)} />
                 <AnimatePresence>
-                  {copyToastVisible ? <CopyPromptToast /> : null}
+                  {promptPreviewOpen ? <PromptPreviewPanel onClose={() => setPromptPreviewOpen(false)} /> : null}
                 </AnimatePresence>
               </div>
             </div>
           </div>
+
+          <AnimatePresence initial={false}>
+            {restorableDraft && !input.trim() ? (
+              <DraftRestoreNotice
+                onRestore={() => {
+                  updateInputContent(restorableDraft)
+                  setRestorableDraft(null)
+                }}
+                onDismiss={() => {
+                  setRestorableDraft(null)
+                  try {
+                    window.localStorage.removeItem(DRAFT_STORAGE_KEY)
+                  } catch {
+                    // Ignore storage failures; dismissing the notice should never block the UI.
+                  }
+                }}
+              />
+            ) : null}
+          </AnimatePresence>
+
+          <InputHealthPanel health={health} />
 
           <textarea
             ref={textareaRef}
@@ -981,6 +1058,213 @@ function ActionButton({
         ) : null}
       </AnimatePresence>
     </motion.button>
+  )
+}
+
+type InputHealth = {
+  score: number
+  status: "empty" | "warning" | "ready"
+  message: string
+  checks: Array<{ label: string; ok: boolean }>
+}
+
+function getInputHealth(input: string, sectionMap: Map<string, string>, missingSections: string[]): InputHealth {
+  if (!input.trim()) {
+    return {
+      score: 0,
+      status: "empty",
+      message: "等待粘贴 AI 生成内容",
+      checks: [
+        { label: "章节", ok: false },
+        { label: "代码块", ok: false },
+        { label: "图块", ok: false },
+      ],
+    }
+  }
+
+  const requiredComplete = REQUIRED_SECTIONS.length - missingSections.length
+  const requiredScore = Math.round((requiredComplete / REQUIRED_SECTIONS.length) * 70)
+  const codeFenceOk = (input.match(/```/g)?.length ?? 0) % 2 === 0
+  const figureOpenCount = input.match(/\[\[图[:：\s]/g)?.length ?? 0
+  const figureCloseCount = input.match(/\[\[\/图\]\]/g)?.length ?? 0
+  const figureOk = figureOpenCount === figureCloseCount
+  const titleOk = Boolean(sectionMap.get("标题")?.trim())
+  const score = Math.min(100, requiredScore + (codeFenceOk ? 10 : 0) + (figureOk ? 10 : 0) + (titleOk ? 10 : 0))
+
+  return {
+    score,
+    status: missingSections.length === 0 && codeFenceOk && figureOk ? "ready" : "warning",
+    message: missingSections.length === 0 ? "结构基本完整，可以继续预览与导出" : `还缺少 ${missingSections.length} 个核心章节`,
+    checks: [
+      { label: "核心章节", ok: missingSections.length === 0 },
+      { label: "代码闭合", ok: codeFenceOk },
+      { label: "图块闭合", ok: figureOk },
+      { label: "标题", ok: titleOk },
+    ],
+  }
+}
+
+function InputHealthPanel({ health }: { health: InputHealth }) {
+  const tone =
+    health.status === "ready"
+      ? "border-emerald-400/20 bg-emerald-500/[0.08] text-emerald-100"
+      : health.status === "warning"
+        ? "border-amber-400/20 bg-amber-500/[0.08] text-amber-100"
+        : "border-white/10 bg-white/[0.035] text-zinc-300"
+  const bar =
+    health.status === "ready"
+      ? "from-emerald-300 via-cyan-200 to-emerald-300"
+      : health.status === "warning"
+        ? "from-amber-300 via-cyan-200 to-amber-300"
+        : "from-zinc-500 via-zinc-400 to-zinc-500"
+
+  return (
+    <motion.div
+      initial={false}
+      animate={{ opacity: 1, y: 0 }}
+      className={`mb-4 rounded-2xl border p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ${tone}`}
+    >
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Info className="h-3.5 w-3.5" />
+          <span className="text-xs font-black text-white">输入健康度</span>
+        </div>
+        <Counter value={health.score} fontSize={14} padding={2} gap={0} textColor="white" fontWeight={900} places={health.score >= 100 ? [100, 10, 1] : [10, 1]} />
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-black/30">
+        <motion.div
+          className={`h-full rounded-full bg-gradient-to-r ${bar}`}
+          initial={false}
+          animate={{ width: `${health.score}%` }}
+          transition={{ type: "spring", stiffness: 180, damping: 24, mass: 0.7 }}
+        />
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-[11px] font-semibold text-zinc-400">{health.message}</span>
+        {health.checks.map((check) => (
+          <span
+            key={check.label}
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-bold ${
+              check.ok ? "border-emerald-300/20 bg-emerald-400/10 text-emerald-200" : "border-white/10 bg-black/20 text-zinc-500"
+            }`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${check.ok ? "bg-emerald-300" : "bg-zinc-600"}`} />
+            {check.label}
+          </span>
+        ))}
+      </div>
+    </motion.div>
+  )
+}
+
+function PromptPreviewButton({ active, onClick }: { active: boolean; onClick: () => void }) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      aria-label="预览 AI 补全指令"
+      whileHover={{ y: -2, scale: 1.03 }}
+      whileTap={{ scale: 0.96 }}
+      transition={{ type: "spring", stiffness: 430, damping: 25, mass: 0.7 }}
+      className={`group relative flex min-h-10 items-center justify-center overflow-hidden rounded-xl border text-cyan-100 shadow-[0_0_24px_rgba(34,211,238,0.08)] ${
+        active ? "border-cyan-300/45 bg-cyan-400/[0.16]" : "border-cyan-400/25 bg-cyan-400/10 hover:border-cyan-300/45 hover:bg-cyan-400/[0.16]"
+      }`}
+    >
+      <span className="pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-[140%] skew-x-[-18deg] bg-gradient-to-r from-transparent via-cyan-100/14 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[260%]" />
+      <Eye className="relative h-4 w-4 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:-translate-y-0.5 group-hover:scale-110" />
+    </motion.button>
+  )
+}
+
+function PromptPreviewPanel({ onClose }: { onClose: () => void }) {
+  return (
+    <motion.div
+      className="absolute right-0 top-full z-30 mt-3 w-[min(520px,calc(100vw-2rem))] overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#071015]/90 shadow-[0_24px_80px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl"
+      initial={{ opacity: 0, y: -8, scale: 0.96, filter: "blur(10px)" }}
+      animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+      exit={{ opacity: 0, y: -6, scale: 0.97, filter: "blur(8px)" }}
+      transition={{
+        opacity: { duration: 0.24, ease: [0.32, 0.72, 0, 1] },
+        y: { type: "spring", stiffness: 360, damping: 24, mass: 0.7 },
+        scale: { type: "spring", stiffness: 380, damping: 25, mass: 0.7 },
+        filter: { duration: 0.26, ease: [0.32, 0.72, 0, 1] },
+      }}
+    >
+      <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-cyan-300">Prompt Preview</div>
+          <div className="mt-1 text-sm font-black text-white">AI 补全指令预览</div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="关闭预览"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-400 transition hover:border-white/20 hover:text-white"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="tool-scrollbar max-h-[280px] overflow-y-auto p-4">
+        <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-zinc-400">{AI_PROMPT}</pre>
+      </div>
+    </motion.div>
+  )
+}
+
+function DraftRestoreNotice({ onRestore, onDismiss }: { onRestore: () => void; onDismiss: () => void }) {
+  return (
+    <motion.div
+      initial={{ maxHeight: 0, marginBottom: 0, opacity: 0, y: -8, scale: 0.98, filter: "blur(8px)" }}
+      animate={{ maxHeight: 120, marginBottom: 16, opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+      exit={{
+        maxHeight: 0,
+        marginBottom: 0,
+        opacity: 0,
+        y: -6,
+        scale: 0.985,
+        filter: "blur(8px)",
+        transition: {
+          maxHeight: { type: "spring", stiffness: 165, damping: 24, mass: 0.9, delay: 0.16 },
+          marginBottom: { type: "spring", stiffness: 165, damping: 24, mass: 0.9, delay: 0.16 },
+          opacity: { duration: 0.28, ease: [0.32, 0.72, 0, 1] },
+          y: { type: "spring", stiffness: 330, damping: 25, mass: 0.72 },
+          scale: { type: "spring", stiffness: 360, damping: 26, mass: 0.7 },
+          filter: { duration: 0.3, ease: [0.32, 0.72, 0, 1] },
+        },
+      }}
+      transition={{
+        maxHeight: { type: "spring", stiffness: 150, damping: 23, mass: 0.95 },
+        marginBottom: { type: "spring", stiffness: 150, damping: 23, mass: 0.95 },
+        opacity: { duration: 0.32, delay: 0.08, ease: [0.32, 0.72, 0, 1] },
+        y: { type: "spring", stiffness: 320, damping: 24, mass: 0.75 },
+        scale: { type: "spring", stiffness: 360, damping: 26, mass: 0.75 },
+        filter: { duration: 0.32, delay: 0.06, ease: [0.32, 0.72, 0, 1] },
+      }}
+      className="overflow-hidden rounded-2xl border border-cyan-300/20 bg-cyan-400/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+    >
+      <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="text-xs font-black text-white">检测到上次未导出的内容</div>
+          <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">可以恢复到输入工作台继续编辑，或者忽略这次草稿。</p>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] font-bold text-zinc-400 transition hover:border-white/20 hover:text-white"
+          >
+            忽略
+          </button>
+          <button
+            type="button"
+            onClick={onRestore}
+            className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-2 text-[11px] font-bold text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-400/15 hover:text-white"
+          >
+            恢复草稿
+          </button>
+        </div>
+      </div>
+    </motion.div>
   )
 }
 
