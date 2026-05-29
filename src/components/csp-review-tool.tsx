@@ -427,6 +427,7 @@ export function CSPReviewTool() {
   const [promptPreviewOpen, setPromptPreviewOpen] = useState(false)
   const [restorableDraft, setRestorableDraft] = useState<string | null>(null)
   const [isScanning, setIsScanning] = useState(false)
+  const [lineNumberScrollTop, setLineNumberScrollTop] = useState(0)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const previewScrollRef = useRef<HTMLDivElement>(null)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
@@ -436,6 +437,8 @@ export function CSPReviewTool() {
   const sections = useMemo(() => parseSections(input), [input])
   const sectionMap = useMemo(() => new Map(sections.map((section) => [section.name, section.content])), [sections])
   const missingSections = REQUIRED_SECTIONS.filter((name) => !sectionMap.get(name)?.trim())
+  const structureIssues = useMemo(() => getStructureIssues(input, sectionMap, missingSections), [input, sectionMap, missingSections])
+  const blockingIssues = structureIssues.filter((issue) => issue.severity === "error")
   const unknownSections = sections.filter((section) => !SECTION_ORDER.includes(section.name))
   const orderedSections = [
     ...SECTION_ORDER.map((name) => sections.find((section) => section.name === name)).filter(Boolean),
@@ -448,11 +451,15 @@ export function CSPReviewTool() {
     figures: getFigures(input).length,
     tables: hasMarkdownTable(input) ? 1 : 0,
   }
-  const health = useMemo(() => getInputHealth(input, sectionMap, missingSections), [input, sectionMap, missingSections])
+  const lineNumbers = useMemo(() => {
+    const lineCount = Math.max(1, input.split(/\r?\n/).length)
+    return Array.from({ length: lineCount }, (_, index) => index + 1)
+  }, [input])
+  const health = useMemo(() => getInputHealth(input, sectionMap, missingSections, structureIssues), [input, sectionMap, missingSections, structureIssues])
 
   const title = sectionMap.get("标题") || "等待粘贴 AI 内容"
   const subtitle = sectionMap.get("副标题") || "先使用模板和 AI 补全指令生成规范内容，再粘贴到左侧工作台。"
-  const canExport = input.trim().length > 0 && missingSections.length === 0 && !isScanning
+  const canExport = input.trim().length > 0 && blockingIssues.length === 0 && !isScanning
 
   useEffect(() => {
     const restoreTimer = window.setTimeout(() => {
@@ -774,17 +781,35 @@ export function CSPReviewTool() {
 
           <InputHealthPanel health={health} />
 
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(event) => {
-              updateInputContent(event.target.value)
-              setActiveSection(null)
-            }}
-            spellCheck={false}
-            className="tool-scrollbar min-h-[520px] w-full flex-1 resize-none rounded-2xl border border-white/10 bg-black/45 p-4 font-mono text-sm leading-relaxed text-zinc-200 outline-none transition placeholder:whitespace-pre-line placeholder:text-zinc-500 focus:border-cyan-500/40 focus:ring-2 focus:ring-cyan-500/10 sm:min-h-[680px] xl:min-h-0"
-            placeholder={INPUT_PLACEHOLDER}
-          />
+          <div className="min-h-[520px] w-full flex-1 overflow-hidden rounded-2xl border border-white/10 bg-black/45 transition focus-within:border-cyan-500/40 focus-within:ring-2 focus-within:ring-cyan-500/10 sm:min-h-[680px] xl:min-h-0">
+            <div className="grid h-full min-h-[520px] grid-cols-[48px_minmax(0,1fr)] sm:min-h-[680px] xl:min-h-0">
+              <div className="pointer-events-none relative overflow-hidden border-r border-white/10 bg-white/[0.025]">
+                <div
+                  className="absolute left-0 right-0 top-0 px-2 py-4 text-right font-mono text-sm leading-relaxed text-zinc-600"
+                  style={{ transform: `translateY(-${lineNumberScrollTop}px)` }}
+                >
+                  {lineNumbers.map((line) => (
+                    <div key={line} className="h-[1.625em] select-none tabular-nums">
+                      {line}
+                    </div>
+                  ))}
+                </div>
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-cyan-300/20 to-transparent" />
+              </div>
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(event) => {
+                  updateInputContent(event.target.value)
+                  setActiveSection(null)
+                }}
+                onScroll={(event) => setLineNumberScrollTop(event.currentTarget.scrollTop)}
+                spellCheck={false}
+                className="tool-scrollbar h-full min-h-0 w-full resize-none border-0 bg-transparent p-4 font-mono text-sm leading-relaxed text-zinc-200 outline-none placeholder:whitespace-pre-line placeholder:text-zinc-500"
+                placeholder={INPUT_PLACEHOLDER}
+              />
+            </div>
+          </div>
         </section>
         </AnimatedContent>
 
@@ -818,8 +843,8 @@ export function CSPReviewTool() {
             <ValidationStatusCard
               visible={input.trim().length > 0}
               isScanning={isScanning}
-              isComplete={missingSections.length === 0}
-              missingSections={missingSections}
+              isComplete={blockingIssues.length === 0}
+              issues={structureIssues}
             />
 
             <AnimatePresence initial={false}>
@@ -896,7 +921,7 @@ export function CSPReviewTool() {
                     isReady={canExport}
                     isSuccess={exportSuccess}
                     error={exportError}
-                    missingCount={missingSections.length}
+                    issueCount={blockingIssues.length}
                     hasInput={input.trim().length > 0}
                   />
                 </AnimatePresence>
@@ -1066,9 +1091,86 @@ type InputHealth = {
   status: "empty" | "warning" | "ready"
   message: string
   checks: Array<{ label: string; ok: boolean }>
+  issues: StructureIssue[]
 }
 
-function getInputHealth(input: string, sectionMap: Map<string, string>, missingSections: string[]): InputHealth {
+type StructureIssue = {
+  id: string
+  severity: "error" | "warning"
+  title: string
+  detail: string
+}
+
+function getStructureIssues(input: string, sectionMap: Map<string, string>, missingSections: string[]): StructureIssue[] {
+  if (!input.trim()) return []
+
+  const issues: StructureIssue[] = missingSections.map((section) => ({
+    id: `missing-${section}`,
+    severity: "error",
+    title: `缺少「${section}」`,
+    detail: "核心章节为空或没有按【章节名】格式填写。",
+  }))
+
+  if (!sectionMap.get("标题")?.trim()) {
+    issues.push({
+      id: "empty-title",
+      severity: "error",
+      title: "标题为空",
+      detail: "请补全【标题】章节，导出的 Word 会使用它作为文档主标题。",
+    })
+  }
+
+  const codeFenceCount = input.match(/```/g)?.length ?? 0
+  if (codeFenceCount % 2 !== 0) {
+    issues.push({
+      id: "code-fence-open",
+      severity: "error",
+      title: "代码块没有闭合",
+      detail: "检测到 ``` 数量为奇数，请补上缺失的结束代码围栏。",
+    })
+  }
+
+  const figureOpenCount = input.match(/\[\[图[:：\s]/g)?.length ?? 0
+  const figureCloseCount = input.match(/\[\[\/图\]\]/g)?.length ?? 0
+  if (figureOpenCount !== figureCloseCount) {
+    issues.push({
+      id: "figure-block-open",
+      severity: "error",
+      title: "图块标签没有闭合",
+      detail: `检测到 ${figureOpenCount} 个图块开始标签、${figureCloseCount} 个结束标签，请检查 [[图:...]] 与 [[/图]]。`,
+    })
+  }
+
+  const lines = input.split(/\r?\n/)
+  const brokenTableIndex = lines.findIndex((line, index) => {
+    const current = line.trim()
+    const next = lines[index + 1]?.trim()
+    return current.startsWith("|") && current.endsWith("|") && Boolean(next) && next.startsWith("|") && !next.match(/^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/)
+  })
+  if (brokenTableIndex >= 0) {
+    issues.push({
+      id: "table-separator",
+      severity: "warning",
+      title: "表格分隔行可能异常",
+      detail: `第 ${brokenTableIndex + 2} 行附近像是 Markdown 表格，但分隔行格式不完整。`,
+    })
+  }
+
+  const sampleInput = sectionMap.get("样例1输入")?.trim()
+  const sampleOutput = sectionMap.get("样例1输出")?.trim()
+  if (input.trim() && (!sampleInput || !sampleOutput)) {
+    issues.push({
+      id: "sample-one-empty",
+      severity: "warning",
+      title: "样例 1 输入/输出不完整",
+      detail: "建议补全样例 1，导出后的复盘文档会更完整。",
+    })
+  }
+
+  return issues
+}
+
+function getInputHealth(input: string, sectionMap: Map<string, string>, missingSections: string[], issues: StructureIssue[]): InputHealth {
   if (!input.trim()) {
     return {
       score: 0,
@@ -1079,9 +1181,11 @@ function getInputHealth(input: string, sectionMap: Map<string, string>, missingS
         { label: "代码块", ok: false },
         { label: "图块", ok: false },
       ],
+      issues: [],
     }
   }
 
+  const blockingIssues = issues.filter((issue) => issue.severity === "error")
   const requiredComplete = REQUIRED_SECTIONS.length - missingSections.length
   const requiredScore = Math.round((requiredComplete / REQUIRED_SECTIONS.length) * 70)
   const codeFenceOk = (input.match(/```/g)?.length ?? 0) % 2 === 0
@@ -1093,14 +1197,15 @@ function getInputHealth(input: string, sectionMap: Map<string, string>, missingS
 
   return {
     score,
-    status: missingSections.length === 0 && codeFenceOk && figureOk ? "ready" : "warning",
-    message: missingSections.length === 0 ? "结构基本完整，可以继续预览与导出" : `还缺少 ${missingSections.length} 个核心章节`,
+    status: blockingIssues.length === 0 ? "ready" : "warning",
+    message: blockingIssues.length === 0 ? "结构基本完整，可以继续预览与导出" : `发现 ${blockingIssues.length} 个需要处理的问题`,
     checks: [
       { label: "核心章节", ok: missingSections.length === 0 },
       { label: "代码闭合", ok: codeFenceOk },
       { label: "图块闭合", ok: figureOk },
       { label: "标题", ok: titleOk },
     ],
+    issues,
   }
 }
 
@@ -1153,6 +1258,51 @@ function InputHealthPanel({ health }: { health: InputHealth }) {
           </span>
         ))}
       </div>
+      <AnimatePresence initial={false}>
+        {health.issues.length > 0 ? (
+          <motion.div
+            initial={{ maxHeight: 190, marginTop: 12, opacity: 0 }}
+            animate={{ maxHeight: 190, marginTop: 12, opacity: 1 }}
+            exit={{
+              maxHeight: 0,
+              marginTop: 0,
+              opacity: 0,
+              transition: {
+                maxHeight: { type: "spring", stiffness: 155, damping: 24, mass: 0.88, delay: 0.12 },
+                marginTop: { type: "spring", stiffness: 155, damping: 24, mass: 0.88, delay: 0.12 },
+                opacity: { duration: 0.24, ease: [0.32, 0.72, 0, 1] },
+              },
+            }}
+            transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="tool-scrollbar max-h-[172px] overflow-y-auto pr-1">
+              <div className="grid gap-2 pb-1">
+                {health.issues.map((issue, index) => (
+                  <motion.div
+                    key={issue.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{
+                      opacity: { duration: 0.28, delay: index * 0.025, ease: [0.32, 0.72, 0, 1] },
+                    }}
+                    className={`rounded-xl border px-3 py-2 ${
+                      issue.severity === "error" ? "border-amber-300/20 bg-amber-400/[0.08]" : "border-cyan-300/20 bg-cyan-400/[0.07]"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 text-[11px] font-black text-white">
+                      <span className={`h-1.5 w-1.5 rounded-full ${issue.severity === "error" ? "bg-amber-300" : "bg-cyan-300"}`} />
+                      {issue.title}
+                    </div>
+                    <p className="mt-1 text-[10px] leading-relaxed text-zinc-400">{issue.detail}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </motion.div>
   )
 }
@@ -1585,13 +1735,14 @@ function ValidationStatusCard({
   visible,
   isScanning,
   isComplete,
-  missingSections,
+  issues,
 }: {
   visible: boolean
   isScanning: boolean
   isComplete: boolean
-  missingSections: string[]
+  issues: StructureIssue[]
 }) {
+  const blockingIssues = issues.filter((issue) => issue.severity === "error")
   const state = isScanning
     ? {
         key: "scanning",
@@ -1612,8 +1763,9 @@ function ValidationStatusCard({
           icon: <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />,
           body: (
             <div>
-              缺少核心章节：
-              <span className="ml-2 text-amber-100">{missingSections.join("、")}</span>
+              发现需要处理的问题：
+              <span className="ml-2 text-amber-100">{blockingIssues.slice(0, 2).map((issue) => issue.title).join("、")}</span>
+              {blockingIssues.length > 2 ? <span className="ml-1 text-amber-100/70">等 {blockingIssues.length} 项</span> : null}
             </div>
           ),
         }
@@ -1622,12 +1774,12 @@ function ValidationStatusCard({
     <motion.div
       initial={false}
       animate={{
-        maxHeight: visible ? 86 : 0,
+        height: visible ? 86 : 0,
         marginTop: visible ? 20 : 0,
         opacity: visible ? 1 : 0,
       }}
       transition={{
-        maxHeight: visible
+        height: visible
           ? { type: "spring", stiffness: 135, damping: 23, mass: 1.05 }
           : { type: "spring", stiffness: 160, damping: 24, mass: 0.98, delay: 0.18 },
         marginTop: {
@@ -1642,7 +1794,7 @@ function ValidationStatusCard({
       className="overflow-hidden rounded-2xl border border-white/10 bg-black/30"
       style={{ pointerEvents: visible ? "auto" : "none" }}
     >
-      <div className="p-4">
+      <div className="flex h-full items-center p-4">
         <AnimatePresence mode="wait" initial={false}>
           {visible ? (
             <motion.div
@@ -1664,10 +1816,10 @@ function ValidationStatusCard({
                 filter: { duration: 0.4, delay: 0.24, ease: [0.32, 0.72, 0, 1] },
                 clipPath: { duration: 0.48, delay: 0.24, ease: [0.22, 1, 0.36, 1] },
               }}
-              className={`flex gap-3 text-sm ${state.className}`}
+              className={`flex min-w-0 gap-3 text-sm ${state.className}`}
             >
               {state.icon}
-              {state.body}
+              <div className="min-w-0">{state.body}</div>
             </motion.div>
           ) : null}
         </AnimatePresence>
@@ -1795,7 +1947,7 @@ function ExportState({
   isReady,
   isSuccess,
   error,
-  missingCount,
+  issueCount,
   hasInput,
 }: {
   isScanning: boolean
@@ -1803,7 +1955,7 @@ function ExportState({
   isReady: boolean
   isSuccess: boolean
   error: string | null
-  missingCount: number
+  issueCount: number
   hasInput: boolean
 }) {
   const state = error
@@ -1844,8 +1996,8 @@ function ExportState({
             : hasInput
               ? {
                   kind: "missing" as const,
-                  label: "等待补齐核心章节",
-                  text: `还缺少 ${missingCount} 个核心章节，补齐后即可导出。`,
+                  label: "等待修复结构问题",
+                  text: `还需要处理 ${issueCount} 个关键问题，修复后即可导出。`,
                   theme: EXPORT_STATE_THEMES.missing,
                 }
               : {
