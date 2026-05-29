@@ -858,7 +858,7 @@ export function CSPReviewTool() {
             </div>
           </div>
 
-          <div ref={previewScrollRef} className="tool-scrollbar min-h-[520px] min-w-0 max-w-full flex-1 overflow-y-auto overflow-x-hidden overscroll-contain rounded-[2rem] border border-white/10 bg-[#05070d]/80 p-4 sm:min-h-[640px] sm:p-5 xl:min-h-0">
+          <div ref={previewScrollRef} className="tool-scrollbar h-[72vh] min-h-[420px] max-h-[680px] min-w-0 max-w-full overflow-y-auto overflow-x-hidden overscroll-y-auto rounded-[2rem] border border-white/10 bg-[#05070d]/80 p-4 sm:h-[68vh] sm:min-h-[520px] sm:max-h-[760px] sm:p-5 xl:h-auto xl:min-h-0 xl:max-h-none xl:flex-1">
             <div className="grid gap-4">
               {orderedSections.length > 0 ? (
                 orderedSections.map((section) => (
