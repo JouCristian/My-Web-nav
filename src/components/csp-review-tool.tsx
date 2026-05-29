@@ -682,6 +682,7 @@ export function CSPReviewTool() {
   const [exporting, setExporting] = useState<"docx" | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
   const [exportSuccess, setExportSuccess] = useState(false)
+  const [exportConfirmOpen, setExportConfirmOpen] = useState(false)
   const [activeSection, setActiveSection] = useState<string | null>(null)
   const [actionFeedback, setActionFeedback] = useState<"template" | "clear" | null>(null)
   const [copyToastVisible, setCopyToastVisible] = useState(false)
@@ -707,6 +708,7 @@ export function CSPReviewTool() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const previewScrollRef = useRef<HTMLDivElement>(null)
   const previewTitleMeasureRef = useRef<HTMLDivElement>(null)
+  const exportConfirmRef = useRef<HTMLDivElement>(null)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
   const scanTimerRef = useRef<number | null>(null)
   const copyToastTimerRef = useRef<number | null>(null)
@@ -732,12 +734,16 @@ export function CSPReviewTool() {
     tables: hasMarkdownTable(input) ? 1 : 0,
   }
   const health = useMemo(() => getInputHealth(input, sectionMap, missingSections, structureIssues), [input, sectionMap, missingSections, structureIssues])
+  const exportNeedsConfirmation = useMemo(
+    () => getExportNeedsConfirmation(input, sectionMap, health, missingSections, blockingIssues),
+    [input, sectionMap, health, missingSections, blockingIssues],
+  )
 
   const rawTitle = sectionMap.get("标题") || ""
   const problemTitle = getPreviewProblemTitle(rawTitle)
   const title = rawTitle ? getTitlePreview(documentSettings, problemTitle) : "等待粘贴 AI 内容"
   const subtitle = sectionMap.get("副标题") || "先使用模板和 AI 补全指令生成规范内容，再粘贴到左侧工作台。"
-  const canExport = input.trim().length > 0 && blockingIssues.length === 0 && !isScanning
+  const canExport = input.trim().length > 0 && !isScanning
   const hasUnsavedSettings = settingsOpen && JSON.stringify(normalizeDocumentSettings(settingsDraft)) !== JSON.stringify(normalizeDocumentSettings(documentSettings))
 
   useLayoutEffect(() => {
@@ -832,6 +838,7 @@ export function CSPReviewTool() {
   const updateInputContent = (nextInput: string) => {
     setInput(nextInput)
     setExportSuccess(false)
+    setExportConfirmOpen(false)
     if (nextInput.trim()) {
       setRestorableDraft(null)
     }
@@ -939,6 +946,26 @@ export function CSPReviewTool() {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [settingsOpen, closeSettingsModal])
 
+  useEffect(() => {
+    if (!exportConfirmOpen) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (target instanceof Node && exportConfirmRef.current?.contains(target)) return
+      setExportConfirmOpen(false)
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setExportConfirmOpen(false)
+    }
+
+    window.addEventListener("pointerdown", handlePointerDown)
+    window.addEventListener("keydown", handleKeyDown)
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown)
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [exportConfirmOpen])
+
   const showActionFeedback = (kind: "template" | "clear") => {
     setActionFeedback(kind)
     window.setTimeout(() => {
@@ -986,6 +1013,9 @@ export function CSPReviewTool() {
   }
 
   const exportGeneratedDocument = async () => {
+    if (exporting !== null || !input.trim() || isScanning) return
+
+    setExportConfirmOpen(false)
     setExporting("docx")
     setExportError(null)
     setExportSuccess(false)
@@ -1047,6 +1077,25 @@ export function CSPReviewTool() {
     } finally {
       setExporting(null)
     }
+  }
+
+  const handleExportClick = () => {
+    if (exporting !== null || !canExport) return
+
+    if (exportNeedsConfirmation) {
+      setExportError(null)
+      setExportConfirmOpen(true)
+      return
+    }
+
+    void exportGeneratedDocument()
+  }
+
+  const confirmDraftExport = () => {
+    if (exporting !== null || !canExport) return
+
+    setExportConfirmOpen(false)
+    void exportGeneratedDocument()
   }
 
   return (
@@ -1351,7 +1400,7 @@ export function CSPReviewTool() {
                   <ExportState
                     isScanning={isScanning}
                     isExporting={exporting === "docx"}
-                    isReady={canExport}
+                    isReady={canExport && health.status === "ready" && health.score >= 100}
                     isSuccess={exportSuccess}
                     error={exportError}
                     issueCount={blockingIssues.length}
@@ -1368,18 +1417,62 @@ export function CSPReviewTool() {
                   tone="emerald"
                   className="h-full w-full"
                 />
-                <ActionButton
-                  icon={FileText}
-                  active={exporting === "docx"}
-                  iconEffect={exporting === "docx" ? "loading" : undefined}
-                  label="导出 Word 文档"
-                  onClick={exportGeneratedDocument}
-                  disabled={exporting !== null || !canExport}
-                  tone="emerald"
-                  hideLabel={exporting === "docx"}
-                  enableLayoutAnimation
-                  className="h-full w-full"
-                />
+                <div ref={exportConfirmRef} className="relative h-full min-w-0">
+                  <ActionButton
+                    icon={FileText}
+                    active={exporting === "docx"}
+                    iconEffect={exporting === "docx" ? "loading" : undefined}
+                    label="导出 Word 文档"
+                    onClick={handleExportClick}
+                    disabled={exporting !== null || !canExport}
+                    tone="emerald"
+                    hideLabel={exporting === "docx"}
+                    enableLayoutAnimation
+                    className="h-full w-full"
+                  />
+                  <AnimatePresence>
+                    {exportConfirmOpen ? (
+                      <motion.div
+                        key="export-confirm"
+                        initial={{ opacity: 0, scale: 0.92, y: 8, filter: "blur(8px)" }}
+                        animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+                        exit={{ opacity: 0, scale: 0.94, y: 6, filter: "blur(8px)" }}
+                        transition={{ type: "spring", stiffness: 440, damping: 26, mass: 0.65 }}
+                        style={{ transformOrigin: "85% 100%" }}
+                        className="absolute bottom-[calc(100%+10px)] right-0 z-30 w-[min(300px,calc(100vw-2rem))] rounded-[20px] border border-cyan-200/25 bg-[#061019]/90 p-3.5 text-left shadow-[0_20px_70px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.10)] backdrop-blur-2xl sm:bottom-0 sm:right-[calc(100%+12px)]"
+                      >
+                        <span className="pointer-events-none absolute -bottom-1.5 right-8 h-3 w-3 rotate-45 border-b border-r border-cyan-200/25 bg-[#061019]/90 sm:-right-1.5 sm:bottom-5 sm:border-b-0 sm:border-l-0 sm:border-r sm:border-t" />
+                        <div className="relative flex gap-3">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border border-amber-200/20 bg-amber-300/10 text-amber-200 shadow-[0_0_24px_rgba(251,191,36,0.10)]">
+                            <AlertCircle className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-black text-white">内容可能不完整</div>
+                            <p className="mt-1.5 text-xs leading-relaxed text-zinc-300">
+                              当前内容还没完全补全，仍要导出 Word 草稿吗？
+                            </p>
+                          </div>
+                        </div>
+                        <div className="relative mt-3 flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setExportConfirmOpen(false)}
+                            className="rounded-xl border border-white/10 bg-white/[0.055] px-3 py-2 text-xs font-bold text-zinc-200 transition hover:border-white/20 hover:bg-white/[0.09] hover:text-white"
+                          >
+                            返回修改
+                          </button>
+                          <button
+                            type="button"
+                            onClick={confirmDraftExport}
+                            className="rounded-xl border border-cyan-300/35 bg-cyan-300/15 px-3 py-2 text-xs font-black text-cyan-50 shadow-[0_12px_28px_rgba(34,211,238,0.12)] transition hover:border-cyan-200/55 hover:bg-cyan-300/22"
+                          >
+                            仍然导出
+                          </button>
+                        </div>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+                </div>
               </div>
             </div>
 
@@ -2549,6 +2642,45 @@ function getInputHealth(input: string, sectionMap: Map<string, string>, missingS
   }
 }
 
+const TEMPLATE_PLACEHOLDER_PATTERNS = [
+  /这里(?:先不用|写|填|放|补|替换|说明|粘贴|整理|生成)/,
+  /(?:待补充|待填写|TODO|TBD)/i,
+  /关键词[1-4]|题名|要求[一二三]/,
+  /版本\s*\d+\s*[：:]\s*最初思路代码/,
+  /阶段\s*\d+\s*[：:]\s*这里/,
+]
+
+function isTemplatePlaceholderText(text: string) {
+  return TEMPLATE_PLACEHOLDER_PATTERNS.some((pattern) => pattern.test(text))
+}
+
+function hasMeaningfulAcCode(sectionMap: Map<string, string>) {
+  const acContent = sectionMap.get("AC代码")?.trim() ?? ""
+  if (!acContent || isTemplatePlaceholderText(acContent)) return false
+
+  const acCodeBlocks = getCodeBlocks(acContent).filter((block) => block.trim())
+  return acCodeBlocks.some((block) => !isTemplatePlaceholderText(block))
+}
+
+function getExportNeedsConfirmation(
+  input: string,
+  sectionMap: Map<string, string>,
+  health: InputHealth,
+  missingSections: string[],
+  blockingIssues: StructureIssue[],
+) {
+  if (!input.trim()) return false
+
+  return (
+    health.score < 100 ||
+    health.status !== "ready" ||
+    missingSections.length > 0 ||
+    blockingIssues.length > 0 ||
+    isTemplatePlaceholderText(input) ||
+    !hasMeaningfulAcCode(sectionMap)
+  )
+}
+
 function InputHealthPanel({ health }: { health: InputHealth }) {
   const isPerfect = health.status === "ready" && health.score >= 100
   const tone =
@@ -2837,41 +2969,41 @@ function CopyPromptToast() {
         filter: { type: "spring", stiffness: 380, damping: 24, mass: 0.6 },
       }}
     >
-      <div className="absolute inset-x-8 bottom-1 h-8 rounded-full bg-black/22 blur-2xl" />
+      <div className="absolute inset-x-8 bottom-1 h-8 rounded-full bg-black/45 blur-2xl" />
       <svg className="absolute inset-0 h-full w-full overflow-visible" viewBox="0 0 360 72" fill="none" aria-hidden="true" preserveAspectRatio="none">
         <defs>
           <linearGradient id="copy-toast-glass" x1="52" y1="8" x2="309" y2="66" gradientUnits="userSpaceOnUse">
-            <stop stopColor="rgba(255,255,255,0.06)" />
-            <stop offset="0.42" stopColor="rgba(20,38,44,0.46)" />
-            <stop offset="1" stopColor="rgba(7,14,18,0.54)" />
+            <stop stopColor="rgba(42,62,64,0.86)" />
+            <stop offset="0.42" stopColor="rgba(18,31,34,0.92)" />
+            <stop offset="1" stopColor="rgba(7,13,16,0.96)" />
           </linearGradient>
           <linearGradient id="copy-toast-edge" x1="54" y1="7" x2="315" y2="66" gradientUnits="userSpaceOnUse">
-            <stop stopColor="rgba(255,255,255,0.16)" />
-            <stop offset="0.4" stopColor="rgba(255,255,255,0.045)" />
-            <stop offset="1" stopColor="rgba(255,255,255,0.10)" />
+            <stop stopColor="rgba(255,255,255,0.28)" />
+            <stop offset="0.4" stopColor="rgba(125,211,252,0.13)" />
+            <stop offset="1" stopColor="rgba(255,255,255,0.18)" />
           </linearGradient>
           <radialGradient id="copy-toast-glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(151 17) rotate(32) scale(156 64)">
-            <stop stopColor="rgba(255,255,255,0.06)" />
+            <stop stopColor="rgba(255,255,255,0.14)" />
             <stop offset="1" stopColor="rgba(255,255,255,0)" />
           </radialGradient>
         </defs>
         <path
           d="M30.5 26.4C35.3 14.2 50.4 10.2 66.5 13.5C77.9 4.9 101.1 5.2 114.8 15.2C132.1 6.9 158.8 8.2 174.6 19.1C193.4 7.2 221.1 9.4 234.4 20.9C249.3 11.1 275.3 13 286.7 25.5C308.1 21.2 330.2 29.1 332.6 43.8C335.4 60.4 315.7 67.8 295.7 62.8C280.8 72.4 257.4 70.3 243.2 62.7C223.5 69.3 198.6 68.6 181.4 60.3C163.2 70.1 134.6 68.6 118.4 59.1C99.9 66.9 76.9 65.5 62.4 57.1C44.9 62.1 26.8 57.4 24.2 44.2C22.8 37.2 24.8 30.9 30.5 26.4Z"
           fill="url(#copy-toast-glass)"
-          opacity="0.96"
+          opacity="1"
         />
         <path
           d="M30.5 26.4C35.3 14.2 50.4 10.2 66.5 13.5C77.9 4.9 101.1 5.2 114.8 15.2C132.1 6.9 158.8 8.2 174.6 19.1C193.4 7.2 221.1 9.4 234.4 20.9C249.3 11.1 275.3 13 286.7 25.5C308.1 21.2 330.2 29.1 332.6 43.8C335.4 60.4 315.7 67.8 295.7 62.8C280.8 72.4 257.4 70.3 243.2 62.7C223.5 69.3 198.6 68.6 181.4 60.3C163.2 70.1 134.6 68.6 118.4 59.1C99.9 66.9 76.9 65.5 62.4 57.1C44.9 62.1 26.8 57.4 24.2 44.2C22.8 37.2 24.8 30.9 30.5 26.4Z"
           stroke="url(#copy-toast-edge)"
           strokeWidth="1.15"
-          opacity="0.8"
+          opacity="0.95"
         />
         <path
           d="M45 22.8C82.5 11.2 101.8 22.5 123 18.4C149.5 13.2 166 15.1 184 25.3"
-          stroke="rgba(255,255,255,0.12)"
+          stroke="rgba(255,255,255,0.18)"
           strokeWidth="1"
           strokeLinecap="round"
-          opacity="0.82"
+          opacity="0.9"
         />
         <path
           d="M30.5 26.4C35.3 14.2 50.4 10.2 66.5 13.5C77.9 4.9 101.1 5.2 114.8 15.2C132.1 6.9 158.8 8.2 174.6 19.1C193.4 7.2 221.1 9.4 234.4 20.9C249.3 11.1 275.3 13 286.7 25.5C308.1 21.2 330.2 29.1 332.6 43.8C335.4 60.4 315.7 67.8 295.7 62.8C280.8 72.4 257.4 70.3 243.2 62.7C223.5 69.3 198.6 68.6 181.4 60.3C163.2 70.1 134.6 68.6 118.4 59.1C99.9 66.9 76.9 65.5 62.4 57.1C44.9 62.1 26.8 57.4 24.2 44.2C22.8 37.2 24.8 30.9 30.5 26.4Z"
@@ -3405,8 +3537,8 @@ function ExportState({
             : hasInput
               ? {
                   kind: "missing" as const,
-                  label: "等待修复结构问题",
-                  text: `还需要处理 ${issueCount} 个关键问题，修复后即可导出。`,
+                  label: "可导出 Word 草稿",
+                  text: issueCount > 0 ? `有 ${issueCount} 个内容提醒，点击导出时会先确认。` : "有轻量提醒，但不影响先导出 Word 草稿。",
                   theme: EXPORT_STATE_THEMES.missing,
                 }
               : {
