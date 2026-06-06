@@ -69,6 +69,70 @@ body {
   animation: fade-in-bg 1.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* ==========================================
+   🚀 搜索框聚焦流光边框（参照 BorderGlow 视觉，改为持续旋转）
+   一段青色锥形亮弧绕着边框持续流动，配合外发光
+   ========================================== */
+@property --search-flow-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes search-flow-spin {
+  to {
+    --search-flow-angle: 360deg;
+  }
+}
+
+/* 共用的旋转锥形渐变：一段 cyan 亮弧 + 拖尾 */
+.search-flow-line,
+.search-flow-aura {
+  position: absolute;
+  inset: -1.5px;
+  border-radius: calc(1rem + 1.5px);
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--search-flow-angle),
+    transparent 0deg,
+    transparent 170deg,
+    rgba(34, 211, 238, 0.15) 230deg,
+    rgba(125, 211, 252, 0.85) 300deg,
+    rgba(186, 250, 255, 1) 335deg,
+    rgba(34, 211, 238, 0.6) 352deg,
+    transparent 360deg
+  );
+  animation: search-flow-spin 3.2s linear infinite;
+}
+
+/* 清晰边框线：用 mask 挖空中心只留 1.5px 描边 */
+.search-flow-line {
+  padding: 1.5px;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+/* 外发光：同款渐变模糊放大，营造光晕流动 */
+.search-flow-aura {
+  inset: -6px;
+  border-radius: calc(1rem + 6px);
+  filter: blur(11px);
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-flow-line,
+  .search-flow-aura {
+    animation: none !important;
+  }
+}
+
 @layer utilities {
   /* ==========================================
      🚀 滚动条隐藏工具类

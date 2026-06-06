@@ -116,21 +116,35 @@ export function PromptCategoryTabs({
 
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
         <div className="relative min-w-0 flex-1">
-          {/* 聚焦光晕 / 空闲呼吸脉冲 */}
+          {/* 聚焦：持续旋转的青色流光边框 + 外发光；空闲时做一次轻微呼吸提示 */}
+          <AnimatePresence>
+            {searchFocused ? (
+              <motion.div
+                key="search-flow"
+                className="pointer-events-none absolute inset-0"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4, ease: easeOutExpo }}
+              >
+                <span className="search-flow-aura" />
+                <span className="search-flow-line" />
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+          {/* 未聚焦时的空闲呼吸脉冲提示 */}
           <motion.div
             className="pointer-events-none absolute inset-0 rounded-2xl"
             animate={
-              searchFocused
-                ? { boxShadow: "0 0 0 1px rgba(125,211,252,0.35), 0 0 26px rgba(34,211,238,0.22)" }
-                : idleHint
-                  ? {
-                      boxShadow: [
-                        "0 0 0 1px rgba(125,211,252,0)",
-                        "0 0 0 1px rgba(125,211,252,0.3), 0 0 22px rgba(34,211,238,0.18)",
-                        "0 0 0 1px rgba(125,211,252,0)",
-                      ],
-                    }
-                  : { boxShadow: "0 0 0 1px rgba(125,211,252,0)" }
+              !searchFocused && idleHint
+                ? {
+                    boxShadow: [
+                      "0 0 0 1px rgba(125,211,252,0)",
+                      "0 0 0 1px rgba(125,211,252,0.3), 0 0 22px rgba(34,211,238,0.18)",
+                      "0 0 0 1px rgba(125,211,252,0)",
+                    ],
+                  }
+                : { boxShadow: "0 0 0 1px rgba(125,211,252,0)" }
             }
             transition={
               idleHint && !searchFocused
@@ -145,7 +159,7 @@ export function PromptCategoryTabs({
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
             placeholder="搜索标题、场景、标签或 prompt 内容"
-            className="relative h-12 w-full rounded-2xl border border-white/10 bg-white/[0.045] pl-11 pr-11 text-sm font-medium text-white outline-none transition-all placeholder:text-zinc-600 focus:border-cyan-200/35 focus:bg-white/[0.065]"
+            className="relative z-[1] h-12 w-full rounded-2xl border border-white/10 bg-[#070a12] pl-11 pr-11 text-sm font-medium text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-transparent"
           />
           {searchQuery ? (
             <button
