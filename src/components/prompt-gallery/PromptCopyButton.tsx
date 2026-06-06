@@ -55,14 +55,26 @@ function StrokeCheck({ size = 16 }: { size?: number }) {
   )
 }
 
-// Q弹云朵 toast
-function CloudToast({ message }: { message: string }) {
+interface ToastAnchor {
+  left: number
+  top: number
+  placement: "below" | "above"
+}
+
+const TOAST_WIDTH = 300
+const TOAST_HEIGHT = 78
+
+// Q弹云朵 toast —— 锚定在按钮附近，空间不足时翻转到另一侧
+function CloudToast({ message, anchor }: { message: string; anchor: ToastAnchor }) {
+  // 进入方向：在下方时从按钮往下弹出，在上方时从按钮往上弹出
+  const fromY = anchor.placement === "below" ? -16 : 16
   return (
     <motion.div
-      className="pointer-events-none fixed bottom-10 left-1/2 z-[120] h-[78px] w-[340px] max-w-[calc(100vw-2.5rem)] -translate-x-1/2"
-      initial={{ opacity: 0, y: 26, scale: 0.6, filter: "blur(10px)" }}
+      className="pointer-events-none fixed z-[120] h-[78px]"
+      style={{ left: anchor.left, top: anchor.top, width: TOAST_WIDTH }}
+      initial={{ opacity: 0, y: fromY, scale: 0.6, filter: "blur(10px)" }}
       animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-      exit={{ opacity: 0, y: 18, scale: 0.78, filter: "blur(8px)" }}
+      exit={{ opacity: 0, y: fromY * 0.7, scale: 0.78, filter: "blur(8px)" }}
       transition={{
         opacity: { type: "spring", stiffness: 420, damping: 22, mass: 0.6 },
         y: { type: "spring", stiffness: 360, damping: 14, mass: 0.7 },
@@ -142,8 +154,10 @@ export function PromptCopyButton({
 }: PromptCopyButtonProps) {
   const [copied, setCopied] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement | null>(null)
   const resetTimer = useRef<number | null>(null)
   const toastTimer = useRef<number | null>(null)
+  const [anchor, setAnchor] = useState<ToastAnchor | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -155,6 +169,32 @@ export function PromptCopyButton({
 
   const [showToast, setShowToast] = useState(false)
 
+  const computeAnchor = (): ToastAnchor => {
+    const gap = 12
+    const margin = 12
+    const fallback: ToastAnchor = {
+      left: typeof window !== "undefined" ? window.innerWidth / 2 - TOAST_WIDTH / 2 : 0,
+      top: 24,
+      placement: "below",
+    }
+    const el = buttonRef.current
+    if (!el || typeof window === "undefined") return fallback
+
+    const rect = el.getBoundingClientRect()
+    // 默认放在按钮下方，下方空间不足则翻转到上方
+    const spaceBelow = window.innerHeight - rect.bottom
+    const placement: ToastAnchor["placement"] =
+      spaceBelow >= TOAST_HEIGHT + gap + margin ? "below" : "above"
+    const top =
+      placement === "below" ? rect.bottom + gap : rect.top - gap - TOAST_HEIGHT
+
+    // 水平居中对齐按钮，并夹在视口内
+    let left = rect.left + rect.width / 2 - TOAST_WIDTH / 2
+    left = Math.max(margin, Math.min(left, window.innerWidth - TOAST_WIDTH - margin))
+
+    return { left, top, placement }
+  }
+
   const handleCopy = async (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
 
@@ -164,6 +204,7 @@ export function PromptCopyButton({
       // 即使复制 API 失败，也给出反馈
     }
 
+    setAnchor(computeAnchor())
     setCopied(true)
     setShowToast(true)
 
@@ -178,6 +219,7 @@ export function PromptCopyButton({
     <>
       <button
         type="button"
+        ref={buttonRef}
         onClick={handleCopy}
         className={`group/copy relative inline-flex cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.09] text-cyan-50 shadow-[0_0_30px_rgba(34,211,238,0.10)] transition-colors duration-300 hover:border-cyan-200/[0.35] hover:bg-cyan-200/[0.13] ${compact ? "gap-2 px-3 py-2 text-xs" : "gap-3 px-5 py-3 text-sm"} ${className}`}
         aria-label={copied ? "已复制" : label}
@@ -219,7 +261,9 @@ export function PromptCopyButton({
 
       {mounted
         ? createPortal(
-            <AnimatePresence>{showToast ? <CloudToast message="已复制到剪贴板" /> : null}</AnimatePresence>,
+            <AnimatePresence>
+              {showToast && anchor ? <CloudToast message="已复制到剪贴板" anchor={anchor} /> : null}
+            </AnimatePresence>,
             document.body,
           )
         : null}
