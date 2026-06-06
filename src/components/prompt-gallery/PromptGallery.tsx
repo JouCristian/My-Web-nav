@@ -14,6 +14,8 @@ import { PromptCard } from "@/components/prompt-gallery/PromptCard"
 import { PromptCategoryTabs } from "@/components/prompt-gallery/PromptCategoryTabs"
 import { PromptDetailPanel } from "@/components/prompt-gallery/PromptDetailPanel"
 import { PromptManagerModal } from "@/components/prompt-gallery/PromptManagerModal"
+import { gridContainerVariants, gridItemVariants } from "@/components/prompt-gallery/motion"
+import { CountUp } from "@/components/prompt-gallery/CountUp"
 import { Settings2 } from "lucide-react"
 
 type ActiveCategory = "全部" | ImagePromptCategory
@@ -59,12 +61,6 @@ function EmptyStateGlyph() {
       </svg>
     </div>
   )
-}
-
-const cardListTransition = {
-  type: "spring" as const,
-  stiffness: 230,
-  damping: 25,
 }
 
 const minTwoRowHeight = 760
@@ -253,7 +249,9 @@ export function PromptGallery({
 
         <div className="mt-5 flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-bold text-white">{filteredPrompts.length} 条精选提示词</p>
+            <p className="text-sm font-bold text-white">
+              <CountUp value={filteredPrompts.length} className="text-cyan-100" /> 条精选提示词
+            </p>
             <p className="mt-1 text-xs text-zinc-500">
               {hasActiveFilters ? "正在按搜索词、分类和标签筛选结果。" : "搜索或选择标签，点击卡片查看完整 prompt 和使用建议。"}
             </p>
@@ -290,21 +288,21 @@ export function PromptGallery({
               key={filteredPromptSignature || "empty-prompts"}
               ref={cardGridRef}
               className="grid min-w-0 content-start items-start gap-5 md:grid-cols-2 lg:pr-2 2xl:grid-cols-3"
-              initial={{ opacity: 0, y: 18, scale: 0.985 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 12, scale: 0.985 }}
-              transition={cardListTransition}
+              variants={gridContainerVariants}
+              initial="hidden"
+              animate="show"
+              exit="exit"
               style={{ transformOrigin: "top center" }}
             >
               {filteredPrompts.map((item) => (
-              <div key={item.id} className="min-w-0">
+              <motion.div key={item.id} variants={gridItemVariants} className="min-w-0">
                 <PromptCard
                   item={item}
                   active={selectedPrompt.id === item.id}
                   selectionVersion={selectionVersion}
                   onSelect={handleSelect}
                 />
-              </div>
+              </motion.div>
               ))}
               {!filteredPrompts.length ? (
               <div className="col-span-full flex min-h-[360px] flex-col items-center justify-center rounded-[1.75rem] border border-white/10 bg-black/25 p-8 text-center">

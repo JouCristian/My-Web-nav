@@ -16,6 +16,7 @@ interface PromptCardProps {
 export function PromptCard({ item, active, selectionVersion, onSelect }: PromptCardProps) {
   const cardRef = useRef<HTMLElement>(null)
   const [cardSize, setCardSize] = useState({ width: 0, height: 0 })
+  const [hovered, setHovered] = useState(false)
   const activeFrameInset = 2
   const activeFrameRadius = 26
   const hasCardSize = cardSize.width > 0 && cardSize.height > 0
@@ -41,8 +42,40 @@ export function PromptCard({ item, active, selectionVersion, onSelect }: PromptC
     <article
       ref={cardRef}
       onClick={() => onSelect(item)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       className="group relative min-w-0 cursor-pointer overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#05070d]/82 p-3.5 shadow-[0_18px_60px_rgba(0,0,0,0.26)] backdrop-blur-2xl"
     >
+      {/* hover 一笔画描边：未选中时也给“被触碰”的反馈，比选中态更细更暗 */}
+      {hasCardSize && !active ? (
+        <svg
+          className="pointer-events-none absolute inset-0 z-30 h-full w-full overflow-visible"
+          viewBox={`0 0 ${cardSize.width} ${cardSize.height}`}
+        >
+          <motion.rect
+            x={activeFrameInset}
+            y={activeFrameInset}
+            width={cardSize.width - activeFrameInset * 2}
+            height={cardSize.height - activeFrameInset * 2}
+            rx={activeFrameRadius}
+            ry={activeFrameRadius}
+            fill="none"
+            stroke="rgba(125, 211, 252, 0.4)"
+            strokeWidth="1"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            pathLength={1}
+            initial={false}
+            animate={{ pathLength: hovered ? 1 : 0, opacity: hovered ? 1 : 0 }}
+            transition={{
+              pathLength: { duration: hovered ? 0.55 : 0.35, ease: hovered ? [0.16, 1, 0.3, 1] : [0.64, 0, 0.78, 0] },
+              opacity: { duration: 0.3 },
+            }}
+            style={{ filter: "drop-shadow(0 0 5px rgba(34,211,238,0.18))" }}
+          />
+        </svg>
+      ) : null}
+
       <AnimatePresence>
         {active ? (
           <motion.div
