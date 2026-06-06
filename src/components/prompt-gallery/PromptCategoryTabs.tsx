@@ -35,7 +35,7 @@ function CountBadge({ resultCount, totalCount }: { resultCount: number; totalCou
   }, [resultCount])
 
   return (
-    <div className="relative inline-flex items-center gap-2 overflow-hidden rounded-2xl border border-cyan-200/15 bg-cyan-200/[0.06] px-3 py-2 text-xs font-black text-cyan-50">
+    <div className="relative inline-flex h-10 items-center gap-2 overflow-hidden rounded-2xl border border-cyan-200/15 bg-cyan-200/[0.06] px-3 text-xs font-black text-cyan-50">
       <SlidersHorizontal className="h-3.5 w-3.5" />
       <span style={{ fontVariantNumeric: "tabular-nums" }}>
         {resultCount}/{totalCount} 条
