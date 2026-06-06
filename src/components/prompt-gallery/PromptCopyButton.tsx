@@ -1,7 +1,7 @@
 "use client"
 
 import { Copy } from "lucide-react"
-import { useEffect, useRef, useState, type MouseEvent } from "react"
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react"
 import { createPortal } from "react-dom"
 import { AnimatePresence, motion } from "framer-motion"
 
@@ -65,11 +65,39 @@ const TOAST_WIDTH = 300
 const TOAST_HEIGHT = 78
 
 // Q弹云朵 toast —— 锚定在按钮附近，空间不足时翻转到另一侧
-function CloudToast({ message, anchor }: { message: string; anchor: ToastAnchor }) {
+function CloudToast({
+  message,
+  anchor,
+  getAnchor,
+}: {
+  message: string
+  anchor: ToastAnchor
+  getAnchor: () => ToastAnchor
+}) {
+  const rootRef = useRef<HTMLDivElement | null>(null)
   // 进入方向：在下方时从按钮往下弹出，在上方时从按钮往上弹出
   const fromY = anchor.placement === "below" ? -16 : 16
+
+  // 滚动/缩放时，直接写入 DOM 位置，绕过 React 重渲染，实现无延迟实时跟随
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el) return
+    const update = () => {
+      const next = getAnchor()
+      el.style.left = `${next.left}px`
+      el.style.top = `${next.top}px`
+    }
+    window.addEventListener("scroll", update, true)
+    window.addEventListener("resize", update)
+    return () => {
+      window.removeEventListener("scroll", update, true)
+      window.removeEventListener("resize", update)
+    }
+  }, [getAnchor])
+
   return (
     <motion.div
+      ref={rootRef}
       className="pointer-events-none fixed z-[120] h-[78px]"
       style={{ left: anchor.left, top: anchor.top, width: TOAST_WIDTH }}
       initial={{ opacity: 0, y: fromY, scale: 0.6, filter: "blur(10px)" }}
@@ -169,20 +197,7 @@ export function PromptCopyButton({
 
   const [showToast, setShowToast] = useState(false)
 
-  // toast 显示期间，跟随窗口滚动/缩放实时更新位置
-  useEffect(() => {
-    if (!showToast) return
-    const update = () => setAnchor(computeAnchor())
-    window.addEventListener("scroll", update, true)
-    window.addEventListener("resize", update)
-    return () => {
-      window.removeEventListener("scroll", update, true)
-      window.removeEventListener("resize", update)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showToast])
-
-  const computeAnchor = (): ToastAnchor => {
+  const computeAnchor = useCallback((): ToastAnchor => {
     const gap = 12
     const margin = 12
     const fallback: ToastAnchor = {
@@ -206,7 +221,7 @@ export function PromptCopyButton({
     left = Math.max(margin, Math.min(left, window.innerWidth - TOAST_WIDTH - margin))
 
     return { left, top, placement }
-  }
+  }, [])
 
   const handleCopy = async (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
@@ -275,7 +290,9 @@ export function PromptCopyButton({
       {mounted
         ? createPortal(
             <AnimatePresence>
-              {showToast && anchor ? <CloudToast message="已复制到剪贴板" anchor={anchor} /> : null}
+              {showToast && anchor ? (
+                <CloudToast message="已复制到剪贴板" anchor={anchor} getAnchor={computeAnchor} />
+              ) : null}
             </AnimatePresence>,
             document.body,
           )
