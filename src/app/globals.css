@@ -109,26 +109,37 @@ body {
 
 /* 底层：完整 360° 静态发散，柔和低亮度，托底不显空 */
 .search-glow-base {
-  opacity: 0.42;
+  opacity: 0.55;
 }
 
-/* 上层：锥形扫光，仅在 --sweep-angle 方向显露一段亮弧 */
+/* 上层：锥形亮弧绕框旋转。用 conic-gradient 作 background（会随 --sweep-angle 重绘），
+   再用静态边框 mask 裁成 1.5px 环形，只在边框上显露流动亮弧 */
 .search-glow-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--sweep-angle) at 50% 50%,
+    transparent 0deg,
+    transparent 18deg,
+    hsl(190deg 95% 70% / 0.5) 45deg,
+    hsl(190deg 98% 82% / 1) 70deg,
+    hsl(190deg 95% 75% / 0.6) 95deg,
+    transparent 130deg,
+    transparent 360deg
+  );
   animation: search-sweep-spin 4.5s linear infinite;
-  -webkit-mask-image: conic-gradient(
-    from var(--sweep-angle) at 50% 50%,
-    transparent 2.5%,
-    black 14%,
-    black 24%,
-    transparent 40%
-  );
-  mask-image: conic-gradient(
-    from var(--sweep-angle) at 50% 50%,
-    transparent 2.5%,
-    black 14%,
-    black 24%,
-    transparent 40%
-  );
+  padding: 2.5px;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  filter: drop-shadow(0 0 8px hsl(190deg 95% 70% / 0.85));
 }
 
 @media (prefers-reduced-motion: reduce) {

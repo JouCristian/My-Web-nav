@@ -7,7 +7,7 @@ export function SearchFlowBorder() {
   return (
     <div className="pointer-events-none absolute inset-0">
       <div className="search-glow-ring search-glow-base" />
-      <div className="search-glow-ring search-glow-sweep" />
+      <div className="search-glow-sweep" />
     </div>
   )
 }
