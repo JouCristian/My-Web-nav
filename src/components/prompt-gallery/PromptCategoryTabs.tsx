@@ -88,28 +88,6 @@ export function PromptCategoryTabs({
   totalCount,
 }: PromptCategoryTabsProps) {
   const [searchFocused, setSearchFocused] = useState(false)
-  // 空闲提示：用户一段时间没操作且搜索框为空时，让搜索框做一次轻微“呼吸”脉冲
-  const [idleHint, setIdleHint] = useState(false)
-  const idleTimerRef = useRef<number | null>(null)
-
-  useEffect(() => {
-    const scheduleIdle = () => {
-      if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current)
-      setIdleHint(false)
-      // 搜索框已有内容或正在聚焦时不提示
-      if (searchQuery || searchFocused) return
-      idleTimerRef.current = window.setTimeout(() => setIdleHint(true), 6000)
-    }
-
-    scheduleIdle()
-    const events: Array<keyof WindowEventMap> = ["pointerdown", "keydown", "pointermove", "scroll"]
-    events.forEach((evt) => window.addEventListener(evt, scheduleIdle, { passive: true }))
-
-    return () => {
-      if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current)
-      events.forEach((evt) => window.removeEventListener(evt, scheduleIdle))
-    }
-  }, [searchQuery, searchFocused])
 
   return (
     <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#05070d]/55 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.2)] backdrop-blur-2xl">
@@ -117,7 +95,7 @@ export function PromptCategoryTabs({
 
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
         <div className="relative min-w-0 flex-1">
-          {/* 聚焦：青色亮弧沿边框匀速流动 + 外发光；空闲时做一次轻微呼吸提示 */}
+          {/* 聚焦：青色亮弧沿边框匀速流动 + 外发光 */}
           <AnimatePresence>
             {searchFocused ? (
               <motion.div
@@ -132,26 +110,6 @@ export function PromptCategoryTabs({
               </motion.div>
             ) : null}
           </AnimatePresence>
-          {/* 未聚焦时的空闲呼吸脉冲提示 */}
-          <motion.div
-            className="pointer-events-none absolute inset-0 rounded-2xl"
-            animate={
-              !searchFocused && idleHint
-                ? {
-                    boxShadow: [
-                      "0 0 0 1px rgba(125,211,252,0)",
-                      "0 0 0 1px rgba(125,211,252,0.3), 0 0 22px rgba(34,211,238,0.18)",
-                      "0 0 0 1px rgba(125,211,252,0)",
-                    ],
-                  }
-                : { boxShadow: "0 0 0 1px rgba(125,211,252,0)" }
-            }
-            transition={
-              idleHint && !searchFocused
-                ? { duration: 2.2, ease: easeOutExpo, repeat: Number.POSITIVE_INFINITY }
-                : { duration: 0.45, ease: easeOutExpo }
-            }
-          />
           <Search className="pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-cyan-100/55" />
           <input
             value={searchQuery}
