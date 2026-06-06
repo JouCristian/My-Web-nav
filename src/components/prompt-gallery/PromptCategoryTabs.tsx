@@ -188,7 +188,7 @@ export function PromptCategoryTabs({
               key={tag}
               type="button"
               onClick={() => onToggleTag(tag)}
-              className={`group/tag inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-xl border px-3 text-xs font-bold transition-all duration-300 active:scale-[0.98] ${
+              className={`group/tag inline-flex min-h-9 cursor-pointer items-center rounded-xl border px-3 text-xs font-bold transition-colors duration-300 active:scale-[0.98] ${
                 active
                   ? "border-cyan-200/25 bg-cyan-200/[0.12] text-cyan-50 shadow-[0_0_24px_rgba(34,211,238,0.08)]"
                   : "border-white/10 bg-white/[0.035] text-zinc-500 hover:border-white/20 hover:bg-white/[0.055] hover:text-zinc-200"
@@ -200,9 +200,9 @@ export function PromptCategoryTabs({
                   <motion.span
                     key="check"
                     className="inline-flex items-center overflow-hidden text-cyan-200"
-                    initial={{ width: 0, opacity: 0 }}
-                    animate={{ width: 14, opacity: 1 }}
-                    exit={{ width: 0, opacity: 0 }}
+                    initial={{ width: 0, marginRight: 0, opacity: 0 }}
+                    animate={{ width: 14, marginRight: 4, opacity: 1 }}
+                    exit={{ width: 0, marginRight: 0, opacity: 0 }}
                     transition={{ duration: 0.32, ease: easeOutExpo }}
                   >
                     <motion.svg
