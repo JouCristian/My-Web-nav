@@ -16,6 +16,10 @@ if (!GITEE_CLIENT_ID || !GITEE_CLIENT_SECRET) {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
+  // 🚀 显式注入密钥，避免运行时读取不到 AUTH_SECRET 导致的 MissingSecret 错误
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  // 🚀 自定义部署 / 预览环境下信任 Host，避免 UntrustedHost 报错
+  trustHost: true,
   // 🚀 开启 debug：错误会在 Vercel Runtime Logs 里打出来真实原因
   debug: true,
   providers: [
