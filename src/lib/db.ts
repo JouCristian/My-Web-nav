@@ -14,9 +14,10 @@ function createPrismaClient() {
 
   const pool = new Pool({
     connectionString,
-    // 🚀 修复 P1017「Server has closed the connection」：
-    // Supabase/pgBouncer 会主动关闭空闲连接，池里残留的死连接会让每个请求都失败。
-    // 通过缩短空闲超时让死连接被尽快回收，并开启 TCP keepAlive 维持活性。
+    // 🚀 修复 ECONNRESET / P1017：Supabase 要求 SSL 连接，但环境无法验证其证书链，
+    // 会在 SSL 握手阶段重置连接。这里显式开启 SSL 且不强制校验证书链。
+    ssl: { rejectUnauthorized: false },
+    // 缩短空闲超时让被 pgBouncer 关闭的死连接尽快回收，并开启 keepAlive 维持活性。
     max: 10,
     idleTimeoutMillis: 10_000,
     connectionTimeoutMillis: 10_000,
