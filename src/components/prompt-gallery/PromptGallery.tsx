@@ -13,6 +13,7 @@ import type { ImagePromptCategory, ImagePromptItem } from "@/types/ai-image-prom
 import { PromptCard } from "@/components/prompt-gallery/PromptCard"
 import { PromptCategoryTabs } from "@/components/prompt-gallery/PromptCategoryTabs"
 import { PromptDetailPanel } from "@/components/prompt-gallery/PromptDetailPanel"
+import { PromptDetailEmpty } from "@/components/prompt-gallery/PromptDetailEmpty"
 import { PromptManagerModal } from "@/components/prompt-gallery/PromptManagerModal"
 import { gridContainerVariants, gridItemVariants } from "@/components/prompt-gallery/motion"
 import { CountUp } from "@/components/prompt-gallery/CountUp"
@@ -121,7 +122,7 @@ export function PromptGallery({
     })
   }, [activeCategory, items, searchQuery, selectedTags])
 
-  const selectedPrompt = filteredPrompts.find((item) => item.id === selectedPromptId) ?? filteredPrompts[0] ?? items[0]
+  const selectedPrompt = filteredPrompts.find((item) => item.id === selectedPromptId) ?? filteredPrompts[0] ?? null
   const hasActiveFilters = activeCategory !== "全部" || selectedTags.length > 0 || Boolean(searchQuery.trim())
   const filteredPromptSignature = filteredPrompts.map((item) => item.id).join("|")
   const panelHeight = twoRowHeight ? Math.max(twoRowHeight, minTwoRowHeight) : null
@@ -298,7 +299,7 @@ export function PromptGallery({
               <motion.div key={item.id} variants={gridItemVariants} className="min-w-0">
                 <PromptCard
                   item={item}
-                  active={selectedPrompt.id === item.id}
+                  active={selectedPrompt?.id === item.id}
                   selectionVersion={selectionVersion}
                   onSelect={handleSelect}
                 />
@@ -323,7 +324,18 @@ export function PromptGallery({
         </div>
 
         <div className="min-w-0 lg:sticky lg:top-24 lg:self-start">
-          {selectedPrompt ? <PromptDetailPanel item={selectedPrompt} panelHeight={panelHeight} /> : null}
+          <AnimatePresence mode="wait">
+            {selectedPrompt ? (
+              <PromptDetailPanel key={selectedPrompt.id} item={selectedPrompt} panelHeight={panelHeight} />
+            ) : (
+              <PromptDetailEmpty
+                key="detail-empty"
+                panelHeight={panelHeight}
+                onClearFilters={handleClearFilters}
+                hasActiveFilters={hasActiveFilters}
+              />
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

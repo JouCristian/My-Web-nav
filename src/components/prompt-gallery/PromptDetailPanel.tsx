@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react"
 import type { ImagePromptItem } from "@/types/ai-image-prompt"
 import { Lightbulb, Sparkles } from "lucide-react"
-import { AnimatePresence, motion } from "framer-motion"
+import { motion } from "framer-motion"
 import { PromptCopyButton } from "@/components/prompt-gallery/PromptCopyButton"
 import { PromptPreviewVisual } from "@/components/prompt-gallery/PromptPreviewVisual"
 
@@ -26,16 +26,15 @@ export function PromptDetailPanel({ item, panelHeight }: PromptDetailPanelProps)
   }, [item.id])
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.aside
-        key={item.id}
-        initial={{ opacity: 0, y: 18, scale: 0.985 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 12, scale: 0.985 }}
-        transition={panelTransition}
-        style={panelHeight ? { height: panelHeight, maxHeight: panelHeight } : undefined}
-        className={panelHeight ? "min-w-0" : "min-w-0 lg:h-[calc(100vh-120px)] lg:max-h-[calc(100vh-120px)] lg:min-h-[70vh]"}
-      >
+    <motion.aside
+      key={item.id}
+      initial={{ opacity: 0, y: 18, scale: 0.985 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 12, scale: 0.985 }}
+      transition={panelTransition}
+      style={panelHeight ? { height: panelHeight, maxHeight: panelHeight } : undefined}
+      className={panelHeight ? "min-w-0" : "min-w-0 lg:h-[calc(100vh-120px)] lg:max-h-[calc(100vh-120px)] lg:min-h-[70vh]"}
+    >
         <div className="relative overflow-visible rounded-[2rem] border border-white/10 bg-[#05070d]/90 p-4 shadow-[0_24px_90px_rgba(0,0,0,0.36)] backdrop-blur-2xl lg:h-full">
           <motion.div
             className="pointer-events-none absolute inset-0 rounded-[2rem]"
@@ -129,6 +128,5 @@ export function PromptDetailPanel({ item, panelHeight }: PromptDetailPanelProps)
               </div>
         </div>
       </motion.aside>
-    </AnimatePresence>
   )
 }
