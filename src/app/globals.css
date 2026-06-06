@@ -70,67 +70,24 @@ body {
 }
 
 /* ==========================================
-   🚀 搜索框聚焦流光边框（参照 BorderGlow 视觉，改为持续旋转）
-   一段青色锥形亮弧绕着边框持续流动，配合外发光
+   🚀 搜索框聚焦流光边框（SVG 描边 + dashoffset 沿周长匀速移动）
+   亮弧沿圆角矩形“周长”等速行进，与宽高比无关，绝对均匀
    ========================================== */
-@property --search-flow-angle {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
-}
-
-@keyframes search-flow-spin {
+@keyframes search-flow-march {
+  from {
+    stroke-dashoffset: 0px;
+  }
   to {
-    --search-flow-angle: 360deg;
+    stroke-dashoffset: var(--flow-perimeter);
   }
 }
 
-/* 共用的旋转锥形渐变：两段对称的 cyan 亮弧，过渡平缓，弱化矩形长边/角落的角速度差异 */
-.search-flow-line,
-.search-flow-aura {
-  position: absolute;
-  inset: -1.5px;
-  border-radius: calc(1rem + 1.5px);
-  pointer-events: none;
-  background: conic-gradient(
-    from var(--search-flow-angle),
-    rgba(34, 211, 238, 0.1) 0deg,
-    rgba(125, 211, 252, 0.7) 45deg,
-    rgba(186, 250, 255, 1) 90deg,
-    rgba(125, 211, 252, 0.7) 135deg,
-    rgba(34, 211, 238, 0.1) 180deg,
-    rgba(125, 211, 252, 0.7) 225deg,
-    rgba(186, 250, 255, 1) 270deg,
-    rgba(125, 211, 252, 0.7) 315deg,
-    rgba(34, 211, 238, 0.1) 360deg
-  );
-  animation: search-flow-spin 4.5s linear infinite;
-}
-
-/* 清晰边框线：用 mask 挖空中心只留 1.5px 描边 */
-.search-flow-line {
-  padding: 1.5px;
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-}
-
-/* 外发光：同款渐变模糊放大，营造光晕流动 */
-.search-flow-aura {
-  inset: -6px;
-  border-radius: calc(1rem + 6px);
-  filter: blur(11px);
-  opacity: 0.7;
+.search-flow-dash {
+  animation: search-flow-march 4.5s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .search-flow-line,
-  .search-flow-aura {
+  .search-flow-dash {
     animation: none !important;
   }
 }

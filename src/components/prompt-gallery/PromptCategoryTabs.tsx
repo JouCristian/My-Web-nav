@@ -5,6 +5,7 @@ import { Search, SlidersHorizontal, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import type { ImagePromptCategory } from "@/types/ai-image-prompt"
 import { easeOutExpo, easeStroke } from "@/components/prompt-gallery/motion"
+import { SearchFlowBorder } from "@/components/prompt-gallery/SearchFlowBorder"
 
 interface PromptCategoryTabsProps {
   categories: Array<"全部" | ImagePromptCategory>
@@ -116,7 +117,7 @@ export function PromptCategoryTabs({
 
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
         <div className="relative min-w-0 flex-1">
-          {/* 聚焦：持续旋转的青色流光边框 + 外发光；空闲时做一次轻微呼吸提示 */}
+          {/* 聚焦：青色亮弧沿边框匀速流动 + 外发光；空闲时做一次轻微呼吸提示 */}
           <AnimatePresence>
             {searchFocused ? (
               <motion.div
@@ -127,8 +128,7 @@ export function PromptCategoryTabs({
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.4, ease: easeOutExpo }}
               >
-                <span className="search-flow-aura" />
-                <span className="search-flow-line" />
+                <SearchFlowBorder />
               </motion.div>
             ) : null}
           </AnimatePresence>
