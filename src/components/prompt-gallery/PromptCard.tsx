@@ -13,6 +13,27 @@ interface PromptCardProps {
   onSelect: (item: ImagePromptItem) => void
 }
 
+// 生成带 overshoot 的圆角矩形描边路径：从顶边中点起顺时针绘制一圈，
+// 终点沿顶边越过起点 overlap 长度，闭环重叠以消除起点/终点对接的小缺口
+function roundedRectPath(x: number, y: number, w: number, h: number, r: number, overlap = 14) {
+  const radius = Math.min(r, w / 2, h / 2)
+  const right = x + w
+  const bottom = y + h
+  const midX = x + w / 2
+  return [
+    `M${midX} ${y}`,
+    `H${right - radius}`,
+    `A${radius} ${radius} 0 0 1 ${right} ${y + radius}`,
+    `V${bottom - radius}`,
+    `A${radius} ${radius} 0 0 1 ${right - radius} ${bottom}`,
+    `H${x + radius}`,
+    `A${radius} ${radius} 0 0 1 ${x} ${bottom - radius}`,
+    `V${y + radius}`,
+    `A${radius} ${radius} 0 0 1 ${x + radius} ${y}`,
+    `H${Math.min(midX + overlap, right - radius)}`,
+  ].join(" ")
+}
+
 export function PromptCard({ item, active, selectionVersion, onSelect }: PromptCardProps) {
   const cardRef = useRef<HTMLElement>(null)
   const [cardSize, setCardSize] = useState({ width: 0, height: 0 })
@@ -52,13 +73,14 @@ export function PromptCard({ item, active, selectionVersion, onSelect }: PromptC
           className="pointer-events-none absolute inset-0 z-30 h-full w-full overflow-visible"
           viewBox={`0 0 ${cardSize.width} ${cardSize.height}`}
         >
-          <motion.rect
-            x={activeFrameInset}
-            y={activeFrameInset}
-            width={cardSize.width - activeFrameInset * 2}
-            height={cardSize.height - activeFrameInset * 2}
-            rx={activeFrameRadius}
-            ry={activeFrameRadius}
+          <motion.path
+            d={roundedRectPath(
+              activeFrameInset,
+              activeFrameInset,
+              cardSize.width - activeFrameInset * 2,
+              cardSize.height - activeFrameInset * 2,
+              activeFrameRadius,
+            )}
             fill="none"
             stroke="rgba(125, 211, 252, 0.4)"
             strokeWidth="1"
@@ -99,13 +121,14 @@ export function PromptCard({ item, active, selectionVersion, onSelect }: PromptC
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           >
-            <motion.rect
-              x={activeFrameInset}
-              y={activeFrameInset}
-              width={cardSize.width - activeFrameInset * 2}
-              height={cardSize.height - activeFrameInset * 2}
-              rx={activeFrameRadius}
-              ry={activeFrameRadius}
+            <motion.path
+              d={roundedRectPath(
+                activeFrameInset,
+                activeFrameInset,
+                cardSize.width - activeFrameInset * 2,
+                cardSize.height - activeFrameInset * 2,
+                activeFrameRadius,
+              )}
               fill="none"
               stroke="rgba(165, 243, 252, 0.98)"
               strokeWidth="2"

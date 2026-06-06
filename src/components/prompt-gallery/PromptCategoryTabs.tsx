@@ -50,13 +50,8 @@ function CountBadge({ resultCount, totalCount }: { resultCount: number; totalCou
           animate={{ opacity: 0 }}
           transition={{ duration: 0.9, ease: easeOutExpo }}
         >
-          <motion.rect
-            x={1.5}
-            y={1.5}
-            width={97}
-            height={33}
-            rx={14}
-            ry={14}
+          <motion.path
+            d="M60 1.5H84.5A14 14 0 0 1 98.5 15.5V20.5A14 14 0 0 1 84.5 34.5H15.5A14 14 0 0 1 1.5 20.5V15.5A14 14 0 0 1 15.5 1.5H72"
             fill="none"
             stroke="rgba(165,243,252,0.95)"
             strokeWidth={1.5}

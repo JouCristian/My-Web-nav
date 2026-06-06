@@ -57,13 +57,9 @@ export function PromptDetailEmpty({ panelHeight, onClearFilters, hasActiveFilter
             aria-hidden="true"
             className="relative overflow-visible"
           >
-            {/* 画框 */}
-            <motion.rect
-              x={18}
-              y={26}
-              width={84}
-              height={68}
-              rx={10}
+            {/* 画框（显式圆角矩形路径，终点沿顶边越过起点重叠，消除闭环缺口） */}
+            <motion.path
+              d="M28 26H92A10 10 0 0 1 102 36V84A10 10 0 0 1 92 94H28A10 10 0 0 1 18 84V36A10 10 0 0 1 28 26H42"
               fill="none"
               stroke={stroke}
               strokeWidth={2.4}
@@ -71,11 +67,9 @@ export function PromptDetailEmpty({ panelHeight, onClearFilters, hasActiveFilter
               style={glow}
               {...drawLoop(0)}
             />
-            {/* 落日 */}
-            <motion.circle
-              cx={44}
-              cy={50}
-              r={9}
+            {/* 落日（显式圆形路径，终点沿圆周越过起点重叠，消除闭环缺口） */}
+            <motion.path
+              d="M44 41A9 9 0 1 1 44 59A9 9 0 1 1 44 41A9 9 0 0 1 47.8 41.8"
               fill="none"
               stroke={stroke}
               strokeWidth={2.4}

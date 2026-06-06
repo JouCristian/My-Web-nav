@@ -34,10 +34,8 @@ function EmptyStateGlyph() {
   return (
     <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl border border-cyan-200/15 bg-cyan-200/[0.05] text-cyan-100 shadow-[0_0_34px_rgba(34,211,238,0.1)]">
       <svg width={40} height={40} viewBox="0 0 48 48" fill="none" aria-hidden="true" className="overflow-visible">
-        <motion.circle
-          cx={20}
-          cy={20}
-          r={13}
+        <motion.path
+          d="M33 20A13 13 0 1 1 7 20A13 13 0 1 1 33 20A13 13 0 0 1 31.5 26"
           fill="none"
           stroke="rgba(165,243,252,0.95)"
           strokeWidth={2.4}
