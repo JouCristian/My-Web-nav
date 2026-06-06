@@ -169,6 +169,19 @@ export function PromptCopyButton({
 
   const [showToast, setShowToast] = useState(false)
 
+  // toast 显示期间，跟随窗口滚动/缩放实时更新位置
+  useEffect(() => {
+    if (!showToast) return
+    const update = () => setAnchor(computeAnchor())
+    window.addEventListener("scroll", update, true)
+    window.addEventListener("resize", update)
+    return () => {
+      window.removeEventListener("scroll", update, true)
+      window.removeEventListener("resize", update)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showToast])
+
   const computeAnchor = (): ToastAnchor => {
     const gap = 12
     const margin = 12
