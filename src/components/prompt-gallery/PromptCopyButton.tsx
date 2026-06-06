@@ -64,41 +64,14 @@ interface ToastAnchor {
 const TOAST_WIDTH = 300
 const TOAST_HEIGHT = 78
 
-// Q弹云朵 toast —— 锚定在按钮附近，空间不足时翻转到另一侧
-function CloudToast({
-  message,
-  anchor,
-  getAnchor,
-}: {
-  message: string
-  anchor: ToastAnchor
-  getAnchor: () => ToastAnchor
-}) {
-  const rootRef = useRef<HTMLDivElement | null>(null)
+// Q弹云朵 toast —— 焊在页面文档坐标上，随页面一起滚动
+function CloudToast({ message, anchor }: { message: string; anchor: ToastAnchor }) {
   // 进入方向：在下方时从按钮往下弹出，在上方时从按钮往上弹出
   const fromY = anchor.placement === "below" ? -16 : 16
 
-  // 滚动/缩放时，直接写入 DOM 位置，绕过 React 重渲染，实现无延迟实时跟随
-  useEffect(() => {
-    const el = rootRef.current
-    if (!el) return
-    const update = () => {
-      const next = getAnchor()
-      el.style.left = `${next.left}px`
-      el.style.top = `${next.top}px`
-    }
-    window.addEventListener("scroll", update, true)
-    window.addEventListener("resize", update)
-    return () => {
-      window.removeEventListener("scroll", update, true)
-      window.removeEventListener("resize", update)
-    }
-  }, [getAnchor])
-
   return (
     <motion.div
-      ref={rootRef}
-      className="pointer-events-none fixed z-[120] h-[78px]"
+      className="pointer-events-none absolute z-[120] h-[78px]"
       style={{ left: anchor.left, top: anchor.top, width: TOAST_WIDTH }}
       initial={{ opacity: 0, y: fromY, scale: 0.6, filter: "blur(10px)" }}
       animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
@@ -200,25 +173,28 @@ export function PromptCopyButton({
   const computeAnchor = useCallback((): ToastAnchor => {
     const gap = 12
     const margin = 12
+    const scrollX = typeof window !== "undefined" ? window.scrollX : 0
+    const scrollY = typeof window !== "undefined" ? window.scrollY : 0
     const fallback: ToastAnchor = {
-      left: typeof window !== "undefined" ? window.innerWidth / 2 - TOAST_WIDTH / 2 : 0,
-      top: 24,
+      left: typeof window !== "undefined" ? window.innerWidth / 2 - TOAST_WIDTH / 2 + scrollX : 0,
+      top: 24 + scrollY,
       placement: "below",
     }
     const el = buttonRef.current
     if (!el || typeof window === "undefined") return fallback
 
     const rect = el.getBoundingClientRect()
-    // 默认放在按钮下方，下方空间不足则翻转到上方
+    // 默认放在按钮下方，下方空间不足则翻转到上方（基于视口判断）
     const spaceBelow = window.innerHeight - rect.bottom
     const placement: ToastAnchor["placement"] =
       spaceBelow >= TOAST_HEIGHT + gap + margin ? "below" : "above"
+    // 转换为文档坐标，使 toast 焊在页面上随滚动移动
     const top =
-      placement === "below" ? rect.bottom + gap : rect.top - gap - TOAST_HEIGHT
+      (placement === "below" ? rect.bottom + gap : rect.top - gap - TOAST_HEIGHT) + scrollY
 
     // 水平居中对齐按钮，并夹在视口内
     let left = rect.left + rect.width / 2 - TOAST_WIDTH / 2
-    left = Math.max(margin, Math.min(left, window.innerWidth - TOAST_WIDTH - margin))
+    left = Math.max(margin, Math.min(left, window.innerWidth - TOAST_WIDTH - margin)) + scrollX
 
     return { left, top, placement }
   }, [])
@@ -291,7 +267,7 @@ export function PromptCopyButton({
         ? createPortal(
             <AnimatePresence>
               {showToast && anchor ? (
-                <CloudToast message="已复制到剪贴板" anchor={anchor} getAnchor={computeAnchor} />
+                <CloudToast message="已复制到剪贴板" anchor={anchor} />
               ) : null}
             </AnimatePresence>,
             document.body,
