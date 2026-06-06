@@ -165,6 +165,47 @@ model Bookmark {
 }
 
 // ==========================================
+// 🎨 AI 生图提示词工坊 (Prompt Workshop)
+// ==========================================
+model PromptCategory {
+  id        String       @id @default(cuid())
+  name      String       @unique
+  slug      String       @unique
+  sortOrder Int          @default(0)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  cards     PromptCard[]
+}
+
+model PromptCard {
+  id              String         @id @default(cuid())
+  title           String
+  description     String
+  categoryId      String
+  category        PromptCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  tags            String[]       @default([])
+  modelTarget     String         @default("AI 通用")
+  previewImage    String?        @db.Text
+  previewImagePath String?
+  previewGradient String?        @db.Text
+  prompt          String         @db.Text
+  promptSummary   String         @db.Text
+  useCase         String         @db.Text
+  tips            String[]       @default([])
+  sortOrder       Int            @default(0)
+  isActive        Boolean        @default(true)
+  createdById     String?
+  updatedById     String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([categoryId])
+  @@index([isActive, sortOrder])
+  @@index([createdAt])
+}
+
+// ==========================================
 // 📢 模块 A：全舰公告大屏 (Broadcast System)
 // ==========================================
 model Announcement {

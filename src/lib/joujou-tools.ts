@@ -14,6 +14,17 @@ export interface JouJouTool {
 
 export const joujouTools: JouJouTool[] = [
   {
+    slug: "ai-image-prompt-workshop",
+    title: "AI生图提示词灵感工坊",
+    subtitle: "精选视觉提示词的高级浏览与复制工作台",
+    description:
+      "以 Apple-like 深色画廊呈现高质量通用生图提示词，支持分类浏览、展开预览和一键复制，适合快速启动视觉创作。",
+    status: "available",
+    tags: ["AI 绘图", "Prompt Gallery", "通用生图", "视觉灵感"],
+    href: "/joujou-tools/ai-image-prompt-workshop",
+    accent: "emerald",
+  },
+  {
     slug: "csp-review-doc-generator",
     title: "算法题解文档可视化生成器",
     subtitle: "从算法题对话到题解复盘文档的可视化工作台",

@@ -44,6 +44,7 @@ export default function RootLayout({
   return (
     <html
       lang="zh-CN"
+      suppressHydrationWarning
       // 🚀 将新的字体变量注入到全局
       className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} h-full antialiased bg-[#020205]`}
     >
