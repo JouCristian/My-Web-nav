@@ -50,10 +50,10 @@ export function PromptCategoryTabs({
             <button
               type="button"
               onClick={() => onSearchChange("")}
-              className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-white/10 hover:text-white"
+              className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-white/10 hover:text-white"
               aria-label="清除搜索"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3.5 w-3.5 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-110" />
             </button>
           ) : null}
         </div>
@@ -70,9 +70,9 @@ export function PromptCategoryTabs({
               onClick={onClearFilters}
               initial={{ opacity: 0, scale: 0.92 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="inline-flex h-10 items-center gap-2 rounded-2xl border border-rose-200/15 bg-rose-300/[0.08] px-3 text-xs font-black text-rose-100 transition-colors hover:bg-rose-300/[0.13] active:scale-[0.98]"
+              className="group/clear inline-flex h-10 cursor-pointer items-center gap-2 rounded-2xl border border-rose-200/15 bg-rose-300/[0.08] px-3 text-xs font-black text-rose-100 transition-colors hover:bg-rose-300/[0.13] active:scale-[0.98]"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3.5 w-3.5 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/clear:scale-110" />
               清除筛选
             </motion.button>
           ) : null}
@@ -80,8 +80,6 @@ export function PromptCategoryTabs({
       </div>
 
       <div className="relative mt-3">
-        <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-8 bg-gradient-to-r from-[#05070d] to-transparent" />
-        <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 w-8 bg-gradient-to-l from-[#05070d] to-transparent" />
         <div className="max-w-full overflow-x-auto pb-2 [scrollbar-color:rgba(125,211,252,0.34)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-200/35 [&::-webkit-scrollbar-track]:bg-transparent">
           <div className="inline-flex w-max min-w-full gap-2 px-2">
             {categories.map((category) => {
@@ -92,7 +90,7 @@ export function PromptCategoryTabs({
                   key={category}
                   type="button"
                   onClick={() => onCategoryChange(category)}
-                  className={`relative min-h-11 shrink-0 rounded-2xl px-4 text-sm font-bold transition-colors duration-300 active:scale-[0.98] ${
+                  className={`relative min-h-11 shrink-0 cursor-pointer rounded-2xl px-4 text-sm font-bold transition-colors duration-300 active:scale-[0.98] ${
                     active ? "text-white" : "text-zinc-500 hover:text-zinc-200"
                   }`}
                 >
@@ -120,7 +118,7 @@ export function PromptCategoryTabs({
               key={tag}
               type="button"
               onClick={() => onToggleTag(tag)}
-              className={`inline-flex min-h-9 items-center rounded-xl border px-3 text-xs font-bold transition-all duration-300 active:scale-[0.98] ${
+              className={`inline-flex min-h-9 cursor-pointer items-center rounded-xl border px-3 text-xs font-bold transition-all duration-300 active:scale-[0.98] ${
                 active
                   ? "border-cyan-200/25 bg-cyan-200/[0.12] text-cyan-50 shadow-[0_0_24px_rgba(34,211,238,0.08)]"
                   : "border-white/10 bg-white/[0.035] text-zinc-500 hover:border-white/20 hover:bg-white/[0.055] hover:text-zinc-200"

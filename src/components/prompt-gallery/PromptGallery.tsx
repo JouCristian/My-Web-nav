@@ -14,9 +14,52 @@ import { PromptCard } from "@/components/prompt-gallery/PromptCard"
 import { PromptCategoryTabs } from "@/components/prompt-gallery/PromptCategoryTabs"
 import { PromptDetailPanel } from "@/components/prompt-gallery/PromptDetailPanel"
 import { PromptManagerModal } from "@/components/prompt-gallery/PromptManagerModal"
-import { Search, Settings2 } from "lucide-react"
+import { Settings2 } from "lucide-react"
 
 type ActiveCategory = "全部" | ImagePromptCategory
+
+// 空状态：循环播放的一笔画放大镜
+function EmptyStateGlyph() {
+  const drawTransition = {
+    duration: 1.6,
+    ease: [0.65, 0, 0.35, 1] as const,
+    repeat: Number.POSITIVE_INFINITY,
+    repeatDelay: 0.7,
+  }
+
+  return (
+    <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl border border-cyan-200/15 bg-cyan-200/[0.05] text-cyan-100 shadow-[0_0_34px_rgba(34,211,238,0.1)]">
+      <svg width={40} height={40} viewBox="0 0 48 48" fill="none" aria-hidden="true" className="overflow-visible">
+        <motion.circle
+          cx={20}
+          cy={20}
+          r={13}
+          fill="none"
+          stroke="rgba(165,243,252,0.95)"
+          strokeWidth={2.4}
+          strokeLinecap="round"
+          pathLength={1}
+          initial={{ pathLength: 0, opacity: 0.2 }}
+          animate={{ pathLength: [0, 1, 1, 0], opacity: [0.2, 1, 1, 0.2] }}
+          transition={drawTransition}
+          style={{ filter: "drop-shadow(0 0 6px rgba(34,211,238,0.4))" }}
+        />
+        <motion.path
+          d="M30 30L41 41"
+          fill="none"
+          stroke="rgba(165,243,252,0.95)"
+          strokeWidth={2.4}
+          strokeLinecap="round"
+          pathLength={1}
+          initial={{ pathLength: 0, opacity: 0.2 }}
+          animate={{ pathLength: [0, 1, 1, 0], opacity: [0.2, 1, 1, 0.2] }}
+          transition={{ ...drawTransition, delay: 0.45 }}
+          style={{ filter: "drop-shadow(0 0 6px rgba(34,211,238,0.4))" }}
+        />
+      </svg>
+    </div>
+  )
+}
 
 const cardListTransition = {
   type: "spring" as const,
@@ -220,9 +263,9 @@ export function PromptGallery({
               <button
                 type="button"
                 onClick={() => setManagerOpen(true)}
-                className="inline-flex min-h-10 items-center gap-2 rounded-2xl border border-emerald-200/15 bg-emerald-200/[0.07] px-3 text-xs font-black text-emerald-50 transition-all hover:bg-emerald-200/[0.11] active:scale-[0.98]"
+                className="group/manage inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-2xl border border-emerald-200/15 bg-emerald-200/[0.07] px-3 text-xs font-black text-emerald-50 transition-all hover:bg-emerald-200/[0.11] active:scale-[0.98]"
               >
-                <Settings2 className="h-3.5 w-3.5" />
+                <Settings2 className="h-3.5 w-3.5 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/manage:scale-110" />
                 管理 card
               </button>
             ) : null}
@@ -265,15 +308,13 @@ export function PromptGallery({
               ))}
               {!filteredPrompts.length ? (
               <div className="col-span-full flex min-h-[360px] flex-col items-center justify-center rounded-[1.75rem] border border-white/10 bg-black/25 p-8 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-200/15 bg-cyan-200/[0.07] text-cyan-100">
-                  <Search className="h-5 w-5" />
-                </div>
+                <EmptyStateGlyph />
                 <h3 className="mt-5 text-lg font-black text-white">没有匹配的提示词</h3>
                 <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-500">换一个关键词，减少标签条件，或者清除筛选重新浏览。</p>
                 <button
                   type="button"
                   onClick={handleClearFilters}
-                  className="mt-5 inline-flex min-h-10 items-center rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.08] px-4 text-xs font-black text-cyan-50 transition-colors hover:bg-cyan-200/[0.13] active:scale-[0.98]"
+                  className="mt-5 inline-flex min-h-10 cursor-pointer items-center rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.08] px-4 text-xs font-black text-cyan-50 transition-colors hover:bg-cyan-200/[0.13] active:scale-[0.98]"
                 >
                   清除筛选
                 </button>
