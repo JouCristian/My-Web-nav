@@ -48,7 +48,7 @@ const heroSignals: Signal[] = [
 export function HeroSignals() {
   return (
     <motion.div
-      className="hidden w-full min-w-0 grid-cols-3 gap-3 lg:grid"
+      className="hidden w-full min-w-0 grid-cols-3 gap-3 md:grid"
       variants={gridContainerVariants}
       initial="hidden"
       animate="show"
@@ -60,7 +60,7 @@ export function HeroSignals() {
           <motion.div
             key={item.step}
             variants={gridItemVariants}
-            className={`group relative min-h-[172px] min-w-0 overflow-hidden rounded-[1.35rem] border p-4 shadow-[0_18px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl ${item.cardClassName}`}
+            className={`group relative min-h-[140px] min-w-0 overflow-hidden rounded-[1.35rem] border p-4 shadow-[0_18px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl lg:min-h-[172px] ${item.cardClassName}`}
           >
             {/* ReactBits 锥形流光描边：纯 CSS 圆角，永远贴合卡片轮廓；三张卡用不同色相并错开相位 */}
             <SearchFlowBorder radius="1.35rem" hue={item.hue} duration="5s" delay={`${index * -1.4}s`} />

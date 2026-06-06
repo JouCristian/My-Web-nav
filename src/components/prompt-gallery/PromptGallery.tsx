@@ -14,6 +14,7 @@ import { PromptCard } from "@/components/prompt-gallery/PromptCard"
 import { PromptCategoryTabs } from "@/components/prompt-gallery/PromptCategoryTabs"
 import { PromptDetailPanel } from "@/components/prompt-gallery/PromptDetailPanel"
 import { PromptDetailEmpty } from "@/components/prompt-gallery/PromptDetailEmpty"
+import { PromptDetailDialog } from "@/components/prompt-gallery/PromptDetailDialog"
 import { PromptManagerModal } from "@/components/prompt-gallery/PromptManagerModal"
 import { gridContainerVariants, gridItemVariants } from "@/components/prompt-gallery/motion"
 import { CountUp } from "@/components/prompt-gallery/CountUp"
@@ -81,6 +82,7 @@ export function PromptGallery({
   const [selectedPromptId, setSelectedPromptId] = useState(items[0].id)
   const [selectionVersion, setSelectionVersion] = useState(0)
   const [managerOpen, setManagerOpen] = useState(false)
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false)
   const [twoRowHeight, setTwoRowHeight] = useState<number | null>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const cardGridRef = useRef<HTMLDivElement>(null)
@@ -147,6 +149,10 @@ export function PromptGallery({
   const handleSelect = (item: ImagePromptItem) => {
     setSelectedPromptId(item.id)
     setSelectionVersion((current) => current + 1)
+    // 中小屏（无右侧常驻面板）：点击卡片直接弹出详情弹窗
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setDetailDialogOpen(true)
+    }
   }
 
   const applyWorkshopData = (data: PromptWorkshopData) => {
@@ -321,7 +327,7 @@ export function PromptGallery({
           </AnimatePresence>
         </div>
 
-        <div className="min-w-0 lg:sticky lg:top-24 lg:self-start">
+        <div className="hidden min-w-0 lg:block lg:sticky lg:top-24 lg:self-start">
           <AnimatePresence mode="wait">
             {selectedPrompt ? (
               <PromptDetailPanel key={selectedPrompt.id} item={selectedPrompt} panelHeight={panelHeight} />
@@ -336,6 +342,8 @@ export function PromptGallery({
           </AnimatePresence>
         </div>
       </div>
+
+      <PromptDetailDialog item={selectedPrompt} open={detailDialogOpen} onClose={() => setDetailDialogOpen(false)} />
 
       <PromptManagerModal
         open={managerOpen}
