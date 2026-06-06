@@ -36,6 +36,34 @@ export function SearchFlowBorder() {
     <div ref={wrapRef} className="pointer-events-none absolute inset-0">
       {ready ? (
         <>
+          {/* 底层 360° 静态发散底色：整圈完整描边 + 模糊，填满亮弧扫不到的地方，不让边框显空 */}
+          <svg className="absolute inset-0 h-full w-full overflow-visible" style={{ filter: "blur(8px)" }}>
+            <rect
+              x={inset}
+              y={inset}
+              width={w}
+              height={h}
+              rx={radius}
+              ry={radius}
+              fill="none"
+              stroke="rgba(34,211,238,0.4)"
+              strokeWidth={2.5}
+            />
+          </svg>
+          {/* 底层 360° 静态描边线：柔和的整圈基底 */}
+          <svg className="absolute inset-0 h-full w-full overflow-visible">
+            <rect
+              x={inset}
+              y={inset}
+              width={w}
+              height={h}
+              rx={radius}
+              ry={radius}
+              fill="none"
+              stroke="rgba(125,211,252,0.3)"
+              strokeWidth={1.5}
+            />
+          </svg>
           {/* 外发光层：更粗、模糊，营造光晕 */}
           <svg className="absolute inset-0 h-full w-full overflow-visible" style={{ filter: "blur(7px)" }}>
             <rect
