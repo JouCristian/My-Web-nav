@@ -169,34 +169,67 @@ export function PromptCopyButton({
   }, [])
 
   const [showToast, setShowToast] = useState(false)
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null)
 
-  const computeAnchor = useCallback((): ToastAnchor => {
+  // 找到承载按钮的实际滚动容器（没有则返回 null，代表用 body）
+  const getScrollParent = (el: HTMLElement | null): HTMLElement | null => {
+    let node = el?.parentElement ?? null
+    while (node && node !== document.body) {
+      const cs = window.getComputedStyle(node)
+      if (/(auto|scroll|overlay)/.test(cs.overflowY) && node.scrollHeight > node.clientHeight) {
+        return node
+      }
+      node = node.parentElement
+    }
+    return null
+  }
+
+  const computeAnchor = useCallback((): { anchor: ToastAnchor; target: HTMLElement | null } => {
     const gap = 12
     const margin = 12
-    const scrollX = typeof window !== "undefined" ? window.scrollX : 0
-    const scrollY = typeof window !== "undefined" ? window.scrollY : 0
-    const fallback: ToastAnchor = {
-      left: typeof window !== "undefined" ? window.innerWidth / 2 - TOAST_WIDTH / 2 + scrollX : 0,
-      top: 24 + scrollY,
-      placement: "below",
+    const fallback = {
+      anchor: {
+        left: typeof window !== "undefined" ? window.innerWidth / 2 - TOAST_WIDTH / 2 : 0,
+        top: 24,
+        placement: "below" as const,
+      },
+      target: null,
     }
     const el = buttonRef.current
     if (!el || typeof window === "undefined") return fallback
 
     const rect = el.getBoundingClientRect()
-    // 默认放在按钮下方，下方空间不足则翻转到上方（基于视口判断）
-    const spaceBelow = window.innerHeight - rect.bottom
+    const container = getScrollParent(el)
+
+    // 判断放上方还是下方：相对滚动容器（无容器则相对视口）的可用空间
+    const containerRect = container?.getBoundingClientRect()
+    const bottomEdge = containerRect ? containerRect.bottom : window.innerHeight
+    const spaceBelow = bottomEdge - rect.bottom
     const placement: ToastAnchor["placement"] =
       spaceBelow >= TOAST_HEIGHT + gap + margin ? "below" : "above"
-    // 转换为文档坐标，使 toast 焊在页面上随滚动移动
+
+    if (container) {
+      // 坐标相对滚动容器内容（含 scrollTop），toast 作为容器子节点，随内容一起滚动并焊在原处
+      const cRect = container.getBoundingClientRect()
+      const top =
+        (placement === "below" ? rect.bottom : rect.top - gap - TOAST_HEIGHT) -
+        cRect.top +
+        container.scrollTop +
+        (placement === "below" ? gap : 0)
+      let left = rect.left - cRect.left + container.scrollLeft + rect.width / 2 - TOAST_WIDTH / 2
+      const maxLeft = container.scrollWidth - TOAST_WIDTH - margin
+      left = Math.max(margin, Math.min(left, Math.max(margin, maxLeft)))
+      return { anchor: { left, top, placement }, target: container }
+    }
+
+    // 没有滚动容器：portal 到 body，使用文档坐标（含 window 滚动）
+    const scrollX = window.scrollX
+    const scrollY = window.scrollY
     const top =
       (placement === "below" ? rect.bottom + gap : rect.top - gap - TOAST_HEIGHT) + scrollY
-
-    // 水平居中对齐按钮，并夹在视口内
     let left = rect.left + rect.width / 2 - TOAST_WIDTH / 2
     left = Math.max(margin, Math.min(left, window.innerWidth - TOAST_WIDTH - margin)) + scrollX
-
-    return { left, top, placement }
+    return { anchor: { left, top, placement }, target: null }
   }, [])
 
   const handleCopy = async (event: MouseEvent<HTMLButtonElement>) => {
@@ -208,7 +241,13 @@ export function PromptCopyButton({
       // 即使复制 API 失败，也给出反馈
     }
 
-    setAnchor(computeAnchor())
+    const { anchor: nextAnchor, target } = computeAnchor()
+    // 确保容器是定位上下文，absolute 才能相对它定位
+    if (target && window.getComputedStyle(target).position === "static") {
+      target.style.position = "relative"
+    }
+    setPortalTarget(target)
+    setAnchor(nextAnchor)
     setCopied(true)
     setShowToast(true)
 
@@ -270,7 +309,7 @@ export function PromptCopyButton({
                 <CloudToast message="已复制到剪贴板" anchor={anchor} />
               ) : null}
             </AnimatePresence>,
-            document.body,
+            portalTarget ?? document.body,
           )
         : null}
     </>
