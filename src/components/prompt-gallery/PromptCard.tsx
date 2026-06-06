@@ -63,7 +63,6 @@ export function PromptCard({ item, active, selectionVersion, onSelect }: PromptC
             stroke="rgba(125, 211, 252, 0.4)"
             strokeWidth="1"
             strokeLinejoin="round"
-            strokeLinecap="round"
             pathLength={1}
             initial={false}
             animate={{ pathLength: hovered ? 1 : 0, opacity: hovered ? 1 : 0 }}
@@ -111,7 +110,6 @@ export function PromptCard({ item, active, selectionVersion, onSelect }: PromptC
               stroke="rgba(165, 243, 252, 0.98)"
               strokeWidth="2"
               strokeLinejoin="round"
-              strokeLinecap="round"
               pathLength={1}
               style={{ filter: "drop-shadow(0 0 10px rgba(34,211,238,0.36))" }}
               initial={{ pathLength: 0 }}

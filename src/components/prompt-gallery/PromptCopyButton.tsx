@@ -44,7 +44,6 @@ function StrokeCheck({ size = 16 }: { size?: number }) {
         d="M4.5 12.5L9.5 17.5L19.5 6.5"
         stroke="currentColor"
         strokeWidth={2.4}
-        strokeLinecap="round"
         strokeLinejoin="round"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}

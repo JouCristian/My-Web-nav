@@ -60,7 +60,6 @@ function CountBadge({ resultCount, totalCount }: { resultCount: number; totalCou
             fill="none"
             stroke="rgba(165,243,252,0.95)"
             strokeWidth={1.5}
-            strokeLinecap="round"
             pathLength={1}
             style={{ filter: "drop-shadow(0 0 6px rgba(34,211,238,0.45))" }}
             initial={{ pathLength: 0 }}
@@ -216,7 +215,6 @@ export function PromptCategoryTabs({
                         d="M4 12.5L9.5 18L20 6"
                         stroke="currentColor"
                         strokeWidth={3}
-                        strokeLinecap="round"
                         strokeLinejoin="round"
                         pathLength={1}
                         initial={{ pathLength: 0 }}

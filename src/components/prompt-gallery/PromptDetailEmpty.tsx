@@ -67,7 +67,6 @@ export function PromptDetailEmpty({ panelHeight, onClearFilters, hasActiveFilter
               fill="none"
               stroke={stroke}
               strokeWidth={2.4}
-              strokeLinecap="round"
               pathLength={1}
               style={glow}
               {...drawLoop(0)}
@@ -80,7 +79,6 @@ export function PromptDetailEmpty({ panelHeight, onClearFilters, hasActiveFilter
               fill="none"
               stroke={stroke}
               strokeWidth={2.4}
-              strokeLinecap="round"
               pathLength={1}
               style={glow}
               {...drawLoop(0.5)}
@@ -91,7 +89,6 @@ export function PromptDetailEmpty({ panelHeight, onClearFilters, hasActiveFilter
               fill="none"
               stroke={stroke}
               strokeWidth={2.4}
-              strokeLinecap="round"
               strokeLinejoin="round"
               pathLength={1}
               style={glow}

@@ -40,7 +40,6 @@ function EmptyStateGlyph() {
           fill="none"
           stroke="rgba(165,243,252,0.95)"
           strokeWidth={2.4}
-          strokeLinecap="round"
           pathLength={1}
           initial={{ pathLength: 0, opacity: 0.2 }}
           animate={{ pathLength: [0, 1, 1, 0], opacity: [0.2, 1, 1, 0.2] }}
@@ -52,7 +51,6 @@ function EmptyStateGlyph() {
           fill="none"
           stroke="rgba(165,243,252,0.95)"
           strokeWidth={2.4}
-          strokeLinecap="round"
           pathLength={1}
           initial={{ pathLength: 0, opacity: 0.2 }}
           animate={{ pathLength: [0, 1, 1, 0], opacity: [0.2, 1, 1, 0.2] }}
