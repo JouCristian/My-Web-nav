@@ -80,8 +80,6 @@ export function PromptCategoryTabs({
       </div>
 
       <div className="relative mt-3">
-        <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-8 bg-gradient-to-r from-[#05070d] to-transparent" />
-        <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 w-8 bg-gradient-to-l from-[#05070d] to-transparent" />
         <div className="max-w-full overflow-x-auto pb-2 [scrollbar-color:rgba(125,211,252,0.34)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-200/35 [&::-webkit-scrollbar-track]:bg-transparent">
           <div className="inline-flex w-max min-w-full gap-2 px-2">
             {categories.map((category) => {
