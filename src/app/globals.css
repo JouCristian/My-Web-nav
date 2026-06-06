@@ -148,6 +148,27 @@ body {
   }
 }
 
+/* ==========================================
+   🚀 循环一笔画描边（步骤卡片 / 图标）
+   一段发光亮线沿边框不断循环行进，pathLength=1 归一化，与尺寸无关
+   ========================================== */
+@keyframes trace-loop {
+  to {
+    stroke-dashoffset: -2;
+  }
+}
+
+.trace-loop {
+  stroke-dashoffset: 0;
+  animation: trace-loop 4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trace-loop {
+    animation: none !important;
+  }
+}
+
 @layer utilities {
   /* ==========================================
      🚀 滚动条隐藏工具类

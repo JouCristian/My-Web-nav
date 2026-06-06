@@ -1,42 +1,16 @@
 import Link from "next/link"
-import { ArrowLeft, CopyCheck, MousePointerClick, Search, SendHorizontal, Sparkles, Tags } from "lucide-react"
+import { ArrowLeft, SendHorizontal, Sparkles, Tags } from "lucide-react"
 import { auth } from "@/auth"
 import AnimatedContent from "@/components/animated-content"
 import { HideSpacetime } from "@/components/hide-spacetime"
 import { PromptGallery } from "@/components/prompt-gallery/PromptGallery"
+import { HeroSignals } from "@/components/prompt-gallery/HeroSignals"
 import { getPromptWorkshopData } from "@/app/joujou-tools/ai-image-prompt-workshop/actions"
 
 const heroPills = [
   { icon: Sparkles, label: "视觉灵感库" },
   { icon: Tags, label: "场景化模板" },
   { icon: SendHorizontal, label: "AI 通用" },
-]
-
-const heroSignals = [
-  {
-    icon: Search,
-    step: "01",
-    title: "筛选标签",
-    caption: "按场景、风格和关键词锁定灵感方向",
-    className: "border-cyan-200/18 bg-cyan-200/[0.075] text-cyan-50",
-    iconClassName: "bg-cyan-100/10 text-cyan-100",
-  },
-  {
-    icon: MousePointerClick,
-    step: "02",
-    title: "查看详情",
-    caption: "在右侧工作区预览完整 prompt 和建议",
-    className: "border-violet-200/18 bg-violet-300/[0.07] text-violet-50",
-    iconClassName: "bg-violet-100/10 text-violet-100",
-  },
-  {
-    icon: CopyCheck,
-    step: "03",
-    title: "复制生成",
-    caption: "一键交给任意 AI 图像工具继续创作",
-    className: "border-emerald-200/18 bg-emerald-300/[0.07] text-emerald-50",
-    iconClassName: "bg-emerald-100/10 text-emerald-100",
-  },
 ]
 
 export default async function AIImagePromptWorkshopPage() {
@@ -98,32 +72,7 @@ export default async function AIImagePromptWorkshopPage() {
           </AnimatedContent>
 
           <AnimatedContent distance={70} direction="horizontal" duration={0.9} ease="power3.out" delay={0.08}>
-            <div className="hidden w-full min-w-0 grid-cols-3 gap-3 lg:grid">
-              {heroSignals.map((item) => {
-                const Icon = item.icon
-
-                return (
-                  <div
-                    key={item.step}
-                    className={`group relative min-h-[172px] min-w-0 overflow-hidden rounded-[1.35rem] border p-4 shadow-[0_18px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl ${item.className}`}
-                  >
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent opacity-70" />
-                    <div className="flex items-start justify-between gap-3">
-                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl ${item.iconClassName}`}>
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <span className="rounded-full border border-white/10 bg-black/15 px-2 py-1 font-mono text-[10px] text-white/60 transition-colors group-hover:text-white/85">
-                        {item.step}
-                      </span>
-                    </div>
-                    <div className="mt-6 min-w-0">
-                      <div className="text-sm font-black leading-tight text-white/90">{item.title}</div>
-                      <p className="mt-2 text-xs leading-relaxed text-white/50">{item.caption}</p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+            <HeroSignals />
           </AnimatedContent>
         </div>
 
