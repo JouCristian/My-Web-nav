@@ -2,6 +2,7 @@
 
 import type { ImagePromptItem } from "@/types/ai-image-prompt"
 import { motion } from "framer-motion"
+import { SearchFlowBorder } from "@/components/prompt-gallery/SearchFlowBorder"
 
 interface PromptPreviewVisualProps {
   item: ImagePromptItem
@@ -37,6 +38,7 @@ export function PromptPreviewVisual({ item, size = "card", active = false, sweep
           transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
         />
       ) : null}
+      {isDetail ? <SearchFlowBorder radius="1.5rem" /> : null}
       <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3">
         <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-xs font-medium text-white/75 backdrop-blur-xl">
           {item.category}
