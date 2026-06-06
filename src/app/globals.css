@@ -70,24 +70,69 @@ body {
 }
 
 /* ==========================================
-   🚀 搜索框聚焦流光边框（SVG 描边 + dashoffset 沿周长匀速移动）
-   亮弧沿圆角矩形“周长”等速行进，与宽高比无关，绝对均匀
+   🚀 搜索框聚焦流光边框（ReactBits BorderGlow 锥形扫光 + 360° 底色发散）
+   底层：完整 360° 静态发光底色，填满边框不显空
+   上层：青色锥形亮光绕边框旋转扫动（mask 由 --sweep-angle 驱动）
    ========================================== */
-@keyframes search-flow-march {
-  from {
-    stroke-dashoffset: 0px;
-  }
+@property --sweep-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes search-sweep-spin {
   to {
-    stroke-dashoffset: var(--flow-perimeter);
+    --sweep-angle: 360deg;
   }
 }
 
-.search-flow-dash {
-  animation: search-flow-march 4.5s linear infinite;
+/* 青色发光环（reactbits edge-light 风格的多层 inset/outer box-shadow） */
+.search-glow-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1px hsl(190deg 95% 75% / 100%),
+    inset 0 0 1px 0 hsl(190deg 95% 75% / 60%),
+    inset 0 0 3px 0 hsl(190deg 95% 70% / 50%),
+    inset 0 0 6px 0 hsl(190deg 95% 70% / 40%),
+    inset 0 0 15px 0 hsl(190deg 90% 65% / 30%),
+    inset 0 0 25px 2px hsl(190deg 90% 65% / 20%),
+    0 0 1px 0 hsl(190deg 95% 75% / 60%),
+    0 0 3px 0 hsl(190deg 95% 70% / 50%),
+    0 0 6px 0 hsl(190deg 95% 70% / 40%),
+    0 0 15px 0 hsl(190deg 90% 65% / 30%),
+    0 0 25px 2px hsl(190deg 90% 65% / 20%),
+    0 0 50px 2px hsl(190deg 90% 65% / 12%);
+}
+
+/* 底层：完整 360° 静态发散，柔和低亮度，托底不显空 */
+.search-glow-base {
+  opacity: 0.42;
+}
+
+/* 上层：锥形扫光，仅在 --sweep-angle 方向显露一段亮弧 */
+.search-glow-sweep {
+  animation: search-sweep-spin 4.5s linear infinite;
+  -webkit-mask-image: conic-gradient(
+    from var(--sweep-angle) at 50% 50%,
+    transparent 2.5%,
+    black 14%,
+    black 24%,
+    transparent 40%
+  );
+  mask-image: conic-gradient(
+    from var(--sweep-angle) at 50% 50%,
+    transparent 2.5%,
+    black 14%,
+    black 24%,
+    transparent 40%
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .search-flow-dash {
+  .search-glow-sweep {
     animation: none !important;
   }
 }
