@@ -86,25 +86,25 @@ body {
   }
 }
 
-/* 青色发光环（reactbits edge-light 风格的多层 inset/outer box-shadow） */
+/* 发光环（reactbits edge-light 风格的多层 inset/outer box-shadow）；色相由 --glow-hue 驱动 */
 .search-glow-ring {
   position: absolute;
   inset: 0;
   border-radius: var(--glow-radius, 1rem);
   pointer-events: none;
   box-shadow:
-    inset 0 0 0 1px hsl(190deg 95% 75% / 100%),
-    inset 0 0 1px 0 hsl(190deg 95% 75% / 60%),
-    inset 0 0 3px 0 hsl(190deg 95% 70% / 50%),
-    inset 0 0 6px 0 hsl(190deg 95% 70% / 40%),
-    inset 0 0 15px 0 hsl(190deg 90% 65% / 30%),
-    inset 0 0 25px 2px hsl(190deg 90% 65% / 20%),
-    0 0 1px 0 hsl(190deg 95% 75% / 60%),
-    0 0 3px 0 hsl(190deg 95% 70% / 50%),
-    0 0 6px 0 hsl(190deg 95% 70% / 40%),
-    0 0 15px 0 hsl(190deg 90% 65% / 30%),
-    0 0 25px 2px hsl(190deg 90% 65% / 20%),
-    0 0 50px 2px hsl(190deg 90% 65% / 12%);
+    inset 0 0 0 1px hsl(var(--glow-hue, 190deg) 95% 75% / 100%),
+    inset 0 0 1px 0 hsl(var(--glow-hue, 190deg) 95% 75% / 60%),
+    inset 0 0 3px 0 hsl(var(--glow-hue, 190deg) 95% 70% / 50%),
+    inset 0 0 6px 0 hsl(var(--glow-hue, 190deg) 95% 70% / 40%),
+    inset 0 0 15px 0 hsl(var(--glow-hue, 190deg) 90% 65% / 30%),
+    inset 0 0 25px 2px hsl(var(--glow-hue, 190deg) 90% 65% / 20%),
+    0 0 1px 0 hsl(var(--glow-hue, 190deg) 95% 75% / 60%),
+    0 0 3px 0 hsl(var(--glow-hue, 190deg) 95% 70% / 50%),
+    0 0 6px 0 hsl(var(--glow-hue, 190deg) 95% 70% / 40%),
+    0 0 15px 0 hsl(var(--glow-hue, 190deg) 90% 65% / 30%),
+    0 0 25px 2px hsl(var(--glow-hue, 190deg) 90% 65% / 20%),
+    0 0 50px 2px hsl(var(--glow-hue, 190deg) 90% 65% / 12%);
 }
 
 /* 底层：完整 360° 静态发散，柔和低亮度，托底不显空 */
@@ -123,13 +123,14 @@ body {
     from var(--sweep-angle) at 50% 50%,
     transparent 0deg,
     transparent 18deg,
-    hsl(190deg 95% 70% / 0.5) 45deg,
-    hsl(190deg 98% 82% / 1) 70deg,
-    hsl(190deg 95% 75% / 0.6) 95deg,
+    hsl(var(--glow-hue, 190deg) 95% 70% / 0.5) 45deg,
+    hsl(var(--glow-hue, 190deg) 98% 82% / 1) 70deg,
+    hsl(var(--glow-hue, 190deg) 95% 75% / 0.6) 95deg,
     transparent 130deg,
     transparent 360deg
   );
-  animation: search-sweep-spin 4.5s linear infinite;
+  animation: search-sweep-spin var(--glow-duration, 4.5s) linear infinite;
+  animation-delay: var(--glow-delay, 0s);
   padding: 2.5px;
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
@@ -139,32 +140,11 @@ body {
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
   mask-composite: exclude;
-  filter: drop-shadow(0 0 8px hsl(190deg 95% 70% / 0.85));
+  filter: drop-shadow(0 0 8px hsl(var(--glow-hue, 190deg) 95% 70% / 0.85));
 }
 
 @media (prefers-reduced-motion: reduce) {
   .search-glow-sweep {
-    animation: none !important;
-  }
-}
-
-/* ==========================================
-   🚀 循环一笔画描边（步骤卡片 / 图标）
-   一段发光亮线沿边框不断循环行进，pathLength=1 归一化，与尺寸无关
-   ========================================== */
-@keyframes trace-loop {
-  to {
-    stroke-dashoffset: -2;
-  }
-}
-
-.trace-loop {
-  stroke-dashoffset: 0;
-  animation: trace-loop 4s linear infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .trace-loop {
     animation: none !important;
   }
 }

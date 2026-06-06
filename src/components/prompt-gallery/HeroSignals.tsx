@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import { CopyCheck, MousePointerClick, Search, type LucideIcon } from "lucide-react"
 import { gridContainerVariants, gridItemVariants } from "@/components/prompt-gallery/motion"
+import { SearchFlowBorder } from "@/components/prompt-gallery/SearchFlowBorder"
 
 type Signal = {
   icon: LucideIcon
@@ -11,8 +12,7 @@ type Signal = {
   caption: string
   cardClassName: string
   iconClassName: string
-  stroke: string
-  glow: string
+  hue: number
 }
 
 const heroSignals: Signal[] = [
@@ -23,8 +23,7 @@ const heroSignals: Signal[] = [
     caption: "按场景、风格和关键词锁定灵感方向",
     cardClassName: "border-cyan-200/18 bg-cyan-200/[0.075] text-cyan-50",
     iconClassName: "bg-cyan-100/10 text-cyan-100",
-    stroke: "rgba(103, 232, 249, 0.9)",
-    glow: "drop-shadow(0 0 5px rgba(34,211,238,0.55))",
+    hue: 190,
   },
   {
     icon: MousePointerClick,
@@ -33,8 +32,7 @@ const heroSignals: Signal[] = [
     caption: "在右侧工作区预览完整 prompt 和建议",
     cardClassName: "border-violet-200/18 bg-violet-300/[0.07] text-violet-50",
     iconClassName: "bg-violet-100/10 text-violet-100",
-    stroke: "rgba(196, 181, 253, 0.9)",
-    glow: "drop-shadow(0 0 5px rgba(167,139,250,0.55))",
+    hue: 265,
   },
   {
     icon: CopyCheck,
@@ -43,40 +41,9 @@ const heroSignals: Signal[] = [
     caption: "一键交给任意 AI 图像工具继续创作",
     cardClassName: "border-emerald-200/18 bg-emerald-300/[0.07] text-emerald-50",
     iconClassName: "bg-emerald-100/10 text-emerald-100",
-    stroke: "rgba(110, 231, 183, 0.9)",
-    glow: "drop-shadow(0 0 5px rgba(52,211,153,0.55))",
+    hue: 155,
   },
 ]
-
-// 循环一笔画：一段亮线沿圆角矩形边框不断行进（pathLength=1 归一化，与卡片尺寸无关）
-function TraceBorder({ stroke, glow, delay, rx = 21 }: { stroke: string; glow: string; delay: number; rx?: number }) {
-  return (
-    <svg
-      className="pointer-events-none absolute inset-0 h-full w-full"
-      preserveAspectRatio="none"
-      viewBox="0 0 100 100"
-      aria-hidden
-    >
-      <rect
-        x="1"
-        y="1"
-        width="98"
-        height="98"
-        rx={rx}
-        ry={rx}
-        fill="none"
-        stroke={stroke}
-        strokeWidth="0.6"
-        strokeLinecap="round"
-        pathLength={1}
-        strokeDasharray="0.22 0.78"
-        className="trace-loop"
-        style={{ filter: glow, animationDelay: `${delay}s` }}
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  )
-}
 
 export function HeroSignals() {
   return (
@@ -95,8 +62,8 @@ export function HeroSignals() {
             variants={gridItemVariants}
             className={`group relative min-h-[172px] min-w-0 overflow-hidden rounded-[1.35rem] border p-4 shadow-[0_18px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl ${item.cardClassName}`}
           >
-            {/* 循环一笔画描边，三张卡错开相位 */}
-            <TraceBorder stroke={item.stroke} glow={item.glow} delay={index * -1.3} />
+            {/* ReactBits 锥形流光描边：纯 CSS 圆角，永远贴合卡片轮廓；三张卡用不同色相并错开相位 */}
+            <SearchFlowBorder radius="1.35rem" hue={item.hue} duration="5s" delay={`${index * -1.4}s`} />
 
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent opacity-70" />
             <div className="relative flex items-start justify-between gap-3">
