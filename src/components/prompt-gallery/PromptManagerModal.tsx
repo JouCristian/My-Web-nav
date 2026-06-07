@@ -1,12 +1,10 @@
 "use client"
 
 import type { ImagePromptCategory, ImagePromptItem } from "@/types/ai-image-prompt"
-import { supabase } from "@/lib/supabase"
 import { AnimatePresence, motion } from "framer-motion"
 import { Database, ImagePlus, Layers3, Loader2, Plus, Save, Settings2, Tag, Trash2, X } from "lucide-react"
 import { memo, useMemo, useState, type ChangeEvent, type ReactNode } from "react"
 
-const PROMPT_PREVIEW_BUCKET = "prompt-previews"
 const PROMPT_PREVIEW_MAX_SIZE = 800
 
 interface PromptManagerModalProps {
@@ -65,8 +63,10 @@ function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
 }
 
-function compressImageToWebp(file: File) {
-  return new Promise<Blob>((resolve, reject) => {
+// 将图片压缩为 webp 格式的 dataURL，直接随表单存入数据库（previewImage 字段），
+// 不依赖任何对象存储桶，避免 "Bucket not found" 问题
+function compressImageToWebpDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
     const image = new Image()
     const objectUrl = URL.createObjectURL(file)
 
@@ -85,18 +85,7 @@ function compressImageToWebp(file: File) {
       }
 
       context.drawImage(image, 0, 0, canvas.width, canvas.height)
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) {
-            reject(new Error("图片压缩失败"))
-            return
-          }
-
-          resolve(blob)
-        },
-        "image/webp",
-        0.8,
-      )
+      resolve(canvas.toDataURL("image/webp", 0.8))
     }
 
     image.onerror = () => {
@@ -109,23 +98,7 @@ function compressImageToWebp(file: File) {
 }
 
 async function uploadPromptPreviewImage(file: File) {
-  const blob = await compressImageToWebp(file)
-  const randomId = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
-  const filePath = `${randomId}.webp`
-
-  const { error } = await supabase.storage.from(PROMPT_PREVIEW_BUCKET).upload(filePath, blob, {
-    cacheControl: "31536000",
-    contentType: "image/webp",
-    upsert: false,
-  })
-
-  if (error) throw error
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from(PROMPT_PREVIEW_BUCKET).getPublicUrl(filePath)
-
-  return publicUrl
+  return compressImageToWebpDataUrl(file)
 }
 
 function Field({
@@ -288,7 +261,7 @@ const PromptManagerEditor = memo(function PromptManagerEditor({
             <Database className="h-4 w-4" />
           </div>
           <div className="min-w-0">
-            <h3 className="truncate text-sm font-black text-white">内容编辑</h3>
+            <h3 className="truncate text-sm font-black text-white">内容编��</h3>
             <p className="mt-0.5 text-xs text-zinc-500">编辑卡片信息、提示词正文和使用场景</p>
           </div>
         </div>

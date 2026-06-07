@@ -30,6 +30,11 @@ const nextConfig: NextConfig = {
   
   // 实验性优化
   experimental: {
+    // 提高 Server Action 请求体上限：预览图以 dataURL 形式随表单提交，
+    // 默认 1MB 在个别大图时可能不足，提高到 8MB 避免保存失败
+    serverActions: {
+      bodySizeLimit: '8mb',
+    },
     // 优化第三方包导入，减少 bundle 体积
     optimizePackageImports: [
       'framer-motion',
