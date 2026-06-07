@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import { useEffect, useRef, useState } from "react"
 import { PromptCopyButton } from "@/components/prompt-gallery/PromptCopyButton"
 import { PromptPreviewVisual } from "@/components/prompt-gallery/PromptPreviewVisual"
+import { ClampedText } from "@/components/prompt-gallery/ClampedText"
 
 interface PromptCardProps {
   item: ImagePromptItem
@@ -172,11 +173,17 @@ export function PromptCard({ item, active, selectionVersion, onSelect }: PromptC
         </div>
 
         <h2 className="line-clamp-1 text-xl font-black leading-tight tracking-tight text-white">{item.title}</h2>
-        <p className="mt-2 line-clamp-2 h-10 text-sm leading-relaxed text-zinc-400">{item.description}</p>
+        <ClampedText
+          text={item.description}
+          lines={2}
+          className="mt-2 h-10 overflow-hidden text-sm leading-relaxed text-zinc-400"
+        />
 
-        <p className="mt-4 line-clamp-2 min-h-[3.9375rem] rounded-2xl border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-xs leading-relaxed text-zinc-300">
-          {item.promptSummary}
-        </p>
+        <ClampedText
+          text={item.promptSummary}
+          lines={2}
+          className="mt-4 h-[3.9375rem] overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-xs leading-relaxed text-zinc-300"
+        />
 
         <div className="mt-4 flex flex-wrap gap-2">
           {item.tags.slice(0, 3).map((tag) => (
