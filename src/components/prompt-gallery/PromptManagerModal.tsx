@@ -65,7 +65,7 @@ function readImageAsDataUrl(file: File) {
     image.onload = () => {
       URL.revokeObjectURL(objectUrl)
 
-      const maxSize = 1400
+      const maxSize = 1200
       const scale = Math.min(1, maxSize / Math.max(image.width, image.height))
       const canvas = document.createElement("canvas")
       canvas.width = Math.max(1, Math.round(image.width * scale))
@@ -78,7 +78,7 @@ function readImageAsDataUrl(file: File) {
       }
 
       context.drawImage(image, 0, 0, canvas.width, canvas.height)
-      resolve(canvas.toDataURL("image/webp", 0.82))
+      resolve(canvas.toDataURL("image/webp", 0.78))
     }
 
     image.onerror = () => {
@@ -189,6 +189,8 @@ function PromptManagerEditor({
 }) {
   const [draft, setDraft] = useState<PromptDraft>(() => toDraft(item))
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const previewStyle = useMemo(
     () => ({ background: draft.previewImage ? undefined : draft.previewGradient }),
@@ -202,8 +204,18 @@ function PromptManagerEditor({
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
-    const dataUrl = await readImageAsDataUrl(file)
-    update("previewImage", dataUrl)
+    setErrorMessage(null)
+    setUploading(true)
+    try {
+      const dataUrl = await readImageAsDataUrl(file)
+      update("previewImage", dataUrl)
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "图片处理失败，请换一张图片重试")
+    } finally {
+      setUploading(false)
+      // 允许重复选择同一文件
+      event.target.value = ""
+    }
   }
 
   return (
@@ -217,8 +229,8 @@ function PromptManagerEditor({
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.18),transparent_34%)]" />
           <label className="absolute bottom-4 left-4 right-4 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white backdrop-blur-xl transition-colors hover:bg-black/50">
             <ImagePlus className="h-4 w-4 text-cyan-100" />
-            上传展示图片
-            <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+            {uploading ? "处理图片中..." : "上传展示图片"}
+            <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={handleImageChange} />
           </label>
         </div>
       </div>
@@ -257,18 +269,27 @@ function PromptManagerEditor({
           <textarea className={baseInputClass(true)} value={draft.useCase} onChange={(event) => update("useCase", event.target.value)} />
         </Field>
 
+        {errorMessage ? (
+          <p className="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-200">
+            {errorMessage}
+          </p>
+        ) : null}
+
         <button
           type="button"
           onClick={async () => {
+            setErrorMessage(null)
             setSaving(true)
             try {
               await onSave(fromDraft(draft))
+            } catch (error) {
+              setErrorMessage(error instanceof Error ? error.message : "保存失败，请稍后重试")
             } finally {
               setSaving(false)
             }
           }}
-          disabled={saving}
-          className="inline-flex min-h-12 items-center justify-center gap-3 rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.10] px-5 text-sm font-black text-cyan-50 transition-all hover:bg-cyan-200/[0.14] active:scale-[0.98]"
+          disabled={saving || uploading}
+          className="inline-flex min-h-12 items-center justify-center gap-3 rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.10] px-5 text-sm font-black text-cyan-50 transition-all hover:bg-cyan-200/[0.14] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Save className="h-4 w-4" />
           {saving ? "保存中..." : "保存到数据库"}
