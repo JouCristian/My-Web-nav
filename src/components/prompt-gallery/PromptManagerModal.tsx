@@ -261,7 +261,7 @@ const PromptManagerEditor = memo(function PromptManagerEditor({
             <Database className="h-4 w-4" />
           </div>
           <div className="min-w-0">
-            <h3 className="truncate text-sm font-black text-white">内容编��</h3>
+            <h3 className="truncate text-sm font-black text-white">内容编辑</h3>
             <p className="mt-0.5 text-xs text-zinc-500">编辑卡片信息、提示词正文和使用场景</p>
           </div>
         </div>
@@ -303,14 +303,17 @@ const PromptManagerEditor = memo(function PromptManagerEditor({
         </div>
       </div>
 
-      <aside className="min-w-0 xl:sticky xl:top-0 xl:self-start">
-        <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#080b12] shadow-[0_18px_60px_rgba(0,0,0,0.28)]">
-          <div className="relative h-64 overflow-hidden" style={previewStyle}>
+      <aside className="min-w-0">
+        <div className="flex h-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#080b12] shadow-[0_18px_60px_rgba(0,0,0,0.28)]">
+          <div className="relative h-56 shrink-0 overflow-hidden" style={previewStyle}>
             {draft.previewImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={draft.previewImage} alt={draft.title} loading="eager" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
             ) : null}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.18),transparent_34%)]" />
+            <span className="absolute left-3 top-3 rounded-full border border-white/15 bg-black/40 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-300 backdrop-blur-md">
+              实时预览
+            </span>
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent p-4">
               <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white backdrop-blur-xl transition-colors hover:bg-black/50">
                 {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin text-cyan-100" /> : <ImagePlus className="h-4 w-4 text-cyan-100" />}
@@ -320,10 +323,10 @@ const PromptManagerEditor = memo(function PromptManagerEditor({
             </div>
           </div>
 
-          <div className="grid gap-3 p-4">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 p-4">
             <div>
-              <div className="truncate text-sm font-black text-white">{draft.title || "未命名卡片"}</div>
-              <div className="mt-1 line-clamp-2 text-xs leading-relaxed text-zinc-500">{draft.description || "暂无副标题"}</div>
+              <div className="truncate text-base font-black text-white">{draft.title || "未命名卡片"}</div>
+              <div className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-zinc-500">{draft.description || "暂无副标题"}</div>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -345,11 +348,18 @@ const PromptManagerEditor = memo(function PromptManagerEditor({
               </div>
             ) : null}
 
-            {draft.tips?.length ? (
-              <div className="rounded-2xl border border-white/10 bg-black/25 p-3 text-xs leading-relaxed text-zinc-500">
-                {draft.tips[0]}
-              </div>
-            ) : null}
+            <div className="min-h-0 flex-1 rounded-2xl border border-white/10 bg-black/25 p-3">
+              <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-600">Prompt 摘要</div>
+              <p className="line-clamp-3 text-xs leading-relaxed text-zinc-400">
+                {draft.promptSummary || "暂无摘要"}
+              </p>
+              {draft.tips?.length ? (
+                <p className="mt-3 border-t border-white/[0.06] pt-3 text-xs leading-relaxed text-zinc-500">
+                  <span className="font-bold text-zinc-400">小贴士 · </span>
+                  {draft.tips[0]}
+                </p>
+              ) : null}
+            </div>
 
             {errorMessage ? (
               <div className="rounded-2xl border border-red-300/15 bg-red-400/10 px-3 py-2 text-xs leading-relaxed text-red-100">
@@ -361,7 +371,7 @@ const PromptManagerEditor = memo(function PromptManagerEditor({
               type="button"
               onClick={handleSave}
               disabled={saving || uploadingImage}
-              className="inline-flex min-h-12 items-center justify-center gap-3 rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.10] px-5 text-sm font-black text-cyan-50 transition-colors hover:bg-cyan-200/[0.14] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-auto inline-flex min-h-12 items-center justify-center gap-3 rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.10] px-5 text-sm font-black text-cyan-50 transition-colors hover:bg-cyan-200/[0.14] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               {saving ? "保存中..." : "保存到数据库"}
