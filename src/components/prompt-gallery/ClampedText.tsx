@@ -31,20 +31,29 @@ export function ClampedText({ text, lines = 2, className }: ClampedTextProps) {
       setDisplay(text)
       return
     }
-    // 目标最大高度 = 行高 * 行数（+1px 容差）
+    // 目标最大高度 = 行高 * 行数（+1px 容差，吸收亚像素误差）
     const maxHeight = Math.ceil(lineHeight * lines) + 1
 
-    // 创建隐藏探针：复制显示元素的盒模型与排版相关样式，宽度一致，
-    // 这样测量结果与真实渲染完全一致，且不污染 React 管理的真实节点。
+    // 真实可用文字宽度 = 内容盒宽度（clientWidth 已扣除边框，再扣 padding）
+    const padLeft = Number.parseFloat(cs.paddingLeft) || 0
+    const padRight = Number.parseFloat(cs.paddingRight) || 0
+    const contentWidth = el.clientWidth - padLeft - padRight
+    if (contentWidth <= 0) {
+      setDisplay(text)
+      return
+    }
+
+    // 创建隐藏探针：content-box，宽度即纯文字宽度，无 padding/border，
+    // 这样 scrollHeight 直接等于文字内容高度，测量与真实渲染一致。
     const probe = document.createElement("div")
     probe.style.position = "absolute"
     probe.style.visibility = "hidden"
     probe.style.left = "-99999px"
     probe.style.top = "0"
-    probe.style.boxSizing = cs.boxSizing
-    probe.style.width = `${el.clientWidth}px`
-    probe.style.paddingLeft = cs.paddingLeft
-    probe.style.paddingRight = cs.paddingRight
+    probe.style.boxSizing = "content-box"
+    probe.style.width = `${contentWidth}px`
+    probe.style.padding = "0"
+    probe.style.border = "0"
     probe.style.fontFamily = cs.fontFamily
     probe.style.fontSize = cs.fontSize
     probe.style.fontWeight = cs.fontWeight
@@ -55,13 +64,9 @@ export function ClampedText({ text, lines = 2, className }: ClampedTextProps) {
     probe.style.overflowWrap = cs.overflowWrap
     document.body.appendChild(probe)
 
-    // 探针的内容高度上限 = 文字区域行高 * 行数（不含 padding，因为 maxHeight 是内容高度）
     const measure = (value: string) => {
       probe.textContent = value
-      // 减去上下 padding，得到纯内容高度
-      const padTop = Number.parseFloat(cs.paddingTop) || 0
-      const padBottom = Number.parseFloat(cs.paddingBottom) || 0
-      return probe.scrollHeight - padTop - padBottom
+      return probe.scrollHeight
     }
 
     let result = text
