@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { startTransition, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
+import dynamic from "next/dynamic"
 import {
   createPromptCategory,
   deletePromptCard,
@@ -15,12 +16,19 @@ import { PromptCategoryTabs } from "@/components/prompt-gallery/PromptCategoryTa
 import { PromptDetailPanel } from "@/components/prompt-gallery/PromptDetailPanel"
 import { PromptDetailEmpty } from "@/components/prompt-gallery/PromptDetailEmpty"
 import { PromptDetailDialog } from "@/components/prompt-gallery/PromptDetailDialog"
-import { PromptManagerModal } from "@/components/prompt-gallery/PromptManagerModal"
 import { gridContainerVariants, gridItemVariants } from "@/components/prompt-gallery/motion"
 import { CountUp } from "@/components/prompt-gallery/CountUp"
 import { Settings2 } from "lucide-react"
 
 type ActiveCategory = "全部" | ImagePromptCategory
+
+const PromptManagerModal = dynamic(
+  () => import("@/components/prompt-gallery/PromptManagerModal").then((mod) => mod.PromptManagerModal),
+  {
+    ssr: false,
+    loading: () => null,
+  },
+)
 
 // 空状态：循环播放的一笔画放大镜
 function EmptyStateGlyph() {
@@ -77,13 +85,21 @@ export function PromptGallery({
   const [activeCategory, setActiveCategory] = useState<ActiveCategory>("全部")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [selectedPromptId, setSelectedPromptId] = useState(items[0].id)
+  const [selectedPromptId, setSelectedPromptId] = useState(items[0]?.id ?? "")
   const [selectionVersion, setSelectionVersion] = useState(0)
   const [managerOpen, setManagerOpen] = useState(false)
+  const [managerMounted, setManagerMounted] = useState(false)
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
+  const [dialogPrompt, setDialogPrompt] = useState<ImagePromptItem | null>(null)
   const [twoRowHeight, setTwoRowHeight] = useState<number | null>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const cardGridRef = useRef<HTMLDivElement>(null)
+
+  const prepareManager = () => {
+    if (canManage && !managerMounted) {
+      setManagerMounted(true)
+    }
+  }
 
   const allTags = useMemo(() => {
     const counts = new Map<string, number>()
@@ -128,7 +144,7 @@ export function PromptGallery({
   const handleCategoryChange = (category: ActiveCategory) => {
     setActiveCategory(category)
     const nextPrompts = category === "全部" ? items : items.filter((item) => item.category === category)
-    setSelectedPromptId((nextPrompts[0] ?? items[0]).id)
+    setSelectedPromptId((nextPrompts[0] ?? items[0])?.id ?? "")
     setSelectionVersion((current) => current + 1)
   }
 
@@ -145,12 +161,23 @@ export function PromptGallery({
   }
 
   const handleSelect = (item: ImagePromptItem) => {
+    const isMobileDetail = typeof window !== "undefined" && window.innerWidth < 1024
+
+    if (isMobileDetail) {
+      setDialogPrompt(item)
+      setDetailDialogOpen(true)
+
+      window.requestAnimationFrame(() => {
+        startTransition(() => {
+          setSelectedPromptId(item.id)
+          setSelectionVersion((current) => current + 1)
+        })
+      })
+      return
+    }
+
     setSelectedPromptId(item.id)
     setSelectionVersion((current) => current + 1)
-    // 中小屏（无右侧常驻面板）：点击卡片直接弹出详情弹窗
-    if (typeof window !== "undefined" && window.innerWidth < 1024) {
-      setDetailDialogOpen(true)
-    }
   }
 
   const applyWorkshopData = (data: PromptWorkshopData) => {
@@ -187,6 +214,18 @@ export function PromptGallery({
     const data = await deletePromptCategory(name)
     applyWorkshopData(data)
   }
+
+  useEffect(() => {
+    if (!canManage || managerMounted) return
+
+    const timer = window.setTimeout(() => {
+      setManagerMounted(true)
+    }, 900)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [canManage, managerMounted])
 
   useEffect(() => {
     const grid = cardGridRef.current
@@ -263,7 +302,13 @@ export function PromptGallery({
             {canManage ? (
               <button
                 type="button"
-                onClick={() => setManagerOpen(true)}
+                onPointerEnter={prepareManager}
+                onFocus={prepareManager}
+                onTouchStart={prepareManager}
+                onClick={() => {
+                  prepareManager()
+                  setManagerOpen(true)
+                }}
                 className="group/manage inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-2xl border border-emerald-200/15 bg-emerald-200/[0.07] px-3 text-xs font-black text-emerald-50 transition-all hover:bg-emerald-200/[0.11] active:scale-[0.98]"
               >
                 <Settings2 className="h-3.5 w-3.5 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/manage:scale-110" />
@@ -341,20 +386,26 @@ export function PromptGallery({
         </div>
       </div>
 
-      <PromptDetailDialog item={selectedPrompt} open={detailDialogOpen} onClose={() => setDetailDialogOpen(false)} />
-
-      <PromptManagerModal
-        open={managerOpen}
-        items={items}
-        categories={categories}
-        onClose={() => setManagerOpen(false)}
-        onItemsChange={setItems}
-        onSaveItem={handleSaveItem}
-        onDeleteItem={handleDeleteItem}
-        onCreateCategory={handleCreateCategory}
-        onDeleteCategory={handleDeleteCategory}
-        onSelectPrompt={handleSelect}
+      <PromptDetailDialog
+        item={dialogPrompt ?? selectedPrompt}
+        open={detailDialogOpen}
+        onClose={() => setDetailDialogOpen(false)}
+        onExitComplete={() => setDialogPrompt(null)}
       />
+
+      {canManage && managerMounted ? (
+        <PromptManagerModal
+          open={managerOpen}
+          items={items}
+          categories={categories}
+          onClose={() => setManagerOpen(false)}
+          onSaveItem={handleSaveItem}
+          onDeleteItem={handleDeleteItem}
+          onCreateCategory={handleCreateCategory}
+          onDeleteCategory={handleDeleteCategory}
+          onSelectPrompt={handleSelect}
+        />
+      ) : null}
     </section>
   )
 }

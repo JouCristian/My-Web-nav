@@ -17,12 +17,19 @@ export function PromptPreviewVisual({ item, size = "card", active = false, sweep
 
   return (
     <div
-      className={`relative isolate overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#080b12] ${isDetail ? "min-h-[360px]" : "h-52"}`}
+      className={`relative isolate overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#080b12] ${isDetail ? "min-h-[360px] [transform:translate3d(0,0,0)] [will-change:transform]" : "h-52"}`}
       style={{ background: item.previewGradient }}
     >
       {item.previewImage ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={item.previewImage} alt={item.title} className="absolute inset-0 h-full w-full object-cover" />
+        <img
+          src={item.previewImage}
+          alt={item.title}
+          loading={isDetail ? "eager" : "lazy"}
+          decoding="async"
+          fetchPriority={isDetail ? "high" : "auto"}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
       ) : null}
       {item.previewImage ? <div className="absolute inset-0 bg-black/20" /> : null}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.18),transparent_35%)]" />

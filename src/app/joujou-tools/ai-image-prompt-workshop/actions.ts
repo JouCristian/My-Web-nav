@@ -4,9 +4,10 @@ import { auth } from "@/auth"
 import { aiImagePrompts, promptCategories } from "@/lib/ai-image-prompts"
 import { prisma } from "@/lib/db"
 import type { ImagePromptCategory, ImagePromptItem } from "@/types/ai-image-prompt"
-import { revalidatePath } from "next/cache"
+import { revalidatePath, unstable_cache, updateTag } from "next/cache"
 
 const WORKSHOP_PATH = "/joujou-tools/ai-image-prompt-workshop"
+const WORKSHOP_CACHE_TAG = "prompt-workshop"
 
 export interface PromptWorkshopData {
   categories: Array<"全部" | ImagePromptCategory>
@@ -74,9 +75,23 @@ async function readPromptWorkshopDataFromDb(): Promise<PromptWorkshopData> {
   }
 }
 
+const readCachedPromptWorkshopData = unstable_cache(
+  async () => readPromptWorkshopDataFromDb(),
+  ["prompt-workshop-data"],
+  {
+    revalidate: 300,
+    tags: [WORKSHOP_CACHE_TAG],
+  },
+)
+
+function revalidatePromptWorkshop() {
+  updateTag(WORKSHOP_CACHE_TAG)
+  revalidatePath(WORKSHOP_PATH)
+}
+
 export async function getPromptWorkshopData(): Promise<PromptWorkshopData> {
   try {
-    return await readPromptWorkshopDataFromDb()
+    return await readCachedPromptWorkshopData()
   } catch (error) {
     console.warn("[prompt-workshop] Falling back to mock data:", error)
     return fallbackWorkshopData()
@@ -142,7 +157,7 @@ export async function savePromptCard(item: ImagePromptItem): Promise<PromptWorks
     },
   })
 
-  revalidatePath(WORKSHOP_PATH)
+  revalidatePromptWorkshop()
   return readPromptWorkshopDataFromDb()
 }
 
@@ -153,14 +168,14 @@ export async function deletePromptCard(id: string): Promise<PromptWorkshopData> 
   if (activeCount <= 1) throw new Error("至少保留一张 card")
 
   await prisma.promptCard.delete({ where: { id } })
-  revalidatePath(WORKSHOP_PATH)
+  revalidatePromptWorkshop()
   return readPromptWorkshopDataFromDb()
 }
 
 export async function createPromptCategory(name: string): Promise<PromptWorkshopData> {
   await assertPromptManager()
   await findOrCreateCategory(name)
-  revalidatePath(WORKSHOP_PATH)
+  revalidatePromptWorkshop()
   return readPromptWorkshopDataFromDb()
 }
 
@@ -182,6 +197,6 @@ export async function deletePromptCategory(name: ImagePromptCategory): Promise<P
   })
   await prisma.promptCategory.delete({ where: { id: target.id } })
 
-  revalidatePath(WORKSHOP_PATH)
+  revalidatePromptWorkshop()
   return readPromptWorkshopDataFromDb()
 }
