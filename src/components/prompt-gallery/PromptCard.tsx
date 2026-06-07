@@ -159,9 +159,7 @@ export function PromptCard({ item, active, selectionVersion, onSelect }: PromptC
       </AnimatePresence>
 
       <div className="relative overflow-hidden rounded-[1.45rem]">
-        <div className="transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.025]">
-          <PromptPreviewVisual item={item} active={active} sweepKey={selectionVersion} />
-        </div>
+        <PromptPreviewVisual item={item} active={active} sweepKey={selectionVersion} />
       </div>
 
       <div className="relative z-10 p-2 pt-5">
