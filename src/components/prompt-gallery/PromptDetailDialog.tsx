@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { memo, useLayoutEffect } from "react"
 import type { ImagePromptItem } from "@/types/ai-image-prompt"
 import { Lightbulb, Sparkles, X } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
@@ -11,10 +11,11 @@ interface PromptDetailDialogProps {
   item: ImagePromptItem | null
   open: boolean
   onClose: () => void
+  onExitComplete?: () => void
 }
 
-export function PromptDetailDialog({ item, open, onClose }: PromptDetailDialogProps) {
-  useEffect(() => {
+function PromptDetailDialogComponent({ item, open, onClose, onExitComplete }: PromptDetailDialogProps) {
+  useLayoutEffect(() => {
     if (!open) return
 
     const onKey = (event: KeyboardEvent) => {
@@ -32,10 +33,10 @@ export function PromptDetailDialog({ item, open, onClose }: PromptDetailDialogPr
   }, [open, onClose])
 
   return (
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={onExitComplete}>
       {open && item ? (
         <motion.div
-          className="fixed inset-0 z-[130] flex items-end justify-center bg-black/60 backdrop-blur-md lg:hidden"
+          className="fixed inset-0 z-[130] flex items-end justify-center bg-black/60 backdrop-blur-md [will-change:opacity] lg:hidden"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -46,7 +47,7 @@ export function PromptDetailDialog({ item, open, onClose }: PromptDetailDialogPr
           aria-label={`${item.title} 详情`}
         >
           <motion.div
-            className="relative flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-[#05070d]/95 shadow-[0_-20px_80px_rgba(0,0,0,0.5)]"
+            className="relative flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-[#05070d]/95 shadow-[0_-20px_80px_rgba(0,0,0,0.5)] [backface-visibility:hidden] [transform:translate3d(0,0,0)] [will-change:transform]"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -68,7 +69,7 @@ export function PromptDetailDialog({ item, open, onClose }: PromptDetailDialogPr
               </button>
             </div>
 
-            <div className="relative overflow-y-auto px-4 pb-6 pt-4 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-200/40 [&::-webkit-scrollbar-track]:bg-transparent">
+            <div className="relative overflow-y-auto overscroll-contain px-4 pb-6 pt-4 [scrollbar-width:thin] [will-change:scroll-position] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-200/40 [&::-webkit-scrollbar-track]:bg-transparent">
               <PromptPreviewVisual item={item} size="detail" />
 
               <div className="px-1 pt-6">
@@ -84,7 +85,7 @@ export function PromptDetailDialog({ item, open, onClose }: PromptDetailDialogPr
                 </div>
               </div>
 
-              <div className="mt-6 rounded-[1.5rem] border border-white/10 bg-black/30 p-4">
+              <div className="mt-6 rounded-[1.5rem] border border-white/10 bg-black/30 p-4 [content-visibility:auto] [contain-intrinsic-size:220px]">
                 <div className="mb-3 flex items-center gap-2 text-sm font-black text-white">
                   <Sparkles className="h-4 w-4 text-cyan-200" />
                   完整提示词
@@ -94,7 +95,7 @@ export function PromptDetailDialog({ item, open, onClose }: PromptDetailDialogPr
                 </p>
               </div>
 
-              <div className="mt-4 grid gap-3">
+              <div className="mt-4 grid gap-3 [content-visibility:auto] [contain-intrinsic-size:260px]">
                 <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-4">
                   <div className="mb-2 flex items-center gap-2 text-sm font-bold text-white">
                     <Lightbulb className="h-4 w-4 text-cyan-200" />
@@ -125,3 +126,5 @@ export function PromptDetailDialog({ item, open, onClose }: PromptDetailDialogPr
     </AnimatePresence>
   )
 }
+
+export const PromptDetailDialog = memo(PromptDetailDialogComponent)

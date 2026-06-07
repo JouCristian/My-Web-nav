@@ -14,10 +14,9 @@ const heroPills = [
 ]
 
 export default async function AIImagePromptWorkshopPage() {
-  const session = await auth()
+  const [session, workshopData] = await Promise.all([auth(), getPromptWorkshopData()])
   const sessionUser = session?.user as { isCaptain?: boolean; role?: string } | undefined
   const canManage = Boolean(sessionUser?.isCaptain || sessionUser?.role === "OWNER" || sessionUser?.role === "ADMIN")
-  const workshopData = await getPromptWorkshopData()
 
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-transparent px-4 py-8 pt-24 text-white sm:px-6 lg:px-10">

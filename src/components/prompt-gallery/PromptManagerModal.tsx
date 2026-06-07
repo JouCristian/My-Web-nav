@@ -1,9 +1,13 @@
 "use client"
 
 import type { ImagePromptCategory, ImagePromptItem } from "@/types/ai-image-prompt"
-import { ImagePlus, Plus, Save, Settings2, Tag, Trash2, X } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 import { AnimatePresence, motion } from "framer-motion"
-import { useMemo, useState } from "react"
+import { Database, ImagePlus, Layers3, Loader2, Plus, Save, Settings2, Tag, Trash2, X } from "lucide-react"
+import { memo, useMemo, useState, type ChangeEvent, type ReactNode } from "react"
+
+const PROMPT_PREVIEW_BUCKET = "prompt-previews"
+const PROMPT_PREVIEW_MAX_SIZE = 800
 
 interface PromptManagerModalProps {
   open: boolean
@@ -57,16 +61,24 @@ function fromDraft(draft: PromptDraft): ImagePromptItem {
   }
 }
 
-function readImageAsDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
+}
+
+function compressImageToWebp(file: File) {
+  return new Promise<Blob>((resolve, reject) => {
     const image = new Image()
     const objectUrl = URL.createObjectURL(file)
 
     image.onload = () => {
       URL.revokeObjectURL(objectUrl)
 
+<<<<<<< HEAD
       const maxSize = 1200
       const scale = Math.min(1, maxSize / Math.max(image.width, image.height))
+=======
+      const scale = Math.min(1, PROMPT_PREVIEW_MAX_SIZE / Math.max(image.width, image.height))
+>>>>>>> a925c5c (Optimize AI prompt workshop performance)
       const canvas = document.createElement("canvas")
       canvas.width = Math.max(1, Math.round(image.width * scale))
       canvas.height = Math.max(1, Math.round(image.height * scale))
@@ -78,7 +90,22 @@ function readImageAsDataUrl(file: File) {
       }
 
       context.drawImage(image, 0, 0, canvas.width, canvas.height)
+<<<<<<< HEAD
       resolve(canvas.toDataURL("image/webp", 0.78))
+=======
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("图片压缩失败"))
+            return
+          }
+
+          resolve(blob)
+        },
+        "image/webp",
+        0.8,
+      )
+>>>>>>> a925c5c (Optimize AI prompt workshop performance)
     }
 
     image.onerror = () => {
@@ -90,15 +117,37 @@ function readImageAsDataUrl(file: File) {
   })
 }
 
+async function uploadPromptPreviewImage(file: File) {
+  const blob = await compressImageToWebp(file)
+  const randomId = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
+  const filePath = `${randomId}.webp`
+
+  const { error } = await supabase.storage.from(PROMPT_PREVIEW_BUCKET).upload(filePath, blob, {
+    cacheControl: "31536000",
+    contentType: "image/webp",
+    upsert: false,
+  })
+
+  if (error) throw error
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(PROMPT_PREVIEW_BUCKET).getPublicUrl(filePath)
+
+  return publicUrl
+}
+
 function Field({
   label,
   children,
+  className = "",
 }: {
   label: string
-  children: React.ReactNode
+  children: ReactNode
+  className?: string
 }) {
   return (
-    <label className="grid gap-2">
+    <label className={`grid gap-2 ${className}`}>
       <span className="text-xs font-bold text-zinc-400">{label}</span>
       {children}
     </label>
@@ -106,7 +155,7 @@ function Field({
 }
 
 function baseInputClass(multiline = false) {
-  return `w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm leading-relaxed text-white outline-none transition-all placeholder:text-zinc-600 focus:border-cyan-200/35 focus:bg-black/45 ${
+  return `w-full rounded-[1.1rem] border border-white/10 bg-black/30 px-4 py-3 text-sm leading-relaxed text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-cyan-200/35 focus:bg-black/45 ${
     multiline ? "min-h-28 resize-y" : ""
   }`
 }
@@ -123,16 +172,18 @@ function CategorySelect({
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="relative">
+    <div
+      className="relative"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setOpen(false)
+        }
+      }}
+    >
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        onBlur={(event) => {
-          if (!event.currentTarget.parentElement?.contains(event.relatedTarget as Node | null)) {
-            setOpen(false)
-          }
-        }}
-        className="flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-left text-sm font-bold text-white outline-none transition-all hover:bg-black/45 focus:border-cyan-200/35"
+        className="flex min-h-12 w-full items-center justify-between gap-3 rounded-[1.1rem] border border-white/10 bg-black/30 px-4 py-3 text-left text-sm font-bold text-white outline-none transition-colors hover:bg-black/45 focus:border-cyan-200/35"
         aria-expanded={open}
       >
         <span className="min-w-0 truncate">{value}</span>
@@ -178,7 +229,7 @@ function CategorySelect({
   )
 }
 
-function PromptManagerEditor({
+const PromptManagerEditor = memo(function PromptManagerEditor({
   item,
   categories,
   onSave,
@@ -189,21 +240,36 @@ function PromptManagerEditor({
 }) {
   const [draft, setDraft] = useState<PromptDraft>(() => toDraft(item))
   const [saving, setSaving] = useState(false)
+<<<<<<< HEAD
   const [uploading, setUploading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+=======
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
+>>>>>>> a925c5c (Optimize AI prompt workshop performance)
 
   const previewStyle = useMemo(
     () => ({ background: draft.previewImage ? undefined : draft.previewGradient }),
     [draft.previewGradient, draft.previewImage],
+  )
+  const previewTags = useMemo(
+    () =>
+      draft.tagsText
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+        .slice(0, 4),
+    [draft.tagsText],
   )
 
   const update = <K extends keyof PromptDraft>(key: K, value: PromptDraft[K]) => {
     setDraft((current) => ({ ...current, [key]: value }))
   }
 
-  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
+<<<<<<< HEAD
     setErrorMessage(null)
     setUploading(true)
     try {
@@ -232,39 +298,78 @@ function PromptManagerEditor({
             {uploading ? "处理图片中..." : "上传展示图片"}
             <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={handleImageChange} />
           </label>
-        </div>
-      </div>
+=======
+    setUploadingImage(true)
+    setErrorMessage("")
+    try {
+      const publicUrl = await uploadPromptPreviewImage(file)
+      update("previewImage", publicUrl)
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, "图片上传失败"))
+    } finally {
+      setUploadingImage(false)
+      event.target.value = ""
+    }
+  }
 
-      <div className="grid min-w-0 gap-4">
-        <div className="grid gap-4 md:grid-cols-2">
+  const handleSave = async () => {
+    setSaving(true)
+    setErrorMessage("")
+    try {
+      await onSave(fromDraft(draft))
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, "保存失败，请稍后重试"))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="min-w-0 rounded-[1.5rem] border border-white/10 bg-white/[0.025] p-4 md:p-5">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-200/15 bg-cyan-200/[0.07] text-cyan-100">
+            <Database className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="truncate text-sm font-black text-white">内容编辑</h3>
+            <p className="mt-0.5 text-xs text-zinc-500">编辑卡片信息、提示词正文和使用场景</p>
+          </div>
+>>>>>>> a925c5c (Optimize AI prompt workshop performance)
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1.15fr)_minmax(220px,0.85fr)]">
           <Field label="标题">
             <input className={baseInputClass()} value={draft.title} onChange={(event) => update("title", event.target.value)} />
           </Field>
           <Field label="分类">
-            <CategorySelect
-              value={draft.category}
-              categories={categories}
-              onChange={(category) => update("category", category)}
-            />
+            <CategorySelect value={draft.category} categories={categories} onChange={(category) => update("category", category)} />
           </Field>
         </div>
 
-        <Field label="副标题">
-          <input className={baseInputClass()} value={draft.description} onChange={(event) => update("description", event.target.value)} />
-        </Field>
+        <div className="mt-4 grid gap-4">
+          <Field label="副标题">
+            <input className={baseInputClass()} value={draft.description} onChange={(event) => update("description", event.target.value)} />
+          </Field>
 
-        <Field label="标签，用英文逗号分隔">
-          <input className={baseInputClass()} value={draft.tagsText} onChange={(event) => update("tagsText", event.target.value)} />
-        </Field>
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(220px,0.72fr)]">
+            <Field label="标签，用英文逗号分隔">
+              <input className={baseInputClass()} value={draft.tagsText} onChange={(event) => update("tagsText", event.target.value)} />
+            </Field>
+            <Field label="模型适配">
+              <input className={baseInputClass()} value={draft.modelTarget} onChange={(event) => update("modelTarget", event.target.value)} />
+            </Field>
+          </div>
 
-        <Field label="Prompt 摘要">
-          <input className={baseInputClass()} value={draft.promptSummary} onChange={(event) => update("promptSummary", event.target.value)} />
-        </Field>
+          <Field label="Prompt 摘要">
+            <input className={baseInputClass()} value={draft.promptSummary} onChange={(event) => update("promptSummary", event.target.value)} />
+          </Field>
 
-        <Field label="完整提示词">
-          <textarea className={baseInputClass(true)} value={draft.prompt} onChange={(event) => update("prompt", event.target.value)} />
-        </Field>
+          <Field label="完整提示词">
+            <textarea className={baseInputClass(true)} value={draft.prompt} onChange={(event) => update("prompt", event.target.value)} />
+          </Field>
 
+<<<<<<< HEAD
         <Field label="适用场景">
           <textarea className={baseInputClass(true)} value={draft.useCase} onChange={(event) => update("useCase", event.target.value)} />
         </Field>
@@ -294,12 +399,85 @@ function PromptManagerEditor({
           <Save className="h-4 w-4" />
           {saving ? "保存中..." : "保存到数据库"}
         </button>
+=======
+          <Field label="适用场景">
+            <textarea className={baseInputClass(true)} value={draft.useCase} onChange={(event) => update("useCase", event.target.value)} />
+          </Field>
+        </div>
+>>>>>>> a925c5c (Optimize AI prompt workshop performance)
       </div>
+
+      <aside className="min-w-0 xl:sticky xl:top-0 xl:self-start">
+        <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#080b12] shadow-[0_18px_60px_rgba(0,0,0,0.28)]">
+          <div className="relative h-64 overflow-hidden" style={previewStyle}>
+            {draft.previewImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={draft.previewImage} alt={draft.title} loading="eager" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+            ) : null}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.18),transparent_34%)]" />
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent p-4">
+              <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white backdrop-blur-xl transition-colors hover:bg-black/50">
+                {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin text-cyan-100" /> : <ImagePlus className="h-4 w-4 text-cyan-100" />}
+                {uploadingImage ? "上传中..." : "上传展示图片"}
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} disabled={uploadingImage} />
+              </label>
+            </div>
+          </div>
+
+          <div className="grid gap-3 p-4">
+            <div>
+              <div className="truncate text-sm font-black text-white">{draft.title || "未命名卡片"}</div>
+              <div className="mt-1 line-clamp-2 text-xs leading-relaxed text-zinc-500">{draft.description || "暂无副标题"}</div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-full border border-cyan-200/15 bg-cyan-200/[0.07] px-2.5 py-1 text-[11px] font-bold text-cyan-50">
+                {draft.category}
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-bold text-zinc-300">
+                {draft.modelTarget || "AI 通用"}
+              </span>
+            </div>
+
+            {previewTags.length ? (
+              <div className="flex flex-wrap gap-1.5">
+                {previewTags.map((tag) => (
+                  <span key={tag} className="rounded-full bg-white/[0.055] px-2 py-1 text-[10px] font-bold text-zinc-400">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+
+            {draft.tips?.length ? (
+              <div className="rounded-2xl border border-white/10 bg-black/25 p-3 text-xs leading-relaxed text-zinc-500">
+                {draft.tips[0]}
+              </div>
+            ) : null}
+
+            {errorMessage ? (
+              <div className="rounded-2xl border border-red-300/15 bg-red-400/10 px-3 py-2 text-xs leading-relaxed text-red-100">
+                {errorMessage}
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || uploadingImage}
+              className="inline-flex min-h-12 items-center justify-center gap-3 rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.10] px-5 text-sm font-black text-cyan-50 transition-colors hover:bg-cyan-200/[0.14] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {saving ? "保存中..." : "保存到数据库"}
+            </button>
+          </div>
+        </div>
+      </aside>
     </div>
   )
-}
+})
 
-export function PromptManagerModal({
+function PromptManagerModalComponent({
   open,
   items,
   categories,
@@ -313,13 +491,21 @@ export function PromptManagerModal({
   const [selectedId, setSelectedId] = useState(items[0]?.id ?? "")
   const [newCategory, setNewCategory] = useState("")
   const [busy, setBusy] = useState(false)
-  const editableCategories = categories.filter((category): category is ImagePromptCategory => category !== "全部")
-  const selectedItem = items.find((item) => item.id === selectedId) ?? items[0]
+  const [mutationError, setMutationError] = useState("")
+
+  const editableCategories = useMemo(
+    () => categories.filter((category): category is ImagePromptCategory => category !== "全部"),
+    [categories],
+  )
+  const selectedItem = useMemo(() => items.find((item) => item.id === selectedId) ?? items[0], [items, selectedId])
 
   const runMutation = async (mutation: () => Promise<void>) => {
     setBusy(true)
+    setMutationError("")
     try {
       await mutation()
+    } catch (error) {
+      setMutationError(getErrorMessage(error, "操作失败，请稍后重试"))
     } finally {
       setBusy(false)
     }
@@ -371,7 +557,7 @@ export function PromptManagerModal({
     <AnimatePresence>
       {open ? (
         <motion.div
-          className="fixed inset-0 z-[140] flex items-center justify-center bg-black/55 p-4 backdrop-blur-xl"
+          className="fixed inset-0 z-[140] flex items-center justify-center bg-black/55 p-4 backdrop-blur-xl [will-change:opacity]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -380,44 +566,60 @@ export function PromptManagerModal({
             initial={{ opacity: 0, y: 24, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 240, damping: 26 }}
-            className="relative flex max-h-[88dvh] w-full max-w-6xl flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-[#05070d]/95 shadow-[0_30px_120px_rgba(0,0,0,0.52)]"
+            transition={{ type: "spring", stiffness: 260, damping: 28 }}
+            className="relative flex max-h-[88dvh] w-full max-w-[1180px] transform-gpu flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-[#05070d]/95 shadow-[0_30px_120px_rgba(0,0,0,0.52)] [backface-visibility:hidden] [will-change:transform,opacity]"
           >
             <div className="flex items-center justify-between gap-4 border-b border-white/10 p-5">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-200/15 bg-emerald-200/[0.08] text-emerald-100">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-200/15 bg-emerald-200/[0.08] text-emerald-100 shadow-[0_0_34px_rgba(16,185,129,0.08)]">
                   <Settings2 className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-xl font-black text-white">提示词卡片管理</h2>
-                  <p className="mt-1 text-xs text-zinc-500">本地编辑预览，不会写入数据库。</p>
+                  <h2 className="truncate text-xl font-black text-white">提示词卡片管理</h2>
+                  <p className="mt-1 text-xs text-zinc-500">编辑后点击保存写入数据库。</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.035] text-zinc-300 transition-colors hover:text-white"
-              >
-                <X className="h-4 w-4" />
-              </button>
+
+              <div className="flex shrink-0 items-center gap-2">
+                <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-[11px] font-bold text-zinc-400 sm:flex">
+                  <Layers3 className="h-3.5 w-3.5 text-cyan-100" />
+                  {items.length} cards
+                </div>
+                <div className="hidden rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-[11px] font-bold text-zinc-400 sm:block">
+                  {editableCategories.length} 分类
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.035] text-zinc-300 transition-colors hover:text-white"
+                  aria-label="关闭管理弹窗"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
-            <div className="grid min-h-0 flex-1 lg:grid-cols-[300px_minmax(0,1fr)]">
-              <div className="flex min-h-0 flex-col border-b border-white/10 p-4 lg:border-b-0 lg:border-r">
+            <div className="grid min-h-0 flex-1 lg:grid-cols-[310px_minmax(0,1fr)]">
+              <div className="flex min-h-0 flex-col border-b border-white/10 bg-black/[0.12] p-4 lg:border-b-0 lg:border-r lg:border-white/10">
                 <button
                   type="button"
                   onClick={handleAdd}
                   disabled={busy}
-                  className="mb-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200/20 bg-emerald-200/[0.08] text-sm font-black text-emerald-50 transition-all hover:bg-emerald-200/[0.12] active:scale-[0.98]"
+                  className="mb-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200/20 bg-emerald-200/[0.08] text-sm font-black text-emerald-50 transition-colors hover:bg-emerald-200/[0.12] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <Plus className="h-4 w-4" />
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                   增加 card
                 </button>
 
                 <div className="mb-4 rounded-[1.35rem] border border-white/10 bg-white/[0.025] p-3">
-                  <div className="mb-3 flex items-center gap-2 text-xs font-black text-white">
-                    <Tag className="h-3.5 w-3.5 text-cyan-100" />
-                    分类标签
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2 text-xs font-black text-white">
+                      <Tag className="h-3.5 w-3.5 shrink-0 text-cyan-100" />
+                      <span className="truncate">分类标签</span>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-white/[0.045] px-2 py-1 text-[10px] font-bold text-zinc-500">
+                      {editableCategories.length}
+                    </span>
                   </div>
                   <div className="flex gap-2">
                     <input
@@ -430,13 +632,13 @@ export function PromptManagerModal({
                         }
                       }}
                       placeholder="新增分类"
-                      className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none placeholder:text-zinc-600 focus:border-cyan-200/35"
+                      className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-cyan-200/35"
                     />
                     <button
                       type="button"
                       onClick={handleAddCategory}
                       disabled={busy}
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.08] text-cyan-50 transition-colors hover:bg-cyan-200/[0.13]"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.08] text-cyan-50 transition-colors hover:bg-cyan-200/[0.13] disabled:cursor-not-allowed disabled:opacity-60"
                       aria-label="新增分类"
                     >
                       <Plus className="h-3.5 w-3.5" />
@@ -448,7 +650,7 @@ export function PromptManagerModal({
                         <span className="max-w-28 truncate">{category}</span>
                         <button
                           type="button"
-                        onClick={() => handleDeleteCategory(category)}
+                          onClick={() => handleDeleteCategory(category)}
                           disabled={busy || editableCategories.length <= 1}
                           className="rounded-full p-0.5 text-zinc-500 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
                           aria-label={`删除分类 ${category}`}
@@ -460,35 +662,50 @@ export function PromptManagerModal({
                   </div>
                 </div>
 
-                <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pb-6 pr-1 [scrollbar-color:rgba(125,211,252,0.42)_rgba(255,255,255,0.06)] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-200/[0.34] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-white/[0.05]">
-                  {items.map((item) => (
-                    <div
-                      key={item.id}
-                      className={`group flex w-full items-start gap-2 rounded-2xl border p-3 text-left transition-colors ${
-                        selectedId === item.id
-                          ? "border-cyan-200/30 bg-cyan-200/[0.08]"
-                          : "border-white/10 bg-white/[0.025] hover:bg-white/[0.045]"
-                      }`}
-                    >
-                      <button type="button" onClick={() => setSelectedId(item.id)} className="min-w-0 flex-1 text-left">
-                        <div className="truncate text-sm font-bold text-white">{item.title}</div>
-                        <div className="mt-1 truncate text-xs text-zinc-500">{item.category}</div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteCard(item.id)}
-                        disabled={busy || items.length <= 1}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/20 text-zinc-500 opacity-0 transition-all hover:border-red-300/25 hover:bg-red-400/10 hover:text-red-100 disabled:cursor-not-allowed disabled:opacity-25 group-hover:opacity-100"
-                        aria-label={`删除 card ${item.title}`}
+                {mutationError ? (
+                  <div className="mb-3 rounded-2xl border border-red-300/15 bg-red-400/10 px-3 py-2 text-xs leading-relaxed text-red-100">
+                    {mutationError}
+                  </div>
+                ) : null}
+
+                <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pb-6 pr-1 [content-visibility:auto] [contain-intrinsic-size:320px_760px] [scrollbar-color:rgba(125,211,252,0.42)_rgba(255,255,255,0.06)] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-200/[0.34] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-white/[0.05]">
+                  {items.map((item, index) => {
+                    const selected = selectedId === item.id
+
+                    return (
+                      <div
+                        key={item.id}
+                        className={`group relative flex w-full items-start gap-2 rounded-2xl border p-3 text-left transition-colors ${
+                          selected ? "border-cyan-200/30 bg-cyan-200/[0.08]" : "border-white/10 bg-white/[0.025] hover:bg-white/[0.045]"
+                        }`}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
+                        {selected ? <span className="absolute bottom-3 left-0 top-3 w-0.5 rounded-r-full bg-cyan-100" /> : null}
+                        <button type="button" onClick={() => setSelectedId(item.id)} className="min-w-0 flex-1 text-left">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="font-mono text-[10px] font-bold text-zinc-600">{String(index + 1).padStart(2, "0")}</span>
+                            <span className="truncate text-sm font-bold text-white">{item.title}</span>
+                          </div>
+                          <div className="mt-1 flex min-w-0 items-center gap-2">
+                            <span className="truncate rounded-full bg-white/[0.045] px-2 py-0.5 text-[10px] font-bold text-zinc-500">{item.category}</span>
+                            <span className="truncate text-[10px] text-zinc-600">{item.tags.slice(0, 2).join(" / ")}</span>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCard(item.id)}
+                          disabled={busy || items.length <= 1}
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/20 text-zinc-500 opacity-100 transition-colors hover:border-red-300/25 hover:bg-red-400/10 hover:text-red-100 disabled:cursor-not-allowed disabled:opacity-25 sm:opacity-0 sm:group-hover:opacity-100"
+                          aria-label={`删除 card ${item.title}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 
-              <div className="min-h-0 overflow-y-auto p-5 [scrollbar-color:rgba(125,211,252,0.42)_rgba(255,255,255,0.06)] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-200/[0.34] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-white/[0.05]">
+              <div className="min-h-0 overflow-y-auto overscroll-contain p-5 [content-visibility:auto] [contain-intrinsic-size:820px_780px] [scrollbar-color:rgba(125,211,252,0.42)_rgba(255,255,255,0.06)] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-200/[0.34] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-white/[0.05]">
                 {selectedItem ? <PromptManagerEditor key={selectedItem.id} item={selectedItem} categories={editableCategories} onSave={handleSave} /> : null}
               </div>
             </div>
@@ -498,3 +715,5 @@ export function PromptManagerModal({
     </AnimatePresence>
   )
 }
+
+export const PromptManagerModal = memo(PromptManagerModalComponent)
