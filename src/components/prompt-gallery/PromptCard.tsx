@@ -174,7 +174,7 @@ export function PromptCard({ item, active, selectionVersion, onSelect }: PromptC
         <ClampedText
           text={item.description}
           lines={2}
-          className="mt-2 h-10 overflow-hidden text-sm leading-relaxed text-zinc-400"
+          className="mt-2 h-12 overflow-hidden text-sm leading-relaxed text-zinc-400"
         />
 
         <ClampedText
