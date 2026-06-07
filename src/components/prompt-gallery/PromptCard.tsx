@@ -174,7 +174,7 @@ export function PromptCard({ item, active, selectionVersion, onSelect }: PromptC
         <h2 className="text-xl font-black leading-tight tracking-tight text-white">{item.title}</h2>
         <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-zinc-400">{item.description}</p>
 
-        <p className="mt-4 rounded-2xl border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-xs leading-relaxed text-zinc-300">
+        <p className="mt-4 line-clamp-4 rounded-2xl border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-xs leading-relaxed text-zinc-300">
           {item.promptSummary}
         </p>
 
