@@ -24,6 +24,7 @@ import { PromptDetailEmpty } from "@/components/prompt-gallery/PromptDetailEmpty
 import { PromptDetailDialog } from "@/components/prompt-gallery/PromptDetailDialog"
 import { gridContainerVariants, gridItemVariants } from "@/components/prompt-gallery/motion"
 import { CountUp } from "@/components/prompt-gallery/CountUp"
+import { LoginRequiredDialog } from "@/components/prompt-gallery/LoginRequiredDialog"
 import { Settings2 } from "lucide-react"
 
 const FAVORITE_CATEGORY = "我的收藏" as const
@@ -182,6 +183,7 @@ export function PromptGallery({
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [favoriteError, setFavoriteError] = useState("")
   const [favoriteBusyIds, setFavoriteBusyIds] = useState<string[]>([])
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false)
   const [selectedPromptId, setSelectedPromptId] = useState(items[0]?.id ?? "")
   const [selectionVersion, setSelectionVersion] = useState(0)
   const [managerOpen, setManagerOpen] = useState(false)
@@ -393,6 +395,11 @@ export function PromptGallery({
   }
 
   const handleToggleFavorite = async (item: ImagePromptItem) => {
+    if (!isAuthenticated) {
+      setLoginDialogOpen(true)
+      return
+    }
+
     if (favoriteBusyIds.includes(item.id)) return
 
     setFavoriteError("")
@@ -662,6 +669,15 @@ export function PromptGallery({
                 >
                   先浏览全部提示词
                 </button>
+                {!isAuthenticated ? (
+                  <button
+                    type="button"
+                    onClick={() => setLoginDialogOpen(true)}
+                    className="mt-3 inline-flex min-h-10 cursor-pointer items-center rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.08] px-4 text-xs font-black text-cyan-50 transition-colors hover:bg-cyan-200/[0.13] active:scale-[0.98]"
+                  >
+                    前往登录
+                  </button>
+                ) : null}
               </div>
               ) : null}
             </motion.div>
@@ -712,6 +728,8 @@ export function PromptGallery({
           onSelectPrompt={handleSelect}
         />
       ) : null}
+
+      <LoginRequiredDialog open={loginDialogOpen} onClose={() => setLoginDialogOpen(false)} />
     </section>
   )
 }

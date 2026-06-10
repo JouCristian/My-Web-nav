@@ -1,9 +1,8 @@
 "use client"
 
-import { AnimatePresence, motion } from "framer-motion"
+import { motion } from "framer-motion"
 import { Loader2 } from "lucide-react"
-import { useId } from "react"
-import { easeOutExpo, easeStroke } from "@/components/prompt-gallery/motion"
+import { easeOutBack } from "@/components/prompt-gallery/motion"
 
 interface PromptFavoriteButtonProps {
   active?: boolean
@@ -15,8 +14,9 @@ interface PromptFavoriteButtonProps {
   onToggle: () => void
 }
 
+// 完整的实心五角星路径（viewBox 0 0 24 24，所有顶点都落在视口内部，避免被裁切）
 const starPath =
-  "M12 2.8L14.86 8.6L21.26 9.53L16.63 14.04L17.72 20.42L12 17.41L6.28 20.42L7.37 14.04L2.74 9.53L9.14 8.6L12 2.8Z"
+  "M12 2.4L14.94 8.36L21.52 9.32L16.76 13.96L17.88 20.52L12 17.42L6.12 20.52L7.24 13.96L2.48 9.32L9.06 8.36L12 2.4Z"
 
 export function PromptFavoriteButton({
   active = false,
@@ -27,9 +27,6 @@ export function PromptFavoriteButton({
   className = "",
   onToggle,
 }: PromptFavoriteButtonProps) {
-  const id = useId().replace(/:/g, "")
-  const clipId = `${id}-favorite-star-clip`
-  const gradientId = `${id}-favorite-star-fill`
   const interactive = !busy && !disabled
 
   return (
@@ -39,17 +36,24 @@ export function PromptFavoriteButton({
         event.stopPropagation()
         if (interactive) onToggle()
       }}
-      disabled={!interactive}
+      disabled={busy}
       aria-pressed={active}
       aria-label={active ? "取消收藏" : "加入收藏"}
-      whileHover={interactive ? { y: -1, borderColor: active ? "rgba(253,224,71,0.48)" : "rgba(255,255,255,0.24)" } : undefined}
+      whileHover={interactive ? { y: -1 } : undefined}
       whileTap={interactive ? { scale: 0.92 } : undefined}
       transition={{ type: "spring", stiffness: 520, damping: 32, mass: 0.6 }}
-      className={`relative inline-flex cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-2xl border border-white/12 bg-black/35 text-white backdrop-blur-xl transition-[background-color,box-shadow] hover:bg-black/50 disabled:cursor-not-allowed disabled:opacity-65 ${
+      className={`relative inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl border text-white backdrop-blur-xl transition-[background-color,border-color,box-shadow] disabled:cursor-not-allowed disabled:opacity-65 ${
         compact ? "h-10 w-10" : "min-h-11 px-4 text-sm font-black"
-      } ${active ? "shadow-[0_0_24px_rgba(250,204,21,0.12)]" : ""} ${className}`}
+      } ${
+        active
+          ? "border-amber-300/40 bg-black/55 shadow-[0_0_22px_rgba(250,204,21,0.18)]"
+          : "border-white/15 bg-black/55 hover:border-white/25 hover:bg-black/65"
+      } ${className}`}
     >
-      <span className="relative grid h-5 w-5 place-items-center">
+      {/* 黑色磨砂玻璃底座：再叠一层轻微的内发光，保证白色星标在浅色预览图上也清晰可见 */}
+      <span className="pointer-events-none absolute inset-0 rounded-2xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]" />
+
+      <span className="relative grid h-[22px] w-[22px] place-items-center">
         {busy ? (
           <Loader2 className="h-4 w-4 animate-spin text-amber-100" />
         ) : (
@@ -58,57 +62,25 @@ export function PromptFavoriteButton({
             height={22}
             viewBox="0 0 24 24"
             fill="none"
-            className="overflow-visible"
-            animate={active ? { scale: [1, 1.18, 0.96, 1.06, 1] } : { scale: 1 }}
-            transition={{ duration: 0.58, ease: easeOutExpo }}
+            aria-hidden="true"
+            // 只对 SVG 图标本体施加 Q 弹（轻微摇晃放大回弹），不在图标之外添加动画
+            animate={active ? { scale: [1, 1.28, 0.9, 1.12, 1], rotate: [0, -6, 5, -2, 0] } : { scale: 1, rotate: 0 }}
+            transition={{ duration: 0.5, ease: easeOutBack }}
+            style={{ transformOrigin: "center", transformBox: "fill-box" }}
           >
-            <defs>
-              <clipPath id={clipId}>
-                <path d={starPath} />
-              </clipPath>
-              <radialGradient id={gradientId} cx="50%" cy="52%" r="58%">
-                <stop offset="0%" stopColor="#fff7ad" />
-                <stop offset="52%" stopColor="#facc15" />
-                <stop offset="100%" stopColor="#f59e0b" />
-              </radialGradient>
-            </defs>
-            <motion.circle
-              clipPath={`url(#${clipId})`}
-              cx={12}
-              cy={12}
-              r={active ? 16 : 0}
-              fill={`url(#${gradientId})`}
-              initial={false}
-              animate={{ r: active ? 16 : 0, opacity: active ? 1 : 0 }}
-              transition={{ type: "spring", stiffness: 360, damping: 22, mass: 0.7 }}
-            />
             <motion.path
               d={starPath}
-              fill="none"
-              stroke={active ? "rgba(254,240,138,0.98)" : "rgba(255,255,255,0.72)"}
-              strokeWidth={1.8}
               strokeLinejoin="round"
-              pathLength={1}
               initial={false}
-              animate={{ pathLength: active ? [0, 1] : 1 }}
-              transition={{ duration: 0.46, ease: easeStroke }}
-              style={{ filter: active ? "drop-shadow(0 0 7px rgba(250,204,21,0.46))" : undefined }}
+              // 触发点：填充色从白色切到黄色
+              animate={{
+                fill: active ? "#facc15" : "rgba(255,255,255,0.96)",
+                stroke: active ? "#fde047" : "rgba(255,255,255,0.5)",
+              }}
+              transition={{ duration: 0.28, ease: "easeOut" }}
+              strokeWidth={1.4}
+              style={{ filter: active ? "drop-shadow(0 0 6px rgba(250,204,21,0.5))" : undefined }}
             />
-            <AnimatePresence>
-              {active ? (
-                <motion.g
-                  key="spark"
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: [0, 1, 0], scale: [0.6, 1.1, 1.35] }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.55, ease: easeOutExpo }}
-                >
-                  <path d="M12 0.8V4" stroke="#fde68a" strokeWidth="1.4" strokeLinecap="round" />
-                  <path d="M21.2 7.2L18.4 8.8" stroke="#fde68a" strokeWidth="1.4" strokeLinecap="round" />
-                  <path d="M2.8 7.2L5.6 8.8" stroke="#fde68a" strokeWidth="1.4" strokeLinecap="round" />
-                </motion.g>
-              ) : null}
-            </AnimatePresence>
           </motion.svg>
         )}
       </span>

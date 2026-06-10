@@ -166,13 +166,14 @@ export function PromptCard({ item, active, selectionVersion, favoriteBusy = fals
 
       <div className="relative overflow-hidden rounded-[1.45rem]">
         <PromptPreviewVisual item={item} active={active} sweepKey={selectionVersion} />
-        <PromptFavoriteButton
-          active={Boolean(item.isFavorited)}
-          busy={favoriteBusy}
-          compact
-          className="absolute right-3 top-3 z-20"
-          onToggle={() => onToggleFavorite(item)}
-        />
+        <div className="absolute right-3 top-3 z-20">
+          <PromptFavoriteButton
+            active={Boolean(item.isFavorited)}
+            busy={favoriteBusy}
+            compact
+            onToggle={() => onToggleFavorite(item)}
+          />
+        </div>
       </div>
 
       <div className="relative z-10 p-2 pt-5">
