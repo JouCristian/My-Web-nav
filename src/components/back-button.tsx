@@ -26,8 +26,9 @@ export function BackButton({ className, fallbackHref = "/" }: { className?: stri
       initial="idle"
       className={`group relative inline-flex h-12 w-12 items-center justify-center ${className ?? ""}`}
     >
-      {/* ShapeBlur 圆形边框效果：跟随指针的发光描边 */}
-      <span className="pointer-events-none absolute inset-0">
+      {/* ShapeBlur 圆形边框效果：跟随指针的发光描边。默认隐藏，hover 时淡入，
+          避免页面加载时指针位置默认 (0,0) 导致整圈白边闪现 */}
+      <span className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
         <ShapeBlur
           variation={2}
           shapeSize={1.0}
