@@ -25,7 +25,7 @@ import { PromptDetailDialog } from "@/components/prompt-gallery/PromptDetailDial
 import { gridContainerVariants, gridItemVariants } from "@/components/prompt-gallery/motion"
 import { CountUp } from "@/components/prompt-gallery/CountUp"
 import { LoginRequiredDialog } from "@/components/prompt-gallery/LoginRequiredDialog"
-import { Settings2 } from "lucide-react"
+import { Compass, LogIn, Settings2 } from "lucide-react"
 
 const FAVORITE_CATEGORY = "我的收藏" as const
 
@@ -662,21 +662,29 @@ export function PromptGallery({
                 <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-500">
                   {isAuthenticated ? "试试收藏一些精美提示词？点击卡片图片右上角的星标，就能把它们收进这里。" : "登录 GitHub 或 Gitee 后，每个账号都可以拥有自己的收藏栏。"}
                 </p>
-                <button
+                <motion.button
                   type="button"
                   onClick={() => setActiveCategory("全部")}
-                  className="mt-5 inline-flex min-h-10 cursor-pointer items-center rounded-2xl border border-amber-200/20 bg-amber-300/[0.08] px-4 text-xs font-black text-amber-50 transition-colors hover:bg-amber-300/[0.13] active:scale-[0.98]"
+                  whileHover={{ scale: 1.04, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 420, damping: 22 }}
+                  className="mt-5 inline-flex w-56 min-h-10 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-amber-200/20 bg-amber-300/[0.08] px-4 text-xs font-black text-amber-50 hover:bg-amber-300/[0.16]"
                 >
+                  <Compass className="h-4 w-4" aria-hidden="true" />
                   先浏览全部提示词
-                </button>
+                </motion.button>
                 {!isAuthenticated ? (
-                  <button
+                  <motion.button
                     type="button"
                     onClick={() => setLoginDialogOpen(true)}
-                    className="mt-3 inline-flex min-h-10 cursor-pointer items-center rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.08] px-4 text-xs font-black text-cyan-50 transition-colors hover:bg-cyan-200/[0.13] active:scale-[0.98]"
+                    whileHover={{ scale: 1.04, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 420, damping: 22 }}
+                    className="mt-3 inline-flex w-56 min-h-10 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.08] px-4 text-xs font-black text-cyan-50 hover:bg-cyan-200/[0.16]"
                   >
+                    <LogIn className="h-4 w-4" aria-hidden="true" />
                     前往登录
-                  </button>
+                  </motion.button>
                 ) : null}
               </div>
               ) : null}
