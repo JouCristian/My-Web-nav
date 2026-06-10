@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useTransition } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { getNotifications, markAsRead, markAllAsRead, deleteNotification, clearReadNotifications } from "@/app/actions/notification"
+import { BackButton } from "@/components/back-button"
 
 type Notification = {
   id: string
@@ -121,16 +121,7 @@ export default function NotificationsPage() {
       </div>
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 py-12 sm:py-20">
-        {/* 返回按钮 */}
-        <Link 
-          href="/"
-          className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors mb-8"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          返回首页
-        </Link>
+        <BackButton className="mb-8" />
 
         {/* 标题 */}
         <div className="flex items-center justify-between mb-8">

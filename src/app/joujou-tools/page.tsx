@@ -1,8 +1,9 @@
 import Link from "next/link"
-import { ArrowLeft, ArrowRight, Boxes, Hammer, HeartHandshake, Lightbulb } from "lucide-react"
+import { ArrowRight, Boxes, Hammer, HeartHandshake, Lightbulb } from "lucide-react"
 import AnimatedContent from "@/components/animated-content"
 import { HideSpacetime } from "@/components/hide-spacetime"
 import { joujouTools, type JouJouTool } from "@/lib/joujou-tools"
+import { BackButton } from "@/components/back-button"
 
 const accentMap: Record<JouJouTool["accent"], string> = {
   cyan: "border-cyan-500/25 bg-cyan-500/10 text-cyan-300 shadow-[0_0_45px_rgba(34,211,238,0.08)]",
@@ -32,13 +33,7 @@ export default function JouJouToolsPage() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <AnimatedContent distance={80} direction="horizontal" reverse duration={0.9} ease="power3.out">
           <div>
-            <Link
-              href="/"
-              className="group mb-8 inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-bold tracking-widest text-zinc-300 backdrop-blur-xl transition-all hover:border-cyan-500/30 hover:text-white active:scale-95"
-            >
-              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-              返回首页
-            </Link>
+            <BackButton className="mb-8" />
 
             <div className="mb-4 flex items-center gap-3">
               <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_16px_rgba(34,211,238,0.9)]" />

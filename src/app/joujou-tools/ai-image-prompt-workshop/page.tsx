@@ -1,11 +1,11 @@
-import Link from "next/link"
-import { ArrowLeft, SendHorizontal, Sparkles, Tags } from "lucide-react"
+import { SendHorizontal, Sparkles, Tags } from "lucide-react"
 import { auth } from "@/auth"
 import AnimatedContent from "@/components/animated-content"
 import { HideSpacetime } from "@/components/hide-spacetime"
 import { PromptGallery } from "@/components/prompt-gallery/PromptGallery"
 import { HeroSignals } from "@/components/prompt-gallery/HeroSignals"
 import { getPromptWorkshopData } from "@/app/joujou-tools/ai-image-prompt-workshop/actions"
+import { BackButton } from "@/components/back-button"
 
 const heroPills = [
   { icon: Sparkles, label: "视觉灵感库" },
@@ -28,13 +28,7 @@ export default async function AIImagePromptWorkshopPage() {
       <div className="relative z-10 mx-auto flex w-full max-w-[1500px] flex-col gap-8">
         <AnimatedContent distance={80} direction="horizontal" reverse duration={0.9} ease="power3.out">
           <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/joujou-tools"
-              className="group inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-bold text-zinc-300 backdrop-blur-xl transition-all hover:border-cyan-500/30 hover:text-white active:scale-95"
-            >
-              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-              返回工具库
-            </Link>
+            <BackButton />
 
             <div className="inline-flex items-center gap-3 rounded-full border border-cyan-200/15 bg-cyan-200/[0.07] px-3 py-1.5 backdrop-blur-xl">
               <Sparkles className="h-3.5 w-3.5 text-cyan-100" />

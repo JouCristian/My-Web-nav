@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackButton } from "@/components/back-button";
 // eslint-disable-next-line @next/next/no-img-element
 
 export default function ContactPage() {
@@ -7,24 +7,7 @@ export default function ContactPage() {
       
       {/* 返回按钮：桌面绝对定位，移动端正常文档流避免与 Dock 重叠 */}
       <div className="md:absolute md:top-8 md:left-8 mb-6 md:mb-0 self-start">
-        <Link 
-          href="/"
-          className="group flex items-center gap-2 sm:gap-3 bg-black/25 px-3 sm:px-5 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-white/10 backdrop-blur-md animate-flame-hover hover:border-white/30 transition-all duration-300 active:scale-[0.97]"
-        >
-          <div className="relative flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-white/10 transition-colors shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400 group-hover:text-white group-hover:-translate-x-0.5 transition-all">
-              <path d="m15 18-6-6 6-6"/>
-            </svg>
-          </div>
-          <div className="flex flex-col items-start">
-            <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono group-hover:text-zinc-400 transition-colors hidden sm:block">
-              Return
-            </span>
-            <span className="text-xs sm:text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">
-              返回主控台
-            </span>
-          </div>
-        </Link>
+        <BackButton />
       </div>
 
       <div className="w-full max-w-3xl mx-auto text-center animate-fade-in-up">

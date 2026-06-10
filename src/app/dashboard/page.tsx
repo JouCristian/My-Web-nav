@@ -9,6 +9,7 @@ import { CreateBroadcastModal } from "@/components/create-broadcast-modal"
 import { DashboardClock } from "@/components/dashboard-clock"
 import { FlightLogCalendar } from "@/components/flight-log-calendar"
 import { OnboardingForm } from "@/components/onboarding-form"
+import { BackButton } from "@/components/back-button"
 
 // ... (保持 THEME_MAP 和 ModuleCard 原样) ...
 const THEME_MAP = {
@@ -153,16 +154,7 @@ export default async function DashboardPage() {
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 sm:gap-6 shrink-0 w-full lg:w-auto justify-between lg:justify-end">
           <DashboardClock />
 
-          <TransitionLink href="/" className="group hover-breathe flex items-center gap-3 sm:gap-4 bg-black/40 px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl border border-white/10 backdrop-blur-md transition-all duration-500 active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)] shrink-0">
-            <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/20 transition-colors duration-500">
-              <div className="w-3 h-3 rounded-full bg-blue-400 group-hover-pulse transition-all duration-500" />
-              <div className="absolute inset-0 rounded-full border border-blue-500/30 opacity-0 group-hover:opacity-100 group-hover:animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite] transition-all duration-500" />
-            </div>
-            <div className="flex flex-col items-start">
-              <span className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-mono group-hover:text-blue-400 transition-colors duration-500">Return Path</span>
-              <span className="text-base font-bold text-white tracking-widest font-[family-name:var(--font-space)]">返回导航站</span>
-            </div>
-          </TransitionLink>
+          <BackButton />
         </div>
       </div>
 

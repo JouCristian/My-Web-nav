@@ -1,8 +1,8 @@
 // src/app/login/page.tsx
 import { auth, signIn } from "@/auth"
-import Link from "next/link"
 import { redirect } from "next/navigation"
 import { HideSpacetime } from "@/components/hide-spacetime" 
+import { BackButton } from "@/components/back-button"
 
 export default async function LoginPage({ searchParams }: { searchParams: { error?: string } }) {
   const session = await auth()
@@ -58,15 +58,7 @@ export default async function LoginPage({ searchParams }: { searchParams: { erro
       `}} />
 
       <div className="fixed top-4 left-4 sm:top-10 sm:left-10 z-[100] animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
-        <Link href="/" className="group flex items-center gap-2 sm:gap-4 bg-black/25 px-3 sm:px-5 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-white/10 backdrop-blur-md transition-all duration-500 hover:bg-white/10 active:scale-95 shadow-[0_0_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:border-blue-500/30">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/5 border border-white/20 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
-            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-white/80 shadow-[0_0_15px_rgba(255,255,255,0.9)] group-hover:bg-blue-400 group-hover:shadow-[0_0_15px_rgba(96,165,250,0.9)] transition-colors" />
-          </div>
-          <div className="flex flex-col items-start">
-            <span className="text-[9px] sm:text-[10px] text-zinc-500 uppercase tracking-[0.2em] sm:tracking-[0.3em] font-mono group-hover:text-blue-400 transition-colors">Mission Control</span>
-            <span className="text-xs sm:text-sm font-bold text-white font-[family-name:var(--font-space)] tracking-widest">返回主站</span>
-          </div>
-        </Link>
+        <BackButton />
       </div>
 
       <div className="relative w-full max-w-[380px] animate-spring-in z-10 pointer-events-none">

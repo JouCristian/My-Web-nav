@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { TransitionLink } from "@/components/transition-link"
 import { ProfileForm } from "@/components/profile-form"
+import { BackButton } from "@/components/back-button"
 
 export default async function ProfilePage() {
   const session = await auth()
@@ -104,20 +105,9 @@ export default async function ProfilePage() {
         }
       `}} />
 
-      {/* 🚀 返回按钮：绝对定位至左上角 */}
+      {/* 返回按钮：绝对定位至左上角 */}
       <div className="absolute top-6 left-4 sm:top-10 sm:left-10 z-50">
-        <TransitionLink 
-          href="/" 
-          className="group flex items-center gap-3 bg-black/40 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-md transition-all hover:bg-black/60 active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.5)]"
-        >
-          <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-white/5 border border-white/20 group-hover:bg-blue-500/20 shrink-0 transition-colors">
-            <div className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_15px_rgba(96,165,250,0.8)]" />
-          </div>
-          <div className="flex flex-col items-start">
-            <span className="text-[9px] text-zinc-500 uppercase tracking-widest font-mono">Return Path</span>
-            <span className="text-sm font-bold text-white tracking-widest font-[family-name:var(--font-space)]">返回导航站</span>
-          </div>
-        </TransitionLink>
+        <BackButton />
       </div>
 
       {/* 🚀 卡片容器：缩小为 max-w-md (448px)，并包裹弹簧动画层 */}

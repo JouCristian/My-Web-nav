@@ -1,10 +1,10 @@
-import Link from "next/link"
-import { ArrowLeft, Code2, FileDown, ShieldCheck } from "lucide-react"
+import { Code2, FileDown, ShieldCheck } from "lucide-react"
 import AnimatedContent from "@/components/animated-content"
 import { HideSpacetime } from "@/components/hide-spacetime"
 import { CSPReviewTool } from "@/components/csp-review-tool"
 import { OpenSourceInfoCard } from "@/components/open-source-info-card"
 import ShinyText from "@/components/ShinyText"
+import { BackButton } from "@/components/back-button"
 
 export default function CSPReviewDocGeneratorPage() {
   return (
@@ -15,13 +15,7 @@ export default function CSPReviewDocGeneratorPage() {
         <div className="flex min-w-0 flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <AnimatedContent distance={80} direction="horizontal" reverse duration={0.9} ease="power3.out">
           <div className="min-w-0">
-            <Link
-              href="/joujou-tools"
-              className="group mb-8 inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-bold tracking-widest text-zinc-300 backdrop-blur-xl transition-all hover:border-cyan-500/30 hover:text-white active:scale-95"
-            >
-              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-              返回工具库
-            </Link>
+            <BackButton className="mb-8" />
 
             <div className="mb-4 flex items-center gap-3">
               <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_16px_rgba(34,211,238,0.9)]" />

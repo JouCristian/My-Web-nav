@@ -5,10 +5,11 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { CrewActionButtons } from "@/components/crew-action-buttons"
 import { RemoveCrewButton } from "@/components/remove-crew-button"
-// 🚀 引入舰长专属授权组件
+
 import { AdminAuthModal } from "@/components/admin-auth-modal"
-// 🚀 引入编辑档案组件
+
 import { EditCrewProfileButton } from "@/components/edit-crew-profile-button"
+import { BackButton } from "@/components/back-button"
 
 export default async function CrewArchivesPage() {
   const session = await auth()
@@ -83,16 +84,7 @@ export default async function CrewArchivesPage() {
               <AdminAuthModal users={allUsers} />
             )}
 
-            <Link href="/dashboard" className="group hover-breathe flex items-center gap-3 sm:gap-4 bg-black/60 px-4 sm:px-6 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border border-white/10 backdrop-blur-md transition-all duration-500 active:scale-95 shadow-[0_0_30px_rgba(0,0,0,0.3)]">
-              <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 border border-white/20 group-hover:bg-purple-500/20 transition-all duration-500 overflow-hidden">
-                <div className="w-2.5 h-2.5 rounded-full bg-purple-400 group-hover-pulse transition-all duration-500" />
-                <div className="absolute inset-0 rounded-full border border-purple-500/30 opacity-0 group-hover:opacity-100 group-hover:animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite] transition-all duration-500" />
-              </div>
-              <div className="flex flex-col items-start text-left">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-[0.3em] font-mono group-hover:text-purple-400 transition-colors duration-500">Return</span>
-                <span className="text-base font-bold text-white tracking-[0.15em] font-[family-name:var(--font-space)]">返回中枢</span>
-              </div>
-            </Link>
+            <BackButton />
           </div>
         </div>
 

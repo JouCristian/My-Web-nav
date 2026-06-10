@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { BroadcastCard } from "@/components/broadcast-card"
 import { CreateBroadcastModal } from "@/components/create-broadcast-modal"
+import { BackButton } from "@/components/back-button"
 
 export default async function BroadcastBoardPage() {
   const session = await auth()
@@ -41,15 +42,7 @@ export default async function BroadcastBoardPage() {
         
         <div className="flex flex-wrap items-center gap-3 sm:gap-6 w-full xl:w-auto">
           {isManager && <CreateBroadcastModal />}
-          <Link href="/dashboard" className="animate-button-breathe group flex items-center gap-3 sm:gap-4 bg-black/60 px-5 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl border border-white/10 backdrop-blur-md hover:border-blue-500/50 transition-all shadow-2xl">
-            <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-white/5 group-hover:bg-blue-500/20 transition-colors">
-              <div className="animate-core-pulse w-2.5 h-2.5 rounded-full bg-blue-400" />
-            </div>
-            <div className="flex flex-col items-start">
-              <span className="text-[10px] text-zinc-600 uppercase tracking-[0.3em] font-mono group-hover:text-blue-400 transition-colors">Return Path</span>
-              <span className="text-base font-bold text-white tracking-[0.1em]">返回指挥中枢</span>
-            </div>
-          </Link>
+          <BackButton />
         </div>
       </div>
 
