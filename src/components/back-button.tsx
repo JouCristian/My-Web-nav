@@ -1,14 +1,26 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { useRouter } from "next/navigation"
 import ShapeBlur from "@/components/ShapeBlur"
 
-export function BackButton({ className }: { className?: string }) {
+export function BackButton({ className, fallbackHref = "/" }: { className?: string; fallbackHref?: string }) {
+  const router = useRouter()
+
+  const handleBack = () => {
+    // 有可回退的历史就回上一页；没有（如 v0 预览 iframe、直接打开的新标签）则回到兜底页面
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back()
+    } else {
+      router.push(fallbackHref)
+    }
+  }
+
   return (
     <motion.button
       type="button"
       aria-label="返回上一页"
-      onClick={() => window.history.back()}
+      onClick={handleBack}
       whileHover="hover"
       whileTap="tap"
       initial="idle"
