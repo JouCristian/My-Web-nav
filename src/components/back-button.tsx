@@ -27,15 +27,16 @@ export function BackButton({ className, fallbackHref = "/" }: { className?: stri
       className={`group relative inline-flex h-12 w-12 items-center justify-center ${className ?? ""}`}
     >
       {/* ShapeBlur 圆形边框效果：跟随指针的发光描边，常驻渲染、实时跟随鼠标。
-          白边问题已在 ShapeBlur 内部将鼠标初始位置移出容器解决 */}
-      <span className="pointer-events-none absolute -inset-2">
+          画布放大到 -inset-5 让指针有移动空间，circleSize/circleEdge 收小让发光只
+          局部出现在指针附近（而非整圈均匀白边），还原 ReactBits 的指针跟随效果。 */}
+      <span className="pointer-events-none absolute -inset-5">
         <ShapeBlur
           variation={2}
           shapeSize={1.0}
           roundness={1.0}
-          borderSize={0.04}
-          circleSize={0.35}
-          circleEdge={0.6}
+          borderSize={0.05}
+          circleSize={0.18}
+          circleEdge={0.18}
         />
       </span>
 
