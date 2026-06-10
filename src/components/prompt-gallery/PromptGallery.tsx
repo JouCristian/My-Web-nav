@@ -3,7 +3,7 @@
 import { startTransition, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import dynamic from "next/dynamic"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
   createPromptCategory,
   deletePromptCard,
@@ -165,6 +165,18 @@ function FavoriteEmptyGlyph() {
 
 const minTwoRowHeight = 760
 
+const SEARCH_DEBOUNCE_MS = 300
+
+// 将筛选状态序列化为 URL query：q=搜索词、cat=分类、tag=标签（可重复，安全编码多个标签）
+function buildFilterQuery(query: string, category: string, tags: string[]) {
+  const params = new URLSearchParams()
+  const trimmed = query.trim()
+  if (trimmed) params.set("q", trimmed)
+  if (category && category !== "全部") params.set("cat", category)
+  tags.forEach((tag) => params.append("tag", tag))
+  return params.toString()
+}
+
 export function PromptGallery({
   canManage = false,
   initialItems,
@@ -179,10 +191,28 @@ export function PromptGallery({
   const [items, setItems] = useState<ImagePromptItem[]>(initialItems)
   const [categories, setCategories] = useState<Array<"全部" | ImagePromptCategory>>(() => withFavoriteCategory(initialCategories))
   const router = useRouter()
-  const [activeCategory, setActiveCategory] = useState<ActiveCategory>("全部")
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  // 从 URL query 还原初始筛选状态（支持刷新恢复）。分类需校验合法性，非法值回落到“全部”。
+  const initialFilters = useMemo(() => {
+    const rawCategory = searchParams.get("cat") ?? "全部"
+    const validCategories = withFavoriteCategory(initialCategories)
+    const category = (validCategories as string[]).includes(rawCategory) ? (rawCategory as ActiveCategory) : "全部"
+    return {
+      query: searchParams.get("q") ?? "",
+      category,
+      tags: searchParams.getAll("tag"),
+    }
+    // 仅用于挂载时的初始值，刻意不随 searchParams 变化重算
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const [activeCategory, setActiveCategory] = useState<ActiveCategory>(initialFilters.category)
   const [activeGenerationMode, setActiveGenerationMode] = useState<ActiveGenerationMode>("全部")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [searchQuery, setSearchQuery] = useState(initialFilters.query)
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(initialFilters.query)
+  const [selectedTags, setSelectedTags] = useState<string[]>(initialFilters.tags)
   const [favoriteError, setFavoriteError] = useState("")
   const [favoriteBusyIds, setFavoriteBusyIds] = useState<string[]>([])
   const [loginDialogOpen, setLoginDialogOpen] = useState(false)
@@ -202,10 +232,43 @@ export function PromptGallery({
     }
   }
 
+  // 1) 搜索防抖：用户停止输入 SEARCH_DEBOUNCE_MS 后才更新 debouncedSearchQuery（驱动过滤与 URL）
+  useEffect(() => {
+    if (searchQuery === debouncedSearchQuery) return
+    const timer = window.setTimeout(() => setDebouncedSearchQuery(searchQuery), SEARCH_DEBOUNCE_MS)
+    return () => window.clearTimeout(timer)
+  }, [searchQuery, debouncedSearchQuery])
+
+  // 2) 写入 URL：筛选状态变化时把 q/cat/tag 同步到地址栏（replace 不污染历史栈）
+  const currentFilterQuery = buildFilterQuery(debouncedSearchQuery, activeCategory, selectedTags)
+  useEffect(() => {
+    const existingQuery = searchParams.toString()
+    if (existingQuery === currentFilterQuery) return
+    const nextUrl = currentFilterQuery ? `${pathname}?${currentFilterQuery}` : pathname
+    router.replace(nextUrl, { scroll: false })
+  }, [currentFilterQuery, pathname, router, searchParams])
+
+  // 3) 读取 URL：浏览器回退/前进导致 searchParams 变化时，把界面筛选状态同步回来
+  useEffect(() => {
+    const urlQuery = searchParams.get("q") ?? ""
+    const rawCategory = searchParams.get("cat") ?? "全部"
+    const nextCategory = (categories as string[]).includes(rawCategory) ? (rawCategory as ActiveCategory) : "全部"
+    const urlTags = searchParams.getAll("tag")
+
+    if (urlQuery !== debouncedSearchQuery) {
+      setSearchQuery(urlQuery)
+      setDebouncedSearchQuery(urlQuery)
+    }
+    if (nextCategory !== activeCategory) setActiveCategory(nextCategory)
+    if (!sameStringList(urlTags, selectedTags)) setSelectedTags(urlTags)
+    // 仅在 URL（searchParams）变化时执行同步，避免与写入 effect 形成回环
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
   const searchFilteredPrompts = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase()
+    const query = debouncedSearchQuery.trim().toLowerCase()
     return items.filter((item) => promptMatchesSearch(item, query))
-  }, [items, searchQuery])
+  }, [items, debouncedSearchQuery])
 
   const categoryScopedPrompts = useMemo(
     () =>
@@ -276,12 +339,12 @@ export function PromptGallery({
     activeCategory !== "全部" ||
     activeGenerationMode !== "全部" ||
     selectedTags.length > 0 ||
-    Boolean(searchQuery.trim())
+    Boolean(debouncedSearchQuery.trim())
   const filteredPromptSignature = filteredPrompts.map((item) => item.id).join("|")
   const panelHeight = twoRowHeight ? Math.max(twoRowHeight, minTwoRowHeight) : null
-  const showSearchEmptyState = Boolean(searchQuery.trim()) && filteredPrompts.length === 0
+  const showSearchEmptyState = Boolean(debouncedSearchQuery.trim()) && filteredPrompts.length === 0
   const showFavoriteEmptyState =
-    activeCategory === FAVORITE_CATEGORY && !searchQuery.trim() && filteredPrompts.length === 0
+    activeCategory === FAVORITE_CATEGORY && !debouncedSearchQuery.trim() && filteredPrompts.length === 0
 
   const handleCategoryChange = (category: ActiveCategory) => {
     if (category !== "全部" && category !== FAVORITE_CATEGORY && !availableCategorySet.has(category)) return
@@ -322,6 +385,7 @@ export function PromptGallery({
     setActiveCategory("全部")
     setActiveGenerationMode("全部")
     setSearchQuery("")
+    setDebouncedSearchQuery("")
     setSelectedTags([])
     setSelectedPromptId(items[0]?.id ?? "")
     setSelectionVersion((current) => current + 1)
@@ -351,6 +415,7 @@ export function PromptGallery({
     setActiveCategory("全部")
     setActiveGenerationMode("全部")
     setSearchQuery("")
+    setDebouncedSearchQuery("")
     setSelectedTags([tag])
     const nextPrompt = items.find((item) => item.tags.includes(tag)) ?? items[0]
     setSelectedPromptId(nextPrompt?.id ?? "")
