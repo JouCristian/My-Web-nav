@@ -1,17 +1,14 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import ShapeBlur from "@/components/ShapeBlur"
 
 export function BackButton({ className }: { className?: string }) {
-  const router = useRouter()
-
   return (
     <motion.button
       type="button"
       aria-label="返回上一页"
-      onClick={() => router.back()}
+      onClick={() => window.history.back()}
       whileHover="hover"
       whileTap="tap"
       initial="idle"
