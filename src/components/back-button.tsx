@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
-import ShapeBlur from "@/components/ShapeBlur"
 
 export function BackButton({ className, fallbackHref = "/" }: { className?: string; fallbackHref?: string }) {
   const router = useRouter()
@@ -26,20 +25,6 @@ export function BackButton({ className, fallbackHref = "/" }: { className?: stri
       initial="idle"
       className={`group relative inline-flex h-12 w-12 items-center justify-center ${className ?? ""}`}
     >
-      {/* ShapeBlur 圆形边框效果：跟随指针的发光描边，常驻渲染、实时跟随鼠标。
-          画布放大到 -inset-5 让指针有移动空间，circleSize/circleEdge 收小让发光只
-          局部出现在指针附近（而非整圈均匀白边），还原 ReactBits 的指针跟随效果。 */}
-      <span className="pointer-events-none absolute -inset-5">
-        <ShapeBlur
-          variation={2}
-          shapeSize={1.0}
-          roundness={1.0}
-          borderSize={0.05}
-          circleSize={0.18}
-          circleEdge={0.18}
-        />
-      </span>
-
       {/* 静态底座圆环 */}
       <motion.span
         className="relative flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-black/40 backdrop-blur-md shadow-[0_2px_16px_rgba(0,0,0,0.45)] cursor-pointer"
