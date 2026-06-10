@@ -159,8 +159,9 @@ export default function ShapeBlur({
     let time = 0
     let lastTime = 0
 
-    const vMouse = new THREE.Vector2()
-    const vMouseDamp = new THREE.Vector2()
+    // 初始鼠标位置放到容器外，避免页面加载时默认 (0,0) 把整圈描边点亮成白边
+    const vMouse = new THREE.Vector2(-1e4, -1e4)
+    const vMouseDamp = new THREE.Vector2(-1e4, -1e4)
     const vResolution = new THREE.Vector2()
 
     let w = 1
