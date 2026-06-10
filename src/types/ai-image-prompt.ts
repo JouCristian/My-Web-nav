@@ -28,4 +28,5 @@ export interface ImagePromptItem {
   promptSummary: string
   useCase: string
   tips?: string[]
+  isFavorited?: boolean
 }

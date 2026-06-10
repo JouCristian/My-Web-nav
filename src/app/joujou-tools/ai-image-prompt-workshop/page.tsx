@@ -76,7 +76,12 @@ export default async function AIImagePromptWorkshopPage() {
         </div>
 
         <div>
-          <PromptGallery canManage={canManage} initialCategories={workshopData.categories} initialItems={workshopData.items} />
+          <PromptGallery
+            canManage={canManage}
+            initialCategories={workshopData.categories}
+            initialItems={workshopData.items}
+            isAuthenticated={workshopData.isAuthenticated}
+          />
         </div>
       </div>
     </main>

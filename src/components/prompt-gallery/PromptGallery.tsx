@@ -8,6 +8,7 @@ import {
   deletePromptCard,
   deletePromptCategory,
   savePromptCard,
+  togglePromptFavorite,
   type PromptWorkshopData,
 } from "@/app/joujou-tools/ai-image-prompt-workshop/actions"
 import {
@@ -25,7 +26,9 @@ import { gridContainerVariants, gridItemVariants } from "@/components/prompt-gal
 import { CountUp } from "@/components/prompt-gallery/CountUp"
 import { Settings2 } from "lucide-react"
 
-type ActiveCategory = "全部" | ImagePromptCategory
+const FAVORITE_CATEGORY = "我的收藏" as const
+
+type ActiveCategory = "全部" | typeof FAVORITE_CATEGORY | ImagePromptCategory
 type ActiveGenerationMode = "全部" | ImagePromptGenerationMode
 
 function promptMatchesSearch(item: ImagePromptItem, query: string) {
@@ -64,6 +67,11 @@ function getTagCounts(items: ImagePromptItem[]) {
   })
 
   return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+}
+
+function withFavoriteCategory(categories: Array<"全部" | ImagePromptCategory>) {
+  const rest = categories.filter((category) => category !== "全部" && category !== FAVORITE_CATEGORY)
+  return ["全部", FAVORITE_CATEGORY, ...rest] as Array<"全部" | ImagePromptCategory>
 }
 
 const PromptManagerModal = dynamic(
@@ -113,23 +121,67 @@ function EmptyStateGlyph() {
   )
 }
 
+function FavoriteEmptyGlyph() {
+  const drawTransition = {
+    duration: 1.8,
+    ease: [0.65, 0, 0.35, 1] as const,
+    repeat: Number.POSITIVE_INFINITY,
+    repeatDelay: 0.8,
+  }
+
+  return (
+    <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl border border-amber-200/15 bg-amber-300/[0.055] text-amber-100 shadow-[0_0_34px_rgba(250,204,21,0.1)]">
+      <svg width={42} height={42} viewBox="0 0 48 48" fill="none" aria-hidden="true" className="overflow-visible">
+        <motion.path
+          d="M24 5L29.4 16L41.5 17.8L32.8 26.3L34.8 38.3L24 32.6L13.2 38.3L15.2 26.3L6.5 17.8L18.6 16L24 5Z"
+          fill="none"
+          stroke="rgba(254,240,138,0.95)"
+          strokeWidth={2.35}
+          strokeLinejoin="round"
+          pathLength={1}
+          initial={{ pathLength: 0, opacity: 0.2 }}
+          animate={{ pathLength: [0, 1, 1, 0], opacity: [0.2, 1, 1, 0.2] }}
+          transition={drawTransition}
+          style={{ filter: "drop-shadow(0 0 6px rgba(250,204,21,0.36))" }}
+        />
+        <motion.path
+          d="M24 16V25L30 28"
+          fill="none"
+          stroke="rgba(254,240,138,0.86)"
+          strokeWidth={2.1}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          pathLength={1}
+          initial={{ pathLength: 0, opacity: 0.15 }}
+          animate={{ pathLength: [0, 1, 1, 0], opacity: [0.15, 0.95, 0.95, 0.15] }}
+          transition={{ ...drawTransition, delay: 0.45 }}
+        />
+      </svg>
+    </div>
+  )
+}
+
 const minTwoRowHeight = 760
 
 export function PromptGallery({
   canManage = false,
   initialItems,
   initialCategories,
+  isAuthenticated = false,
 }: {
   canManage?: boolean
   initialItems: ImagePromptItem[]
   initialCategories: Array<"全部" | ImagePromptCategory>
+  isAuthenticated?: boolean
 }) {
   const [items, setItems] = useState<ImagePromptItem[]>(initialItems)
-  const [categories, setCategories] = useState<Array<"全部" | ImagePromptCategory>>(initialCategories)
+  const [categories, setCategories] = useState<Array<"全部" | ImagePromptCategory>>(() => withFavoriteCategory(initialCategories))
   const [activeCategory, setActiveCategory] = useState<ActiveCategory>("全部")
   const [activeGenerationMode, setActiveGenerationMode] = useState<ActiveGenerationMode>("全部")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [favoriteError, setFavoriteError] = useState("")
+  const [favoriteBusyIds, setFavoriteBusyIds] = useState<string[]>([])
   const [selectedPromptId, setSelectedPromptId] = useState(items[0]?.id ?? "")
   const [selectionVersion, setSelectionVersion] = useState(0)
   const [managerOpen, setManagerOpen] = useState(false)
@@ -152,7 +204,12 @@ export function PromptGallery({
   }, [items, searchQuery])
 
   const categoryScopedPrompts = useMemo(
-    () => searchFilteredPrompts.filter((item) => activeCategory === "全部" || item.category === activeCategory),
+    () =>
+      searchFilteredPrompts.filter((item) => {
+        if (activeCategory === "全部") return true
+        if (activeCategory === FAVORITE_CATEGORY) return Boolean(item.isFavorited)
+        return item.category === activeCategory
+      }),
     [activeCategory, searchFilteredPrompts],
   )
 
@@ -170,6 +227,7 @@ export function PromptGallery({
   )
 
   const tagEntries = useMemo(() => getTagCounts(modeScopedPrompts), [modeScopedPrompts])
+  const suggestedTags = useMemo(() => getTagCounts(items).slice(0, 6).map(([tag]) => tag), [items])
   const tagOptions = useMemo(
     () =>
       tagEntries.map(([tag]) => {
@@ -194,7 +252,11 @@ export function PromptGallery({
 
   const availableGenerationModeSet = useMemo(() => {
     const candidates = searchFilteredPrompts
-      .filter((item) => activeCategory === "全部" || item.category === activeCategory)
+      .filter((item) => {
+        if (activeCategory === "全部") return true
+        if (activeCategory === FAVORITE_CATEGORY) return Boolean(item.isFavorited)
+        return item.category === activeCategory
+      })
       .filter((item) => promptMatchesTags(item, selectedTags))
 
     return new Set(candidates.map((item) => item.generationMode))
@@ -205,6 +267,7 @@ export function PromptGallery({
   const tagSignature = tagEntries.map(([tag]) => tag).join("|")
 
   const selectedPrompt = filteredPrompts.find((item) => item.id === selectedPromptId) ?? filteredPrompts[0] ?? null
+  const detailDialogItem = dialogPrompt ? items.find((item) => item.id === dialogPrompt.id) ?? dialogPrompt : selectedPrompt
   const hasActiveFilters =
     activeCategory !== "全部" ||
     activeGenerationMode !== "全部" ||
@@ -213,13 +276,19 @@ export function PromptGallery({
   const filteredPromptSignature = filteredPrompts.map((item) => item.id).join("|")
   const panelHeight = twoRowHeight ? Math.max(twoRowHeight, minTwoRowHeight) : null
   const showSearchEmptyState = Boolean(searchQuery.trim()) && filteredPrompts.length === 0
+  const showFavoriteEmptyState =
+    activeCategory === FAVORITE_CATEGORY && !searchQuery.trim() && filteredPrompts.length === 0
 
   const handleCategoryChange = (category: ActiveCategory) => {
-    if (category !== "全部" && !availableCategorySet.has(category)) return
+    if (category !== "全部" && category !== FAVORITE_CATEGORY && !availableCategorySet.has(category)) return
 
     setActiveCategory(category)
     const nextPrompts = searchFilteredPrompts
-      .filter((item) => category === "全部" || item.category === category)
+      .filter((item) => {
+        if (category === "全部") return true
+        if (category === FAVORITE_CATEGORY) return Boolean(item.isFavorited)
+        return item.category === category
+      })
       .filter((item) => activeGenerationMode === "全部" || item.generationMode === activeGenerationMode)
       .filter((item) => promptMatchesTags(item, selectedTags))
     setSelectedPromptId((nextPrompts[0] ?? items[0])?.id ?? "")
@@ -274,11 +343,21 @@ export function PromptGallery({
     setSelectionVersion((current) => current + 1)
   }
 
+  const handleTrySuggestedTag = (tag: string) => {
+    setActiveCategory("全部")
+    setActiveGenerationMode("全部")
+    setSearchQuery("")
+    setSelectedTags([tag])
+    const nextPrompt = items.find((item) => item.tags.includes(tag)) ?? items[0]
+    setSelectedPromptId(nextPrompt?.id ?? "")
+    setSelectionVersion((current) => current + 1)
+  }
+
   const applyWorkshopData = (data: PromptWorkshopData) => {
     setItems(data.items)
-    setCategories(data.categories)
+    setCategories(withFavoriteCategory(data.categories))
 
-    if (!data.categories.includes(activeCategory)) {
+    if (activeCategory !== FAVORITE_CATEGORY && !data.categories.includes(activeCategory)) {
       setActiveCategory("全部")
     }
 
@@ -313,10 +392,41 @@ export function PromptGallery({
     applyWorkshopData(data)
   }
 
+  const handleToggleFavorite = async (item: ImagePromptItem) => {
+    if (favoriteBusyIds.includes(item.id)) return
+
+    setFavoriteError("")
+    setFavoriteBusyIds((current) => [...current, item.id])
+    const nextFavorite = !item.isFavorited
+    setItems((current) =>
+      current.map((currentItem) =>
+        currentItem.id === item.id ? { ...currentItem, isFavorited: nextFavorite } : currentItem,
+      ),
+    )
+
+    try {
+      const result = await togglePromptFavorite(item.id)
+      setItems((current) =>
+        current.map((currentItem) =>
+          currentItem.id === result.cardId ? { ...currentItem, isFavorited: result.isFavorited } : currentItem,
+        ),
+      )
+    } catch (error) {
+      setItems((current) =>
+        current.map((currentItem) =>
+          currentItem.id === item.id ? { ...currentItem, isFavorited: Boolean(item.isFavorited) } : currentItem,
+        ),
+      )
+      setFavoriteError(error instanceof Error ? error.message : "收藏失败，请稍后重试")
+    } finally {
+      setFavoriteBusyIds((current) => current.filter((id) => id !== item.id))
+    }
+  }
+
   useEffect(() => {
     if (!searchFilteredPrompts.length) return
 
-    if (activeCategory !== "全部" && !availableCategorySet.has(activeCategory)) {
+    if (activeCategory !== "全部" && activeCategory !== FAVORITE_CATEGORY && !availableCategorySet.has(activeCategory)) {
       setActiveCategory("全部")
       setSelectionVersion((current) => current + 1)
     }
@@ -432,6 +542,19 @@ export function PromptGallery({
           totalCount={items.length}
         />
 
+        <AnimatePresence>
+          {favoriteError ? (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="mt-3 rounded-2xl border border-amber-200/15 bg-amber-300/[0.08] px-4 py-2 text-xs font-bold text-amber-100"
+            >
+              {favoriteError}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+
         <div className="mt-5 flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-bold text-white">
@@ -491,7 +614,9 @@ export function PromptGallery({
                   item={item}
                   active={selectedPrompt?.id === item.id}
                   selectionVersion={selectionVersion}
+                  favoriteBusy={favoriteBusyIds.includes(item.id)}
                   onSelect={handleSelect}
+                  onToggleFavorite={handleToggleFavorite}
                 />
               </motion.div>
               ))}
@@ -499,13 +624,43 @@ export function PromptGallery({
               <div className="col-span-full flex min-h-[360px] flex-col items-center justify-center rounded-[1.75rem] border border-white/10 bg-black/25 p-8 text-center">
                 <EmptyStateGlyph />
                 <h3 className="mt-5 text-lg font-black text-white">没有匹配的提示词</h3>
-                <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-500">换一个关键词，或清空搜索重新浏览当前可用提示词。</p>
+                <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-500">换一个关键词，或试试这些常用标签。</p>
+                {suggestedTags.length ? (
+                  <div className="mt-4 flex max-w-lg flex-wrap justify-center gap-2">
+                    {suggestedTags.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => handleTrySuggestedTag(tag)}
+                        className="min-h-9 cursor-pointer rounded-xl border border-cyan-200/15 bg-cyan-200/[0.07] px-3 text-xs font-black text-cyan-50 transition-colors hover:bg-cyan-200/[0.12] active:scale-[0.98]"
+                      >
+                        #{tag}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
                   className="mt-5 inline-flex min-h-10 cursor-pointer items-center rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.08] px-4 text-xs font-black text-cyan-50 transition-colors hover:bg-cyan-200/[0.13] active:scale-[0.98]"
                 >
                   清空搜索
+                </button>
+              </div>
+              ) : null}
+              {showFavoriteEmptyState ? (
+              <div className="col-span-full flex min-h-[360px] flex-col items-center justify-center rounded-[1.75rem] border border-white/10 bg-black/25 p-8 text-center">
+                <FavoriteEmptyGlyph />
+                <h3 className="mt-5 text-lg font-black text-white">{isAuthenticated ? "还没有收藏提示词" : "登录后使用收藏栏"}</h3>
+                <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-500">
+                  {isAuthenticated ? "试试收藏一些精美提示词？点击卡片图片右上角的星标，就能把它们收进这里。" : "登录 GitHub 或 Gitee 后，每个账号都可以拥有自己的收藏栏。"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveCategory("全部")}
+                  className="mt-5 inline-flex min-h-10 cursor-pointer items-center rounded-2xl border border-amber-200/20 bg-amber-300/[0.08] px-4 text-xs font-black text-amber-50 transition-colors hover:bg-amber-300/[0.13] active:scale-[0.98]"
+                >
+                  先浏览全部提示词
                 </button>
               </div>
               ) : null}
@@ -516,7 +671,13 @@ export function PromptGallery({
         <div className="hidden min-w-0 lg:block lg:sticky lg:top-24 lg:self-start">
           <AnimatePresence mode="wait">
             {selectedPrompt ? (
-              <PromptDetailPanel key={selectedPrompt.id} item={selectedPrompt} panelHeight={panelHeight} />
+              <PromptDetailPanel
+                key={selectedPrompt.id}
+                item={selectedPrompt}
+                panelHeight={panelHeight}
+                favoriteBusy={favoriteBusyIds.includes(selectedPrompt.id)}
+                onToggleFavorite={handleToggleFavorite}
+              />
             ) : (
               <PromptDetailEmpty
                 key="detail-empty"
@@ -530,8 +691,10 @@ export function PromptGallery({
       </div>
 
       <PromptDetailDialog
-        item={dialogPrompt ?? selectedPrompt}
+        item={detailDialogItem}
         open={detailDialogOpen}
+        favoriteBusy={Boolean(detailDialogItem?.id && favoriteBusyIds.includes(detailDialogItem.id))}
+        onToggleFavorite={handleToggleFavorite}
         onClose={() => setDetailDialogOpen(false)}
         onExitComplete={() => setDialogPrompt(null)}
       />
@@ -540,7 +703,7 @@ export function PromptGallery({
         <PromptManagerModal
           open={managerOpen}
           items={items}
-          categories={categories}
+          categories={categories.filter((category) => category !== FAVORITE_CATEGORY)}
           onClose={() => setManagerOpen(false)}
           onSaveItem={handleSaveItem}
           onDeleteItem={handleDeleteItem}

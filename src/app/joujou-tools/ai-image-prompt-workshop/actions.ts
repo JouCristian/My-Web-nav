@@ -13,12 +13,14 @@ const DEFAULT_GENERATION_MODE: ImagePromptGenerationMode = "text-to-image"
 export interface PromptWorkshopData {
   categories: Array<"全部" | ImagePromptCategory>
   items: ImagePromptItem[]
+  isAuthenticated: boolean
 }
 
 function fallbackWorkshopData(): PromptWorkshopData {
   return {
     categories: promptCategories,
-    items: aiImagePrompts,
+    items: aiImagePrompts.map((item) => ({ ...item, isFavorited: false })),
+    isAuthenticated: false,
   }
 }
 
@@ -47,7 +49,12 @@ async function assertPromptManager() {
   return user
 }
 
-async function readPromptWorkshopDataFromDb(): Promise<PromptWorkshopData> {
+async function getCurrentUserId() {
+  const session = await auth()
+  return session?.user?.id ?? null
+}
+
+async function readPromptWorkshopBaseDataFromDb(): Promise<Omit<PromptWorkshopData, "isAuthenticated">> {
   const [categories, cards] = await Promise.all([
     prisma.promptCategory.findMany({
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -59,7 +66,13 @@ async function readPromptWorkshopDataFromDb(): Promise<PromptWorkshopData> {
     }),
   ])
 
-  if (!categories.length || !cards.length) return fallbackWorkshopData()
+  if (!categories.length || !cards.length) {
+    const fallback = fallbackWorkshopData()
+    return {
+      categories: fallback.categories,
+      items: fallback.items,
+    }
+  }
 
   return {
     categories: ["全部", ...categories.map((category) => category.name)],
@@ -77,12 +90,13 @@ async function readPromptWorkshopDataFromDb(): Promise<PromptWorkshopData> {
       promptSummary: card.promptSummary,
       useCase: card.useCase,
       tips: card.tips,
+      isFavorited: false,
     })),
   }
 }
 
 const readCachedPromptWorkshopData = unstable_cache(
-  async () => readPromptWorkshopDataFromDb(),
+  async () => readPromptWorkshopBaseDataFromDb(),
   ["prompt-workshop-data"],
   {
     revalidate: 300,
@@ -97,7 +111,26 @@ function revalidatePromptWorkshop() {
 
 export async function getPromptWorkshopData(): Promise<PromptWorkshopData> {
   try {
-    return await readCachedPromptWorkshopData()
+    const [baseData, userId] = await Promise.all([readCachedPromptWorkshopData(), getCurrentUserId()])
+    if (!userId) return { ...baseData, isAuthenticated: false }
+
+    let favoriteIds: Array<{ cardId: string }> = []
+    try {
+      favoriteIds = await prisma.promptCardFavorite.findMany({
+        where: { userId, card: { isActive: true } },
+        select: { cardId: true },
+      })
+    } catch (error) {
+      console.warn("[prompt-workshop] Favorites unavailable, returning cards without favorite state:", error)
+    }
+
+    const favoriteIdSet = new Set(favoriteIds.map((favorite) => favorite.cardId))
+
+    return {
+      ...baseData,
+      isAuthenticated: true,
+      items: baseData.items.map((item) => ({ ...item, isFavorited: favoriteIdSet.has(item.id) })),
+    }
   } catch (error) {
     console.warn("[prompt-workshop] Falling back to mock data:", error)
     return fallbackWorkshopData()
@@ -166,7 +199,7 @@ export async function savePromptCard(item: ImagePromptItem): Promise<PromptWorks
   })
 
   revalidatePromptWorkshop()
-  return readPromptWorkshopDataFromDb()
+  return getPromptWorkshopData()
 }
 
 export async function deletePromptCard(id: string): Promise<PromptWorkshopData> {
@@ -177,14 +210,14 @@ export async function deletePromptCard(id: string): Promise<PromptWorkshopData> 
 
   await prisma.promptCard.delete({ where: { id } })
   revalidatePromptWorkshop()
-  return readPromptWorkshopDataFromDb()
+  return getPromptWorkshopData()
 }
 
 export async function createPromptCategory(name: string): Promise<PromptWorkshopData> {
   await assertPromptManager()
   await findOrCreateCategory(name)
   revalidatePromptWorkshop()
-  return readPromptWorkshopDataFromDb()
+  return getPromptWorkshopData()
 }
 
 export async function deletePromptCategory(name: ImagePromptCategory): Promise<PromptWorkshopData> {
@@ -194,7 +227,7 @@ export async function deletePromptCategory(name: ImagePromptCategory): Promise<P
   if (categories.length <= 1) throw new Error("至少保留一个分类")
 
   const target = categories.find((category) => category.name === name)
-  if (!target) return readPromptWorkshopDataFromDb()
+  if (!target) return getPromptWorkshopData()
 
   const fallback = categories.find((category) => category.id !== target.id)
   if (!fallback) throw new Error("至少保留一个分类")
@@ -206,5 +239,32 @@ export async function deletePromptCategory(name: ImagePromptCategory): Promise<P
   await prisma.promptCategory.delete({ where: { id: target.id } })
 
   revalidatePromptWorkshop()
-  return readPromptWorkshopDataFromDb()
+  return getPromptWorkshopData()
+}
+
+export async function togglePromptFavorite(cardId: string): Promise<{ cardId: string; isFavorited: boolean }> {
+  const userId = await getCurrentUserId()
+  if (!userId) throw new Error("请先登录后再收藏提示词")
+
+  const card = await prisma.promptCard.findFirst({
+    where: { id: cardId, isActive: true },
+    select: { id: true },
+  })
+  if (!card) throw new Error("提示词不存在或已下线")
+
+  const existing = await prisma.promptCardFavorite.findUnique({
+    where: { userId_cardId: { userId, cardId } },
+  })
+
+  if (existing) {
+    await prisma.promptCardFavorite.delete({ where: { id: existing.id } })
+    revalidatePath(WORKSHOP_PATH)
+    return { cardId, isFavorited: false }
+  }
+
+  await prisma.promptCardFavorite.create({
+    data: { userId, cardId },
+  })
+  revalidatePath(WORKSHOP_PATH)
+  return { cardId, isFavorited: true }
 }

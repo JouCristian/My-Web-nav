@@ -104,6 +104,7 @@ model User {
   faqQuestions     FAQQuestion[]      // 关联FAQ提问
   notifications    Notification[]     // 通知列表
   pushSubscriptions PushSubscription[] // 推送订阅
+  promptCardFavorites PromptCardFavorite[] // AI 提示词收藏
 }
 
 // ==========================================
@@ -200,11 +201,26 @@ model PromptCard {
   updatedById     String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+  favorites       PromptCardFavorite[]
 
   @@index([categoryId])
   @@index([generationMode])
   @@index([isActive, sortOrder])
   @@index([createdAt])
+}
+
+model PromptCardFavorite {
+  id        String     @id @default(cuid())
+  userId    String
+  cardId    String
+  createdAt DateTime   @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card      PromptCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cardId])
+  @@index([userId, createdAt])
+  @@index([cardId])
 }
 
 // ==========================================

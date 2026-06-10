@@ -7,15 +7,25 @@ import { Lightbulb, Sparkles, X } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { PromptCopyButton } from "@/components/prompt-gallery/PromptCopyButton"
 import { PromptPreviewVisual } from "@/components/prompt-gallery/PromptPreviewVisual"
+import { PromptFavoriteButton } from "@/components/prompt-gallery/PromptFavoriteButton"
 
 interface PromptDetailDialogProps {
   item: ImagePromptItem | null
   open: boolean
+  favoriteBusy?: boolean
+  onToggleFavorite: (item: ImagePromptItem) => void
   onClose: () => void
   onExitComplete?: () => void
 }
 
-function PromptDetailDialogComponent({ item, open, onClose, onExitComplete }: PromptDetailDialogProps) {
+function PromptDetailDialogComponent({
+  item,
+  open,
+  favoriteBusy = false,
+  onToggleFavorite,
+  onClose,
+  onExitComplete,
+}: PromptDetailDialogProps) {
   const generationModeLabel = item
     ? imagePromptGenerationModes.find((mode) => mode.value === item.generationMode)?.label ?? "直接生成创意图片"
     : ""
@@ -83,6 +93,15 @@ function PromptDetailDialogComponent({ item, open, onClose, onExitComplete }: Pr
               <div className="px-1 pt-6">
                 <h2 className="text-2xl font-black leading-tight tracking-tight text-white">{item.title}</h2>
                 <p className="mt-3 text-sm leading-relaxed text-zinc-400">{item.description}</p>
+
+                <div className="mt-4">
+                  <PromptFavoriteButton
+                    active={Boolean(item.isFavorited)}
+                    busy={favoriteBusy}
+                    label={item.isFavorited ? "已加入收藏" : "加入收藏"}
+                    onToggle={() => onToggleFavorite(item)}
+                  />
+                </div>
 
                 <div className="mt-5 flex flex-wrap gap-2">
                   {item.tags.map((tag) => (

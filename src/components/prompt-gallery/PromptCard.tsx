@@ -7,12 +7,15 @@ import { useEffect, useRef, useState } from "react"
 import { PromptCopyButton } from "@/components/prompt-gallery/PromptCopyButton"
 import { PromptPreviewVisual } from "@/components/prompt-gallery/PromptPreviewVisual"
 import { ClampedText } from "@/components/prompt-gallery/ClampedText"
+import { PromptFavoriteButton } from "@/components/prompt-gallery/PromptFavoriteButton"
 
 interface PromptCardProps {
   item: ImagePromptItem
   active: boolean
   selectionVersion: number
+  favoriteBusy?: boolean
   onSelect: (item: ImagePromptItem) => void
+  onToggleFavorite: (item: ImagePromptItem) => void
 }
 
 // 生成带 overshoot 的圆角矩形描边路径：从顶边中点起顺时针绘制一圈，
@@ -36,7 +39,7 @@ function roundedRectPath(x: number, y: number, w: number, h: number, r: number, 
   ].join(" ")
 }
 
-export function PromptCard({ item, active, selectionVersion, onSelect }: PromptCardProps) {
+export function PromptCard({ item, active, selectionVersion, favoriteBusy = false, onSelect, onToggleFavorite }: PromptCardProps) {
   const cardRef = useRef<HTMLElement>(null)
   const [cardSize, setCardSize] = useState({ width: 0, height: 0 })
   const [hovered, setHovered] = useState(false)
@@ -163,6 +166,13 @@ export function PromptCard({ item, active, selectionVersion, onSelect }: PromptC
 
       <div className="relative overflow-hidden rounded-[1.45rem]">
         <PromptPreviewVisual item={item} active={active} sweepKey={selectionVersion} />
+        <PromptFavoriteButton
+          active={Boolean(item.isFavorited)}
+          busy={favoriteBusy}
+          compact
+          className="absolute right-3 top-3 z-20"
+          onToggle={() => onToggleFavorite(item)}
+        />
       </div>
 
       <div className="relative z-10 p-2 pt-5">

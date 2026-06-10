@@ -285,7 +285,7 @@ export function PromptCategoryTabs({
           <div className="inline-flex w-max min-w-full gap-2 px-2">
             {categories.map((category) => {
               const active = category === activeCategory
-              const available = category === "全部" || availableCategorySet.has(category)
+              const available = category === "全部" || category === "我的收藏" || availableCategorySet.has(category)
 
               return (
                 <button

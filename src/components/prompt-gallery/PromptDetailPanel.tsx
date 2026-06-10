@@ -7,10 +7,13 @@ import { Lightbulb, Sparkles } from "lucide-react"
 import { motion } from "framer-motion"
 import { PromptCopyButton } from "@/components/prompt-gallery/PromptCopyButton"
 import { PromptPreviewVisual } from "@/components/prompt-gallery/PromptPreviewVisual"
+import { PromptFavoriteButton } from "@/components/prompt-gallery/PromptFavoriteButton"
 
 interface PromptDetailPanelProps {
   item: ImagePromptItem
   panelHeight?: number | null
+  favoriteBusy?: boolean
+  onToggleFavorite: (item: ImagePromptItem) => void
 }
 
 const panelTransition = {
@@ -19,7 +22,7 @@ const panelTransition = {
   damping: 25,
 }
 
-export function PromptDetailPanel({ item, panelHeight }: PromptDetailPanelProps) {
+export function PromptDetailPanel({ item, panelHeight, favoriteBusy = false, onToggleFavorite }: PromptDetailPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const generationModeLabel =
     imagePromptGenerationModes.find((mode) => mode.value === item.generationMode)?.label ?? "直接生成创意图片"
@@ -77,6 +80,15 @@ export function PromptDetailPanel({ item, panelHeight }: PromptDetailPanelProps)
 
               <h2 className="text-2xl font-black leading-tight tracking-tight text-white sm:text-3xl">{item.title}</h2>
               <p className="mt-3 text-sm leading-relaxed text-zinc-400">{item.description}</p>
+
+              <div className="mt-4">
+                <PromptFavoriteButton
+                  active={Boolean(item.isFavorited)}
+                  busy={favoriteBusy}
+                  label={item.isFavorited ? "已加入收藏" : "加入收藏"}
+                  onToggle={() => onToggleFavorite(item)}
+                />
+              </div>
 
               <div className="mt-5 flex flex-wrap gap-2">
                 {item.tags.map((tag) => (
