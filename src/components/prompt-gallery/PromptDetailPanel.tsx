@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react"
 import type { ImagePromptItem } from "@/types/ai-image-prompt"
+import { imagePromptGenerationModes } from "@/types/ai-image-prompt"
 import { Lightbulb, Sparkles } from "lucide-react"
 import { motion } from "framer-motion"
 import { PromptCopyButton } from "@/components/prompt-gallery/PromptCopyButton"
@@ -20,6 +21,8 @@ const panelTransition = {
 
 export function PromptDetailPanel({ item, panelHeight }: PromptDetailPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const generationModeLabel =
+    imagePromptGenerationModes.find((mode) => mode.value === item.generationMode)?.label ?? "直接生成创意图片"
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0 })
@@ -66,6 +69,9 @@ export function PromptDetailPanel({ item, panelHeight }: PromptDetailPanelProps)
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-cyan-200/20 bg-cyan-200/[0.08] px-3 py-1.5 text-xs font-bold text-cyan-100">
                   {item.category}
+                </span>
+                <span className="rounded-full border border-violet-200/15 bg-violet-300/[0.07] px-3 py-1.5 text-xs font-bold text-violet-50">
+                  {generationModeLabel}
                 </span>
               </div>
 

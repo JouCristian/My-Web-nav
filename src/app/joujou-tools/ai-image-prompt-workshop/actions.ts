@@ -3,11 +3,12 @@
 import { auth } from "@/auth"
 import { aiImagePrompts, promptCategories } from "@/lib/ai-image-prompts"
 import { prisma } from "@/lib/db"
-import type { ImagePromptCategory, ImagePromptItem } from "@/types/ai-image-prompt"
+import type { ImagePromptCategory, ImagePromptGenerationMode, ImagePromptItem } from "@/types/ai-image-prompt"
 import { revalidatePath, unstable_cache, updateTag } from "next/cache"
 
 const WORKSHOP_PATH = "/joujou-tools/ai-image-prompt-workshop"
 const WORKSHOP_CACHE_TAG = "prompt-workshop"
+const DEFAULT_GENERATION_MODE: ImagePromptGenerationMode = "text-to-image"
 
 export interface PromptWorkshopData {
   categories: Array<"全部" | ImagePromptCategory>
@@ -28,6 +29,10 @@ function slugifyCategory(name: string) {
     .replace(/\s+/g, "-")
     .replace(/[^\p{Letter}\p{Number}-]+/gu, "")
     .replace(/^-+|-+$/g, "") || `category-${Date.now()}`
+}
+
+function normalizeGenerationMode(value: string | null | undefined): ImagePromptGenerationMode {
+  return value === "image-to-image" || value === "text-to-image" ? value : DEFAULT_GENERATION_MODE
 }
 
 async function assertPromptManager() {
@@ -64,6 +69,7 @@ async function readPromptWorkshopDataFromDb(): Promise<PromptWorkshopData> {
       description: card.description,
       category: card.category.name,
       tags: card.tags,
+      generationMode: normalizeGenerationMode(card.generationMode),
       modelTarget: card.modelTarget,
       previewImage: card.previewImage ?? undefined,
       previewGradient: card.previewGradient ?? undefined,
@@ -128,6 +134,7 @@ export async function savePromptCard(item: ImagePromptItem): Promise<PromptWorks
       description: item.description,
       categoryId: category.id,
       tags: item.tags,
+      generationMode: item.generationMode || DEFAULT_GENERATION_MODE,
       modelTarget: item.modelTarget || "AI 通用",
       previewImage: item.previewImage ?? null,
       previewGradient: item.previewGradient ?? null,
@@ -144,6 +151,7 @@ export async function savePromptCard(item: ImagePromptItem): Promise<PromptWorks
       description: item.description,
       categoryId: category.id,
       tags: item.tags,
+      generationMode: item.generationMode || DEFAULT_GENERATION_MODE,
       modelTarget: item.modelTarget || "AI 通用",
       previewImage: item.previewImage ?? null,
       previewGradient: item.previewGradient ?? null,

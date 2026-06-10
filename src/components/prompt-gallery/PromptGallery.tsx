@@ -10,7 +10,12 @@ import {
   savePromptCard,
   type PromptWorkshopData,
 } from "@/app/joujou-tools/ai-image-prompt-workshop/actions"
-import type { ImagePromptCategory, ImagePromptItem } from "@/types/ai-image-prompt"
+import {
+  imagePromptGenerationModes,
+  type ImagePromptCategory,
+  type ImagePromptGenerationMode,
+  type ImagePromptItem,
+} from "@/types/ai-image-prompt"
 import { PromptCard } from "@/components/prompt-gallery/PromptCard"
 import { PromptCategoryTabs } from "@/components/prompt-gallery/PromptCategoryTabs"
 import { PromptDetailPanel } from "@/components/prompt-gallery/PromptDetailPanel"
@@ -21,6 +26,45 @@ import { CountUp } from "@/components/prompt-gallery/CountUp"
 import { Settings2 } from "lucide-react"
 
 type ActiveCategory = "全部" | ImagePromptCategory
+type ActiveGenerationMode = "全部" | ImagePromptGenerationMode
+
+function promptMatchesSearch(item: ImagePromptItem, query: string) {
+  if (!query) return true
+
+  const searchSource = [
+    item.title,
+    item.description,
+    item.category,
+    item.promptSummary,
+    item.prompt,
+    item.useCase,
+    item.generationMode,
+    item.modelTarget,
+    item.tags.join(" "),
+  ]
+    .join(" ")
+    .toLowerCase()
+
+  return searchSource.includes(query)
+}
+
+function promptMatchesTags(item: ImagePromptItem, tags: string[]) {
+  return tags.length === 0 || tags.every((tag) => item.tags.includes(tag))
+}
+
+function sameStringList(a: string[], b: string[]) {
+  return a.length === b.length && a.every((value, index) => value === b[index])
+}
+
+function getTagCounts(items: ImagePromptItem[]) {
+  const counts = new Map<string, number>()
+
+  items.forEach((item) => {
+    item.tags.forEach((tag) => counts.set(tag, (counts.get(tag) ?? 0) + 1))
+  })
+
+  return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+}
 
 const PromptManagerModal = dynamic(
   () => import("@/components/prompt-gallery/PromptManagerModal").then((mod) => mod.PromptManagerModal),
@@ -83,6 +127,7 @@ export function PromptGallery({
   const [items, setItems] = useState<ImagePromptItem[]>(initialItems)
   const [categories, setCategories] = useState<Array<"全部" | ImagePromptCategory>>(initialCategories)
   const [activeCategory, setActiveCategory] = useState<ActiveCategory>("全部")
+  const [activeGenerationMode, setActiveGenerationMode] = useState<ActiveGenerationMode>("全部")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [selectedPromptId, setSelectedPromptId] = useState(items[0]?.id ?? "")
@@ -101,59 +146,108 @@ export function PromptGallery({
     }
   }
 
-  const allTags = useMemo(() => {
-    const counts = new Map<string, number>()
-
-    items.forEach((item) => {
-      item.tags.forEach((tag) => counts.set(tag, (counts.get(tag) ?? 0) + 1))
-    })
-
-    return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .map(([tag]) => tag)
-  }, [items])
-
-  const filteredPrompts = useMemo(() => {
+  const searchFilteredPrompts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
+    return items.filter((item) => promptMatchesSearch(item, query))
+  }, [items, searchQuery])
 
-    return items.filter((item) => {
-      const matchCategory = activeCategory === "全部" || item.category === activeCategory
-      const matchTags = selectedTags.length === 0 || selectedTags.every((tag) => item.tags.includes(tag))
-      const searchSource = [
-        item.title,
-        item.description,
-        item.category,
-        item.promptSummary,
-        item.prompt,
-        item.useCase,
-        item.tags.join(" "),
-      ]
-        .join(" ")
-        .toLowerCase()
-      const matchSearch = !query || searchSource.includes(query)
+  const categoryScopedPrompts = useMemo(
+    () => searchFilteredPrompts.filter((item) => activeCategory === "全部" || item.category === activeCategory),
+    [activeCategory, searchFilteredPrompts],
+  )
 
-      return matchCategory && matchTags && matchSearch
-    })
-  }, [activeCategory, items, searchQuery, selectedTags])
+  const modeScopedPrompts = useMemo(
+    () =>
+      categoryScopedPrompts.filter(
+        (item) => activeGenerationMode === "全部" || item.generationMode === activeGenerationMode,
+      ),
+    [activeGenerationMode, categoryScopedPrompts],
+  )
+
+  const filteredPrompts = useMemo(
+    () => modeScopedPrompts.filter((item) => promptMatchesTags(item, selectedTags)),
+    [modeScopedPrompts, selectedTags],
+  )
+
+  const tagEntries = useMemo(() => getTagCounts(modeScopedPrompts), [modeScopedPrompts])
+  const tagOptions = useMemo(
+    () =>
+      tagEntries.map(([tag]) => {
+        const active = selectedTags.includes(tag)
+        const nextTags = active ? selectedTags.filter((item) => item !== tag) : [...selectedTags, tag]
+
+        return {
+          tag,
+          disabled: !active && !modeScopedPrompts.some((item) => promptMatchesTags(item, nextTags)),
+        }
+      }),
+    [modeScopedPrompts, selectedTags, tagEntries],
+  )
+
+  const availableCategorySet = useMemo(() => {
+    const candidates = searchFilteredPrompts
+      .filter((item) => activeGenerationMode === "全部" || item.generationMode === activeGenerationMode)
+      .filter((item) => promptMatchesTags(item, selectedTags))
+
+    return new Set(candidates.map((item) => item.category))
+  }, [activeGenerationMode, searchFilteredPrompts, selectedTags])
+
+  const availableGenerationModeSet = useMemo(() => {
+    const candidates = searchFilteredPrompts
+      .filter((item) => activeCategory === "全部" || item.category === activeCategory)
+      .filter((item) => promptMatchesTags(item, selectedTags))
+
+    return new Set(candidates.map((item) => item.generationMode))
+  }, [activeCategory, searchFilteredPrompts, selectedTags])
+
+  const availableCategorySignature = Array.from(availableCategorySet).sort().join("|")
+  const availableGenerationModeSignature = Array.from(availableGenerationModeSet).sort().join("|")
+  const tagSignature = tagEntries.map(([tag]) => tag).join("|")
 
   const selectedPrompt = filteredPrompts.find((item) => item.id === selectedPromptId) ?? filteredPrompts[0] ?? null
-  const hasActiveFilters = activeCategory !== "全部" || selectedTags.length > 0 || Boolean(searchQuery.trim())
+  const hasActiveFilters =
+    activeCategory !== "全部" ||
+    activeGenerationMode !== "全部" ||
+    selectedTags.length > 0 ||
+    Boolean(searchQuery.trim())
   const filteredPromptSignature = filteredPrompts.map((item) => item.id).join("|")
   const panelHeight = twoRowHeight ? Math.max(twoRowHeight, minTwoRowHeight) : null
+  const showSearchEmptyState = Boolean(searchQuery.trim()) && filteredPrompts.length === 0
 
   const handleCategoryChange = (category: ActiveCategory) => {
+    if (category !== "全部" && !availableCategorySet.has(category)) return
+
     setActiveCategory(category)
-    const nextPrompts = category === "全部" ? items : items.filter((item) => item.category === category)
+    const nextPrompts = searchFilteredPrompts
+      .filter((item) => category === "全部" || item.category === category)
+      .filter((item) => activeGenerationMode === "全部" || item.generationMode === activeGenerationMode)
+      .filter((item) => promptMatchesTags(item, selectedTags))
+    setSelectedPromptId((nextPrompts[0] ?? items[0])?.id ?? "")
+    setSelectionVersion((current) => current + 1)
+  }
+
+  const handleGenerationModeChange = (mode: ActiveGenerationMode) => {
+    if (mode !== "全部" && !availableGenerationModeSet.has(mode)) return
+
+    setActiveGenerationMode(mode)
+    const nextPrompts = searchFilteredPrompts
+      .filter((item) => activeCategory === "全部" || item.category === activeCategory)
+      .filter((item) => mode === "全部" || item.generationMode === mode)
+      .filter((item) => promptMatchesTags(item, selectedTags))
     setSelectedPromptId((nextPrompts[0] ?? items[0])?.id ?? "")
     setSelectionVersion((current) => current + 1)
   }
 
   const handleToggleTag = (tag: string) => {
+    const option = tagOptions.find((item) => item.tag === tag)
+    if (option?.disabled) return
+
     setSelectedTags((current) => (current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]))
   }
 
   const handleClearFilters = () => {
     setActiveCategory("全部")
+    setActiveGenerationMode("全部")
     setSearchQuery("")
     setSelectedTags([])
     setSelectedPromptId(items[0]?.id ?? "")
@@ -188,6 +282,10 @@ export function PromptGallery({
       setActiveCategory("全部")
     }
 
+    if (activeGenerationMode !== "全部" && !data.items.some((item) => item.generationMode === activeGenerationMode)) {
+      setActiveGenerationMode("全部")
+    }
+
     if (!data.items.some((item) => item.id === selectedPromptId)) {
       setSelectedPromptId(data.items[0]?.id ?? "")
       setSelectionVersion((current) => current + 1)
@@ -214,6 +312,46 @@ export function PromptGallery({
     const data = await deletePromptCategory(name)
     applyWorkshopData(data)
   }
+
+  useEffect(() => {
+    if (!searchFilteredPrompts.length) return
+
+    if (activeCategory !== "全部" && !availableCategorySet.has(activeCategory)) {
+      setActiveCategory("全部")
+      setSelectionVersion((current) => current + 1)
+    }
+  }, [activeCategory, availableCategorySet, availableCategorySignature, searchFilteredPrompts.length])
+
+  useEffect(() => {
+    if (!searchFilteredPrompts.length) return
+
+    if (activeGenerationMode !== "全部" && !availableGenerationModeSet.has(activeGenerationMode)) {
+      setActiveGenerationMode("全部")
+      setSelectionVersion((current) => current + 1)
+    }
+  }, [
+    activeGenerationMode,
+    availableGenerationModeSet,
+    availableGenerationModeSignature,
+    searchFilteredPrompts.length,
+  ])
+
+  useEffect(() => {
+    if (!searchFilteredPrompts.length) return
+
+    setSelectedTags((current) => {
+      const next: string[] = []
+
+      current.forEach((tag) => {
+        const nextTags = [...next, tag]
+        if (tagEntries.some(([item]) => item === tag) && modeScopedPrompts.some((item) => promptMatchesTags(item, nextTags))) {
+          next.push(tag)
+        }
+      })
+
+      return sameStringList(current, next) ? current : next
+    })
+  }, [modeScopedPrompts, searchFilteredPrompts.length, tagEntries, tagSignature])
 
   useEffect(() => {
     if (!canManage || managerMounted) return
@@ -278,9 +416,14 @@ export function PromptGallery({
           categories={categories}
           activeCategory={activeCategory}
           onCategoryChange={handleCategoryChange}
+          generationModes={imagePromptGenerationModes}
+          activeGenerationMode={activeGenerationMode}
+          onGenerationModeChange={handleGenerationModeChange}
+          availableCategories={Array.from(availableCategorySet)}
+          availableGenerationModes={Array.from(availableGenerationModeSet)}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          tags={allTags}
+          tagOptions={tagOptions}
           selectedTags={selectedTags}
           onToggleTag={handleToggleTag}
           onClearFilters={handleClearFilters}
@@ -295,7 +438,7 @@ export function PromptGallery({
               <CountUp value={filteredPrompts.length} className="text-cyan-100" /> 条精选提示词
             </p>
             <p className="mt-1 text-xs text-zinc-500">
-              {hasActiveFilters ? "正在按搜索词、分类和标签筛选结果。" : "搜索或选择标签，点击卡片查看完整 prompt 和使用建议。"}
+              {hasActiveFilters ? "正在按搜索词、分类、生成方式和标签筛选结果。" : "搜索或选择标签，点击卡片查看完整 prompt 和使用建议。"}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -352,17 +495,17 @@ export function PromptGallery({
                 />
               </motion.div>
               ))}
-              {!filteredPrompts.length ? (
+              {showSearchEmptyState ? (
               <div className="col-span-full flex min-h-[360px] flex-col items-center justify-center rounded-[1.75rem] border border-white/10 bg-black/25 p-8 text-center">
                 <EmptyStateGlyph />
                 <h3 className="mt-5 text-lg font-black text-white">没有匹配的提示词</h3>
-                <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-500">换一个关键词，减少标签条件，或者清除筛选重新浏览。</p>
+                <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-500">换一个关键词，或清空搜索重新浏览当前可用提示词。</p>
                 <button
                   type="button"
-                  onClick={handleClearFilters}
+                  onClick={() => setSearchQuery("")}
                   className="mt-5 inline-flex min-h-10 cursor-pointer items-center rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.08] px-4 text-xs font-black text-cyan-50 transition-colors hover:bg-cyan-200/[0.13] active:scale-[0.98]"
                 >
-                  清除筛选
+                  清空搜索
                 </button>
               </div>
               ) : null}

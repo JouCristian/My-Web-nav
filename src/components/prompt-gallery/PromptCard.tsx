@@ -1,6 +1,7 @@
 "use client"
 
 import type { ImagePromptItem } from "@/types/ai-image-prompt"
+import { imagePromptGenerationModes } from "@/types/ai-image-prompt"
 import { AnimatePresence, motion } from "framer-motion"
 import { useEffect, useRef, useState } from "react"
 import { PromptCopyButton } from "@/components/prompt-gallery/PromptCopyButton"
@@ -42,6 +43,8 @@ export function PromptCard({ item, active, selectionVersion, onSelect }: PromptC
   const activeFrameInset = 2
   const activeFrameRadius = 26
   const hasCardSize = cardSize.width > 0 && cardSize.height > 0
+  const generationModeLabel =
+    imagePromptGenerationModes.find((mode) => mode.value === item.generationMode)?.label ?? "直接生成创意图片"
 
   useEffect(() => {
     const card = cardRef.current
@@ -167,7 +170,9 @@ export function PromptCard({ item, active, selectionVersion, onSelect }: PromptC
           <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-zinc-300">
             {item.category}
           </span>
-          <span className="font-mono text-[10px] text-cyan-100/70">Prompt</span>
+          <span className="shrink-0 rounded-full border border-cyan-200/15 bg-cyan-200/[0.07] px-2 py-1 text-[10px] font-bold text-cyan-100/80">
+            {generationModeLabel}
+          </span>
         </div>
 
         <h2 className="line-clamp-1 text-xl font-black leading-tight tracking-tight text-white">{item.title}</h2>

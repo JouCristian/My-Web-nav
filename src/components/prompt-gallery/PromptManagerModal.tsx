@@ -1,11 +1,20 @@
 "use client"
 
-import type { ImagePromptCategory, ImagePromptItem } from "@/types/ai-image-prompt"
+import {
+  imagePromptGenerationModes,
+  type ImagePromptCategory,
+  type ImagePromptGenerationMode,
+  type ImagePromptItem,
+} from "@/types/ai-image-prompt"
 import { AnimatePresence, motion } from "framer-motion"
-import { Database, ImagePlus, Layers3, Loader2, Plus, Save, Settings2, Tag, Trash2, X } from "lucide-react"
-import { memo, useMemo, useState, type ChangeEvent, type ReactNode } from "react"
+import { Check, Database, ImagePlus, Layers3, Loader2, Plus, Save, Settings2, Tag, Trash2, X } from "lucide-react"
+import { memo, useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react"
+import { easeOutExpo, easeStroke } from "@/components/prompt-gallery/motion"
 
 const PROMPT_PREVIEW_MAX_SIZE = 800
+const PROMPT_PREVIEW_MAX_BYTES = 8 * 1024 * 1024
+const softSpring = { type: "spring" as const, stiffness: 420, damping: 34, mass: 0.72 }
+const quickFade = { duration: 0.22, ease: easeOutExpo }
 
 interface PromptManagerModalProps {
   open: boolean
@@ -23,6 +32,9 @@ type PromptDraft = Omit<ImagePromptItem, "tags"> & {
   tagsText: string
 }
 
+type SaveState = "idle" | "saving" | "success" | "error"
+type UploadState = "idle" | "processing" | "success" | "error"
+
 function createEmptyPrompt(category: ImagePromptCategory): ImagePromptItem {
   const id = `custom-${Date.now()}`
 
@@ -32,6 +44,7 @@ function createEmptyPrompt(category: ImagePromptCategory): ImagePromptItem {
     description: "写一句清晰的副标题，说明这条提示词适合什么画面。",
     category,
     tags: ["custom", "prompt"],
+    generationMode: "text-to-image",
     modelTarget: "AI 通用",
     previewGradient:
       "radial-gradient(circle at 28% 18%, rgba(190,238,255,0.26), transparent 28%), radial-gradient(circle at 74% 70%, rgba(78,161,255,0.18), transparent 30%), linear-gradient(145deg, #111827 0%, #05070d 50%, #0f172a 100%)",
@@ -119,9 +132,47 @@ function Field({
 }
 
 function baseInputClass(multiline = false) {
-  return `w-full rounded-[1.1rem] border border-white/10 bg-black/30 px-4 py-3 text-sm leading-relaxed text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-cyan-200/35 focus:bg-black/45 ${
+  return `w-full rounded-[1.1rem] border border-white/10 bg-black/30 px-4 py-3 text-sm leading-relaxed text-white outline-none transition-[border-color,background-color,box-shadow] duration-200 placeholder:text-zinc-600 focus:border-cyan-200/40 focus:bg-black/45 focus:shadow-[0_0_0_3px_rgba(125,211,252,0.08)] ${
     multiline ? "min-h-28 resize-y" : ""
   }`
+}
+
+function SweepHighlight({
+  tone = "cyan",
+  rounded = "rounded-[inherit]",
+}: {
+  tone?: "cyan" | "emerald" | "rose"
+  rounded?: string
+}) {
+  const colorClass =
+    tone === "emerald"
+      ? "from-transparent via-emerald-100/80 to-transparent"
+      : tone === "rose"
+        ? "from-transparent via-rose-100/75 to-transparent"
+        : "from-transparent via-cyan-100/80 to-transparent"
+
+  return (
+    <motion.span
+      aria-hidden
+      className={`pointer-events-none absolute inset-0 overflow-hidden ${rounded}`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: [0, 1, 0] }}
+      transition={{ duration: 0.92, ease: easeStroke }}
+    >
+      <motion.span
+        className={`absolute left-0 top-0 h-px w-2/3 bg-gradient-to-r ${colorClass}`}
+        initial={{ x: "-115%" }}
+        animate={{ x: "175%" }}
+        transition={{ duration: 0.82, ease: easeStroke }}
+      />
+      <motion.span
+        className={`absolute bottom-0 right-0 h-px w-2/3 bg-gradient-to-r ${colorClass}`}
+        initial={{ x: "115%" }}
+        animate={{ x: "-175%" }}
+        transition={{ duration: 0.82, ease: easeStroke }}
+      />
+    </motion.span>
+  )
 }
 
 function CategorySelect({
@@ -144,15 +195,18 @@ function CategorySelect({
         }
       }}
     >
-      <button
+      <motion.button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="flex min-h-12 w-full items-center justify-between gap-3 rounded-[1.1rem] border border-white/10 bg-black/30 px-4 py-3 text-left text-sm font-bold text-white outline-none transition-colors hover:bg-black/45 focus:border-cyan-200/35"
+        whileHover={{ y: -1, borderColor: "rgba(165,243,252,0.28)" }}
+        whileTap={{ scale: 0.985 }}
+        transition={softSpring}
+        className="flex min-h-12 w-full items-center justify-between gap-3 rounded-[1.1rem] border border-white/10 bg-black/30 px-4 py-3 text-left text-sm font-bold text-white outline-none transition-[background-color,box-shadow] hover:bg-black/45 hover:shadow-[0_0_24px_rgba(34,211,238,0.08)] focus:border-cyan-200/35 focus:shadow-[0_0_0_3px_rgba(125,211,252,0.08)]"
         aria-expanded={open}
       >
         <span className="min-w-0 truncate">{value}</span>
         <span className={`text-cyan-100 transition-transform duration-300 ${open ? "rotate-180" : ""}`}>⌄</span>
-      </button>
+      </motion.button>
 
       <AnimatePresence>
         {open ? (
@@ -168,7 +222,7 @@ function CategorySelect({
                 const selected = category === value
 
                 return (
-                  <button
+                  <motion.button
                     key={category}
                     type="button"
                     onMouseDown={(event) => event.preventDefault()}
@@ -176,19 +230,65 @@ function CategorySelect({
                       onChange(category)
                       setOpen(false)
                     }}
+                    whileHover={{ x: selected ? 0 : 2 }}
+                    whileTap={{ scale: 0.985 }}
+                    transition={softSpring}
                     className={`flex min-h-10 w-full items-center justify-between rounded-xl px-3 text-left text-sm font-bold transition-colors ${
-                      selected ? "bg-cyan-200/[0.12] text-cyan-50" : "text-zinc-400 hover:bg-white/[0.055] hover:text-white"
+                      selected ? "bg-cyan-200/[0.12] text-cyan-50" : "text-white/60 hover:bg-white/[0.055] hover:text-white"
                     }`}
                   >
                     <span className="min-w-0 truncate">{category}</span>
                     {selected ? <span className="ml-3 h-1.5 w-1.5 rounded-full bg-cyan-100" /> : null}
-                  </button>
+                  </motion.button>
                 )
               })}
             </div>
           </motion.div>
         ) : null}
       </AnimatePresence>
+    </div>
+  )
+}
+
+function GenerationModePicker({
+  value,
+  onChange,
+}: {
+  value: ImagePromptGenerationMode
+  onChange: (mode: ImagePromptGenerationMode) => void
+}) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {imagePromptGenerationModes.map((mode) => {
+        const selected = mode.value === value
+
+        return (
+          <motion.button
+            key={mode.value}
+            type="button"
+            onClick={() => onChange(mode.value)}
+            aria-pressed={selected}
+            whileHover={{ y: -2, borderColor: selected ? "rgba(165,243,252,0.48)" : "rgba(255,255,255,0.18)" }}
+            whileTap={{ scale: 0.985 }}
+            transition={softSpring}
+            className={`relative min-h-20 overflow-hidden rounded-[1.1rem] border px-4 py-3 text-left transition-[background-color,box-shadow] ${
+              selected
+                ? "border-cyan-200/35 bg-cyan-200/[0.1] text-cyan-50 shadow-[0_0_30px_rgba(34,211,238,0.08)]"
+                : "border-white/10 bg-black/30 text-zinc-400 hover:bg-black/45 hover:text-white"
+            }`}
+          >
+            {selected ? (
+              <motion.span
+                layoutId="manager-generation-mode-active"
+                className="absolute inset-0 rounded-[inherit] border border-cyan-100/10"
+                transition={softSpring}
+              />
+            ) : null}
+            <span className="block text-sm font-black">{mode.label}</span>
+            <span className="mt-1 block text-xs leading-relaxed text-current opacity-65">{mode.description}</span>
+          </motion.button>
+        )
+      })}
     </div>
   )
 }
@@ -203,9 +303,12 @@ const PromptManagerEditor = memo(function PromptManagerEditor({
   onSave: (item: ImagePromptItem) => Promise<void>
 }) {
   const [draft, setDraft] = useState<PromptDraft>(() => toDraft(item))
-  const [saving, setSaving] = useState(false)
-  const [uploadingImage, setUploadingImage] = useState(false)
+  const [saveState, setSaveState] = useState<SaveState>("idle")
+  const [uploadState, setUploadState] = useState<UploadState>("idle")
   const [errorMessage, setErrorMessage] = useState("")
+  const [statusMessage, setStatusMessage] = useState("")
+  const saving = saveState === "saving"
+  const uploadingImage = uploadState === "processing"
 
   const previewStyle = useMemo(
     () => ({ background: draft.previewImage ? undefined : draft.previewGradient }),
@@ -225,37 +328,88 @@ const PromptManagerEditor = memo(function PromptManagerEditor({
     setDraft((current) => ({ ...current, [key]: value }))
   }
 
+  useEffect(() => {
+    if (saveState !== "success") return
+
+    const timer = window.setTimeout(() => {
+      setSaveState("idle")
+      setStatusMessage("")
+    }, 1700)
+
+    return () => window.clearTimeout(timer)
+  }, [saveState])
+
+  useEffect(() => {
+    if (uploadState !== "success") return
+
+    const timer = window.setTimeout(() => {
+      setUploadState("idle")
+      setStatusMessage("")
+    }, 1600)
+
+    return () => window.clearTimeout(timer)
+  }, [uploadState])
+
   const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
-    setUploadingImage(true)
+    if (file.size > PROMPT_PREVIEW_MAX_BYTES) {
+      setUploadState("error")
+      setErrorMessage("图片过大，请选择 8MB 以内的图片。")
+      event.target.value = ""
+      return
+    }
+
+    setUploadState("processing")
     setErrorMessage("")
+    setStatusMessage("图片处理中...")
     try {
       const publicUrl = await uploadPromptPreviewImage(file)
       update("previewImage", publicUrl)
+      setUploadState("success")
+      setStatusMessage("图片已更新")
     } catch (error) {
+      setUploadState("error")
+      setStatusMessage("")
       setErrorMessage(getErrorMessage(error, "图片上传失败"))
     } finally {
-      setUploadingImage(false)
       event.target.value = ""
     }
   }
 
   const handleSave = async () => {
-    setSaving(true)
+    setSaveState("saving")
     setErrorMessage("")
+    setStatusMessage("正在保存...")
     try {
       await onSave(fromDraft(draft))
+      setSaveState("success")
+      setStatusMessage("已保存")
     } catch (error) {
+      setSaveState("error")
+      setStatusMessage("")
       setErrorMessage(getErrorMessage(error, "保存失败，请稍后重试"))
-    } finally {
-      setSaving(false)
     }
   }
 
   return (
-    <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="min-w-0 rounded-[1.5rem] border border-white/10 bg-white/[0.025] p-4 md:p-5">
+    <motion.div
+      className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_320px]"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={quickFade}
+    >
+      <motion.div
+        className="relative min-w-0 overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.025] p-4 md:p-5"
+        initial={false}
+        animate={{
+          borderColor: saveState === "success" ? "rgba(167,243,208,0.28)" : "rgba(255,255,255,0.1)",
+          boxShadow: saveState === "success" ? "0 0 34px rgba(16,185,129,0.08)" : "0 0 0 rgba(0,0,0,0)",
+        }}
+        transition={quickFade}
+      >
+        <AnimatePresence>{saveState === "success" ? <SweepHighlight key="save-sweep" tone="emerald" /> : null}</AnimatePresence>
         <div className="mb-5 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-200/15 bg-cyan-200/[0.07] text-cyan-100">
             <Database className="h-4 w-4" />
@@ -280,6 +434,10 @@ const PromptManagerEditor = memo(function PromptManagerEditor({
             <input className={baseInputClass()} value={draft.description} onChange={(event) => update("description", event.target.value)} />
           </Field>
 
+          <Field label="生成方式">
+            <GenerationModePicker value={draft.generationMode} onChange={(mode) => update("generationMode", mode)} />
+          </Field>
+
           <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(220px,0.72fr)]">
             <Field label="标签，用英文逗号分隔">
               <input className={baseInputClass()} value={draft.tagsText} onChange={(event) => update("tagsText", event.target.value)} />
@@ -301,29 +459,71 @@ const PromptManagerEditor = memo(function PromptManagerEditor({
             <textarea className={baseInputClass(true)} value={draft.useCase} onChange={(event) => update("useCase", event.target.value)} />
           </Field>
         </div>
-      </div>
+      </motion.div>
 
       <aside className="min-w-0">
-        <div className="flex h-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#080b12] shadow-[0_18px_60px_rgba(0,0,0,0.28)]">
+        <motion.div
+          className="relative flex h-full flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#080b12] shadow-[0_18px_60px_rgba(0,0,0,0.28)]"
+          initial={false}
+          animate={{
+            borderColor: uploadState === "success" ? "rgba(165,243,252,0.24)" : "rgba(255,255,255,0.1)",
+            boxShadow: uploadState === "success" ? "0 18px 64px rgba(34,211,238,0.1)" : "0 18px 60px rgba(0,0,0,0.28)",
+          }}
+          transition={quickFade}
+        >
+          <AnimatePresence>{uploadState === "success" ? <SweepHighlight key="upload-sweep" /> : null}</AnimatePresence>
           <div className="relative h-56 shrink-0 overflow-hidden" style={previewStyle}>
-            {draft.previewImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={draft.previewImage} alt={draft.title} loading="eager" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
-            ) : null}
+            <AnimatePresence mode="wait">
+              {draft.previewImage ? (
+                <motion.img
+                  key={draft.previewImage}
+                  src={draft.previewImage}
+                  alt={draft.title}
+                  loading="eager"
+                  decoding="async"
+                  className="absolute inset-0 h-full w-full object-cover"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={quickFade}
+                />
+              ) : (
+                <motion.div
+                  key={draft.previewGradient}
+                  className="absolute inset-0"
+                  style={{ background: draft.previewGradient }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={quickFade}
+                />
+              )}
+            </AnimatePresence>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.18),transparent_34%)]" />
             <span className="absolute left-3 top-3 rounded-full border border-white/15 bg-black/40 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-300 backdrop-blur-md">
               实时预览
             </span>
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent p-4">
-              <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white backdrop-blur-xl transition-colors hover:bg-black/50">
-                {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin text-cyan-100" /> : <ImagePlus className="h-4 w-4 text-cyan-100" />}
-                {uploadingImage ? "上传中..." : "上传展示图片"}
+              <motion.label
+                whileHover={uploadingImage ? undefined : { y: -2, borderColor: "rgba(165,243,252,0.26)" }}
+                whileTap={uploadingImage ? undefined : { scale: 0.985 }}
+                transition={softSpring}
+                className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white backdrop-blur-xl transition-[background-color,box-shadow] hover:bg-black/50 hover:shadow-[0_0_26px_rgba(34,211,238,0.1)] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-70"
+              >
+                {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin text-cyan-100" /> : uploadState === "success" ? <Check className="h-4 w-4 text-emerald-100" /> : <ImagePlus className="h-4 w-4 text-cyan-100" />}
+                {uploadingImage ? "图片处理中..." : uploadState === "success" ? "图片已更新" : "上传展示图片"}
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} disabled={uploadingImage} />
-              </label>
+              </motion.label>
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-4 p-4">
+          <motion.div
+            key={item.id}
+            className="flex min-h-0 flex-1 flex-col gap-4 p-4"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={quickFade}
+          >
             <div>
               <div className="truncate text-base font-black text-white">{draft.title || "未命名卡片"}</div>
               <div className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-zinc-500">{draft.description || "暂无副标题"}</div>
@@ -335,6 +535,9 @@ const PromptManagerEditor = memo(function PromptManagerEditor({
               </span>
               <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-bold text-zinc-300">
                 {draft.modelTarget || "AI 通用"}
+              </span>
+              <span className="rounded-full border border-violet-200/15 bg-violet-300/[0.07] px-2.5 py-1 text-[11px] font-bold text-violet-50">
+                {imagePromptGenerationModes.find((mode) => mode.value === draft.generationMode)?.label ?? "直接生成创意图片"}
               </span>
             </div>
 
@@ -361,25 +564,56 @@ const PromptManagerEditor = memo(function PromptManagerEditor({
               ) : null}
             </div>
 
-            {errorMessage ? (
-              <div className="rounded-2xl border border-red-300/15 bg-red-400/10 px-3 py-2 text-xs leading-relaxed text-red-100">
-                {errorMessage}
-              </div>
-            ) : null}
+            <AnimatePresence mode="wait">
+              {errorMessage ? (
+                <motion.div
+                  key="error"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={quickFade}
+                  className="rounded-2xl border border-red-300/15 bg-red-400/10 px-3 py-2 text-xs leading-relaxed text-red-100"
+                >
+                  {errorMessage}
+                </motion.div>
+              ) : statusMessage ? (
+                <motion.div
+                  key="status"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={quickFade}
+                  className={`rounded-2xl border px-3 py-2 text-xs font-bold ${
+                    saveState === "success" || uploadState === "success"
+                      ? "border-emerald-200/15 bg-emerald-300/[0.08] text-emerald-100"
+                      : "border-cyan-200/15 bg-cyan-300/[0.08] text-cyan-100"
+                  }`}
+                >
+                  {statusMessage}
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
 
-            <button
+            <motion.button
               type="button"
               onClick={handleSave}
               disabled={saving || uploadingImage}
-              className="mt-auto inline-flex min-h-12 items-center justify-center gap-3 rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.10] px-5 text-sm font-black text-cyan-50 transition-colors hover:bg-cyan-200/[0.14] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              whileHover={saving || uploadingImage ? undefined : { y: -2, borderColor: "rgba(165,243,252,0.34)" }}
+              whileTap={saving || uploadingImage ? undefined : { scale: 0.985 }}
+              transition={softSpring}
+              className={`mt-auto inline-flex min-h-12 items-center justify-center gap-3 rounded-2xl border px-5 text-sm font-black transition-[background-color,box-shadow] disabled:cursor-not-allowed disabled:opacity-60 ${
+                saveState === "success"
+                  ? "border-emerald-200/25 bg-emerald-300/[0.12] text-emerald-50 shadow-[0_0_28px_rgba(16,185,129,0.1)]"
+                  : "border-cyan-200/20 bg-cyan-200/[0.10] text-cyan-50 hover:bg-cyan-200/[0.14] hover:shadow-[0_0_28px_rgba(34,211,238,0.1)]"
+              }`}
             >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {saving ? "保存中..." : "保存到数据库"}
-            </button>
-          </div>
-        </div>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saveState === "success" ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+              {saving ? "保存中..." : saveState === "success" ? "已保存" : "保存到数据库"}
+            </motion.button>
+          </motion.div>
+        </motion.div>
       </aside>
-    </div>
+    </motion.div>
   )
 })
 
@@ -494,28 +728,34 @@ function PromptManagerModalComponent({
                 <div className="hidden rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-[11px] font-bold text-zinc-400 sm:block">
                   {editableCategories.length} 分类
                 </div>
-                <button
+                <motion.button
                   type="button"
                   onClick={onClose}
+                  whileHover={{ y: -1, borderColor: "rgba(255,255,255,0.2)", backgroundColor: "rgba(255,255,255,0.065)" }}
+                  whileTap={{ scale: 0.94 }}
+                  transition={softSpring}
                   className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.035] text-zinc-300 transition-colors hover:text-white"
                   aria-label="关闭管理弹窗"
                 >
                   <X className="h-4 w-4" />
-                </button>
+                </motion.button>
               </div>
             </div>
 
             <div className="grid min-h-0 flex-1 lg:grid-cols-[310px_minmax(0,1fr)]">
               <div className="flex min-h-0 flex-col border-b border-white/10 bg-black/[0.12] p-4 lg:border-b-0 lg:border-r lg:border-white/10">
-                <button
+                <motion.button
                   type="button"
                   onClick={handleAdd}
                   disabled={busy}
-                  className="mb-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200/20 bg-emerald-200/[0.08] text-sm font-black text-emerald-50 transition-colors hover:bg-emerald-200/[0.12] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                  whileHover={busy ? undefined : { y: -2, borderColor: "rgba(167,243,208,0.34)" }}
+                  whileTap={busy ? undefined : { scale: 0.985 }}
+                  transition={softSpring}
+                  className="mb-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200/20 bg-emerald-200/[0.08] text-sm font-black text-emerald-50 transition-[background-color,box-shadow] hover:bg-emerald-200/[0.12] hover:shadow-[0_0_28px_rgba(16,185,129,0.1)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                   增加 card
-                </button>
+                </motion.button>
 
                 <div className="mb-4 rounded-[1.35rem] border border-white/10 bg-white/[0.025] p-3">
                   <div className="mb-3 flex items-center justify-between gap-3">
@@ -538,81 +778,139 @@ function PromptManagerModalComponent({
                         }
                       }}
                       placeholder="新增分类"
-                      className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-cyan-200/35"
+                      className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white outline-none transition-[border-color,background-color,box-shadow] placeholder:text-zinc-600 focus:border-cyan-200/35 focus:bg-black/45 focus:shadow-[0_0_0_3px_rgba(125,211,252,0.08)]"
                     />
-                    <button
+                    <motion.button
                       type="button"
                       onClick={handleAddCategory}
                       disabled={busy}
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.08] text-cyan-50 transition-colors hover:bg-cyan-200/[0.13] disabled:cursor-not-allowed disabled:opacity-60"
+                      whileHover={busy ? undefined : { y: -1, borderColor: "rgba(165,243,252,0.34)" }}
+                      whileTap={busy ? undefined : { scale: 0.94 }}
+                      transition={softSpring}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-cyan-200/20 bg-cyan-200/[0.08] text-cyan-50 transition-[background-color,box-shadow] hover:bg-cyan-200/[0.13] hover:shadow-[0_0_20px_rgba(34,211,238,0.1)] disabled:cursor-not-allowed disabled:opacity-60"
                       aria-label="新增分类"
                     >
                       <Plus className="h-3.5 w-3.5" />
-                    </button>
+                    </motion.button>
                   </div>
                   <div className="mt-3 flex max-h-28 flex-wrap gap-2 overflow-y-auto pr-1 [scrollbar-color:rgba(125,211,252,0.34)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-200/35 [&::-webkit-scrollbar-track]:bg-transparent">
-                    {editableCategories.map((category) => (
-                      <span key={category} className="inline-flex min-w-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px] text-zinc-300">
-                        <span className="max-w-28 truncate">{category}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteCategory(category)}
-                          disabled={busy || editableCategories.length <= 1}
-                          className="rounded-full p-0.5 text-zinc-500 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
-                          aria-label={`删除分类 ${category}`}
+                    <AnimatePresence initial={false}>
+                      {editableCategories.map((category) => (
+                        <motion.span
+                          key={category}
+                          layout
+                          initial={{ opacity: 0, scale: 0.96 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.94 }}
+                          transition={quickFade}
+                          className="inline-flex min-w-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px] text-zinc-300"
                         >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    ))}
+                          <span className="max-w-28 truncate">{category}</span>
+                          <motion.button
+                            type="button"
+                            onClick={() => handleDeleteCategory(category)}
+                            disabled={busy || editableCategories.length <= 1}
+                            whileHover={busy || editableCategories.length <= 1 ? undefined : { backgroundColor: "rgba(248,113,113,0.12)", color: "rgb(254,202,202)" }}
+                            whileTap={busy || editableCategories.length <= 1 ? undefined : { scale: 0.9 }}
+                            transition={softSpring}
+                            className="rounded-full p-0.5 text-zinc-500 transition-colors disabled:cursor-not-allowed disabled:opacity-35"
+                            aria-label={`删除分类 ${category}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </motion.button>
+                        </motion.span>
+                      ))}
+                    </AnimatePresence>
                   </div>
                 </div>
 
-                {mutationError ? (
-                  <div className="mb-3 rounded-2xl border border-red-300/15 bg-red-400/10 px-3 py-2 text-xs leading-relaxed text-red-100">
-                    {mutationError}
-                  </div>
-                ) : null}
+                <AnimatePresence>
+                  {mutationError ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={quickFade}
+                      className="mb-3 rounded-2xl border border-red-300/15 bg-red-400/10 px-3 py-2 text-xs leading-relaxed text-red-100"
+                    >
+                      {mutationError}
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
 
                 <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pb-6 pr-1 [content-visibility:auto] [contain-intrinsic-size:320px_760px] [scrollbar-color:rgba(125,211,252,0.42)_rgba(255,255,255,0.06)] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-200/[0.34] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-white/[0.05]">
-                  {items.map((item, index) => {
-                    const selected = selectedId === item.id
+                  <AnimatePresence initial={false}>
+                    {items.map((item, index) => {
+                      const selected = selectedId === item.id
 
-                    return (
-                      <div
-                        key={item.id}
-                        className={`group relative flex w-full items-start gap-2 rounded-2xl border p-3 text-left transition-colors ${
-                          selected ? "border-cyan-200/30 bg-cyan-200/[0.08]" : "border-white/10 bg-white/[0.025] hover:bg-white/[0.045]"
-                        }`}
-                      >
-                        {selected ? <span className="absolute bottom-3 left-0 top-3 w-0.5 rounded-r-full bg-cyan-100" /> : null}
-                        <button type="button" onClick={() => setSelectedId(item.id)} className="min-w-0 flex-1 text-left">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span className="font-mono text-[10px] font-bold text-zinc-600">{String(index + 1).padStart(2, "0")}</span>
-                            <span className="truncate text-sm font-bold text-white">{item.title}</span>
-                          </div>
-                          <div className="mt-1 flex min-w-0 items-center gap-2">
-                            <span className="truncate rounded-full bg-white/[0.045] px-2 py-0.5 text-[10px] font-bold text-zinc-500">{item.category}</span>
-                            <span className="truncate text-[10px] text-zinc-600">{item.tags.slice(0, 2).join(" / ")}</span>
-                          </div>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteCard(item.id)}
-                          disabled={busy || items.length <= 1}
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/20 text-zinc-500 opacity-100 transition-colors hover:border-red-300/25 hover:bg-red-400/10 hover:text-red-100 disabled:cursor-not-allowed disabled:opacity-25 sm:opacity-0 sm:group-hover:opacity-100"
-                          aria-label={`删除 card ${item.title}`}
+                      return (
+                        <motion.div
+                          key={item.id}
+                          layout
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, height: 0, y: -6, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
+                          transition={quickFade}
+                          whileHover={selected ? undefined : { x: 2 }}
+                          className={`group relative flex w-full items-start gap-2 overflow-hidden rounded-2xl border p-3 text-left transition-colors ${
+                            selected ? "border-cyan-200/30 bg-cyan-200/[0.08]" : "border-white/10 bg-white/[0.025] hover:bg-white/[0.045]"
+                          }`}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    )
-                  })}
+                          {selected ? (
+                            <>
+                              <motion.span
+                                layoutId="manager-card-active-bg"
+                                className="absolute inset-0 rounded-2xl bg-cyan-200/[0.045]"
+                                transition={softSpring}
+                              />
+                              <motion.span
+                                layoutId="manager-card-active-line"
+                                className="absolute bottom-3 left-0 top-3 w-0.5 rounded-r-full bg-cyan-100"
+                                transition={softSpring}
+                              />
+                              <SweepHighlight rounded="rounded-2xl" />
+                            </>
+                          ) : null}
+                          <button type="button" onClick={() => setSelectedId(item.id)} className="relative min-w-0 flex-1 text-left">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="font-mono text-[10px] font-bold text-zinc-600">{String(index + 1).padStart(2, "0")}</span>
+                              <span className="truncate text-sm font-bold text-white">{item.title}</span>
+                            </div>
+                            <div className="mt-1 flex min-w-0 items-center gap-2">
+                              <span className="truncate rounded-full bg-white/[0.045] px-2 py-0.5 text-[10px] font-bold text-zinc-500">{item.category}</span>
+                              <span className="truncate text-[10px] text-zinc-600">{item.tags.slice(0, 2).join(" / ")}</span>
+                            </div>
+                          </button>
+                          <motion.button
+                            type="button"
+                            onClick={() => handleDeleteCard(item.id)}
+                            disabled={busy || items.length <= 1}
+                            whileHover={busy || items.length <= 1 ? undefined : { y: -1, borderColor: "rgba(252,165,165,0.28)", backgroundColor: "rgba(248,113,113,0.1)", color: "rgb(254,202,202)" }}
+                            whileTap={busy || items.length <= 1 ? undefined : { scale: 0.92 }}
+                            transition={softSpring}
+                            className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/20 text-zinc-500 opacity-100 transition-opacity disabled:cursor-not-allowed disabled:opacity-25 sm:opacity-0 sm:group-hover:opacity-100"
+                            aria-label={`删除 card ${item.title}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </motion.button>
+                        </motion.div>
+                      )
+                    })}
+                  </AnimatePresence>
                 </div>
               </div>
 
               <div className="min-h-0 overflow-y-auto overscroll-contain p-5 [content-visibility:auto] [contain-intrinsic-size:820px_780px] [scrollbar-color:rgba(125,211,252,0.42)_rgba(255,255,255,0.06)] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-200/[0.34] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-white/[0.05]">
-                {selectedItem ? <PromptManagerEditor key={selectedItem.id} item={selectedItem} categories={editableCategories} onSave={handleSave} /> : null}
+                <AnimatePresence mode="wait">
+                  {selectedItem ? (
+                    <PromptManagerEditor
+                      key={selectedItem.id}
+                      item={selectedItem}
+                      categories={editableCategories}
+                      onSave={handleSave}
+                    />
+                  ) : null}
+                </AnimatePresence>
               </div>
             </div>
           </motion.div>

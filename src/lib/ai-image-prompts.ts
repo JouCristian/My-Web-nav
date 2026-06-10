@@ -17,6 +17,7 @@ export const aiImagePrompts: ImagePromptItem[] = [
     description: "适合表现一件硬件产品的精密、冷静和高级材质。",
     category: "产品海报",
     tags: ["product", "studio light", "minimal"],
+    generationMode: "text-to-image",
     modelTarget: "AI 通用",
     previewGradient:
       "radial-gradient(circle at 28% 18%, rgba(190,238,255,0.40), transparent 28%), radial-gradient(circle at 74% 70%, rgba(78,161,255,0.22), transparent 30%), linear-gradient(145deg, #111827 0%, #05070d 50%, #0f172a 100%)",
@@ -32,6 +33,7 @@ export const aiImagePrompts: ImagePromptItem[] = [
     description: "以自然光和真实肤色为核心，避免过度修饰的人像模板。",
     category: "真实摄影",
     tags: ["portrait", "natural light", "editorial"],
+    generationMode: "image-to-image",
     modelTarget: "AI 通用",
     previewGradient:
       "radial-gradient(circle at 45% 22%, rgba(255,229,205,0.34), transparent 24%), radial-gradient(circle at 62% 76%, rgba(120,168,255,0.18), transparent 28%), linear-gradient(145deg, #171717 0%, #0b0f16 54%, #18202b 100%)",
@@ -47,6 +49,7 @@ export const aiImagePrompts: ImagePromptItem[] = [
     description: "用于生成有叙事感的街头环境，强调湿润路面和城市灯光。",
     category: "电影场景",
     tags: ["cinematic", "city", "night"],
+    generationMode: "text-to-image",
     modelTarget: "AI 通用",
     previewGradient:
       "radial-gradient(circle at 24% 34%, rgba(34,211,238,0.26), transparent 26%), radial-gradient(circle at 78% 30%, rgba(250,204,21,0.18), transparent 21%), linear-gradient(150deg, #03111c 0%, #09090b 42%, #1f2937 100%)",
@@ -62,6 +65,7 @@ export const aiImagePrompts: ImagePromptItem[] = [
     description: "生成适合 App 图标、功能入口和工具封面的玻璃感图标。",
     category: "UI 图标",
     tags: ["icon", "glass", "interface"],
+    generationMode: "image-to-image",
     modelTarget: "AI 通用",
     previewGradient:
       "radial-gradient(circle at 32% 26%, rgba(255,255,255,0.42), transparent 18%), radial-gradient(circle at 68% 72%, rgba(56,189,248,0.26), transparent 26%), linear-gradient(145deg, #07111f 0%, #020617 58%, #111827 100%)",
@@ -77,6 +81,7 @@ export const aiImagePrompts: ImagePromptItem[] = [
     description: "适合做深色网站首屏背景，强调空间、光层和高级留白。",
     category: "网站视觉",
     tags: ["hero", "website", "spatial"],
+    generationMode: "text-to-image",
     modelTarget: "AI 通用",
     previewGradient:
       "radial-gradient(circle at 18% 24%, rgba(125,211,252,0.26), transparent 24%), radial-gradient(circle at 72% 34%, rgba(148,163,184,0.18), transparent 20%), linear-gradient(135deg, #020617 0%, #0b1120 48%, #111827 100%)",
@@ -92,6 +97,7 @@ export const aiImagePrompts: ImagePromptItem[] = [
     description: "保留东方气韵，但避免廉价古风和过饱和红金配色。",
     category: "东方美学",
     tags: ["oriental", "mist", "poetic"],
+    generationMode: "text-to-image",
     modelTarget: "AI 通用",
     previewGradient:
       "radial-gradient(circle at 66% 20%, rgba(226,232,240,0.30), transparent 24%), radial-gradient(circle at 28% 70%, rgba(74,222,128,0.14), transparent 26%), linear-gradient(145deg, #0c1210 0%, #111827 48%, #1f2933 100%)",
@@ -107,6 +113,7 @@ export const aiImagePrompts: ImagePromptItem[] = [
     description: "用克制构图和单一形体建立海报气质，适合留给后期排版。",
     category: "产品海报",
     tags: ["poster", "minimal", "gallery"],
+    generationMode: "text-to-image",
     modelTarget: "AI 通用",
     previewGradient:
       "radial-gradient(circle at 50% 36%, rgba(226,232,240,0.26), transparent 22%), linear-gradient(160deg, #111111 0%, #050505 56%, #18181b 100%)",
@@ -122,6 +129,7 @@ export const aiImagePrompts: ImagePromptItem[] = [
     description: "用于表现一个尚未存在的设备概念，重点是可信结构和材质。",
     category: "产品海报",
     tags: ["concept", "device", "industrial"],
+    generationMode: "image-to-image",
     modelTarget: "AI 通用",
     previewGradient:
       "radial-gradient(circle at 22% 26%, rgba(14,165,233,0.22), transparent 24%), radial-gradient(circle at 75% 72%, rgba(203,213,225,0.20), transparent 22%), linear-gradient(145deg, #05070d 0%, #111827 50%, #020617 100%)",

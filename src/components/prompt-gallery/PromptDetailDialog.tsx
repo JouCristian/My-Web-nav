@@ -2,6 +2,7 @@
 
 import { memo, useLayoutEffect } from "react"
 import type { ImagePromptItem } from "@/types/ai-image-prompt"
+import { imagePromptGenerationModes } from "@/types/ai-image-prompt"
 import { Lightbulb, Sparkles, X } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { PromptCopyButton } from "@/components/prompt-gallery/PromptCopyButton"
@@ -15,6 +16,10 @@ interface PromptDetailDialogProps {
 }
 
 function PromptDetailDialogComponent({ item, open, onClose, onExitComplete }: PromptDetailDialogProps) {
+  const generationModeLabel = item
+    ? imagePromptGenerationModes.find((mode) => mode.value === item.generationMode)?.label ?? "直接生成创意图片"
+    : ""
+
   useLayoutEffect(() => {
     if (!open) return
 
@@ -58,6 +63,9 @@ function PromptDetailDialogComponent({ item, open, onClose, onExitComplete }: Pr
               <div className="mx-auto absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-white/15" />
               <span className="mt-1 rounded-full border border-cyan-200/20 bg-cyan-200/[0.08] px-3 py-1.5 text-xs font-bold text-cyan-100">
                 {item.category}
+              </span>
+              <span className="mt-1 rounded-full border border-violet-200/15 bg-violet-300/[0.07] px-3 py-1.5 text-xs font-bold text-violet-50">
+                {generationModeLabel}
               </span>
               <button
                 type="button"

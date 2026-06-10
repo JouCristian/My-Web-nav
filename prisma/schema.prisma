@@ -185,6 +185,7 @@ model PromptCard {
   categoryId      String
   category        PromptCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   tags            String[]       @default([])
+  generationMode  String         @default("text-to-image")
   modelTarget     String         @default("AI 通用")
   previewImage    String?        @db.Text
   previewImagePath String?
@@ -201,6 +202,7 @@ model PromptCard {
   updatedAt       DateTime       @updatedAt
 
   @@index([categoryId])
+  @@index([generationMode])
   @@index([isActive, sortOrder])
   @@index([createdAt])
 }
