@@ -72,13 +72,13 @@ export function PromptFavoriteButton({
               d={starPath}
               strokeLinejoin="round"
               initial={false}
-              // 触发点：填充色从白色切到黄色
+              // 触发点：未收藏时只有白色描边、内部空心；收藏后填充黄色
               animate={{
-                fill: active ? "#facc15" : "rgba(255,255,255,0.96)",
-                stroke: active ? "#fde047" : "rgba(255,255,255,0.5)",
+                fill: active ? "#facc15" : "rgba(255,255,255,0)",
+                stroke: active ? "#fde047" : "rgba(255,255,255,0.95)",
               }}
               transition={{ duration: 0.28, ease: "easeOut" }}
-              strokeWidth={1.4}
+              strokeWidth={1.6}
               style={{ filter: active ? "drop-shadow(0 0 6px rgba(250,204,21,0.5))" : undefined }}
             />
           </motion.svg>
