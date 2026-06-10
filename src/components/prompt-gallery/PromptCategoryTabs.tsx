@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import { Search, SlidersHorizontal, X } from "lucide-react"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import type { ImagePromptCategory, ImagePromptGenerationMode } from "@/types/ai-image-prompt"
 import { easeOutExpo, easeStroke } from "@/components/prompt-gallery/motion"
 import { SearchFlowBorder } from "@/components/prompt-gallery/SearchFlowBorder"
@@ -127,6 +128,9 @@ export function PromptCategoryTabs({
   const [tagsVisible, setTagsVisible] = useState(true)
   const [tagViewportHeight, setTagViewportHeight] = useState<number | null>(null)
   const [compactMotion, setCompactMotion] = useState(false)
+  const [isMobileLayout, setIsMobileLayout] = useState(false)
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false)
+  const [portalReady, setPortalReady] = useState(false)
   const tagContentRef = useRef<HTMLDivElement>(null)
   const renderedTagsRef = useRef(renderedTags)
   const animationIdRef = useRef(0)
@@ -139,6 +143,14 @@ export function PromptCategoryTabs({
   const tagItemTransition = shouldReduceMotion ? { duration: 0.01 } : { duration: 0.24, ease: easeOutExpo }
   const tagHeightTransition = shouldReduceMotion ? { duration: 0.01 } : compactMotion ? tagAreaMobileSpring : tagAreaSpring
   const tagRevealDelay = shouldReduceMotion ? 0 : compactMotion ? tagRevealDelayMobileMs : tagRevealDelayMs
+
+  // 移动端进阶筛选（生成方式 + 标签）激活计数，用于“筛选”按钮上的徽章
+  const advancedFilterCount = (activeGenerationMode !== "全部" ? 1 : 0) + selectedTags.length
+
+  // 仅客户端挂载后才允许 Portal 渲染（避免 SSR 调用 createPortal）
+  useEffect(() => {
+    setPortalReady(true)
+  }, [])
 
   const updateTagViewportHeight = () => {
     const content = tagContentRef.current
@@ -156,6 +168,40 @@ export function PromptCategoryTabs({
 
     return () => mediaQuery.removeEventListener("change", syncCompactMotion)
   }, [])
+
+  // lg 断点以下视为移动布局：生成方式 + 标签收进底部抽屉
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 1023px)")
+    const syncMobileLayout = () => setIsMobileLayout(mediaQuery.matches)
+
+    syncMobileLayout()
+    mediaQuery.addEventListener("change", syncMobileLayout)
+
+    return () => mediaQuery.removeEventListener("change", syncMobileLayout)
+  }, [])
+
+  // 切回桌面布局时关闭抽屉
+  useEffect(() => {
+    if (!isMobileLayout) setFilterSheetOpen(false)
+  }, [isMobileLayout])
+
+  // 抽屉打开时锁定背景滚动并支持 Esc 关闭
+  useEffect(() => {
+    if (!filterSheetOpen) return
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFilterSheetOpen(false)
+    }
+
+    document.addEventListener("keydown", onKey)
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+
+    return () => {
+      document.removeEventListener("keydown", onKey)
+      document.body.style.overflow = previousOverflow
+    }
+  }, [filterSheetOpen])
 
   useLayoutEffect(() => {
     updateTagViewportHeight()
@@ -220,6 +266,130 @@ export function PromptCategoryTabs({
     }
   }, [])
 
+  // 生成方式选择区（桌面内联 / 移动抽屉内共用）
+  const generationModesBlock = (
+    <div className="flex max-w-full gap-2 overflow-x-auto pb-1 [scrollbar-color:rgba(125,211,252,0.34)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-200/35 [&::-webkit-scrollbar-track]:bg-transparent">
+      <button
+        type="button"
+        onClick={() => onGenerationModeChange("全部")}
+        aria-pressed={activeGenerationMode === "全部"}
+        className={`relative min-h-12 shrink-0 rounded-2xl border px-4 text-left transition-colors duration-300 active:scale-[0.98] ${
+          activeGenerationMode === "全部"
+            ? "border-cyan-200/25 bg-cyan-200/[0.11] text-white"
+            : "border-white/10 bg-white/[0.03] text-zinc-500 hover:border-white/20 hover:text-zinc-200"
+        }`}
+      >
+        <span className="block text-xs font-black">全部生成方式</span>
+        <span className="mt-0.5 block text-[10px] font-medium text-current opacity-60">不限制参考图或纯文字生成</span>
+      </button>
+
+      {generationModes.map((mode) => {
+        const active = activeGenerationMode === mode.value
+        const available = availableGenerationModeSet.has(mode.value)
+
+        return (
+          <button
+            key={mode.value}
+            type="button"
+            onClick={() => onGenerationModeChange(mode.value)}
+            disabled={!available}
+            aria-pressed={active}
+            title={mode.description}
+            className={`relative min-h-12 shrink-0 rounded-2xl border px-4 text-left transition-colors duration-300 active:scale-[0.98] ${
+              active
+                ? "border-cyan-200/25 bg-cyan-200/[0.11] text-white"
+                : available
+                  ? "border-white/10 bg-white/[0.03] text-zinc-500 hover:border-white/20 hover:text-zinc-200"
+                  : "cursor-not-allowed border-white/5 bg-white/[0.015] text-zinc-700 opacity-45"
+            }`}
+          >
+            <span className="block text-xs font-black">{mode.label}</span>
+            <span className="mt-0.5 block max-w-[13rem] truncate text-[10px] font-medium text-current opacity-60">
+              {mode.description}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+
+  // 标签选择区（桌面内联 / 移动抽屉内共用）
+  const tagsBlock = (
+    <motion.div
+      initial={false}
+      animate={tagViewportHeight === null ? undefined : { height: tagViewportHeight }}
+      style={{ height: tagViewportHeight === null ? "auto" : tagViewportHeight }}
+      transition={tagHeightTransition}
+      className="overflow-hidden"
+    >
+      <div className="max-h-24 overflow-y-auto pr-1 [scrollbar-color:rgba(125,211,252,0.34)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-200/35 [&::-webkit-scrollbar-track]:bg-transparent">
+        <motion.div
+          ref={tagContentRef}
+          animate={{ opacity: tagsVisible ? 1 : 0 }}
+          transition={tagItemTransition}
+          className="flex flex-wrap gap-2"
+        >
+          {renderedTags.map(({ tag, disabled }) => {
+            const active = selectedTags.includes(tag)
+            const clickable = !disabled && tagsVisible && currentTagSet.has(tag)
+
+            return (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => onToggleTag(tag)}
+                disabled={!clickable}
+                aria-pressed={active}
+                className={`group/tag inline-flex min-h-9 cursor-pointer items-center rounded-xl border px-3 text-xs font-bold transition-colors duration-300 active:scale-[0.98] ${
+                  active
+                    ? "border-cyan-200/25 bg-cyan-200/[0.12] text-cyan-50 shadow-[0_0_24px_rgba(34,211,238,0.08)]"
+                    : !clickable
+                      ? "cursor-not-allowed border-white/5 bg-white/[0.015] text-zinc-700 opacity-45"
+                      : "border-white/10 bg-white/[0.035] text-zinc-500 hover:border-white/20 hover:bg-white/[0.055] hover:text-zinc-200"
+                }`}
+              >
+                {/* 选中时：一笔画对勾，呼应复制按钮的对勾语言 */}
+                <AnimatePresence initial={false}>
+                  {active ? (
+                    <motion.span
+                      key="check"
+                      className="inline-flex items-center overflow-hidden text-cyan-200"
+                      initial={{ width: 0, marginRight: 0, opacity: 0 }}
+                      animate={{ width: 14, marginRight: 4, opacity: 1 }}
+                      exit={{ width: 0, marginRight: 0, opacity: 0 }}
+                      transition={{ duration: 0.32, ease: easeOutExpo }}
+                    >
+                      <motion.svg
+                        width={12}
+                        height={12}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        className="overflow-visible"
+                      >
+                        <motion.path
+                          d="M4 12.5L9.5 18L20 6"
+                          stroke="currentColor"
+                          strokeWidth={3}
+                          strokeLinejoin="round"
+                          pathLength={1}
+                          initial={{ pathLength: 0 }}
+                          animate={{ pathLength: 1 }}
+                          transition={{ duration: 0.4, ease: easeStroke }}
+                          style={{ filter: "drop-shadow(0 0 4px rgba(34,211,238,0.5))" }}
+                        />
+                      </motion.svg>
+                    </motion.span>
+                  ) : null}
+                </AnimatePresence>
+                #{tag}
+              </button>
+            )
+          })}
+        </motion.div>
+      </div>
+    </motion.div>
+  )
+
   return (
     <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#05070d]/55 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.2)] backdrop-blur-2xl">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-100/35 to-transparent" />
@@ -264,6 +434,21 @@ export function PromptCategoryTabs({
 
         <div className="flex shrink-0 items-center justify-between gap-3">
           <CountBadge resultCount={resultCount} totalCount={totalCount} />
+
+          {/* 移动端：进阶筛选触发按钮（生成方式 + 标签收进底部抽屉） */}
+          <button
+            type="button"
+            onClick={() => setFilterSheetOpen(true)}
+            className="relative inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-zinc-200 transition-colors hover:border-white/20 hover:text-white active:scale-[0.98] lg:hidden"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            筛选
+            {advancedFilterCount > 0 ? (
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-cyan-200/25 bg-cyan-200/[0.14] px-1 text-[10px] font-black text-cyan-50">
+                {advancedFilterCount}
+              </span>
+            ) : null}
+          </button>
 
           {hasActiveFilters ? (
             <motion.button
@@ -317,123 +502,88 @@ export function PromptCategoryTabs({
         </div>
       </div>
 
-      <div className="mt-2 flex max-w-full gap-2 overflow-x-auto pb-1 [scrollbar-color:rgba(125,211,252,0.34)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-200/35 [&::-webkit-scrollbar-track]:bg-transparent">
-        <button
-          type="button"
-          onClick={() => onGenerationModeChange("全部")}
-          aria-pressed={activeGenerationMode === "全部"}
-          className={`relative min-h-12 shrink-0 rounded-2xl border px-4 text-left transition-colors duration-300 active:scale-[0.98] ${
-            activeGenerationMode === "全部"
-              ? "border-cyan-200/25 bg-cyan-200/[0.11] text-white"
-              : "border-white/10 bg-white/[0.03] text-zinc-500 hover:border-white/20 hover:text-zinc-200"
-          }`}
-        >
-          <span className="block text-xs font-black">全部生成方式</span>
-          <span className="mt-0.5 block text-[10px] font-medium text-current opacity-60">不限制参考图或纯文字生成</span>
-        </button>
-
-        {generationModes.map((mode) => {
-          const active = activeGenerationMode === mode.value
-          const available = availableGenerationModeSet.has(mode.value)
-
-          return (
-            <button
-              key={mode.value}
-              type="button"
-              onClick={() => onGenerationModeChange(mode.value)}
-              disabled={!available}
-              aria-pressed={active}
-              title={mode.description}
-              className={`relative min-h-12 shrink-0 rounded-2xl border px-4 text-left transition-colors duration-300 active:scale-[0.98] ${
-                active
-                  ? "border-cyan-200/25 bg-cyan-200/[0.11] text-white"
-                  : available
-                    ? "border-white/10 bg-white/[0.03] text-zinc-500 hover:border-white/20 hover:text-zinc-200"
-                    : "cursor-not-allowed border-white/5 bg-white/[0.015] text-zinc-700 opacity-45"
-              }`}
-            >
-              <span className="block text-xs font-black">{mode.label}</span>
-              <span className="mt-0.5 block max-w-[13rem] truncate text-[10px] font-medium text-current opacity-60">
-                {mode.description}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
-      <motion.div
-        initial={false}
-        animate={tagViewportHeight === null ? undefined : { height: tagViewportHeight }}
-        style={{ height: tagViewportHeight === null ? "auto" : tagViewportHeight }}
-        transition={tagHeightTransition}
-        className="mt-2 overflow-hidden"
-      >
-        <div className="max-h-24 overflow-y-auto pr-1 [scrollbar-color:rgba(125,211,252,0.34)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-200/35 [&::-webkit-scrollbar-track]:bg-transparent">
-          <motion.div
-            ref={tagContentRef}
-            animate={{ opacity: tagsVisible ? 1 : 0 }}
-            transition={tagItemTransition}
-            className="flex flex-wrap gap-2"
-          >
-            {renderedTags.map(({ tag, disabled }) => {
-              const active = selectedTags.includes(tag)
-              const clickable = !disabled && tagsVisible && currentTagSet.has(tag)
-
-              return (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => onToggleTag(tag)}
-                  disabled={!clickable}
-                  aria-pressed={active}
-                  className={`group/tag inline-flex min-h-9 cursor-pointer items-center rounded-xl border px-3 text-xs font-bold transition-colors duration-300 active:scale-[0.98] ${
-                    active
-                      ? "border-cyan-200/25 bg-cyan-200/[0.12] text-cyan-50 shadow-[0_0_24px_rgba(34,211,238,0.08)]"
-                      : !clickable
-                        ? "cursor-not-allowed border-white/5 bg-white/[0.015] text-zinc-700 opacity-45"
-                        : "border-white/10 bg-white/[0.035] text-zinc-500 hover:border-white/20 hover:bg-white/[0.055] hover:text-zinc-200"
-                  }`}
-                >
-                  {/* 选中时：一笔画对勾，呼应复制按钮的对勾语言 */}
-                  <AnimatePresence initial={false}>
-                    {active ? (
-                      <motion.span
-                        key="check"
-                        className="inline-flex items-center overflow-hidden text-cyan-200"
-                        initial={{ width: 0, marginRight: 0, opacity: 0 }}
-                        animate={{ width: 14, marginRight: 4, opacity: 1 }}
-                        exit={{ width: 0, marginRight: 0, opacity: 0 }}
-                        transition={{ duration: 0.32, ease: easeOutExpo }}
-                      >
-                        <motion.svg
-                          width={12}
-                          height={12}
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          className="overflow-visible"
-                        >
-                          <motion.path
-                            d="M4 12.5L9.5 18L20 6"
-                            stroke="currentColor"
-                            strokeWidth={3}
-                            strokeLinejoin="round"
-                            pathLength={1}
-                            initial={{ pathLength: 0 }}
-                            animate={{ pathLength: 1 }}
-                            transition={{ duration: 0.4, ease: easeStroke }}
-                            style={{ filter: "drop-shadow(0 0 4px rgba(34,211,238,0.5))" }}
-                          />
-                        </motion.svg>
-                      </motion.span>
-                    ) : null}
-                  </AnimatePresence>
-                  #{tag}
-                </button>
-              )
-            })}
-          </motion.div>
+      {/* 桌面端：生成方式 + 标签内联展示 */}
+      {!isMobileLayout ? (
+        <div className="mt-2 flex flex-col gap-2">
+          {generationModesBlock}
+          {tagsBlock}
         </div>
-      </motion.div>
+      ) : null}
+
+      {/* 移动端：生成方式 + 标签收进底部抽屉（Portal 挂到 body，避开父级 backdrop-blur 包含块裁剪） */}
+      {isMobileLayout && portalReady
+        ? createPortal(
+            <AnimatePresence>
+              {filterSheetOpen ? (
+            <motion.div
+              className="fixed inset-0 z-[130] flex items-end justify-center bg-black/60 backdrop-blur-md [will-change:opacity] lg:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              onClick={() => setFilterSheetOpen(false)}
+              role="dialog"
+              aria-modal="true"
+              aria-label="筛选选项"
+            >
+              <motion.div
+                className="relative flex max-h-[85dvh] w-full flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-[#05070d]/95 shadow-[0_-20px_80px_rgba(0,0,0,0.5)] [backface-visibility:hidden] [transform:translate3d(0,0,0)] [will-change:transform]"
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", stiffness: 320, damping: 34 }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="relative flex shrink-0 items-center justify-between border-b border-white/[0.06] px-5 py-3.5">
+                  <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-white/15" />
+                  <span className="mt-1 text-sm font-black text-white">筛选选项</span>
+                  <button
+                    type="button"
+                    onClick={() => setFilterSheetOpen(false)}
+                    aria-label="关闭筛选"
+                    className="mt-1 inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-zinc-300 transition-colors hover:bg-white/[0.09] hover:text-white active:scale-95"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="overflow-y-auto overscroll-contain px-4 pb-5 pt-4 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-cyan-200/40 [&::-webkit-scrollbar-track]:bg-transparent">
+                  <div className="mb-2 text-xs font-black text-zinc-400">生成方式</div>
+                  {generationModesBlock}
+
+                  <div className="mb-2 mt-5 text-xs font-black text-zinc-400">标签</div>
+                  {tagsBlock}
+                </div>
+
+                <div className="flex shrink-0 items-center gap-3 border-t border-white/[0.06] px-4 py-3">
+                  {hasActiveFilters ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClearFilters()
+                        setFilterSheetOpen(false)
+                      }}
+                      className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl border border-rose-200/15 bg-rose-300/[0.08] text-sm font-black text-rose-100 transition-colors hover:bg-rose-300/[0.13] active:scale-[0.98]"
+                    >
+                      <X className="h-4 w-4" />
+                      清除筛选
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setFilterSheetOpen(false)}
+                    className="inline-flex h-11 flex-1 items-center justify-center rounded-2xl border border-cyan-200/25 bg-cyan-200/[0.12] text-sm font-black text-cyan-50 transition-colors hover:bg-cyan-200/[0.18] active:scale-[0.98]"
+                  >
+                    查看 {resultCount} 条结果
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          ) : null}
+            </AnimatePresence>,
+            document.body,
+          )
+        : null}
     </div>
   )
 }
