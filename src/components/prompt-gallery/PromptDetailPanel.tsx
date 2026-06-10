@@ -128,19 +128,6 @@ export function PromptDetailPanel({ item, panelHeight, favoriteBusy = false, onT
                 <p className="text-sm leading-relaxed text-zinc-400">{item.useCase}</p>
               </div>
 
-              {item.tips?.length ? (
-                <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.035] p-4">
-                  <div className="mb-3 text-sm font-bold text-white">使用建议</div>
-                  <div className="grid gap-2">
-                    {item.tips.map((tip) => (
-                      <p key={tip} className="text-sm leading-relaxed text-zinc-400">
-                        {tip}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
               <PromptCopyButton prompt={item.prompt} label="复制提示词" className="w-full" />
             </motion.div>
               </div>
