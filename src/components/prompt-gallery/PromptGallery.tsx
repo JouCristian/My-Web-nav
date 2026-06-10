@@ -3,6 +3,7 @@
 import { startTransition, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import dynamic from "next/dynamic"
+import { useRouter } from "next/navigation"
 import {
   createPromptCategory,
   deletePromptCard,
@@ -177,6 +178,7 @@ export function PromptGallery({
 }) {
   const [items, setItems] = useState<ImagePromptItem[]>(initialItems)
   const [categories, setCategories] = useState<Array<"全部" | ImagePromptCategory>>(() => withFavoriteCategory(initialCategories))
+  const router = useRouter()
   const [activeCategory, setActiveCategory] = useState<ActiveCategory>("全部")
   const [activeGenerationMode, setActiveGenerationMode] = useState<ActiveGenerationMode>("全部")
   const [searchQuery, setSearchQuery] = useState("")
@@ -676,7 +678,7 @@ export function PromptGallery({
                 {!isAuthenticated ? (
                   <motion.button
                     type="button"
-                    onClick={() => setLoginDialogOpen(true)}
+                    onClick={() => router.push("/login")}
                     whileHover={{ scale: 1.04, y: -2 }}
                     whileTap={{ scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 420, damping: 22 }}
