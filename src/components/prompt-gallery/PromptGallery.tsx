@@ -225,6 +225,9 @@ export function PromptGallery({
   const [twoRowHeight, setTwoRowHeight] = useState<number | null>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const cardGridRef = useRef<HTMLDivElement>(null)
+  // 记录“本组件最后一次写入 URL 的 query”，用于在读取 effect 中区分
+  // 自己写入产生的回声（应忽略）与真正的外部变化（回退/前进/刷新，应同步）
+  const lastWrittenQueryRef = useRef<string>(buildFilterQuery(initialFilters.query, initialFilters.category, initialFilters.tags))
 
   const prepareManager = () => {
     if (canManage && !managerMounted) {
@@ -244,16 +247,25 @@ export function PromptGallery({
   useEffect(() => {
     const existingQuery = searchParams.toString()
     if (existingQuery === currentFilterQuery) return
+    // 标记这是我们自己写入的 query，供读取 effect 区分回声与外部变化
+    lastWrittenQueryRef.current = currentFilterQuery
     const nextUrl = currentFilterQuery ? `${pathname}?${currentFilterQuery}` : pathname
     router.replace(nextUrl, { scroll: false })
   }, [currentFilterQuery, pathname, router, searchParams])
 
-  // 3) 读取 URL：浏览器回退/前进导致 searchParams 变化时，把界面筛选状态同步回来
+  // 3) 读取 URL：仅当 searchParams 与“我们最后写入的值”不同才认定为外部变化
+  //    （浏览器回退/前进/刷新），从而忽略 router.replace 异步产生的滞后回声，避免状态来回横跳
   useEffect(() => {
+    const incomingQuery = searchParams.toString()
+    if (incomingQuery === lastWrittenQueryRef.current) return
+
     const urlQuery = searchParams.get("q") ?? ""
     const rawCategory = searchParams.get("cat") ?? "全部"
     const nextCategory = (categories as string[]).includes(rawCategory) ? (rawCategory as ActiveCategory) : "全部"
     const urlTags = searchParams.getAll("tag")
+
+    // 外部变化已被界面接受，更新记录值，防止后续写入 effect 再次触发同步
+    lastWrittenQueryRef.current = incomingQuery
 
     if (urlQuery !== debouncedSearchQuery) {
       setSearchQuery(urlQuery)
