@@ -27,6 +27,7 @@ import {
   voiceSpring,
   voiceTap,
 } from "@/components/ai-voice-workshop/motion"
+import { AutoHeight } from "@/components/ai-voice-workshop/AutoHeight"
 import {
   defaultLocalVoiceApiBaseUrl,
   generateVoice,
@@ -440,11 +441,11 @@ export function VoiceWorkshopClient() {
 
         <div className="grid items-stretch gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(390px,0.92fr)]">
           <form ref={formRef} onSubmit={handleSubmit} className="min-w-0">
-            <motion.section layout transition={voiceLayoutSpring} className="relative overflow-visible rounded-2xl border border-white/10 bg-[#090c18]/88 p-5 shadow-[0_8px_24px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-6">
+            <section className="relative overflow-visible rounded-2xl border border-white/10 bg-[#090c18]/88 p-5 shadow-[0_8px_24px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-6">
               <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/60 to-transparent" />
               <div className="mb-5 flex items-center gap-2 text-sm font-bold text-white"><Wand2 className="h-4 w-4 text-cyan-100" />创作流程</div>
 
-              <motion.div layout transition={voiceLayoutSpring} className="relative space-y-5">
+              <div className="relative space-y-5">
                 <div className="absolute bottom-5 left-[15px] top-4 hidden border-l border-dashed border-cyan-200/20 sm:block" aria-hidden="true" />
 
                 <FlowStep number="1" title="选择模式" description="选择音色设计，或使用参考音频克隆声音。">
@@ -482,7 +483,7 @@ export function VoiceWorkshopClient() {
 
                 <section className="relative grid gap-3 sm:grid-cols-[2rem_minmax(0,1fr)] sm:gap-4">
                   <span className="relative z-10 grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-cyan-200 to-violet-300 text-[11px] font-black text-[#07101d]">2</span>
-                  <motion.div layout transition={voiceLayoutSpring} className="relative min-w-0 overflow-hidden">
+                  <AutoHeight className="relative min-w-0">
                     <motion.div
                       key={isCloneMode ? "clone-settings" : "design-settings"}
                       initial={{ opacity: 0 }}
@@ -519,7 +520,7 @@ export function VoiceWorkshopClient() {
                         </>
                       )}
                     </motion.div>
-                  </motion.div>
+                  </AutoHeight>
                 </section>
 
                 <FlowStep number="3" title="合成文本" description="输入要朗读的内容，一次最多 500 字。">
@@ -550,8 +551,8 @@ export function VoiceWorkshopClient() {
                     {!connected ? <p className="mt-1.5 text-center text-[11px] text-amber-100/70">连接并加载声音引擎后即可生成。</p> : null}
                   </div>
                 </FlowStep>
-              </motion.div>
-            </motion.section>
+              </div>
+            </section>
           </form>
 
           <aside className="flex min-w-0 flex-col gap-4 xl:max-h-full">

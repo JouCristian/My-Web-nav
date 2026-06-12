@@ -28,6 +28,7 @@ import {
   voiceSpring,
   voiceTap,
 } from "@/components/ai-voice-workshop/motion"
+import { AutoHeight } from "@/components/ai-voice-workshop/AutoHeight"
 import type { VoiceEngineInfo, VoiceEngineMode, VoiceEngineStatus } from "@/lib/ai-voice-workshop/types"
 
 interface VoiceEngineSettingsProps {
@@ -171,7 +172,6 @@ export function VoiceEngineSettings({
       <AnimatePresence>
         {settingsOpen ? (
           <motion.div
-            layout
             variants={voicePopoverVariants}
             initial="hidden"
             animate="visible"
@@ -205,9 +205,10 @@ export function VoiceEngineSettings({
               <EngineModeButton active={engineMode === "custom"} icon={<PlugZap className="h-4 w-4" />} label="自定义 API" onClick={() => onModeChange("custom")} />
             </div>
 
-            <AnimatePresence mode="wait" initial={false}>
-              {engineMode === "local" ? (
-                <motion.div key="local" variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} className="mt-5">
+            <AutoHeight className="mt-5">
+              <motion.div key={engineMode} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={voiceSpring}>
+                {engineMode === "local" ? (
+                  <>
                   <div className="space-y-4">
                     <SetupRow number="1" title="下载 Windows 本地引擎包">
                       <a href="/downloads/joujou-voice-engine-windows.zip" download className="mt-2 inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full bg-gradient-to-r from-cyan-300 to-violet-400 px-4 text-xs font-black text-[#07101d] transition-[filter] hover:brightness-110">
@@ -253,7 +254,7 @@ export function VoiceEngineSettings({
                             </div>
                             <div className="mt-3 flex flex-wrap gap-2">
                               <button type="button" onClick={() => void copyApiUrl()} className={secondaryButton}>
-                                {copied ? <Check className="h-4 w-4 text-emerald-200" /> : <Clipboard className="h-4 w-4" />}{copied ? "已复制" : "复制当前 API"}
+                                {copied ? <Check className="h-4 w-4 text-emerald-200" /> : <Clipboard className="h-4 w-4" />}{copied ? "已��制" : "复制当前 API"}
                               </button>
                               <button type="button" onClick={onToggleGuide} className={secondaryButton}><Archive className="h-4 w-4" />{guideOpen ? "收起安装说明" : "查看安装说明"}</button>
                             </div>
@@ -276,9 +277,9 @@ export function VoiceEngineSettings({
                       ) : null}
                     </AnimatePresence>
                   </div>
-                </motion.div>
-              ) : (
-                <motion.div key="custom" variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} className="mt-5">
+                  </>
+                ) : (
+                  <>
                   <div className="rounded-xl border border-violet-200/15 bg-violet-300/[0.05] p-4">
                     <div className="flex items-center gap-2 text-sm font-bold text-white"><Wrench className="h-4 w-4 text-violet-200" />开发者模式</div>
                     <p className="mt-2 text-xs leading-relaxed text-zinc-400">连接兼容 AI 声音创作工坊接口协议的 VoxCPM 或 FastAPI 服务。</p>
@@ -295,9 +296,10 @@ export function VoiceEngineSettings({
                     <button type="button" onClick={() => void copyApiUrl()} className={secondaryButton}>{copied ? <Check className="h-4 w-4 text-emerald-200" /> : <Clipboard className="h-4 w-4" />}{copied ? "已复制" : "复制当前 API"}</button>
                   </div>
                   <EngineFeedback status={engineStatus} info={engineInfo} error={engineError} />
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  </>
+                )}
+              </motion.div>
+            </AutoHeight>
           </motion.div>
         ) : null}
       </AnimatePresence>
