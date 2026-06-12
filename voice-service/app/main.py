@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import threading
 import time
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
 from app.audio_utils import normalize_reference_audio, save_upload_file
 from app.job_store import job_store
@@ -34,19 +35,84 @@ worker_started = False
 
 app = FastAPI(title="AI Voice Workshop Service", version="0.1.0")
 
-allowed_origins = [
-    origin.strip()
-    for origin in os.getenv("VOICE_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
-    if origin.strip()
+# Default web origins allowed to reach the local voice engine.
+# Browser CORS uses the Origin (scheme + host + port) only, not the full page path.
+# For https://www.zoujunyispace.cn/joujou-tools/ai-voice-workshop the origin is
+# https://www.zoujunyispace.cn
+DEFAULT_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "https://www.zoujunyispace.cn",
 ]
+
+_env_origins = os.getenv("VOICE_ALLOWED_ORIGINS", "")
+_extra_origins = [item.strip() for item in _env_origins.split(",") if item.strip()]
+
+# Merge defaults with env-provided origins while preserving order and removing duplicates.
+allowed_origins = list(dict.fromkeys(DEFAULT_ALLOWED_ORIGINS + _extra_origins))
+
+# Optional regex for advanced setups. Disabled (empty) by default so that arbitrary
+# public sites can NOT reach the user's local engine.
+allowed_origin_regex = os.getenv("VOICE_ALLOWED_ORIGIN_REGEX", "").strip()
+
+
+def is_allowed_origin(origin: str | None) -> bool:
+    if not origin:
+        return False
+
+    if origin in allowed_origins:
+        return True
+
+    if allowed_origin_regex:
+        try:
+            return re.match(allowed_origin_regex, origin) is not None
+        except re.error:
+            return False
+
+    return False
+
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_credentials=True,
+    allow_origin_regex=allowed_origin_regex or None,
+    # Credentials are not used; keeping this False lets the engine echo the exact Origin
+    # without the wildcard restrictions and avoids leaking cookies cross-site.
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def add_private_network_access_headers(request: Request, call_next):
+    """Add Chrome Private Network Access headers so an HTTPS page can reach
+    the local (private network) engine. CORSMiddleware does not emit
+    Access-Control-Allow-Private-Network on its own."""
+    origin = request.headers.get("origin")
+
+    # Handle the PNA preflight explicitly so the required header is always present.
+    if request.method == "OPTIONS" and is_allowed_origin(origin):
+        response = Response(status_code=204)
+        response.headers["Access-Control-Allow-Origin"] = origin  # type: ignore[arg-type]
+        response.headers["Vary"] = "Origin"
+        response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = request.headers.get(
+            "access-control-request-headers", "*"
+        )
+        response.headers["Access-Control-Allow-Private-Network"] = "true"
+        return response
+
+    response = await call_next(request)
+
+    if is_allowed_origin(origin):
+        response.headers["Access-Control-Allow-Origin"] = origin  # type: ignore[arg-type]
+        response.headers["Vary"] = "Origin"
+        response.headers["Access-Control-Allow-Private-Network"] = "true"
+
+    return response
 
 
 def _worker_loop() -> None:

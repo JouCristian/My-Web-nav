@@ -55,6 +55,33 @@ public/downloads/joujou-voice-engine-windows.zip
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8866
 ```
 
+## 线上网页连接失败排查（CORS / 私有网络访问）
+
+如果线上网页无法连接本地引擎，但本地引擎窗口显示 `/health`、`/engine/info` 返回 200，通常是 CORS / 浏览器私有网络访问（Private Network Access）限制。
+
+本地引擎默认允许以下页面访问：
+
+- http://localhost:3000
+- http://127.0.0.1:3000
+- http://localhost:3001
+- http://127.0.0.1:3001
+- https://www.zoujunyispace.cn
+
+如果你部署到自己的域名，需要在 `VOICE_ALLOWED_ORIGINS` 中加入你的域名 Origin。
+例如页面地址是：
+
+```text
+https://www.zoujunyispace.cn/joujou-tools/ai-voice-workshop
+```
+
+则需要加入的 Origin 是：
+
+```text
+https://www.zoujunyispace.cn
+```
+
+注意 CORS 判断只看 Origin（协议 + 域名 + 端口），不看完整路径。多个 Origin 用英文逗号分隔，并且会与内置默认白名单合并。
+
 ## 卸载本地协议
 
 ```powershell

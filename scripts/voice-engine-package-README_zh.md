@@ -41,6 +41,31 @@
 
 第一次会下载 PyTorch、VoxCPM2 和相关依赖，可能需要较长时间，请保持网络稳定。
 
+### 线上网页连接失败，但本地引擎窗口显示 200 怎么办？
+
+如果线上网页无法连接本地引擎，但本地引擎窗口显示 `/health`、`/engine/info` 返回 200，通常是 CORS / 浏览器私有网络访问（Private Network Access）限制。
+
+本地引擎默认允许以下页面访问：
+
+- http://localhost:3000
+- http://127.0.0.1:3000
+- https://www.zoujunyispace.cn
+
+如果你部署到自己的域名，需要在 `voice-service\.env` 的 `VOICE_ALLOWED_ORIGINS` 中加入你的域名 Origin。
+例如页面地址是：
+
+```text
+https://www.zoujunyispace.cn/joujou-tools/ai-voice-workshop
+```
+
+则需要加入的 Origin 是：
+
+```text
+https://www.zoujunyispace.cn
+```
+
+注意 CORS 只看 Origin（协议 + 域名 + 端口），不看完整路径。修改后请重启本地引擎。
+
 ### 是否会上传我的参考音频？
 
 本地 GPU 引擎模式下，参考音频默认只在你的电脑本地处理，不上传云端。
