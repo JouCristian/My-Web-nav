@@ -60,7 +60,7 @@ export function VoiceAdvancedOptions({
           <span className="font-normal text-zinc-500">CFG {cfgValue.toFixed(1)} · Steps {inferenceTimesteps}</span>
         </span>
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={voiceFastSpring}>
-          <ChevronDown className="h-4 w-4" />
+          <ChevronDown className="no-spin-hover h-4 w-4" />
         </motion.span>
       </motion.button>
 

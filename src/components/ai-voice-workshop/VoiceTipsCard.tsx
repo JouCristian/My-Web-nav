@@ -17,7 +17,7 @@ export function VoiceTipsCard() {
         aria-expanded={open}
       >
         <span className="inline-flex items-center gap-2"><Lightbulb className="h-4 w-4 text-amber-200" />使用提示</span>
-        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={voiceFastSpring}><ChevronDown className="h-4 w-4 text-zinc-500" /></motion.span>
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={voiceFastSpring}><ChevronDown className="no-spin-hover h-4 w-4 text-zinc-500" /></motion.span>
       </button>
       <AnimatePresence initial={false}>
         {open ? (

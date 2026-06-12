@@ -164,7 +164,7 @@ export function VoiceEngineSettings({
           <Settings2 className="h-4 w-4" />
           引擎设置
           <motion.span animate={{ rotate: settingsOpen ? 180 : 0 }} transition={voiceFastSpring}>
-            <ChevronDown className="h-3.5 w-3.5" />
+            <ChevronDown className="no-spin-hover h-3.5 w-3.5" />
           </motion.span>
         </motion.button>
       </div>
@@ -235,7 +235,7 @@ export function VoiceEngineSettings({
                   <div className="mt-5 border-t border-white/10 pt-4">
                     <button type="button" onClick={() => setDeveloperOpen((open) => !open)} className="flex w-full cursor-pointer items-center justify-between text-left text-xs font-bold text-zinc-400" aria-expanded={developerOpen}>
                       <span className="inline-flex items-center gap-2"><Wrench className="h-4 w-4" />开发者选项</span>
-                      <motion.span animate={{ rotate: developerOpen ? 180 : 0 }} transition={voiceFastSpring}><ChevronDown className="h-4 w-4" /></motion.span>
+                      <motion.span animate={{ rotate: developerOpen ? 180 : 0 }} transition={voiceFastSpring}><ChevronDown className="no-spin-hover h-4 w-4" /></motion.span>
                     </button>
                     <AnimatePresence initial={false}>
                       {developerOpen ? (

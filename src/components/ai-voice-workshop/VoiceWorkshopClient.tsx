@@ -387,7 +387,7 @@ export function VoiceWorkshopClient() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="space-y-6">
+      <div className="voice-workshop space-y-6">
         <header className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.46fr)] lg:items-end">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
@@ -526,7 +526,7 @@ export function VoiceWorkshopClient() {
                 <FlowStep number="3" title="合成文本" description="输入要朗读的内容，一次最多 500 字。">
                   <label className="block">
                     <span className="sr-only">合成文本</span>
-                    <textarea value={text} onChange={(event) => setText(event.target.value)} rows={5} placeholder="请输入要生成语音的文字，建议一段话控制在 500 字内。" className={`min-h-[132px] w-full resize-y rounded-xl border bg-black/30 px-4 py-3 text-sm leading-6 text-white outline-none transition-colors placeholder:text-zinc-500 focus:ring-2 ${trimmedText.length > 500 ? "border-rose-300/55 focus:border-rose-300 focus:ring-rose-300/10" : "border-white/10 focus:border-cyan-100/45 focus:ring-cyan-200/10"}`} />
+                    <textarea value={text} onChange={(event) => setText(event.target.value)} rows={5} placeholder="请输入要生成语音的文字，建议一段话控制在 500 字内。" className={`voice-scroll min-h-[132px] w-full resize-y rounded-xl border bg-black/30 px-4 py-3 text-sm leading-6 text-white outline-none transition-colors placeholder:text-zinc-500 focus:ring-2 ${trimmedText.length > 500 ? "border-rose-300/55 focus:border-rose-300 focus:ring-rose-300/10" : "border-white/10 focus:border-cyan-100/45 focus:ring-cyan-200/10"}`} />
                     <span className={`mt-1.5 block text-right font-mono text-[11px] ${trimmedText.length > 500 ? "text-rose-200" : "text-zinc-500"}`}>{trimmedText.length}/500</span>
                   </label>
                 </FlowStep>

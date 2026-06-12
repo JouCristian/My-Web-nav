@@ -193,6 +193,63 @@ body {
   }
 
   /* ==========================================
+     🎙️ 工坊作用域内所有滚动条统一为自定义暗色样式
+     兜底任何未显式加 .voice-scroll 的原生滚动条（含 textarea）
+     ========================================== */
+  .voice-workshop,
+  .voice-workshop * {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: rgba(125, 211, 252, 0.35) transparent;
+  }
+  .voice-workshop ::-webkit-scrollbar,
+  .voice-workshop::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .voice-workshop ::-webkit-scrollbar-track,
+  .voice-workshop::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 6px 0;
+  }
+  .voice-workshop ::-webkit-scrollbar-thumb,
+  .voice-workshop::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: linear-gradient(180deg, rgba(125, 211, 252, 0.45), rgba(167, 139, 250, 0.45));
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .voice-workshop ::-webkit-scrollbar-thumb:hover,
+  .voice-workshop::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(125, 211, 252, 0.7), rgba(167, 139, 250, 0.7));
+    background-clip: padding-box;
+  }
+  .voice-workshop ::-webkit-scrollbar-corner,
+  .voice-workshop::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* ==========================================
+     🎙️ 工坊作用域内所有可点击按钮：hover 时图标微动效
+     统一使用非线性弹性曲线（cubic-bezier 回弹）
+     ========================================== */
+  .voice-workshop button svg,
+  .voice-workshop [role="button"] svg,
+  .voice-workshop label[for] svg {
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    will-change: transform;
+  }
+  .voice-workshop button:hover:not(:disabled) svg,
+  .voice-workshop [role="button"]:hover svg,
+  .voice-workshop label[for]:hover svg {
+    transform: scale(1.18) rotate(-4deg);
+  }
+  /* 折叠 chevron / 展开箭头只放大不旋转，避免与开合状态旋转冲突 */
+  .voice-workshop button:hover:not(:disabled) svg.no-spin-hover {
+    transform: scale(1.18);
+  }
+
+  /* ==========================================
      🚀 移动端性能优化：减少动画开销
      ========================================== */
   @media (max-width: 1024px), (hover: none) {

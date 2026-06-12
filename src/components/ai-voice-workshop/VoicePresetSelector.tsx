@@ -62,7 +62,7 @@ export function VoicePresetSelector({ presets, selectedPreset, onSelect }: Voice
         <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-cyan-100">
           更换音色
           <motion.span animate={{ rotate: open ? 180 : 0 }} transition={voiceFastSpring}>
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="no-spin-hover h-4 w-4" />
           </motion.span>
         </span>
       </motion.button>
