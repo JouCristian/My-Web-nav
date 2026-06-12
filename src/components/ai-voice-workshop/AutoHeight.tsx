@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react"
 
 import { voiceLayoutSpring } from "@/components/ai-voice-workshop/motion"
 
@@ -13,18 +13,21 @@ import { voiceLayoutSpring } from "@/components/ai-voice-workshop/motion"
  */
 export function AutoHeight({ children, className }: { children: ReactNode; className?: string }) {
   const innerRef = useRef<HTMLDivElement>(null)
+  const hasMeasured = useRef(false)
   const [height, setHeight] = useState<number | "auto">("auto")
   const [animating, setAnimating] = useState(false)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = innerRef.current
     if (!el) return
     const update = () => {
       const next = el.offsetHeight
       setHeight((prev) => {
-        if (prev !== "auto" && prev !== next) setAnimating(true)
+        // 首次测量同步定位，不触发弹簧动画；只有挂载后内容真正变化才动画。
+        if (hasMeasured.current && prev !== next) setAnimating(true)
         return next
       })
+      hasMeasured.current = true
     }
     update()
     const observer = new ResizeObserver(update)
@@ -35,7 +38,7 @@ export function AutoHeight({ children, className }: { children: ReactNode; class
   return (
     <motion.div
       animate={{ height }}
-      transition={voiceLayoutSpring}
+      transition={animating ? voiceLayoutSpring : { duration: 0 }}
       onAnimationComplete={() => setAnimating(false)}
       className={className}
       style={{ overflow: animating ? "hidden" : "visible" }}
