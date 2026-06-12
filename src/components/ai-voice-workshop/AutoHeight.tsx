@@ -41,7 +41,13 @@ export function AutoHeight({ children, className }: { children: ReactNode; class
       transition={animating ? voiceLayoutSpring : { duration: 0 }}
       onAnimationComplete={() => setAnimating(false)}
       className={className}
-      style={{ overflow: animating ? "hidden" : "visible" }}
+      style={{
+        // clip-path 在动画期间裁切超出部分，动画结束后恢复 none，
+        // 这样绝对定位的弹出层（预设面板、下拉等）不受影响，
+        // 也不会在弹窗的 overflow-y-auto 容器内触发多余的滚动条。
+        clipPath: animating ? "inset(0 -100vw -100vh -100vw)" : "none",
+        overflow: "visible",
+      }}
     >
       <div ref={innerRef}>{children}</div>
     </motion.div>

@@ -61,3 +61,30 @@ export const voiceFadeScaleVariants: Variants = {
 
 export const voiceHover = { y: -1 }
 export const voiceTap = { scale: 0.975 }
+
+// 页面整体入场：stagger 容器
+export const voicePageContainer: Variants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.07,
+      delayChildren: 0.04,
+    },
+  },
+}
+
+// 每个区块的入场动画（从下方淡入 + 轻微上升）
+export const voicePageItem: Variants = {
+  hidden: { opacity: 0, y: 22, filter: "blur(4px)" },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: {
+      type: "spring",
+      stiffness: 320,
+      damping: 30,
+      mass: 0.8,
+    },
+  },
+}

@@ -26,6 +26,8 @@ import {
   voiceLayoutSpring,
   voiceSpring,
   voiceTap,
+  voicePageContainer,
+  voicePageItem,
 } from "@/components/ai-voice-workshop/motion"
 import { AutoHeight } from "@/components/ai-voice-workshop/AutoHeight"
 import {
@@ -325,7 +327,7 @@ export function VoiceWorkshopClient() {
 
       if (job.status === "failed") {
         stopPolling()
-        setResultError(job.error || "生成失败，请查看 voice-service 终端日志。")
+        setResultError(job.error || "生成失败，请查看 voice-service 终端日��。")
       }
     } catch (error) {
       stopPolling()
@@ -387,8 +389,13 @@ export function VoiceWorkshopClient() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="voice-workshop space-y-6">
-        <header className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.46fr)] lg:items-end">
+      <motion.div
+        className="voice-workshop space-y-6"
+        variants={voicePageContainer}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.header variants={voicePageItem} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.46fr)] lg:items-end">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
               <BackButton />
@@ -403,7 +410,7 @@ export function VoiceWorkshopClient() {
               <div className="min-w-0">
                 <h1 className="text-balance text-4xl font-black leading-tight tracking-[-0.03em] text-white sm:text-5xl">AI 声音创作工坊</h1>
                 <p className="mt-3 max-w-3xl text-pretty text-sm leading-6 text-zinc-300 sm:text-base">
-                  输入文本，选择音色或上传参考音频，让本地 VoxCPM2 生成可播放、可下载的 WAV 语音。
+                  输入文本，选择音色或上传参考音频，让本地 VoxCPM2 生成可播放、��下载的 WAV 语音。
                 </p>
               </div>
             </div>
@@ -437,9 +444,10 @@ export function VoiceWorkshopClient() {
             onResetCustomApiUrl={handleResetCustomApiUrl}
             onToggleGuide={() => setEngineGuideOpen((open) => !open)}
           />
-        </header>
+        </motion.header>
 
         <div className="grid items-stretch gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(390px,0.92fr)]">
+          <motion.div variants={voicePageItem}>
           <form ref={formRef} onSubmit={handleSubmit} className="min-w-0">
             <section className="relative overflow-visible rounded-2xl border border-white/10 bg-[#090c18]/88 p-5 shadow-[0_8px_24px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-6">
               <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/60 to-transparent" />
@@ -554,14 +562,15 @@ export function VoiceWorkshopClient() {
               </div>
             </section>
           </form>
+          </motion.div>
 
-          <aside className="flex min-w-0 flex-col gap-4 xl:max-h-full">
+          <motion.aside variants={voicePageItem} className="flex min-w-0 flex-col gap-4 xl:max-h-full">
             <AudioResultCard status={resultStatus} mode={resultMode} audioUrl={resultAudioUrl} filename={resultFilename} title={resultTitle} error={resultError || undefined} onReset={resultStatus === "idle" ? undefined : resetResult} onRetry={resultStatus === "failed" ? () => formRef.current?.requestSubmit() : undefined} />
             <VoiceTipsCard />
             <VoiceHistoryPanel items={history} onClear={() => setHistory([])} />
-          </aside>
+          </motion.aside>
         </div>
-      </div>
+      </motion.div>
     </MotionConfig>
   )
 }
