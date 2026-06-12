@@ -14,11 +14,18 @@ import { voiceLayoutSpring } from "@/components/ai-voice-workshop/motion"
 export function AutoHeight({ children, className }: { children: ReactNode; className?: string }) {
   const innerRef = useRef<HTMLDivElement>(null)
   const [height, setHeight] = useState<number | "auto">("auto")
+  const [animating, setAnimating] = useState(false)
 
   useEffect(() => {
     const el = innerRef.current
     if (!el) return
-    const update = () => setHeight(el.offsetHeight)
+    const update = () => {
+      const next = el.offsetHeight
+      setHeight((prev) => {
+        if (prev !== "auto" && prev !== next) setAnimating(true)
+        return next
+      })
+    }
     update()
     const observer = new ResizeObserver(update)
     observer.observe(el)
@@ -29,8 +36,9 @@ export function AutoHeight({ children, className }: { children: ReactNode; class
     <motion.div
       animate={{ height }}
       transition={voiceLayoutSpring}
+      onAnimationComplete={() => setAnimating(false)}
       className={className}
-      style={{ overflow: "hidden" }}
+      style={{ overflow: animating ? "hidden" : "visible" }}
     >
       <div ref={innerRef}>{children}</div>
     </motion.div>

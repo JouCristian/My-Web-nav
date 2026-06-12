@@ -241,12 +241,13 @@ export function VoiceEngineSettings({
                       {developerOpen ? (
                         <motion.div
                           key="developer-content"
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
+                          initial={{ gridTemplateRows: "0fr", opacity: 0 }}
+                          animate={{ gridTemplateRows: "1fr", opacity: 1 }}
+                          exit={{ gridTemplateRows: "0fr", opacity: 0 }}
                           transition={voiceLayoutSpring}
-                          className="overflow-hidden"
+                          className="grid"
                         >
+                          <div className="min-h-0 overflow-hidden">
                           <div className="pt-4">
                             <div className="space-y-1 break-all font-mono text-[11px] text-zinc-500">
                               <p>当前 API: {activeApiBaseUrl}</p>
@@ -262,16 +263,19 @@ export function VoiceEngineSettings({
                               {guideOpen ? (
                                 <motion.div
                                   key="guide-content"
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: "auto", opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
+                                  initial={{ gridTemplateRows: "0fr", opacity: 0 }}
+                                  animate={{ gridTemplateRows: "1fr", opacity: 1 }}
+                                  exit={{ gridTemplateRows: "0fr", opacity: 0 }}
                                   transition={voiceLayoutSpring}
-                                  className="overflow-hidden"
+                                  className="grid"
                                 >
+                                  <div className="min-h-0 overflow-hidden">
                                   <div className="mt-3 rounded-xl border border-white/[0.08] bg-white/[0.035] p-3 text-xs leading-relaxed text-zinc-400">首次使用请下载并解压引擎包，双击 INSTALL.bat。以后可从网页启动，也可以双击包内 START.bat。</div>
+                                  </div>
                                 </motion.div>
                               ) : null}
                             </AnimatePresence>
+                          </div>
                           </div>
                         </motion.div>
                       ) : null}
