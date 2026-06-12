@@ -327,7 +327,7 @@ export function VoiceWorkshopClient() {
 
       if (job.status === "failed") {
         stopPolling()
-        setResultError(job.error || "生成失败，请查看 voice-service 终端日��。")
+        setResultError(job.error || "生成失败，请查看 voice-service 终端����。")
       }
     } catch (error) {
       stopPolling()
@@ -410,7 +410,7 @@ export function VoiceWorkshopClient() {
               <div className="min-w-0">
                 <h1 className="text-balance text-4xl font-black leading-tight tracking-[-0.03em] text-white sm:text-5xl">AI 声音创作工坊</h1>
                 <p className="mt-3 max-w-3xl text-pretty text-sm leading-6 text-zinc-300 sm:text-base">
-                  输入文本，选择音色或上传参考音频，让本地 VoxCPM2 生成可播放、��下载的 WAV 语音。
+                  输入文本，选择音色或上传参考音频，让本地 VoxCPM2 生成可播放、可下载的 WAV 语音。
                 </p>
               </div>
             </div>
