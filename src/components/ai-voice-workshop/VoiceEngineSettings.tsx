@@ -205,7 +205,7 @@ export function VoiceEngineSettings({
               <EngineModeButton active={engineMode === "custom"} icon={<PlugZap className="h-4 w-4" />} label="自定义 API" onClick={() => onModeChange("custom")} />
             </div>
 
-            <AutoHeight className="mt-5">
+            <AutoHeight className="mt-5" clip>
               <motion.div key={engineMode} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={voiceSpring}>
                 {engineMode === "local" ? (
                   <>
