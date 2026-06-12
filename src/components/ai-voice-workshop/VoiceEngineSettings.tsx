@@ -58,7 +58,7 @@ const statusCopy: Record<VoiceEngineStatus, string> = {
 }
 
 const secondaryButton =
-  "inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-full border border-white/12 bg-white/[0.045] px-4 text-xs font-bold text-zinc-200 transition-colors hover:border-cyan-100/35 hover:bg-cyan-100/[0.07] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+  "inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-full border border-white/12 bg-white/[0.045] px-4 text-xs font-bold text-zinc-200 transition-colors hover:border-cyan-100/35 hover:bg-cyan-100/[0.07] disabled:cursor-not-allowed disabled:opacity-50"
 
 function statusTone(status: VoiceEngineStatus) {
   if (status === "connected") return "border-emerald-200/25 bg-emerald-300/[0.08] text-emerald-100"
@@ -130,7 +130,7 @@ export function VoiceEngineSettings({
       ref={rootRef}
       className={`relative overflow-visible rounded-2xl border border-white/10 bg-[#090c18]/88 shadow-[0_8px_24px_rgba(0,0,0,0.24)] backdrop-blur-xl ${settingsOpen ? "z-50" : "z-20"}`}
     >
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/55 to-violet-300/25" />
+      <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/55 to-transparent" />
       <div className="flex flex-col items-stretch gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
@@ -156,9 +156,6 @@ export function VoiceEngineSettings({
         <motion.button
           type="button"
           onClick={() => setSettingsOpen((open) => !open)}
-          whileHover={voiceHover}
-          whileTap={voiceTap}
-          transition={voiceFastSpring}
           className="inline-flex min-h-10 w-full shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full border border-cyan-100/20 bg-cyan-100/[0.07] px-4 text-xs font-bold text-cyan-50 transition-colors hover:border-cyan-100/40 hover:bg-cyan-100/[0.11] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/50 sm:w-auto"
           aria-expanded={settingsOpen}
           aria-haspopup="dialog"
@@ -273,7 +270,7 @@ export function VoiceEngineSettings({
                     <motion.button type="button" onClick={onSaveCustomApiUrl} disabled={busy} whileHover={!busy ? voiceHover : undefined} whileTap={!busy ? voiceTap : undefined} transition={voiceFastSpring} className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full border border-cyan-100/25 bg-cyan-100/[0.09] px-4 text-xs font-bold text-cyan-50 transition-colors hover:bg-cyan-100/[0.14] disabled:cursor-not-allowed disabled:opacity-50">
                       {engineStatus === "checking" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}保存并检测
                     </motion.button>
-                    <motion.button type="button" onClick={onResetCustomApiUrl} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className={secondaryButton}><RotateCcw className="h-4 w-4" />恢复默认地址</motion.button>
+                    <motion.button type="button" onClick={onResetCustomApiUrl} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className={secondaryButton}><RotateCcw className="h-4 w-4" />恢复���认地址</motion.button>
                     <motion.button type="button" onClick={() => void copyApiUrl()} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className={secondaryButton}>{copied ? <Check className="h-4 w-4 text-emerald-200" /> : <Clipboard className="h-4 w-4" />}{copied ? "已复制" : "复制当前 API"}</motion.button>
                   </div>
                   <EngineFeedback status={engineStatus} info={engineInfo} error={engineError} />

@@ -330,7 +330,7 @@ export function VoiceWorkshopClient() {
     } catch (error) {
       stopPolling()
       setResultStatus("failed")
-      setResultError(error instanceof Error ? error.message : "轮询任务状态失败")
+      setResultError(error instanceof Error ? error.message : "轮询���务状态失败")
     }
   }
 
@@ -442,7 +442,7 @@ export function VoiceWorkshopClient() {
         <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(390px,0.92fr)]">
           <form ref={formRef} onSubmit={handleSubmit} className="min-w-0">
             <motion.section layout transition={voiceLayoutSpring} className="relative overflow-visible rounded-2xl border border-white/10 bg-[#090c18]/88 p-5 shadow-[0_8px_24px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-6">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-violet-300/30 via-cyan-200/60 to-transparent" />
+              <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/60 to-transparent" />
               <div className="mb-5 flex items-center gap-2 text-sm font-bold text-white"><Wand2 className="h-4 w-4 text-cyan-100" />创作流程</div>
 
               <motion.div layout transition={voiceLayoutSpring} className="relative space-y-5">
@@ -482,10 +482,10 @@ export function VoiceWorkshopClient() {
                   </div>
                 </FlowStep>
 
-                <motion.div layout transition={voiceLayoutSpring}>
-                  <AnimatePresence mode="wait" initial={false}>
+                <motion.div layout transition={voiceLayoutSpring} className="relative">
+                  <AnimatePresence mode="popLayout" initial={false}>
                     {!isCloneMode ? (
-                      <motion.div key="design-settings" variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring}>
+                      <motion.div key="design-settings" layout variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring}>
                         <FlowStep number="2" title="音色设置" description="选择预设，也可以补充自定义音色描述。">
                           <VoicePresetSelector presets={presets} selectedPreset={selectedPreset} onSelect={(preset) => setSelectedPresetId(preset.id)} />
                           <label className="mt-3 block">
@@ -496,7 +496,7 @@ export function VoiceWorkshopClient() {
                         </FlowStep>
                       </motion.div>
                     ) : (
-                      <motion.div key="clone-settings" variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring}>
+                      <motion.div key="clone-settings" layout variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring}>
                         <FlowStep number="2" title="参考音频" description="建议使用纯净、无背景噪声的 5 至 20 秒人声。">
                           <ReferenceAudioUploader
                             file={referenceAudio}

@@ -39,7 +39,7 @@ export function AudioResultCard({ status, mode, audioUrl, filename, title, error
 
   return (
     <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#090c18]/88 p-5 shadow-[0_8px_24px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-6">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/55 to-cyan-200/50" />
+      <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/55 to-transparent" />
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 text-sm font-bold text-white"><Radio className="h-4 w-4 text-cyan-100" />生成结果</div>
@@ -102,7 +102,7 @@ export function AudioResultCard({ status, mode, audioUrl, filename, title, error
           <motion.div key="failed" initial={{ opacity: 0, scale: 0.985, y: 5, x: 0 }} animate={{ opacity: 1, scale: 1, y: 0, x: reducedMotion ? 0 : [0, -3, 3, -2, 0] }} exit="exit" variants={voiceFadeScaleVariants} transition={reducedMotion ? voiceSpring : voiceErrorTransition} className="col-start-1 row-start-1 flex min-h-[250px] flex-col justify-center rounded-xl border border-rose-200/20 bg-rose-500/[0.08] p-5 text-sm leading-relaxed text-rose-100">
             <div className="mb-2 flex items-center gap-2 font-bold"><TriangleAlert className="h-4 w-4" />生成失败</div>
             <p className="text-xs text-rose-100/80">{error || "请检查本地引擎状态后重试。"}</p>
-            {onRetry ? <motion.button type="button" onClick={onRetry} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className="mt-4 inline-flex min-h-10 w-fit cursor-pointer items-center gap-2 rounded-full border border-rose-100/25 bg-rose-100/[0.08] px-4 text-xs font-bold text-rose-50 transition-colors hover:bg-rose-100/[0.13]"><Wand2 className="h-4 w-4" />重新生成</motion.button> : null}
+            {onRetry ? <button type="button" onClick={onRetry} className="mt-4 inline-flex min-h-10 w-fit cursor-pointer items-center gap-2 rounded-full border border-rose-100/25 bg-rose-100/[0.08] px-4 text-xs font-bold text-rose-50 transition-colors hover:bg-rose-100/[0.13]"><Wand2 className="h-4 w-4" />重新生成</button> : null}
           </motion.div>
         ) : null}
 
@@ -118,9 +118,9 @@ export function AudioResultCard({ status, mode, audioUrl, filename, title, error
               </div>
               <audio controls src={audioUrl} className="mt-4 w-full" />
             </div>
-            <motion.a href={audioUrl} download={filename || "voice-output.wav"} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-300 to-violet-400 px-5 text-sm font-black text-[#07101d] transition-[filter] hover:brightness-110">
+            <a href={audioUrl} download={filename || "voice-output.wav"} className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-300 to-violet-400 px-5 text-sm font-black text-[#07101d] transition-[filter] hover:brightness-110">
               <Download className="h-4 w-4" />下载 WAV
-            </motion.a>
+            </a>
           </motion.div>
         ) : null}
       </AnimatePresence>
