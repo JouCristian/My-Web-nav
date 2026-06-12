@@ -438,7 +438,7 @@ export function VoiceWorkshopClient() {
           />
         </header>
 
-        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(390px,0.92fr)]">
+        <div className="grid items-stretch gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(390px,0.92fr)]">
           <form ref={formRef} onSubmit={handleSubmit} className="min-w-0">
             <motion.section layout transition={voiceLayoutSpring} className="relative overflow-visible rounded-2xl border border-white/10 bg-[#090c18]/88 p-5 shadow-[0_8px_24px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-6">
               <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/60 to-transparent" />
@@ -480,42 +480,47 @@ export function VoiceWorkshopClient() {
                   </div>
                 </FlowStep>
 
-                <motion.div layout transition={voiceLayoutSpring} className="relative overflow-hidden">
-                  <motion.div
-                    key={isCloneMode ? "clone-settings" : "design-settings"}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={voiceSpring}
-                  >
-                    {!isCloneMode ? (
-                      <FlowStep number="2" title="音色设置" description="选择预设，也可以补充自定义音色描述。">
-                        <VoicePresetSelector presets={presets} selectedPreset={selectedPreset} onSelect={(preset) => setSelectedPresetId(preset.id)} />
-                        <label className="mt-3 block">
-                          <span className="mb-2 block text-xs font-bold text-zinc-300">自定义音色描述</span>
-                          <input value={voicePrompt} onChange={(event) => setVoicePrompt(event.target.value)} placeholder="例如：年轻女性，清晰自然，语速偏慢" className="h-11 w-full rounded-xl border border-white/10 bg-black/30 px-4 text-sm text-white outline-none transition-colors placeholder:text-zinc-500 focus:border-cyan-100/45 focus:ring-2 focus:ring-cyan-200/10" />
-                          <span className="mt-1.5 block text-[11px] leading-relaxed text-zinc-500">填写后优先使用自定义描述，留空则使用已选预设。</span>
-                        </label>
-                      </FlowStep>
-                    ) : (
-                      <FlowStep number="2" title="参考音频" description="建议使用纯净、无背景噪声的 5 至 20 秒人声。">
-                        <ReferenceAudioUploader
-                          file={referenceAudio}
-                          consentChecked={cloneConsent}
-                          error={cloneValidationError}
-                          safetyError={showCloneSafetyError}
-                          onFileChange={setReferenceAudio}
-                          onConsentChange={(checked) => {
-                            setCloneConsent(checked)
-                            if (checked) {
-                              setShowCloneSafetyError(false)
-                              setValidationError((current) => (current?.includes("使用权") ? null : current))
-                            }
-                          }}
-                        />
-                      </FlowStep>
-                    )}
+                <section className="relative grid gap-3 sm:grid-cols-[2rem_minmax(0,1fr)] sm:gap-4">
+                  <span className="relative z-10 grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-cyan-200 to-violet-300 text-[11px] font-black text-[#07101d]">2</span>
+                  <motion.div layout transition={voiceLayoutSpring} className="relative min-w-0 overflow-hidden">
+                    <motion.div
+                      key={isCloneMode ? "clone-settings" : "design-settings"}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={voiceSpring}
+                    >
+                      {!isCloneMode ? (
+                        <>
+                          <div className="mb-3"><h2 className="text-sm font-bold text-white">音色设置</h2><p className="mt-1 text-xs leading-relaxed text-zinc-400">选择预设，也可以补充自定义音色描述。</p></div>
+                          <VoicePresetSelector presets={presets} selectedPreset={selectedPreset} onSelect={(preset) => setSelectedPresetId(preset.id)} />
+                          <label className="mt-3 block">
+                            <span className="mb-2 block text-xs font-bold text-zinc-300">自定义音色描述</span>
+                            <input value={voicePrompt} onChange={(event) => setVoicePrompt(event.target.value)} placeholder="例如：年轻女性，清晰自然，语速偏慢" className="h-11 w-full rounded-xl border border-white/10 bg-black/30 px-4 text-sm text-white outline-none transition-colors placeholder:text-zinc-500 focus:border-cyan-100/45 focus:ring-2 focus:ring-cyan-200/10" />
+                            <span className="mt-1.5 block text-[11px] leading-relaxed text-zinc-500">填写后优先使用自定义描述，留空则使用已选预设。</span>
+                          </label>
+                        </>
+                      ) : (
+                        <>
+                          <div className="mb-3"><h2 className="text-sm font-bold text-white">参考音频</h2><p className="mt-1 text-xs leading-relaxed text-zinc-400">建议使用纯净、无背景噪声的 5 至 20 秒人声。</p></div>
+                          <ReferenceAudioUploader
+                            file={referenceAudio}
+                            consentChecked={cloneConsent}
+                            error={cloneValidationError}
+                            safetyError={showCloneSafetyError}
+                            onFileChange={setReferenceAudio}
+                            onConsentChange={(checked) => {
+                              setCloneConsent(checked)
+                              if (checked) {
+                                setShowCloneSafetyError(false)
+                                setValidationError((current) => (current?.includes("使用权") ? null : current))
+                              }
+                            }}
+                          />
+                        </>
+                      )}
+                    </motion.div>
                   </motion.div>
-                </motion.div>
+                </section>
 
                 <FlowStep number="3" title="合成文本" description="输入要朗读的内容，一次最多 500 字。">
                   <label className="block">
@@ -549,7 +554,7 @@ export function VoiceWorkshopClient() {
             </motion.section>
           </form>
 
-          <aside className="min-w-0 space-y-4 xl:sticky xl:top-24 xl:self-start">
+          <aside className="flex min-w-0 flex-col gap-4 xl:max-h-full">
             <AudioResultCard status={resultStatus} mode={resultMode} audioUrl={resultAudioUrl} filename={resultFilename} title={resultTitle} error={resultError || undefined} onReset={resultStatus === "idle" ? undefined : resetResult} onRetry={resultStatus === "failed" ? () => formRef.current?.requestSubmit() : undefined} />
             <VoiceTipsCard />
             <VoiceHistoryPanel items={history} onClear={() => setHistory([])} />

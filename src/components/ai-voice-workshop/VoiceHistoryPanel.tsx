@@ -34,7 +34,7 @@ function formatTime(value: string) {
 export function VoiceHistoryPanel({ items, onClear }: VoiceHistoryPanelProps) {
   const [allOpen, setAllOpen] = useState(false)
   const rootRef = useRef<HTMLElement>(null)
-  const visibleItems = items.slice(0, 3)
+  const visibleItems = items
 
   useEffect(() => {
     if (!allOpen) return
@@ -56,7 +56,7 @@ export function VoiceHistoryPanel({ items, onClear }: VoiceHistoryPanelProps) {
   }, [allOpen])
 
   return (
-    <section ref={rootRef} className={`relative overflow-visible rounded-2xl border border-white/10 bg-[#090c18]/82 p-5 backdrop-blur-xl sm:p-6 ${allOpen ? "z-40" : "z-10"}`}>
+    <section ref={rootRef} className={`relative flex min-h-0 flex-1 flex-col overflow-visible rounded-2xl border border-white/10 bg-[#090c18]/82 p-5 backdrop-blur-xl sm:p-6 ${allOpen ? "z-40" : "z-10"}`}>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 text-sm font-bold text-white"><Clock3 className="h-4 w-4 text-cyan-100" />最近生成</div>
@@ -79,7 +79,7 @@ export function VoiceHistoryPanel({ items, onClear }: VoiceHistoryPanelProps) {
       {items.length === 0 ? (
         <div className="rounded-xl border border-dashed border-white/10 bg-black/18 p-5 text-sm leading-relaxed text-zinc-400">生成成功后会自动保留最近记录，方便回听和下载。</div>
       ) : (
-        <div className="space-y-2">
+        <div className="voice-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1">
           <AnimatePresence initial={false} mode="popLayout">
             {visibleItems.map((item) => <HistoryRow key={item.id} item={item} />)}
           </AnimatePresence>

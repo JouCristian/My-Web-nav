@@ -23,6 +23,7 @@ import {
 import {
   voiceFadeScaleVariants,
   voiceFastSpring,
+  voiceLayoutSpring,
   voicePopoverVariants,
   voiceSpring,
   voiceTap,
@@ -170,6 +171,7 @@ export function VoiceEngineSettings({
       <AnimatePresence>
         {settingsOpen ? (
           <motion.div
+            layout
             variants={voicePopoverVariants}
             initial="hidden"
             animate="visible"
@@ -236,20 +238,40 @@ export function VoiceEngineSettings({
                     </button>
                     <AnimatePresence initial={false}>
                       {developerOpen ? (
-                        <motion.div variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} className="pt-4">
-                          <div className="space-y-1 break-all font-mono text-[11px] text-zinc-500">
-                            <p>当前 API: {activeApiBaseUrl}</p>
-                            <p>本地 API: {localApiUrl}</p>
+                        <motion.div
+                          key="developer-content"
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={voiceLayoutSpring}
+                          className="overflow-hidden"
+                        >
+                          <div className="pt-4">
+                            <div className="space-y-1 break-all font-mono text-[11px] text-zinc-500">
+                              <p>当前 API: {activeApiBaseUrl}</p>
+                              <p>本地 API: {localApiUrl}</p>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button type="button" onClick={() => void copyApiUrl()} className={secondaryButton}>
+                                {copied ? <Check className="h-4 w-4 text-emerald-200" /> : <Clipboard className="h-4 w-4" />}{copied ? "已复制" : "复制当前 API"}
+                              </button>
+                              <button type="button" onClick={onToggleGuide} className={secondaryButton}><Archive className="h-4 w-4" />{guideOpen ? "收起安装说明" : "查看安装说明"}</button>
+                            </div>
+                            <AnimatePresence initial={false}>
+                              {guideOpen ? (
+                                <motion.div
+                                  key="guide-content"
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={voiceLayoutSpring}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="mt-3 rounded-xl border border-white/[0.08] bg-white/[0.035] p-3 text-xs leading-relaxed text-zinc-400">首次使用请下载并解压引擎包，双击 INSTALL.bat。以后可从网页启动，也可以双击包内 START.bat。</div>
+                                </motion.div>
+                              ) : null}
+                            </AnimatePresence>
                           </div>
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            <button type="button" onClick={() => void copyApiUrl()} className={secondaryButton}>
-                              {copied ? <Check className="h-4 w-4 text-emerald-200" /> : <Clipboard className="h-4 w-4" />}{copied ? "已复制" : "复制当前 API"}
-                            </button>
-                            <button type="button" onClick={onToggleGuide} className={secondaryButton}><Archive className="h-4 w-4" />{guideOpen ? "收起安装说明" : "查看安装说明"}</button>
-                          </div>
-                          <AnimatePresence initial={false}>
-                            {guideOpen ? <motion.div variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} className="mt-3 rounded-xl border border-white/[0.08] bg-white/[0.035] p-3 text-xs leading-relaxed text-zinc-400">首次使用请下载并解压引擎包，双击 INSTALL.bat。以后可从网页启动，也可以双击包内 START.bat。</motion.div> : null}
-                          </AnimatePresence>
                         </motion.div>
                       ) : null}
                     </AnimatePresence>
