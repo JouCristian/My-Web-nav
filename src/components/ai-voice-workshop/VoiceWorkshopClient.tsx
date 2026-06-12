@@ -480,40 +480,41 @@ export function VoiceWorkshopClient() {
                   </div>
                 </FlowStep>
 
-                <motion.div layout transition={voiceLayoutSpring} className="relative">
-                  <AnimatePresence mode="popLayout" initial={false}>
+                <motion.div layout transition={voiceLayoutSpring} className="relative overflow-hidden">
+                  <motion.div
+                    key={isCloneMode ? "clone-settings" : "design-settings"}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={voiceSpring}
+                  >
                     {!isCloneMode ? (
-                      <motion.div key="design-settings" layout variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring}>
-                        <FlowStep number="2" title="音色设置" description="选择预设，也可以补充自定义音色描述。">
-                          <VoicePresetSelector presets={presets} selectedPreset={selectedPreset} onSelect={(preset) => setSelectedPresetId(preset.id)} />
-                          <label className="mt-3 block">
-                            <span className="mb-2 block text-xs font-bold text-zinc-300">自定义音色描述</span>
-                            <input value={voicePrompt} onChange={(event) => setVoicePrompt(event.target.value)} placeholder="例如：年轻女性，清晰自然，语速偏慢" className="h-11 w-full rounded-xl border border-white/10 bg-black/30 px-4 text-sm text-white outline-none transition-colors placeholder:text-zinc-500 focus:border-cyan-100/45 focus:ring-2 focus:ring-cyan-200/10" />
-                            <span className="mt-1.5 block text-[11px] leading-relaxed text-zinc-500">填写后优先使用自定义描述，留空则使用已选预设。</span>
-                          </label>
-                        </FlowStep>
-                      </motion.div>
+                      <FlowStep number="2" title="音色设置" description="选择预设，也可以补充自定义音色描述。">
+                        <VoicePresetSelector presets={presets} selectedPreset={selectedPreset} onSelect={(preset) => setSelectedPresetId(preset.id)} />
+                        <label className="mt-3 block">
+                          <span className="mb-2 block text-xs font-bold text-zinc-300">自定义音色描述</span>
+                          <input value={voicePrompt} onChange={(event) => setVoicePrompt(event.target.value)} placeholder="例如：年轻女性，清晰自然，语速偏慢" className="h-11 w-full rounded-xl border border-white/10 bg-black/30 px-4 text-sm text-white outline-none transition-colors placeholder:text-zinc-500 focus:border-cyan-100/45 focus:ring-2 focus:ring-cyan-200/10" />
+                          <span className="mt-1.5 block text-[11px] leading-relaxed text-zinc-500">填写后优先使用自定义描述，留空则使用已选预设。</span>
+                        </label>
+                      </FlowStep>
                     ) : (
-                      <motion.div key="clone-settings" layout variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring}>
-                        <FlowStep number="2" title="参考音频" description="建议使用纯净、无背景噪声的 5 至 20 秒人声。">
-                          <ReferenceAudioUploader
-                            file={referenceAudio}
-                            consentChecked={cloneConsent}
-                            error={cloneValidationError}
-                            safetyError={showCloneSafetyError}
-                            onFileChange={setReferenceAudio}
-                            onConsentChange={(checked) => {
-                              setCloneConsent(checked)
-                              if (checked) {
-                                setShowCloneSafetyError(false)
-                                setValidationError((current) => (current?.includes("使用权") ? null : current))
-                              }
-                            }}
-                          />
-                        </FlowStep>
-                      </motion.div>
+                      <FlowStep number="2" title="参考音频" description="建议使用纯净、无背景噪声的 5 至 20 秒人声。">
+                        <ReferenceAudioUploader
+                          file={referenceAudio}
+                          consentChecked={cloneConsent}
+                          error={cloneValidationError}
+                          safetyError={showCloneSafetyError}
+                          onFileChange={setReferenceAudio}
+                          onConsentChange={(checked) => {
+                            setCloneConsent(checked)
+                            if (checked) {
+                              setShowCloneSafetyError(false)
+                              setValidationError((current) => (current?.includes("使用权") ? null : current))
+                            }
+                          }}
+                        />
+                      </FlowStep>
                     )}
-                  </AnimatePresence>
+                  </motion.div>
                 </motion.div>
 
                 <FlowStep number="3" title="合成文本" description="输入要朗读的内容，一次最多 500 字。">

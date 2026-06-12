@@ -175,7 +175,7 @@ export function VoiceEngineSettings({
             animate="visible"
             exit="exit"
             transition={voiceSpring}
-            className="voice-scroll absolute right-0 top-[calc(100%+12px)] z-50 w-[min(520px,calc(100vw-2rem))] max-h-[min(560px,65vh)] overflow-y-auto overscroll-contain rounded-2xl border border-white/12 bg-[#090c18]/98 p-5 shadow-[0_16px_44px_rgba(0,0,0,0.48)] backdrop-blur-2xl sm:p-6"
+            className="voice-scroll absolute right-0 top-[calc(100%+12px)] z-50 w-[min(520px,calc(100vw-2rem))] max-h-[min(760px,82vh)] overflow-y-auto overscroll-contain rounded-2xl border border-white/12 bg-[#090c18]/98 p-5 shadow-[0_16px_44px_rgba(0,0,0,0.48)] backdrop-blur-2xl sm:p-6"
             role="dialog"
             aria-label="声音引擎设置"
           >
