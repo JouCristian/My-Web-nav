@@ -23,7 +23,6 @@ import { VoiceTipsCard } from "@/components/ai-voice-workshop/VoiceTipsCard"
 import {
   voiceFadeScaleVariants,
   voiceFastSpring,
-  voiceLayoutSpring,
   voiceSpring,
   voiceTap,
   voicePageContainer,
@@ -57,6 +56,8 @@ const maxHistoryItems = 8
 const VOICE_ENGINE_MODE_KEY = "joujou_voice_engine_mode"
 const VOICE_CUSTOM_API_URL_KEY = "joujou_voice_custom_api_url"
 const VOICE_LOCAL_API_URL_KEY = "joujou_voice_local_api_url"
+
+type VoiceHistoryConfig = Pick<VoiceHistoryItem, "presetId" | "presetName" | "voicePrompt" | "cfgValue" | "inferenceTimesteps" | "referenceAudioName">
 
 function isValidHttpUrl(url: string) {
   return /^https?:\/\/.+/i.test(url.trim())
@@ -97,8 +98,11 @@ export function VoiceWorkshopClient() {
   const [validationError, setValidationError] = useState<string | null>(null)
   const [history, setHistory] = useState<VoiceHistoryItem[]>([])
   const [resultMode, setResultMode] = useState<VoiceMode>("design")
+  const [generationStartedAt, setGenerationStartedAt] = useState<number | null>(null)
+  const [reuseNotice, setReuseNotice] = useState<string | null>(null)
 
   const pollTimerRef = useRef<number | null>(null)
+  const reuseTimerRef = useRef<number | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
 
   const selectedPreset = useMemo(
@@ -125,12 +129,20 @@ export function VoiceWorkshopClient() {
     mode === "clone" && validationError && (validationError.includes("参考音频") || validationError.includes("使用权"))
       ? validationError
       : undefined
-  const canGenerate =
-    connected &&
-    !isGenerating &&
-    trimmedText.length > 0 &&
-    trimmedText.length <= 500 &&
-    (!isCloneMode || (Boolean(referenceAudio) && cloneConsent))
+  const generationBlockReason = isGenerating
+    ? "当前任务正在生成，请等待完成。"
+    : !connected
+      ? "请先连接并加载声音引擎。"
+      : !trimmedText
+        ? "请输入要合成的文字。"
+        : trimmedText.length > 500
+          ? "文字超过 500 字，请先精简文案。"
+          : isCloneMode && !referenceAudio
+            ? "请上传参考音频。"
+            : isCloneMode && !cloneConsent
+              ? "请确认拥有参考音频的使用权。"
+              : null
+  const canGenerate = generationBlockReason === null
 
   const stopPolling = useCallback(() => {
     if (pollTimerRef.current !== null) {
@@ -206,7 +218,10 @@ export function VoiceWorkshopClient() {
     }
   }, [history])
 
-  useEffect(() => stopPolling, [stopPolling])
+  useEffect(() => () => {
+    stopPolling()
+    if (reuseTimerRef.current !== null) window.clearTimeout(reuseTimerRef.current)
+  }, [stopPolling])
 
   useEffect(() => {
     if (!isCloneMode) {
@@ -214,6 +229,37 @@ export function VoiceWorkshopClient() {
       setShowCloneSafetyError(false)
     }
   }, [isCloneMode])
+
+  useEffect(() => {
+    function handleKeyboardShortcut(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null
+      const interactive = Boolean(target?.closest("input, textarea, select, button, a, [contenteditable='true']"))
+      const commandKey = event.ctrlKey || event.metaKey
+
+      if (commandKey && event.key === "Enter") {
+        event.preventDefault()
+        formRef.current?.requestSubmit()
+        return
+      }
+
+      if (commandKey && event.shiftKey && event.key.toLowerCase() === "d" && resultStatus === "succeeded" && resultAudioUrl) {
+        event.preventDefault()
+        const link = document.createElement("a")
+        link.href = resultAudioUrl
+        link.download = resultFilename || "voice-output.wav"
+        link.click()
+        return
+      }
+
+      if (!interactive && event.code === "Space" && resultStatus === "succeeded" && resultAudioUrl) {
+        event.preventDefault()
+        window.dispatchEvent(new Event("joujou-voice-toggle-primary-player"))
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyboardShortcut)
+    return () => window.removeEventListener("keydown", handleKeyboardShortcut)
+  }, [resultAudioUrl, resultFilename, resultStatus])
 
   function handleEngineModeChange(nextMode: VoiceEngineMode) {
     setEngineMode(nextMode)
@@ -289,7 +335,7 @@ export function VoiceWorkshopClient() {
   }
 
   function validateForm() {
-    if (!connected) return "请先启动 voice-service，并等待 VoxCPM2 模型加载完成。"
+    if (!connected) return "请先连接声音引擎，并等待模型加载完成。"
     if (!trimmedText) return "请输入要合成的文字。"
     if (trimmedText.length > 500) return "文字最多 500 字，请先精简文案。"
     if (isCloneMode && !referenceAudio) return "声音克隆模式需要上传参考音频。"
@@ -297,7 +343,7 @@ export function VoiceWorkshopClient() {
     return null
   }
 
-  async function pollJob(jobId: string, requestTitle: string, requestText: string, requestMode: VoiceMode, requestApiBaseUrl: string) {
+  async function pollJob(jobId: string, requestTitle: string, requestText: string, requestMode: VoiceMode, requestApiBaseUrl: string, requestConfig: VoiceHistoryConfig) {
     try {
       const job = await getVoiceJob(requestApiBaseUrl, jobId)
       setResultStatus(job.status)
@@ -316,7 +362,7 @@ export function VoiceWorkshopClient() {
             title: requestTitle,
             text: requestText,
             mode: requestMode,
-            presetName: requestMode === "clone" ? undefined : requestTitle,
+            ...requestConfig,
             audioUrl,
             filename,
             createdAt: new Date().toISOString(),
@@ -327,12 +373,12 @@ export function VoiceWorkshopClient() {
 
       if (job.status === "failed") {
         stopPolling()
-        setResultError(job.error || "生成失败，请查看 voice-service 终端����。")
+        setResultError(job.error || "生成失败，请检查本地声音引擎后重试。")
       }
     } catch (error) {
       stopPolling()
       setResultStatus("failed")
-      setResultError(error instanceof Error ? error.message : "轮询���务状态失败")
+      setResultError(error instanceof Error ? error.message : "获取生成任务状态失败，请检查引擎连接。")
     }
   }
 
@@ -350,12 +396,21 @@ export function VoiceWorkshopClient() {
     setResultAudioUrl("")
     setResultFilename("")
     setResultTitle(displayTitle)
+    setGenerationStartedAt(Date.now())
 
     try {
       const requestTitle = displayTitle
       const requestText = trimmedText
       const requestMode = mode
       const requestApiBaseUrl = activeApiBaseUrl
+      const requestConfig: VoiceHistoryConfig = {
+        presetId: requestMode === "design" ? selectedPreset?.id : undefined,
+        presetName: requestMode === "design" ? selectedPreset?.name : undefined,
+        voicePrompt: requestMode === "design" ? voicePrompt.trim() : undefined,
+        cfgValue,
+        inferenceTimesteps,
+        referenceAudioName: requestMode === "clone" ? referenceAudio?.name : undefined,
+      }
       setResultMode(requestMode)
       const response = await generateVoice(requestApiBaseUrl, {
         text: requestText,
@@ -368,9 +423,9 @@ export function VoiceWorkshopClient() {
         inferenceTimesteps,
       })
       setResultStatus(response.status)
-      await pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl)
+      await pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestConfig)
       pollTimerRef.current = window.setInterval(() => {
-        void pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl)
+        void pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestConfig)
       }, 1000)
     } catch (error) {
       setResultStatus("failed")
@@ -385,6 +440,31 @@ export function VoiceWorkshopClient() {
     setResultAudioUrl("")
     setResultFilename("")
     setResultTitle("")
+    setGenerationStartedAt(null)
+  }
+
+  function handleDeleteHistory(id: string) {
+    setHistory((current) => current.filter((item) => item.id !== id))
+  }
+
+  function handleReuseHistory(item: VoiceHistoryItem) {
+    setMode(item.mode)
+    setText(item.text)
+    setCfgValue(item.cfgValue ?? 2)
+    setInferenceTimesteps(item.inferenceTimesteps ?? 10)
+    if (item.mode === "design") {
+      if (item.presetId && presets.some((preset) => preset.id === item.presetId)) setSelectedPresetId(item.presetId)
+      setVoicePrompt(item.voicePrompt || "")
+      setValidationError(null)
+    } else {
+      setReferenceAudio(null)
+      setCloneConsent(false)
+      setValidationError(null)
+    }
+    setReuseNotice(item.mode === "clone" ? "已恢复文本和参数，请重新上传参考音频。" : "已恢复这条记录的文本、音色和生成参数。")
+    if (reuseTimerRef.current !== null) window.clearTimeout(reuseTimerRef.current)
+    reuseTimerRef.current = window.setTimeout(() => setReuseNotice(null), 2200)
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
   return (
@@ -452,6 +532,9 @@ export function VoiceWorkshopClient() {
             <section className="relative overflow-visible rounded-2xl border border-white/10 bg-[#090c18]/88 p-5 shadow-[0_8px_24px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-6">
               <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/60 to-transparent" />
               <div className="mb-5 flex items-center gap-2 text-sm font-bold text-white"><Wand2 className="h-4 w-4 text-cyan-100" />创作流程</div>
+              <AnimatePresence initial={false}>
+                {reuseNotice ? <motion.div key={reuseNotice} variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} className="mb-5 rounded-xl border border-cyan-100/18 bg-cyan-200/[0.065] px-4 py-3 text-xs font-bold text-cyan-50">{reuseNotice}</motion.div> : null}
+              </AnimatePresence>
 
               <div className="relative space-y-5">
                 <div className="absolute bottom-5 left-[15px] top-4 hidden border-l border-dashed border-cyan-200/20 sm:block" aria-hidden="true" />
@@ -470,6 +553,7 @@ export function VoiceWorkshopClient() {
                           type="button"
                           onClick={() => {
                             setMode(item.value)
+                            setValidationError(null)
                             if (item.value !== "clone") {
                               setCloneConsent(false)
                               setShowCloneSafetyError(false)
@@ -516,7 +600,10 @@ export function VoiceWorkshopClient() {
                             consentChecked={cloneConsent}
                             error={cloneValidationError}
                             safetyError={showCloneSafetyError}
-                            onFileChange={setReferenceAudio}
+                            onFileChange={(file) => {
+                              setReferenceAudio(file)
+                              if (file) setValidationError((current) => current?.includes("参考音频") ? null : current)
+                            }}
                             onConsentChange={(checked) => {
                               setCloneConsent(checked)
                               if (checked) {
@@ -534,7 +621,7 @@ export function VoiceWorkshopClient() {
                 <FlowStep number="3" title="合成文本" description="输入要朗读的内容，一次最多 500 字。">
                   <label className="block">
                     <span className="sr-only">合成文本</span>
-                    <textarea value={text} onChange={(event) => setText(event.target.value)} rows={5} placeholder="请输入要生成语音的文字，建议一段话控制在 500 字内。" className={`voice-scroll min-h-[132px] w-full resize-y rounded-xl border bg-black/30 px-4 py-3 text-sm leading-6 text-white outline-none transition-colors placeholder:text-zinc-500 focus:ring-2 ${trimmedText.length > 500 ? "border-rose-300/55 focus:border-rose-300 focus:ring-rose-300/10" : "border-white/10 focus:border-cyan-100/45 focus:ring-cyan-200/10"}`} />
+                    <textarea value={text} onChange={(event) => { setText(event.target.value); setValidationError((current) => current?.includes("文字") ? null : current) }} rows={5} placeholder="请输入要生成语音的文字，建议一段话控制在 500 字内。" className={`voice-scroll min-h-[132px] max-h-[280px] w-full resize-y rounded-xl border bg-black/30 px-4 py-3 text-sm leading-6 text-white outline-none transition-colors placeholder:text-zinc-500 focus:ring-2 ${trimmedText.length > 500 ? "border-rose-300/55 focus:border-rose-300 focus:ring-rose-300/10" : "border-white/10 focus:border-cyan-100/45 focus:ring-cyan-200/10"}`} />
                     <span className={`mt-1.5 block text-right font-mono text-[11px] ${trimmedText.length > 500 ? "text-rose-200" : "text-zinc-500"}`}>{trimmedText.length}/500</span>
                   </label>
                 </FlowStep>
@@ -547,16 +634,21 @@ export function VoiceWorkshopClient() {
                   </AnimatePresence>
 
                   <div className="mt-3" onPointerDownCapture={() => {
-                    if (isCloneMode && referenceAudio && !cloneConsent) {
-                      setShowCloneSafetyError(true)
-                      setValidationError("请先确认拥有参考音频使用权，并承诺不会用于冒充、欺骗或违法用途。")
+                    if (!canGenerate && !isGenerating) {
+                      const issue = validateForm()
+                      setValidationError(issue)
+                      if (isCloneMode && referenceAudio && !cloneConsent) setShowCloneSafetyError(true)
                     }
                   }}>
-                    <button type="submit" disabled={!canGenerate} className="inline-flex min-h-[52px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-300 via-blue-300 to-violet-400 px-6 py-3.5 text-sm font-black text-[#07101d] transition-[filter,opacity] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35 disabled:saturate-50">
+                    <button type="submit" disabled={!canGenerate} className="inline-flex min-h-[52px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-300 via-blue-300 to-violet-400 px-6 py-3.5 text-sm font-black text-[#07101d] transition-[filter,opacity] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35 disabled:saturate-50" aria-keyshortcuts="Control+Enter Meta+Enter">
                       {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <AudioLines className="h-4 w-4" />}
                       {isGenerating ? "生成中..." : "开始生成 WAV"}
                     </button>
-                    {!connected ? <p className="mt-1.5 text-center text-[11px] text-amber-100/70">连接并加载声音引擎后即可生成。</p> : null}
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.p key={generationBlockReason || "ready"} variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} className={`mt-1.5 text-center text-[11px] ${generationBlockReason ? "text-amber-100/70" : "text-emerald-100/65"}`}>
+                        {generationBlockReason || "已准备好，可以开始生成。"}
+                      </motion.p>
+                    </AnimatePresence>
                   </div>
                 </FlowStep>
               </div>
@@ -565,9 +657,9 @@ export function VoiceWorkshopClient() {
           </motion.div>
 
           <motion.aside variants={voicePageItem} className="flex min-w-0 flex-col gap-4 xl:max-h-full">
-            <AudioResultCard status={resultStatus} mode={resultMode} audioUrl={resultAudioUrl} filename={resultFilename} title={resultTitle} error={resultError || undefined} onReset={resultStatus === "idle" ? undefined : resetResult} onRetry={resultStatus === "failed" ? () => formRef.current?.requestSubmit() : undefined} />
+            <AudioResultCard status={resultStatus} mode={resultMode} audioUrl={resultAudioUrl} filename={resultFilename} title={resultTitle} error={resultError || undefined} startedAt={generationStartedAt} onReset={resultStatus === "idle" ? undefined : resetResult} onRetry={resultStatus === "failed" ? () => formRef.current?.requestSubmit() : undefined} />
             <VoiceTipsCard />
-            <VoiceHistoryPanel items={history} onClear={() => setHistory([])} />
+            <VoiceHistoryPanel items={history} onDelete={handleDeleteHistory} onReuse={handleReuseHistory} />
           </motion.aside>
         </div>
       </motion.div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { useEffect, useRef, type ReactNode } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react"
 import {
@@ -9,6 +9,7 @@ import {
   voiceSpring,
   voiceTap,
 } from "@/components/ai-voice-workshop/motion"
+import { useExclusiveVoicePopover } from "@/components/ai-voice-workshop/useExclusiveVoicePopover"
 
 interface VoiceAdvancedOptionsProps {
   cfgValue: number
@@ -23,18 +24,18 @@ export function VoiceAdvancedOptions({
   onCfgValueChange,
   onInferenceTimestepsChange,
 }: VoiceAdvancedOptionsProps) {
-  const [open, setOpen] = useState(false)
+  const { open, closePopover, togglePopover } = useExclusiveVoicePopover("advanced-options")
   const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!open) return
 
     function handlePointerDown(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+      if (!rootRef.current?.contains(event.target as Node)) closePopover()
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false)
+      if (event.key === "Escape") closePopover()
     }
 
     document.addEventListener("pointerdown", handlePointerDown)
@@ -43,13 +44,13 @@ export function VoiceAdvancedOptions({
       document.removeEventListener("pointerdown", handlePointerDown)
       document.removeEventListener("keydown", handleKeyDown)
     }
-  }, [open])
+  }, [closePopover, open])
 
   return (
     <div ref={rootRef} className={`relative ${open ? "z-40" : "z-10"}`}>
       <motion.button
         type="button"
-        onClick={() => setOpen((current) => !current)}
+        onClick={togglePopover}
         className="flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 text-left text-xs font-bold text-zinc-300 transition-colors hover:border-cyan-100/30 hover:bg-cyan-100/[0.045] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/50"
         aria-expanded={open}
         aria-haspopup="dialog"
@@ -83,7 +84,7 @@ export function VoiceAdvancedOptions({
               </div>
               <motion.button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={closePopover}
                 whileTap={voiceTap}
                 transition={voiceFastSpring}
                 className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition-colors hover:border-white/20 hover:text-white"

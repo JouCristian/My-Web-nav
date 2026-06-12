@@ -29,6 +29,7 @@ import {
   voiceTap,
 } from "@/components/ai-voice-workshop/motion"
 import { AutoHeight } from "@/components/ai-voice-workshop/AutoHeight"
+import { useExclusiveVoicePopover } from "@/components/ai-voice-workshop/useExclusiveVoicePopover"
 import type { VoiceEngineInfo, VoiceEngineMode, VoiceEngineStatus } from "@/lib/ai-voice-workshop/types"
 
 interface VoiceEngineSettingsProps {
@@ -85,7 +86,7 @@ export function VoiceEngineSettings({
   onResetCustomApiUrl,
   onToggleGuide,
 }: VoiceEngineSettingsProps) {
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const { open: settingsOpen, closePopover: closeSettings, togglePopover: toggleSettings } = useExclusiveVoicePopover("engine-settings")
   const [developerOpen, setDeveloperOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const rootRef = useRef<HTMLElement>(null)
@@ -96,11 +97,11 @@ export function VoiceEngineSettings({
     if (!settingsOpen) return
 
     function handlePointerDown(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setSettingsOpen(false)
+      if (!rootRef.current?.contains(event.target as Node)) closeSettings()
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setSettingsOpen(false)
+      if (event.key === "Escape") closeSettings()
     }
 
     document.addEventListener("pointerdown", handlePointerDown)
@@ -109,7 +110,7 @@ export function VoiceEngineSettings({
       document.removeEventListener("pointerdown", handlePointerDown)
       document.removeEventListener("keydown", handleKeyDown)
     }
-  }, [settingsOpen])
+  }, [closeSettings, settingsOpen])
 
   useEffect(() => () => {
     if (copyTimerRef.current !== null) window.clearTimeout(copyTimerRef.current)
@@ -156,7 +157,7 @@ export function VoiceEngineSettings({
 
         <motion.button
           type="button"
-          onClick={() => setSettingsOpen((open) => !open)}
+          onClick={toggleSettings}
           className="inline-flex min-h-10 w-full shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full border border-cyan-100/20 bg-cyan-100/[0.07] px-4 text-xs font-bold text-cyan-50 transition-colors hover:border-cyan-100/40 hover:bg-cyan-100/[0.11] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/50 sm:w-auto"
           aria-expanded={settingsOpen}
           aria-haspopup="dialog"
@@ -190,7 +191,7 @@ export function VoiceEngineSettings({
               </div>
               <motion.button
                 type="button"
-                onClick={() => setSettingsOpen(false)}
+                onClick={closeSettings}
                 whileTap={voiceTap}
                 transition={voiceFastSpring}
                 className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition-colors hover:border-white/20 hover:text-white"
@@ -255,7 +256,7 @@ export function VoiceEngineSettings({
                             </div>
                             <div className="mt-3 flex flex-wrap gap-2">
                               <button type="button" onClick={() => void copyApiUrl()} className={secondaryButton}>
-                                {copied ? <Check className="h-4 w-4 text-emerald-200" /> : <Clipboard className="h-4 w-4" />}{copied ? "已��制" : "复制当前 API"}
+                                {copied ? <Check className="h-4 w-4 text-emerald-200" /> : <Clipboard className="h-4 w-4" />}{copied ? "已复制" : "复制当前 API"}
                               </button>
                               <button type="button" onClick={onToggleGuide} className={secondaryButton}><Archive className="h-4 w-4" />{guideOpen ? "收起安装说明" : "查看安装说明"}</button>
                             </div>

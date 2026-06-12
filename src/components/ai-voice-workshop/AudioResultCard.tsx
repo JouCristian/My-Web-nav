@@ -1,7 +1,9 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
-import { CheckCircle2, Download, Loader2, Radio, RotateCcw, Sparkles, TriangleAlert, Wand2 } from "lucide-react"
+import { Check, CheckCircle2, Clock3, Download, Loader2, Radio, RotateCcw, Sparkles, TriangleAlert, Wand2 } from "lucide-react"
+import { VoiceAudioPlayer } from "@/components/ai-voice-workshop/VoiceAudioPlayer"
 import {
   voiceErrorTransition,
   voiceFadeScaleVariants,
@@ -19,6 +21,7 @@ interface AudioResultCardProps {
   filename?: string
   title?: string
   error?: string
+  startedAt?: number | null
   onReset?: () => void
   onRetry?: () => void
 }
@@ -33,9 +36,18 @@ const statusText: Record<AudioResultCardProps["status"], string> = {
 
 const waveform = [32, 54, 42, 72, 48, 84, 58, 38, 66, 46, 78, 52, 34, 62, 44, 70, 40, 56]
 
-export function AudioResultCard({ status, mode, audioUrl, filename, title, error, onReset, onRetry }: AudioResultCardProps) {
+export function AudioResultCard({ status, mode, audioUrl, filename, title, error, startedAt, onReset, onRetry }: AudioResultCardProps) {
   const reducedMotion = useReducedMotion()
   const isLoading = status === "queued" || status === "running"
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+
+  useEffect(() => {
+    if (!isLoading || !startedAt) return
+    const update = () => setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000)))
+    update()
+    const timer = window.setInterval(update, 1000)
+    return () => window.clearInterval(timer)
+  }, [isLoading, startedAt])
 
   return (
     <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#090c18]/88 p-5 shadow-[0_8px_24px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-6">
@@ -79,8 +91,16 @@ export function AudioResultCard({ status, mode, audioUrl, filename, title, error
 
         {isLoading ? (
           <motion.div key="loading" variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} className="col-start-1 row-start-1 flex min-h-[250px] flex-col justify-center overflow-hidden rounded-xl border border-cyan-100/15 bg-cyan-100/[0.05] p-5">
-            <div className="flex items-center gap-3 text-sm font-bold text-cyan-50"><Loader2 className="h-4 w-4 animate-spin" />{status === "queued" ? "任务已进入队列" : "VoxCPM2 正在合成音频"}</div>
-            <p className="mt-2 text-xs leading-relaxed text-zinc-400">本地任务按顺序执行，模型加载或前序任务生成时请稍候。</p>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 text-sm font-bold text-cyan-50"><Loader2 className="h-4 w-4 animate-spin" />{status === "queued" ? "任务正在等待执行" : "VoxCPM2 正在合成声音"}</div>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/20 px-2.5 py-1 font-mono text-[10px] text-cyan-50/65"><Clock3 className="h-3 w-3" />{elapsedSeconds}s</span>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-zinc-400">任务由本地引擎单线程执行，当前输入和参数已锁定到本次任务。</p>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <StageItem label="等待执行" state={status === "queued" ? "active" : "done"} />
+              <StageItem label="声音合成" state={status === "running" ? "active" : "pending"} />
+              <StageItem label="WAV 就绪" state="pending" />
+            </div>
             <div className="mt-5 flex h-16 items-center justify-center gap-1 overflow-hidden" aria-hidden="true">
               {waveform.slice(0, 14).map((height, index) => (
                 <motion.span
@@ -116,9 +136,9 @@ export function AudioResultCard({ status, mode, audioUrl, filename, title, error
                 </div>
                 <span className="text-[11px] text-emerald-50/60">刚刚生成</span>
               </div>
-              <audio controls src={audioUrl} className="mt-4 w-full" />
+              <div className="mt-4"><VoiceAudioPlayer id="current-result" src={audioUrl} primary /></div>
             </div>
-            <a href={audioUrl} download={filename || "voice-output.wav"} className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-300 to-violet-400 px-5 text-sm font-black text-[#07101d] transition-[filter] hover:brightness-110">
+            <a href={audioUrl} download={filename || "voice-output.wav"} className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-300 to-violet-400 px-5 text-sm font-black text-[#07101d] transition-[filter] hover:brightness-110" aria-keyshortcuts="Control+Shift+D Meta+Shift+D">
               <Download className="h-4 w-4" />下载 WAV
             </a>
           </motion.div>
@@ -126,5 +146,14 @@ export function AudioResultCard({ status, mode, audioUrl, filename, title, error
       </AnimatePresence>
       </div>
     </section>
+  )
+}
+
+function StageItem({ label, state }: { label: string; state: "pending" | "active" | "done" }) {
+  return (
+    <div className={`flex min-w-0 items-center gap-1.5 rounded-lg border px-2 py-2 text-[10px] font-bold ${state === "active" ? "border-cyan-100/25 bg-cyan-200/[0.08] text-cyan-50" : state === "done" ? "border-emerald-100/15 bg-emerald-300/[0.055] text-emerald-50/80" : "border-white/[0.07] bg-black/15 text-zinc-500"}`}>
+      {state === "active" ? <Loader2 className="h-3 w-3 shrink-0 animate-spin" /> : state === "done" ? <Check className="h-3 w-3 shrink-0" /> : <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-45" />}
+      <span className="truncate">{label}</span>
+    </div>
   )
 }

@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { ChevronDown, Mic2, X } from "lucide-react"
 import { VoicePresetCard } from "@/components/ai-voice-workshop/VoicePresetCard"
+import { useExclusiveVoicePopover } from "@/components/ai-voice-workshop/useExclusiveVoicePopover"
 import {
   voiceFastSpring,
   voicePopoverVariants,
@@ -19,18 +20,18 @@ interface VoicePresetSelectorProps {
 }
 
 export function VoicePresetSelector({ presets, selectedPreset, onSelect }: VoicePresetSelectorProps) {
-  const [open, setOpen] = useState(false)
+  const { open, closePopover, togglePopover } = useExclusiveVoicePopover("preset-selector")
   const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!open) return
 
     function handlePointerDown(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+      if (!rootRef.current?.contains(event.target as Node)) closePopover()
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false)
+      if (event.key === "Escape") closePopover()
     }
 
     document.addEventListener("pointerdown", handlePointerDown)
@@ -39,13 +40,13 @@ export function VoicePresetSelector({ presets, selectedPreset, onSelect }: Voice
       document.removeEventListener("pointerdown", handlePointerDown)
       document.removeEventListener("keydown", handleKeyDown)
     }
-  }, [open])
+  }, [closePopover, open])
 
   return (
     <div ref={rootRef} className={`relative ${open ? "z-40" : "z-10"}`}>
       <motion.button
         type="button"
-        onClick={() => setOpen((current) => !current)}
+        onClick={togglePopover}
         className="flex min-h-16 w-full cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-black/22 px-4 text-left transition-colors hover:border-cyan-100/35 hover:bg-cyan-100/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/50"
         aria-expanded={open}
         aria-haspopup="listbox"
@@ -85,7 +86,7 @@ export function VoicePresetSelector({ presets, selectedPreset, onSelect }: Voice
               </div>
               <motion.button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={closePopover}
                 whileTap={voiceTap}
                 transition={voiceFastSpring}
                 className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition-colors hover:border-white/20 hover:text-white"
@@ -102,7 +103,7 @@ export function VoicePresetSelector({ presets, selectedPreset, onSelect }: Voice
                   selected={selectedPreset?.id === preset.id}
                   onSelect={(nextPreset) => {
                     onSelect(nextPreset)
-                    setOpen(false)
+                    closePopover()
                   }}
                 />
               ))}

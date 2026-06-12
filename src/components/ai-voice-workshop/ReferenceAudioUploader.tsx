@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, type DragEvent } from "react"
+import { useEffect, useMemo, useState, type DragEvent } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { FileAudio, ShieldCheck, UploadCloud, X } from "lucide-react"
+import { CircleAlert, CircleCheck, FileAudio, ShieldCheck, UploadCloud, X } from "lucide-react"
+import { VoiceAudioPlayer } from "@/components/ai-voice-workshop/VoiceAudioPlayer"
 import {
   voiceErrorTransition,
   voiceFadeScaleVariants,
@@ -30,6 +31,34 @@ export function ReferenceAudioUploader({
   onConsentChange,
 }: ReferenceAudioUploaderProps) {
   const [dragging, setDragging] = useState(false)
+  const [audioUrl, setAudioUrl] = useState("")
+  const [duration, setDuration] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!file) {
+      setAudioUrl("")
+      setDuration(null)
+      return
+    }
+
+    const nextUrl = URL.createObjectURL(file)
+    const probe = new Audio(nextUrl)
+    setAudioUrl(nextUrl)
+    setDuration(null)
+    probe.addEventListener("loadedmetadata", () => setDuration(Number.isFinite(probe.duration) ? probe.duration : null), { once: true })
+    probe.load()
+    return () => URL.revokeObjectURL(nextUrl)
+  }, [file])
+
+  const fileInspection = useMemo(() => {
+    if (!file) return null
+    const extension = file.name.split(".").pop()?.toUpperCase() || "AUDIO"
+    const size = file.size < 1024 * 1024 ? `${Math.max(1, Math.round(file.size / 1024))} KB` : `${(file.size / 1024 / 1024).toFixed(1)} MB`
+    if (!["WAV", "MP3", "M4A", "AAC"].includes(extension)) return { tone: "warning" as const, summary: "该格式可能无法被声音引擎处理", details: `${extension} · ${size}，建议改用 WAV` }
+    if (file.size > 50 * 1024 * 1024) return { tone: "warning" as const, summary: "文件较大，上传和转换可能需要更久", details: `${extension} · ${size}` }
+    if (duration !== null && (duration < 5 || duration > 20)) return { tone: "warning" as const, summary: "建议使用 5 至 20 秒的参考音频", details: `${extension} · ${size} · ${formatDuration(duration)}` }
+    return { tone: "good" as const, summary: duration === null ? "正在读取音频信息" : "音频长度适合声音克隆", details: `${extension} · ${size}${duration === null ? "" : ` · ${formatDuration(duration)}`}` }
+  }, [duration, file])
 
   function handleDrop(event: DragEvent<HTMLLabelElement>) {
     event.preventDefault()
@@ -77,8 +106,9 @@ export function ReferenceAudioUploader({
             animate="visible"
             exit="exit"
             transition={voiceSpring}
-            className="flex items-center justify-between gap-3 rounded-xl border border-cyan-100/15 bg-cyan-100/[0.055] px-3 py-2.5"
+            className="space-y-3 rounded-xl border border-cyan-100/15 bg-cyan-100/[0.055] p-3"
           >
+            <div className="flex items-center justify-between gap-3">
             <span className="flex min-w-0 items-center gap-2">
               <FileAudio className="h-4 w-4 shrink-0 text-cyan-100" />
               <span className="truncate text-xs font-bold text-zinc-200">{file.name}</span>
@@ -94,6 +124,14 @@ export function ReferenceAudioUploader({
             >
               <X className="h-4 w-4" />
             </motion.button>
+            </div>
+            {audioUrl ? <VoiceAudioPlayer id={`reference-${file.name}-${file.lastModified}`} src={audioUrl} compact /> : null}
+            {fileInspection ? (
+              <div className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-[11px] ${fileInspection.tone === "good" ? "border-emerald-200/15 bg-emerald-300/[0.06] text-emerald-50/80" : "border-amber-200/20 bg-amber-300/[0.07] text-amber-50/80"}`}>
+                {fileInspection.tone === "good" ? <CircleCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-200" /> : <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-200" />}
+                <span><b className="block font-bold text-current">{fileInspection.summary}</b><span className="mt-0.5 block opacity-65">{fileInspection.details}</span></span>
+              </div>
+            ) : null}
           </motion.div>
         ) : null}
       </AnimatePresence>
@@ -129,4 +167,10 @@ export function ReferenceAudioUploader({
       </AnimatePresence>
     </div>
   )
+}
+
+function formatDuration(seconds: number) {
+  const minutes = Math.floor(seconds / 60)
+  const remainder = Math.round(seconds % 60)
+  return `${minutes}:${remainder.toString().padStart(2, "0")}`
 }

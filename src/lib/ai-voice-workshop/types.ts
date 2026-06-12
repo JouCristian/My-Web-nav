@@ -60,7 +60,12 @@ export interface VoiceHistoryItem {
   title?: string
   text: string
   mode: VoiceMode
+  presetId?: string
   presetName?: string
+  voicePrompt?: string
+  cfgValue?: number
+  inferenceTimesteps?: number
+  referenceAudioName?: string
   audioUrl: string
   filename: string
   createdAt: string
