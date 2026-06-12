@@ -35,6 +35,17 @@ export const joujouTools: JouJouTool[] = [
     href: "/joujou-tools/csp-review-doc-generator",
     accent: "cyan",
   },
+  {
+    slug: "ai-voice-workshop",
+    title: "AI 声音创作工坊",
+    subtitle: "基于本地 VoxCPM2 的语音生成、音色设计与声音克隆工具",
+    description:
+      "通过独立 FastAPI 服务调用本地 VoxCPM2 模型，支持文本转语音、预设音色、自定义音色描述、参考音频克隆、在线播放和 WAV 下载。",
+    status: "beta",
+    tags: ["AI 语音", "VoxCPM2", "声音克隆", "TTS"],
+    href: "/joujou-tools/ai-voice-workshop",
+    accent: "violet",
+  },
 ]
 
 export function getJouJouTool(slug: string) {
