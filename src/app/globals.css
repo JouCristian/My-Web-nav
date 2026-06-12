@@ -162,6 +162,37 @@ body {
   }
 
   /* ==========================================
+     🎙️ AI 声音工坊自定义滚动条
+     仅作用于带 .voice-scroll 的滚动区域
+     ========================================== */
+  .voice-scroll {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: rgba(125, 211, 252, 0.35) transparent; /* Firefox: thumb track */
+  }
+  .voice-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .voice-scroll::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 6px 0;
+  }
+  .voice-scroll::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: linear-gradient(180deg, rgba(125, 211, 252, 0.45), rgba(167, 139, 250, 0.45));
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background 0.2s ease;
+  }
+  .voice-scroll::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(125, 211, 252, 0.7), rgba(167, 139, 250, 0.7));
+    background-clip: padding-box;
+  }
+  .voice-scroll::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* ==========================================
      🚀 移动端性能优化：减少动画开销
      ========================================== */
   @media (max-width: 1024px), (hover: none) {

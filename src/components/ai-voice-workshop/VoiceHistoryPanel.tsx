@@ -64,9 +64,9 @@ export function VoiceHistoryPanel({ items, onClear }: VoiceHistoryPanelProps) {
         </div>
         <div className="flex items-center gap-2">
           {items.length > 3 ? (
-            <motion.button type="button" onClick={() => setAllOpen((current) => !current)} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 text-[11px] font-bold text-zinc-300 transition-colors hover:border-cyan-100/25 hover:text-white" aria-expanded={allOpen}>
+            <button type="button" onClick={() => setAllOpen((current) => !current)} className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 text-[11px] font-bold text-zinc-300 transition-colors hover:border-cyan-100/25" aria-expanded={allOpen}>
               查看全部<ChevronRight className="h-3.5 w-3.5" />
-            </motion.button>
+            </button>
           ) : null}
           {items.length > 0 ? (
             <motion.button type="button" onClick={() => { setAllOpen(false); onClear() }} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className="grid h-9 w-9 cursor-pointer place-items-center rounded-full border border-white/10 bg-black/20 text-rose-100/65 transition-colors hover:border-rose-200/30 hover:bg-rose-500/10 hover:text-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200/50" aria-label="清空生成历史">
@@ -88,7 +88,7 @@ export function VoiceHistoryPanel({ items, onClear }: VoiceHistoryPanelProps) {
 
       <AnimatePresence>
         {allOpen ? (
-          <motion.div variants={voicePopoverVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} className="absolute bottom-[calc(100%+10px)] right-0 z-50 w-[min(540px,calc(100vw-3rem))] max-h-[min(520px,60vh)] overflow-y-auto overscroll-contain rounded-2xl border border-white/12 bg-[#090c18]/98 p-4 shadow-[0_12px_36px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:p-5" role="dialog" aria-label="全部生成历史">
+          <motion.div variants={voicePopoverVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} className="voice-scroll absolute bottom-[calc(100%+10px)] right-0 z-50 w-[min(540px,calc(100vw-3rem))] max-h-[min(520px,60vh)] overflow-y-auto overscroll-contain rounded-2xl border border-white/12 bg-[#090c18]/98 p-4 shadow-[0_12px_36px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:p-5" role="dialog" aria-label="全部生成历史">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div><div className="text-sm font-bold text-white">全部生成记录</div><p className="mt-1 text-xs text-zinc-500">最多保留 8 条本地记录</p></div>
               <motion.button type="button" onClick={() => setAllOpen(false)} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className="grid h-9 w-9 cursor-pointer place-items-center rounded-full border border-white/10 bg-white/[0.04] text-zinc-300 transition-colors hover:border-white/20 hover:text-white" aria-label="关闭全部生成历史"><X className="h-4 w-4" /></motion.button>

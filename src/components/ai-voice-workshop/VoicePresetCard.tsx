@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import { Check, Mic2 } from "lucide-react"
-import { voiceFastSpring, voiceHover, voiceSpring, voiceTap } from "@/components/ai-voice-workshop/motion"
+import { voiceFastSpring, voiceSpring, voiceTap } from "@/components/ai-voice-workshop/motion"
 import type { VoicePreset } from "@/lib/ai-voice-workshop/types"
 
 interface VoicePresetCardProps {
@@ -16,7 +16,6 @@ export function VoicePresetCard({ preset, selected, onSelect }: VoicePresetCardP
     <motion.button
       type="button"
       onClick={() => onSelect(preset)}
-      whileHover={voiceHover}
       whileTap={voiceTap}
       transition={voiceFastSpring}
       className={`group relative min-h-[116px] cursor-pointer overflow-hidden rounded-xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/60 ${
@@ -27,7 +26,7 @@ export function VoicePresetCard({ preset, selected, onSelect }: VoicePresetCardP
       role="option"
       aria-selected={selected}
     >
-      {selected ? <motion.span layoutId="voice-preset-highlight" className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-cyan-200 via-violet-300 to-cyan-200" transition={voiceSpring} /> : null}
+      {selected ? <motion.span layoutId="voice-preset-highlight" className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-violet-300 to-transparent" transition={voiceSpring} /> : null}
       <span className="relative flex items-start gap-3">
         <span
           className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg border transition-colors ${

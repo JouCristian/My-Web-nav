@@ -23,7 +23,6 @@ import { VoiceTipsCard } from "@/components/ai-voice-workshop/VoiceTipsCard"
 import {
   voiceFadeScaleVariants,
   voiceFastSpring,
-  voiceHover,
   voiceLayoutSpring,
   voiceSpring,
   voiceTap,
@@ -467,7 +466,6 @@ export function VoiceWorkshopClient() {
                               setShowCloneSafetyError(false)
                             }
                           }}
-                          whileHover={voiceHover}
                           whileTap={voiceTap}
                           transition={voiceFastSpring}
                           className={`relative isolate flex min-h-[76px] cursor-pointer items-center gap-3 overflow-hidden rounded-xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/50 ${selected ? "border-cyan-200/45 bg-cyan-200/[0.08]" : "border-white/10 bg-black/20 hover:border-white/20 hover:bg-white/[0.045]"}`}
@@ -539,10 +537,10 @@ export function VoiceWorkshopClient() {
                       setValidationError("请先确认拥有参考音频使用权，并承诺不会用于冒充、欺骗或违法用途。")
                     }
                   }}>
-                    <motion.button type="submit" disabled={!canGenerate} whileHover={canGenerate ? voiceHover : undefined} whileTap={canGenerate ? voiceTap : undefined} transition={voiceFastSpring} className="inline-flex min-h-[52px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-300 via-blue-300 to-violet-400 px-6 py-3.5 text-sm font-black text-[#07101d] transition-[filter,opacity] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35 disabled:saturate-50">
+                    <button type="submit" disabled={!canGenerate} className="inline-flex min-h-[52px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-300 via-blue-300 to-violet-400 px-6 py-3.5 text-sm font-black text-[#07101d] transition-[filter,opacity] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35 disabled:saturate-50">
                       {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <AudioLines className="h-4 w-4" />}
                       {isGenerating ? "生成中..." : "开始生成 WAV"}
-                    </motion.button>
+                    </button>
                     {!connected ? <p className="mt-1.5 text-center text-[11px] text-amber-100/70">连接并加载声音引擎后即可生成。</p> : null}
                   </div>
                 </FlowStep>

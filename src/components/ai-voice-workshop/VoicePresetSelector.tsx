@@ -6,7 +6,6 @@ import { ChevronDown, Mic2, X } from "lucide-react"
 import { VoicePresetCard } from "@/components/ai-voice-workshop/VoicePresetCard"
 import {
   voiceFastSpring,
-  voiceHover,
   voicePopoverVariants,
   voiceSpring,
   voiceTap,
@@ -47,9 +46,6 @@ export function VoicePresetSelector({ presets, selectedPreset, onSelect }: Voice
       <motion.button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        whileHover={voiceHover}
-        whileTap={voiceTap}
-        transition={voiceFastSpring}
         className="flex min-h-16 w-full cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-black/22 px-4 text-left transition-colors hover:border-cyan-100/35 hover:bg-cyan-100/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/50"
         aria-expanded={open}
         aria-haspopup="listbox"
@@ -79,7 +75,7 @@ export function VoicePresetSelector({ presets, selectedPreset, onSelect }: Voice
             animate="visible"
             exit="exit"
             transition={voiceSpring}
-            className="absolute left-0 top-[calc(100%+10px)] z-50 w-[min(640px,calc(100vw-3rem))] max-h-[min(520px,60vh)] overflow-y-auto overscroll-contain rounded-2xl border border-white/12 bg-[#090c18]/98 p-4 shadow-[0_12px_36px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:p-5"
+            className="voice-scroll absolute left-0 top-[calc(100%+10px)] z-50 w-[min(640px,calc(100vw-3rem))] max-h-[min(520px,60vh)] overflow-y-auto overscroll-contain rounded-2xl border border-white/12 bg-[#090c18]/98 p-4 shadow-[0_12px_36px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:p-5"
             role="listbox"
           >
             <div className="mb-4 flex items-start justify-between gap-3">

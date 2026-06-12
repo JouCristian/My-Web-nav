@@ -23,7 +23,6 @@ import {
 import {
   voiceFadeScaleVariants,
   voiceFastSpring,
-  voiceHover,
   voicePopoverVariants,
   voiceSpring,
   voiceTap,
@@ -176,7 +175,7 @@ export function VoiceEngineSettings({
             animate="visible"
             exit="exit"
             transition={voiceSpring}
-            className="absolute right-0 top-[calc(100%+12px)] z-50 w-[min(520px,calc(100vw-2rem))] max-h-[min(560px,65vh)] overflow-y-auto overscroll-contain rounded-2xl border border-white/12 bg-[#090c18]/98 p-5 shadow-[0_16px_44px_rgba(0,0,0,0.48)] backdrop-blur-2xl sm:p-6"
+            className="voice-scroll absolute right-0 top-[calc(100%+12px)] z-50 w-[min(520px,calc(100vw-2rem))] max-h-[min(560px,65vh)] overflow-y-auto overscroll-contain rounded-2xl border border-white/12 bg-[#090c18]/98 p-5 shadow-[0_16px_44px_rgba(0,0,0,0.48)] backdrop-blur-2xl sm:p-6"
             role="dialog"
             aria-label="声音引擎设置"
           >
@@ -209,21 +208,21 @@ export function VoiceEngineSettings({
                 <motion.div key="local" variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} className="mt-5">
                   <div className="space-y-4">
                     <SetupRow number="1" title="下载 Windows 本地引擎包">
-                      <motion.a href="/downloads/joujou-voice-engine-windows.zip" download whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className="mt-2 inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full bg-gradient-to-r from-cyan-300 to-violet-400 px-4 text-xs font-black text-[#07101d] transition-[filter] hover:brightness-110">
+                      <a href="/downloads/joujou-voice-engine-windows.zip" download className="mt-2 inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full bg-gradient-to-r from-cyan-300 to-violet-400 px-4 text-xs font-black text-[#07101d] transition-[filter] hover:brightness-110">
                         <Download className="h-4 w-4" />下载本地引擎包
-                      </motion.a>
+                      </a>
                     </SetupRow>
                     <SetupRow number="2" title="解压并双击 INSTALL.bat">
                       <p className="mt-1 text-xs leading-relaxed text-zinc-400">首次安装会下载运行环境和模型，请等待窗口显示完成。</p>
                     </SetupRow>
                     <SetupRow number="3" title="回到网页启动引擎">
                       <div className="mt-2 flex flex-wrap gap-2">
-                        <motion.button type="button" onClick={onStartLocalEngine} disabled={busy} whileHover={!busy ? voiceHover : undefined} whileTap={!busy ? voiceTap : undefined} transition={voiceFastSpring} className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full border border-emerald-200/30 bg-emerald-300/[0.09] px-4 text-xs font-bold text-emerald-50 transition-colors hover:bg-emerald-300/[0.14] disabled:cursor-not-allowed disabled:opacity-50">
+                        <button type="button" onClick={onStartLocalEngine} disabled={busy} className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full border border-emerald-200/30 bg-emerald-300/[0.09] px-4 text-xs font-bold text-emerald-50 transition-colors hover:bg-emerald-300/[0.14] disabled:cursor-not-allowed disabled:opacity-50">
                           {engineStatus === "starting" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gauge className="h-4 w-4" />}启动本地引擎
-                        </motion.button>
-                        <motion.button type="button" onClick={onCheckEngine} disabled={busy} whileHover={!busy ? voiceHover : undefined} whileTap={!busy ? voiceTap : undefined} transition={voiceFastSpring} className={secondaryButton}>
+                        </button>
+                        <button type="button" onClick={onCheckEngine} disabled={busy} className={secondaryButton}>
                           {engineStatus === "checking" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}检测连接
-                        </motion.button>
+                        </button>
                       </div>
                     </SetupRow>
                   </div>
@@ -231,10 +230,10 @@ export function VoiceEngineSettings({
                   <EngineFeedback status={engineStatus} info={engineInfo} error={engineError} local />
 
                   <div className="mt-5 border-t border-white/10 pt-4">
-                    <motion.button type="button" onClick={() => setDeveloperOpen((open) => !open)} whileTap={voiceTap} transition={voiceFastSpring} className="flex w-full cursor-pointer items-center justify-between text-left text-xs font-bold text-zinc-400 transition-colors hover:text-zinc-200" aria-expanded={developerOpen}>
+                    <button type="button" onClick={() => setDeveloperOpen((open) => !open)} className="flex w-full cursor-pointer items-center justify-between text-left text-xs font-bold text-zinc-400" aria-expanded={developerOpen}>
                       <span className="inline-flex items-center gap-2"><Wrench className="h-4 w-4" />开发者选项</span>
                       <motion.span animate={{ rotate: developerOpen ? 180 : 0 }} transition={voiceFastSpring}><ChevronDown className="h-4 w-4" /></motion.span>
-                    </motion.button>
+                    </button>
                     <AnimatePresence initial={false}>
                       {developerOpen ? (
                         <motion.div variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} className="pt-4">
@@ -243,10 +242,10 @@ export function VoiceEngineSettings({
                             <p>本地 API: {localApiUrl}</p>
                           </div>
                           <div className="mt-3 flex flex-wrap gap-2">
-                            <motion.button type="button" onClick={() => void copyApiUrl()} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className={secondaryButton}>
+                            <button type="button" onClick={() => void copyApiUrl()} className={secondaryButton}>
                               {copied ? <Check className="h-4 w-4 text-emerald-200" /> : <Clipboard className="h-4 w-4" />}{copied ? "已复制" : "复制当前 API"}
-                            </motion.button>
-                            <motion.button type="button" onClick={onToggleGuide} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className={secondaryButton}><Archive className="h-4 w-4" />{guideOpen ? "收起安装说明" : "查看安装说明"}</motion.button>
+                            </button>
+                            <button type="button" onClick={onToggleGuide} className={secondaryButton}><Archive className="h-4 w-4" />{guideOpen ? "收起安装说明" : "查看安装说明"}</button>
                           </div>
                           <AnimatePresence initial={false}>
                             {guideOpen ? <motion.div variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} className="mt-3 rounded-xl border border-white/[0.08] bg-white/[0.035] p-3 text-xs leading-relaxed text-zinc-400">首次使用请下载并解压引擎包，双击 INSTALL.bat。以后可从网页启动，也可以双击包内 START.bat。</motion.div> : null}
@@ -267,11 +266,11 @@ export function VoiceEngineSettings({
                     <input value={customDraftApiUrl} onChange={(event) => onCustomDraftChange(event.target.value)} placeholder="http://127.0.0.1:8866" className="h-11 w-full rounded-xl border border-white/10 bg-black/30 px-4 font-mono text-xs text-white outline-none transition-colors placeholder:text-zinc-500 focus:border-cyan-100/45 focus:ring-2 focus:ring-cyan-200/10" />
                   </label>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <motion.button type="button" onClick={onSaveCustomApiUrl} disabled={busy} whileHover={!busy ? voiceHover : undefined} whileTap={!busy ? voiceTap : undefined} transition={voiceFastSpring} className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full border border-cyan-100/25 bg-cyan-100/[0.09] px-4 text-xs font-bold text-cyan-50 transition-colors hover:bg-cyan-100/[0.14] disabled:cursor-not-allowed disabled:opacity-50">
+                    <button type="button" onClick={onSaveCustomApiUrl} disabled={busy} className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full border border-cyan-100/25 bg-cyan-100/[0.09] px-4 text-xs font-bold text-cyan-50 transition-colors hover:bg-cyan-100/[0.14] disabled:cursor-not-allowed disabled:opacity-50">
                       {engineStatus === "checking" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}保存并检测
-                    </motion.button>
-                    <motion.button type="button" onClick={onResetCustomApiUrl} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className={secondaryButton}><RotateCcw className="h-4 w-4" />恢复���认地址</motion.button>
-                    <motion.button type="button" onClick={() => void copyApiUrl()} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className={secondaryButton}>{copied ? <Check className="h-4 w-4 text-emerald-200" /> : <Clipboard className="h-4 w-4" />}{copied ? "已复制" : "复制当前 API"}</motion.button>
+                    </button>
+                    <button type="button" onClick={onResetCustomApiUrl} className={secondaryButton}><RotateCcw className="h-4 w-4" />恢复默认地址</button>
+                    <button type="button" onClick={() => void copyApiUrl()} className={secondaryButton}>{copied ? <Check className="h-4 w-4 text-emerald-200" /> : <Clipboard className="h-4 w-4" />}{copied ? "已复制" : "复制当前 API"}</button>
                   </div>
                   <EngineFeedback status={engineStatus} info={engineInfo} error={engineError} />
                 </motion.div>
@@ -286,7 +285,7 @@ export function VoiceEngineSettings({
 
 function EngineModeButton({ active, icon, label, onClick }: { active: boolean; icon: ReactNode; label: string; onClick: () => void }) {
   return (
-    <motion.button type="button" onClick={onClick} whileTap={voiceTap} transition={voiceFastSpring} className={`relative isolate flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-xs font-bold transition-colors ${active ? "text-cyan-50" : "text-zinc-400 hover:text-zinc-200"}`}>
+    <motion.button type="button" onClick={onClick} whileTap={voiceTap} transition={voiceFastSpring} className={`relative isolate flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-xs font-bold transition-colors ${active ? "text-cyan-50" : "text-zinc-400"}`}>
       {active ? <motion.span layoutId="voice-engine-tab" className="absolute inset-0 -z-10 rounded-lg border border-cyan-200/35 bg-cyan-200/[0.09]" transition={voiceSpring} /> : null}
       <span className={active ? "text-cyan-100" : "text-zinc-500"}>{icon}</span>{label}
     </motion.button>

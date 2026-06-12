@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from "framer-motion"
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react"
 import {
   voiceFastSpring,
-  voiceHover,
   voicePopoverVariants,
   voiceSpring,
   voiceTap,
@@ -51,10 +50,7 @@ export function VoiceAdvancedOptions({
       <motion.button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        whileHover={voiceHover}
-        whileTap={voiceTap}
-        transition={voiceFastSpring}
-        className="flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 text-left text-xs font-bold text-zinc-300 transition-colors hover:border-cyan-100/30 hover:bg-cyan-100/[0.045] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/50"
+        className="flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 text-left text-xs font-bold text-zinc-300 transition-colors hover:border-cyan-100/30 hover:bg-cyan-100/[0.045] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/50"
         aria-expanded={open}
         aria-haspopup="dialog"
       >
@@ -76,7 +72,7 @@ export function VoiceAdvancedOptions({
             animate="visible"
             exit="exit"
             transition={voiceSpring}
-            className="absolute bottom-[calc(100%+10px)] right-0 z-50 w-[min(520px,calc(100vw-3rem))] max-h-[min(420px,55vh)] overflow-y-auto overscroll-contain rounded-2xl border border-white/12 bg-[#090c18]/98 p-5 shadow-[0_12px_36px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:p-6"
+            className="voice-scroll absolute bottom-[calc(100%+10px)] right-0 z-50 w-[min(520px,calc(100vw-3rem))] max-h-[min(420px,55vh)] overflow-y-auto overscroll-contain rounded-2xl border border-white/12 bg-[#090c18]/98 p-5 shadow-[0_12px_36px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:p-6"
             role="dialog"
             aria-label="高级生成选项"
           >

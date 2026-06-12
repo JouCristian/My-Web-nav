@@ -40,9 +40,7 @@ export function ReferenceAudioUploader({
 
   return (
     <div className="space-y-3">
-      <motion.label
-        whileHover={voiceHover}
-        transition={voiceFastSpring}
+      <label
         className={`group block cursor-pointer rounded-xl border border-dashed px-5 py-6 text-center transition-colors focus-within:ring-2 focus-within:ring-cyan-200/50 ${
           dragging
             ? "border-cyan-200/65 bg-cyan-200/[0.09]"
@@ -67,7 +65,7 @@ export function ReferenceAudioUploader({
           className="sr-only"
           onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
         />
-      </motion.label>
+      </label>
 
       <AnimatePresence initial={false} mode="popLayout">
         {file ? (
