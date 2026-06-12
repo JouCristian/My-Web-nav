@@ -75,11 +75,10 @@ export const voicePageContainer: Variants = {
 
 // 每个区块的入场动画（从下方淡入 + 轻微上升）
 export const voicePageItem: Variants = {
-  hidden: { opacity: 0, y: 22, filter: "blur(4px)" },
+  hidden: { opacity: 0, y: 22 },
   visible: {
     opacity: 1,
     y: 0,
-    filter: "blur(0px)",
     transition: {
       type: "spring",
       stiffness: 320,
