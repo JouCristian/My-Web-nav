@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { ChevronDown, SlidersHorizontal, X } from "lucide-react"
+import { ChevronDown, CircleStop, Gauge, SlidersHorizontal, X } from "lucide-react"
 import {
   voiceFastSpring,
   voicePopoverVariants,
@@ -14,15 +14,19 @@ import { useExclusiveVoicePopover } from "@/components/ai-voice-workshop/useExcl
 interface VoiceAdvancedOptionsProps {
   cfgValue: number
   inferenceTimesteps: number
+  interruptible: boolean
   onCfgValueChange: (value: number) => void
   onInferenceTimestepsChange: (value: number) => void
+  onInterruptibleChange: (value: boolean) => void
 }
 
 export function VoiceAdvancedOptions({
   cfgValue,
   inferenceTimesteps,
+  interruptible,
   onCfgValueChange,
   onInferenceTimestepsChange,
+  onInterruptibleChange,
 }: VoiceAdvancedOptionsProps) {
   const { open, closePopover, togglePopover } = useExclusiveVoicePopover("advanced-options")
   const rootRef = useRef<HTMLDivElement>(null)
@@ -58,7 +62,7 @@ export function VoiceAdvancedOptions({
         <span className="inline-flex items-center gap-2">
           <SlidersHorizontal className="h-4 w-4 text-cyan-100" />
           高级选项
-          <span className="font-normal text-zinc-500">CFG {cfgValue.toFixed(1)} · Steps {inferenceTimesteps}</span>
+          <span className="font-normal text-zinc-500">CFG {cfgValue.toFixed(1)} · Steps {inferenceTimesteps} · {interruptible ? "可中断" : "快速"}</span>
         </span>
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={voiceFastSpring}>
           <ChevronDown className="no-spin-hover h-4 w-4" />
@@ -101,6 +105,29 @@ export function VoiceAdvancedOptions({
                 <input type="range" min={4} max={30} step={1} value={inferenceTimesteps} onChange={(event) => onInferenceTimestepsChange(Number(event.target.value))} className="w-full cursor-pointer accent-cyan-300" />
               </ParameterSlider>
             </div>
+            <motion.label
+              layout
+              transition={voiceSpring}
+              className="mt-5 flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-white/[0.08] bg-black/20 p-3 transition-colors hover:border-cyan-100/20 hover:bg-cyan-100/[0.035]"
+            >
+              <span className="flex min-w-0 items-start gap-3">
+                <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg border ${interruptible ? "border-violet-200/25 bg-violet-300/[0.1] text-violet-100" : "border-cyan-100/15 bg-cyan-200/[0.06] text-cyan-100"}`}>
+                  {interruptible ? <CircleStop className="h-4 w-4" /> : <Gauge className="h-4 w-4" />}
+                </span>
+                <span>
+                  <span className="block text-xs font-bold text-zinc-100">可中断生成</span>
+                  <span className="mt-1 block text-[11px] leading-relaxed text-zinc-400">默认关闭并使用快速 GPU 推理。开启后可在生成途中停止，但速度会明显变慢。</span>
+                </span>
+              </span>
+              <span className={`relative mt-1 h-6 w-11 shrink-0 rounded-full border transition-colors ${interruptible ? "border-violet-200/35 bg-violet-400/35" : "border-white/12 bg-white/[0.07]"}`}>
+                <motion.span
+                  className="absolute left-0.5 top-0.5 h-[18px] w-[18px] rounded-full bg-white shadow-sm"
+                  animate={{ x: interruptible ? 20 : 0 }}
+                  transition={voiceFastSpring}
+                />
+              </span>
+              <input type="checkbox" checked={interruptible} onChange={(event) => onInterruptibleChange(event.target.checked)} className="sr-only" />
+            </motion.label>
           </motion.div>
         ) : null}
       </AnimatePresence>

@@ -115,6 +115,12 @@ class TTSEngine:
         else:
             kwargs["text"] = f"({voice_prompt.strip()}){text}" if voice_prompt else text
 
+        if not job.interruptible:
+            wav = self.model.generate(**kwargs)
+            if cancel_event.is_set():
+                raise GenerationCancelled()
+            return wav
+
         chunks: list[np.ndarray] = []
         stream = self.model.generate_streaming(**kwargs)
         try:

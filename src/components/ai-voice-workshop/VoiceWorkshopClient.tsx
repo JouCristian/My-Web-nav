@@ -58,7 +58,7 @@ const VOICE_ENGINE_MODE_KEY = "joujou_voice_engine_mode"
 const VOICE_CUSTOM_API_URL_KEY = "joujou_voice_custom_api_url"
 const VOICE_LOCAL_API_URL_KEY = "joujou_voice_local_api_url"
 
-type VoiceHistoryConfig = Pick<VoiceHistoryItem, "presetId" | "presetName" | "voicePrompt" | "cfgValue" | "inferenceTimesteps" | "referenceAudioName">
+type VoiceHistoryConfig = Pick<VoiceHistoryItem, "presetId" | "presetName" | "voicePrompt" | "cfgValue" | "inferenceTimesteps" | "referenceAudioName" | "interruptible">
 
 function isValidHttpUrl(url: string) {
   return /^https?:\/\/.+/i.test(url.trim())
@@ -78,6 +78,7 @@ export function VoiceWorkshopClient() {
   const [showCloneSafetyError, setShowCloneSafetyError] = useState(false)
   const [cfgValue, setCfgValue] = useState(2)
   const [inferenceTimesteps, setInferenceTimesteps] = useState(10)
+  const [interruptible, setInterruptible] = useState(false)
 
   const [engineMode, setEngineMode] = useState<VoiceEngineMode>("local")
   const [engineStatus, setEngineStatus] = useState<VoiceEngineStatus>("idle")
@@ -99,6 +100,7 @@ export function VoiceWorkshopClient() {
   const [validationError, setValidationError] = useState<string | null>(null)
   const [history, setHistory] = useState<VoiceHistoryItem[]>([])
   const [resultMode, setResultMode] = useState<VoiceMode>("design")
+  const [resultInterruptible, setResultInterruptible] = useState(false)
   const [generationStartedAt, setGenerationStartedAt] = useState<number | null>(null)
   const [formContentVersion, setFormContentVersion] = useState(0)
 
@@ -117,6 +119,7 @@ export function VoiceWorkshopClient() {
   }, [customApiUrl, engineMode, localApiUrl])
 
   const connected = engineStatus === "connected" && Boolean(health?.model_loaded)
+  const localEngineNeedsUpdate = engineMode === "local" && connected && !engineInfo?.capabilities?.includes("interruptible_generation")
   const isGenerating = resultStatus === "queued" || resultStatus === "running" || resultStatus === "canceling"
   const trimmedText = text.trim()
   const isCloneMode = mode === "clone"
@@ -134,6 +137,8 @@ export function VoiceWorkshopClient() {
     ? resultStatus === "canceling" ? "正在停止本次生成，请稍候。" : "当前任务正在生成，可在结果区停止本次任务。"
     : !connected
       ? "请先连接并加载声音引擎。"
+      : localEngineNeedsUpdate
+        ? "本地声音引擎版本过旧，请安装 0.3.0 或更高版本后重新启动。"
       : !trimmedText
         ? "请输入要合成的文字。"
         : trimmedText.length > 500
@@ -420,9 +425,11 @@ export function VoiceWorkshopClient() {
         voicePrompt: requestMode === "design" ? voicePrompt.trim() : undefined,
         cfgValue,
         inferenceTimesteps,
+        interruptible,
         referenceAudioName: requestMode === "clone" ? referenceAudio?.name : undefined,
       }
       setResultMode(requestMode)
+      setResultInterruptible(interruptible)
       const response = await generateVoice(requestApiBaseUrl, {
         text: requestText,
         mode: requestMode,
@@ -432,6 +439,7 @@ export function VoiceWorkshopClient() {
         cloneSafetyAccepted: isCloneMode ? cloneConsent : undefined,
         cfgValue,
         inferenceTimesteps,
+        interruptible,
       })
       activeJobIdRef.current = response.job_id
       setResultStatus(response.status)
@@ -463,6 +471,11 @@ export function VoiceWorkshopClient() {
     const jobId = activeJobIdRef.current
     if (!jobId || !isGenerating || resultStatus === "canceling") return
 
+    if (!engineInfo?.capabilities?.includes("job_cancel")) {
+      setResultError("当前本地声音引擎版本过旧，不支持网页停止任务。请下载并安装最新版引擎，然后重新启动。")
+      return
+    }
+
     const previousStatus = resultStatus
     setResultStatus("canceling")
     setResultError(null)
@@ -489,6 +502,7 @@ export function VoiceWorkshopClient() {
     setText(item.text)
     setCfgValue(item.cfgValue ?? 2)
     setInferenceTimesteps(item.inferenceTimesteps ?? 10)
+    setInterruptible(item.interruptible ?? false)
     if (item.mode === "design") {
       if (item.presetId && presets.some((preset) => preset.id === item.presetId)) setSelectedPresetId(item.presetId)
       setVoicePrompt(item.voicePrompt || "")
@@ -666,7 +680,7 @@ export function VoiceWorkshopClient() {
                 </FlowStep>
 
                 <FlowStep number="4" title="生成语音" description="确认设置后提交生成任务。">
-                  <VoiceAdvancedOptions cfgValue={cfgValue} inferenceTimesteps={inferenceTimesteps} onCfgValueChange={setCfgValue} onInferenceTimestepsChange={setInferenceTimesteps} />
+                  <VoiceAdvancedOptions cfgValue={cfgValue} inferenceTimesteps={inferenceTimesteps} interruptible={interruptible} onCfgValueChange={setCfgValue} onInferenceTimestepsChange={setInferenceTimesteps} onInterruptibleChange={setInterruptible} />
 
                   <AnimatePresence mode="wait" initial={false}>
                     {validationError && !cloneValidationError ? <motion.p key={validationError} variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} role="alert" className="mt-3 rounded-xl border border-rose-200/20 bg-rose-500/[0.08] p-3 text-xs font-bold text-rose-100">{validationError}</motion.p> : null}
@@ -697,7 +711,7 @@ export function VoiceWorkshopClient() {
           </motion.div>
 
           <motion.aside variants={voicePageItem} className="flex min-w-0 flex-col gap-4 xl:max-h-full">
-            <AudioResultCard status={resultStatus} mode={resultMode} audioUrl={resultAudioUrl} filename={resultFilename} title={resultTitle} error={resultError || undefined} startedAt={generationStartedAt} onCancel={isGenerating ? () => void handleCancelGeneration() : undefined} onReset={resultStatus === "idle" || isGenerating ? undefined : resetResult} onRetry={resultStatus === "failed" || resultStatus === "canceled" ? () => formRef.current?.requestSubmit() : undefined} />
+            <AudioResultCard status={resultStatus} mode={resultMode} interruptible={resultInterruptible} audioUrl={resultAudioUrl} filename={resultFilename} title={resultTitle} error={resultError || undefined} startedAt={generationStartedAt} onCancel={isGenerating ? () => void handleCancelGeneration() : undefined} onReset={resultStatus === "idle" || isGenerating ? undefined : resetResult} onRetry={resultStatus === "failed" || resultStatus === "canceled" ? () => formRef.current?.requestSubmit() : undefined} />
             <VoiceTipsCard />
             <VoiceHistoryPanel items={history} onDelete={handleDeleteHistory} onReuse={handleReuseHistory} />
           </motion.aside>

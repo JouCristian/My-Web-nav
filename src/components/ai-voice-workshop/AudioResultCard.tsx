@@ -17,6 +17,7 @@ import type { VoiceJobStatus, VoiceMode } from "@/lib/ai-voice-workshop/types"
 interface AudioResultCardProps {
   status: VoiceJobStatus | "idle"
   mode?: VoiceMode
+  interruptible?: boolean
   audioUrl?: string
   filename?: string
   title?: string
@@ -39,7 +40,7 @@ const statusText: Record<AudioResultCardProps["status"], string> = {
 
 const waveform = [32, 54, 42, 72, 48, 84, 58, 38, 66, 46, 78, 52, 34, 62, 44, 70, 40, 56]
 
-export function AudioResultCard({ status, mode, audioUrl, filename, title, error, startedAt, onCancel, onReset, onRetry }: AudioResultCardProps) {
+export function AudioResultCard({ status, mode, interruptible = false, audioUrl, filename, title, error, startedAt, onCancel, onReset, onRetry }: AudioResultCardProps) {
   const reducedMotion = useReducedMotion()
   const isLoading = status === "queued" || status === "running" || status === "canceling"
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
@@ -95,10 +96,10 @@ export function AudioResultCard({ status, mode, audioUrl, filename, title, error
         {isLoading ? (
           <motion.div key="loading" variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} className="col-start-1 row-start-1 flex min-h-[250px] flex-col justify-center overflow-hidden rounded-xl border border-cyan-100/15 bg-cyan-100/[0.05] p-5">
             <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 text-sm font-bold text-cyan-50"><Loader2 className="h-4 w-4 animate-spin" />{status === "queued" ? "任务正在等待执行" : status === "canceling" ? "正在安全停止本次生成" : "VoxCPM2 正在合成声音"}</div>
+              <div className="flex items-center gap-3 text-sm font-bold text-cyan-50"><Loader2 className="h-4 w-4 animate-spin" />{status === "queued" ? "任务正在等待执行" : status === "canceling" ? interruptible ? "正在安全停止本次生成" : "停止请求已发送" : "VoxCPM2 正在合成声音"}</div>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/20 px-2.5 py-1 font-mono text-[10px] text-cyan-50/65"><Clock3 className="h-3 w-3" />{elapsedSeconds}s</span>
             </div>
-            <p className="mt-2 text-xs leading-relaxed text-zinc-400">任务由本地引擎单线程执行，当前输入和参数已锁定到本次任务。</p>
+            <p className="mt-2 text-xs leading-relaxed text-zinc-400">{status === "canceling" && !interruptible ? "停止请求已发送，当前快速生成任务会在本轮推理结束后停止处理结果。" : interruptible ? "当前使用可中断生成，会在流式音频块之间响应停止请求。" : "当前使用快速 GPU 推理，输入和参数已锁定到本次任务。"}</p>
             <div className="mt-4 grid grid-cols-3 gap-2">
               <StageItem label="等待执行" state={status === "queued" ? "active" : "done"} />
               <StageItem label="声音合成" state={status === "running" || status === "canceling" ? "active" : "pending"} />
@@ -132,7 +133,7 @@ export function AudioResultCard({ status, mode, audioUrl, filename, title, error
                 className="mt-4 inline-flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-rose-100/20 bg-rose-500/[0.07] px-4 text-xs font-bold text-rose-50/85 transition-colors hover:border-rose-100/35 hover:bg-rose-500/[0.12] disabled:cursor-wait disabled:opacity-55"
               >
                 {status === "canceling" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CircleStop className="h-4 w-4" />}
-                {status === "canceling" ? "正在停止..." : "停止本次生成"}
+                {status === "canceling" ? interruptible ? "正在停止..." : "等待本轮推理结束" : "停止本次生成"}
               </motion.button>
             ) : null}
           </motion.div>

@@ -33,7 +33,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 engine = TTSEngine(output_dir=OUTPUT_DIR)
 worker_started = False
 
-app = FastAPI(title="AI Voice Workshop Service", version="0.1.0")
+app = FastAPI(title="AI Voice Workshop Service", version="0.3.0")
 
 # Default web origins allowed to reach the local voice engine.
 # Browser CORS uses the Origin (scheme + host + port) only, not the full page path.
@@ -129,6 +129,32 @@ def _worker_loop() -> None:
 
         job_store.update(job.job_id, status="running", error=None)
         try:
+            try:
+                import torch
+
+                torch_version = torch.__version__
+                cuda_available = torch.cuda.is_available()
+            except Exception:  # noqa: BLE001 - diagnostics must not block generation.
+                torch_version = "unavailable"
+                cuda_available = False
+
+            generation_backend = "generate_streaming" if job.interruptible else "generate"
+            logger.info(
+                "TTS generation start job_id=%s mode=%s text_length=%s reference_audio_duration=%s "
+                "cfg=%s steps=%s interruptible=%s generation_backend=%s device=%s "
+                "torch_version=%s cuda_available=%s",
+                job.job_id,
+                job.mode,
+                len(job.text),
+                f"{job.reference_audio_duration:.2f}s" if job.reference_audio_duration is not None else "none",
+                job.cfg_value,
+                job.inference_timesteps,
+                job.interruptible,
+                generation_backend,
+                engine.device,
+                torch_version,
+                cuda_available,
+            )
             filename, _ = engine.generate(job, cancel_event)
             if cancel_event.is_set():
                 (OUTPUT_DIR / filename).unlink(missing_ok=True)
@@ -144,6 +170,10 @@ def _worker_loop() -> None:
             logger.info("TTS job canceled: %s", job.job_id)
             job_store.update(job.job_id, status="canceled", error=None)
         except Exception as error:  # noqa: BLE001 - API should return model errors as job failures.
+            if cancel_event.is_set():
+                logger.info("TTS job canceled after inference ended with an error: %s", job.job_id)
+                job_store.update(job.job_id, status="canceled", error=None)
+                continue
             logger.exception("TTS job failed: %s", job.job_id)
             job_store.update(job.job_id, status="failed", error=str(error))
 
@@ -183,7 +213,8 @@ def engine_info() -> dict[str, object]:
     return {
         "ok": True,
         "engine": "voxcpm2",
-        "engine_version": "0.1.0",
+        "engine_version": "0.3.0",
+        "capabilities": ["job_cancel", "audio_format_conversion", "interruptible_generation"],
         "model_name": "openbmb/VoxCPM2",
         "model_loaded": engine.model_loaded,
         "device": device,
@@ -207,6 +238,7 @@ async def generate_tts(
     clone_safety_accepted: bool = Form(False),
     cfg_value: float = Form(2.0),
     inference_timesteps: int = Form(10),
+    interruptible: bool = Form(False),
 ) -> GenerateResponse:
     normalized_text = text.strip()
     if not normalized_text:
@@ -221,6 +253,7 @@ async def generate_tts(
         raise HTTPException(status_code=400, detail="inference_timesteps 必须在 4 到 30 之间")
 
     reference_audio_path: str | None = None
+    reference_audio_duration: float | None = None
     if mode == "clone":
         if not clone_safety_accepted:
             raise HTTPException(status_code=400, detail="声音克隆前必须确认拥有参考音频使用权。")
@@ -230,6 +263,9 @@ async def generate_tts(
         try:
             uploaded_path = await save_upload_file(reference_audio, INPUT_DIR)
             reference_audio_path = str(normalize_reference_audio(uploaded_path, INPUT_DIR))
+            import soundfile as sf
+
+            reference_audio_duration = float(sf.info(reference_audio_path).duration)
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
         except Exception as error:  # noqa: BLE001
@@ -246,6 +282,8 @@ async def generate_tts(
         reference_audio_path=reference_audio_path,
         cfg_value=cfg_value,
         inference_timesteps=inference_timesteps,
+        interruptible=interruptible,
+        reference_audio_duration=reference_audio_duration,
     )
     job_store.create(job)
 

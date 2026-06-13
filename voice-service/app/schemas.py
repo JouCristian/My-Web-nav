@@ -35,6 +35,8 @@ class JobRecord(BaseModel):
     reference_audio_path: Optional[str] = None
     cfg_value: float = Field(default=2.0, ge=1.0, le=3.0)
     inference_timesteps: int = Field(default=10, ge=4, le=30)
+    interruptible: bool = False
+    reference_audio_duration: Optional[float] = None
     audio_url: Optional[str] = None
     filename: Optional[str] = None
     error: Optional[str] = None

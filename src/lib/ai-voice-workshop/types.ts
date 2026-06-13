@@ -20,6 +20,7 @@ export interface VoiceEngineInfo {
   ok: boolean
   engine: string
   engine_version?: string
+  capabilities?: string[]
   model_name?: string
   model_loaded: boolean
   device: string
@@ -36,6 +37,7 @@ export interface VoiceGeneratePayload {
   cloneSafetyAccepted?: boolean
   cfgValue: number
   inferenceTimesteps: number
+  interruptible?: boolean
 }
 
 export interface VoiceGenerateResponse {
@@ -66,6 +68,7 @@ export interface VoiceHistoryItem {
   cfgValue?: number
   inferenceTimesteps?: number
   referenceAudioName?: string
+  interruptible?: boolean
   audioUrl: string
   filename: string
   createdAt: string

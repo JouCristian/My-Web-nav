@@ -65,6 +65,7 @@ export async function generateVoice(baseUrl: string, payload: VoiceGeneratePaylo
   }
   body.set("cfg_value", String(payload.cfgValue))
   body.set("inference_timesteps", String(payload.inferenceTimesteps))
+  body.set("interruptible", String(Boolean(payload.interruptible)))
 
   const response = await fetch(`${normalizeVoiceApiBaseUrl(baseUrl)}/tts/generate`, {
     method: "POST",
@@ -83,6 +84,9 @@ export async function cancelVoiceJob(baseUrl: string, jobId: string): Promise<Vo
   const response = await fetch(`${normalizeVoiceApiBaseUrl(baseUrl)}/tts/jobs/${jobId}/cancel`, {
     method: "POST",
   })
+  if (response.status === 404) {
+    throw new Error("本地声音引擎版本过旧，请下载并安装最新版引擎后重试。")
+  }
   return readJson<VoiceJob>(response)
 }
 

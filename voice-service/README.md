@@ -8,6 +8,8 @@ The model runs outside Next.js and Vercel Serverless. The frontend can connect t
 
 `NEXT_PUBLIC_VOICE_API_BASE_URL=http://127.0.0.1:8866`
 
+Current local engine API version: `0.3.0`. This version uses fast non-streaming generation by default, supports optional interruptible generation, reference-audio conversion, and canceling jobs without stopping the engine process.
+
 For the productized local engine flow, run `setup-local-engine.bat` once. It creates `.venv`, installs dependencies, and registers the `joujou-voice://` protocol. After that, the web page can call `joujou-voice://start` to launch `start-local-engine.bat`.
 
 ## Start Locally
@@ -85,6 +87,7 @@ Fields:
 - `clone_safety_accepted`: required as `true` in `clone` mode.
 - `cfg_value`: optional, default `2.0`, range `1.0` to `3.0`.
 - `inference_timesteps`: optional, default `10`, range `4` to `30`.
+- `interruptible`: optional, default `false`. When `false`, the engine uses the faster `model.generate()` path. When `true`, it uses `model.generate_streaming()` and checks cancel requests between audio chunks.
 
 Returns:
 
@@ -100,7 +103,7 @@ Successful jobs include `audio_url` and `filename`. Failed jobs include `error`.
 
 ### `POST /tts/jobs/{job_id}/cancel`
 
-Cancels a queued job immediately. A running job stops at the next VoxCPM2 streaming audio chunk, releases the active generator, and leaves the service available for the next request.
+Cancels a queued job immediately. Interruptible running jobs stop at the next VoxCPM2 streaming audio chunk. Fast non-streaming jobs finish the current inference and discard the result. In both cases the service remains available for the next request.
 
 ### `GET /tts/audio/{filename}`
 
