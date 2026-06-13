@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { Check, ChevronRight, Clock3, Download, RotateCcw, SlidersHorizontal, Trash2, X } from "lucide-react"
+import { Check, ChevronRight, Clock3, Download, Loader2, RotateCcw, SlidersHorizontal, Trash2, X } from "lucide-react"
 import { VoiceAudioPlayer } from "@/components/ai-voice-workshop/VoiceAudioPlayer"
 import {
   voiceFadeScaleVariants,
@@ -19,7 +19,7 @@ import type { VoiceHistoryItem } from "@/lib/ai-voice-workshop/types"
 interface VoiceHistoryPanelProps {
   items: VoiceHistoryItem[]
   onDelete: (id: string) => void
-  onReuse: (item: VoiceHistoryItem) => void
+  onReuse: (item: VoiceHistoryItem) => Promise<string>
 }
 
 function formatTime(value: string) {
@@ -106,19 +106,28 @@ export function VoiceHistoryPanel({ items, onDelete, onReuse }: VoiceHistoryPane
   )
 }
 
-function HistoryRow({ item, scope, deleting, onDelete, onReuse }: { item: VoiceHistoryItem; scope: string; deleting: boolean; onDelete: () => void; onReuse: () => void }) {
+function HistoryRow({ item, scope, deleting, onDelete, onReuse }: { item: VoiceHistoryItem; scope: string; deleting: boolean; onDelete: () => void; onReuse: () => Promise<string> }) {
   const [reuseToast, setReuseToast] = useState(false)
+  const [reuseMessage, setReuseMessage] = useState("")
+  const [reusePending, setReusePending] = useState(false)
   const reuseTimer = useRef<number | null>(null)
 
   useEffect(() => () => {
     if (reuseTimer.current !== null) window.clearTimeout(reuseTimer.current)
   }, [])
 
-  function handleReuse() {
-    onReuse()
-    setReuseToast(true)
-    if (reuseTimer.current !== null) window.clearTimeout(reuseTimer.current)
-    reuseTimer.current = window.setTimeout(() => setReuseToast(false), 1800)
+  async function handleReuse() {
+    if (reusePending) return
+    setReusePending(true)
+    try {
+      const message = await onReuse()
+      setReuseMessage(message)
+      setReuseToast(true)
+      if (reuseTimer.current !== null) window.clearTimeout(reuseTimer.current)
+      reuseTimer.current = window.setTimeout(() => setReuseToast(false), 2200)
+    } finally {
+      setReusePending(false)
+    }
   }
 
   return (
@@ -137,7 +146,7 @@ function HistoryRow({ item, scope, deleting, onDelete, onReuse }: { item: VoiceH
           <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-500"><span>{formatTime(item.createdAt)}</span><span>·</span><span>CFG {item.cfgValue?.toFixed(1) ?? "2.0"}</span><span>·</span><span>{item.inferenceTimesteps ?? 10} Steps</span></div>
         </div>
         <div className="relative flex shrink-0 items-center gap-1">
-          <HistoryAction label="使用此配置" onClick={handleReuse}><RotateCcw className="h-3.5 w-3.5" /></HistoryAction>
+          <HistoryAction label="使用此配置" onClick={() => void handleReuse()} disabled={reusePending}>{reusePending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}</HistoryAction>
           <HistoryAction label="删除此记录" danger onClick={onDelete}><Trash2 className="h-3.5 w-3.5" /></HistoryAction>
           <AnimatePresence>
             {reuseToast ? (
@@ -150,7 +159,7 @@ function HistoryRow({ item, scope, deleting, onDelete, onReuse }: { item: VoiceH
                 role="status"
               >
                 <Check className="h-3.5 w-3.5 text-cyan-200" />
-                {item.mode === "clone" ? "配置已恢复，请重新上传音频" : "文本、音色和参数已恢复"}
+                {reuseMessage}
               </motion.div>
             ) : null}
           </AnimatePresence>
@@ -159,13 +168,13 @@ function HistoryRow({ item, scope, deleting, onDelete, onReuse }: { item: VoiceH
 
       <div className="mt-3"><VoiceAudioPlayer id={`history-${scope}-${item.id}`} src={item.audioUrl} compact /></div>
       <div className="mt-2 flex items-center justify-between gap-3">
-        <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-[10px] text-zinc-500"><SlidersHorizontal className="h-3 w-3 shrink-0" />{item.mode === "clone" ? item.referenceAudioName || "需重新上传参考音频" : item.voicePrompt || item.presetName || "预设音色"}</span>
+        <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-[10px] text-zinc-500"><SlidersHorizontal className="h-3 w-3 shrink-0" />{item.mode === "clone" ? item.referenceAudioStored ? `${item.referenceAudioName || "参考音频"} · 可恢复` : item.referenceAudioName || "需重新上传参考音频" : item.voicePrompt || item.presetName || "预设音色"}</span>
         <motion.a href={item.audioUrl} download={item.filename} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-bold text-zinc-400 transition-colors hover:bg-white/[0.06] hover:text-cyan-50" aria-label="下载历史音频"><Download className="h-3.5 w-3.5" />下载</motion.a>
       </div>
     </motion.article>
   )
 }
 
-function HistoryAction({ label, danger = false, onClick, children }: { label: string; danger?: boolean; onClick: () => void; children: React.ReactNode }) {
-  return <motion.button type="button" onClick={onClick} whileTap={voiceTap} transition={voiceFastSpring} className={`grid h-8 w-8 cursor-pointer place-items-center rounded-full border border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 ${danger ? "text-rose-100/60 hover:border-rose-200/20 hover:bg-rose-500/10 hover:text-rose-50 focus-visible:ring-rose-200/40" : "text-zinc-400 hover:border-cyan-100/15 hover:bg-cyan-100/[0.07] hover:text-cyan-50 focus-visible:ring-cyan-200/40"}`} aria-label={label} title={label}>{children}</motion.button>
+function HistoryAction({ label, danger = false, disabled = false, onClick, children }: { label: string; danger?: boolean; disabled?: boolean; onClick: () => void; children: React.ReactNode }) {
+  return <motion.button type="button" onClick={onClick} disabled={disabled} whileTap={disabled ? undefined : voiceTap} transition={voiceFastSpring} className={`grid h-8 w-8 cursor-pointer place-items-center rounded-full border border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-wait disabled:opacity-60 ${danger ? "text-rose-100/60 hover:border-rose-200/20 hover:bg-rose-500/10 hover:text-rose-50 focus-visible:ring-rose-200/40" : "text-zinc-400 hover:border-cyan-100/15 hover:bg-cyan-100/[0.07] hover:text-cyan-50 focus-visible:ring-cyan-200/40"}`} aria-label={label} title={label}>{children}</motion.button>
 }

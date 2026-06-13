@@ -68,6 +68,7 @@ export interface VoiceHistoryItem {
   cfgValue?: number
   inferenceTimesteps?: number
   referenceAudioName?: string
+  referenceAudioStored?: boolean
   interruptible?: boolean
   audioUrl: string
   filename: string

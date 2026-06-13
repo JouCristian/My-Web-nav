@@ -41,6 +41,11 @@ import {
   voiceApiBaseUrl,
 } from "@/lib/ai-voice-workshop/api"
 import { defaultVoicePresets } from "@/lib/ai-voice-workshop/presets"
+import {
+  deleteHistoryReferenceAudio,
+  getHistoryReferenceAudio,
+  saveHistoryReferenceAudio,
+} from "@/lib/ai-voice-workshop/history-audio-store"
 import type {
   VoiceEngineInfo,
   VoiceEngineMode,
@@ -58,7 +63,7 @@ const VOICE_ENGINE_MODE_KEY = "joujou_voice_engine_mode"
 const VOICE_CUSTOM_API_URL_KEY = "joujou_voice_custom_api_url"
 const VOICE_LOCAL_API_URL_KEY = "joujou_voice_local_api_url"
 
-type VoiceHistoryConfig = Pick<VoiceHistoryItem, "presetId" | "presetName" | "voicePrompt" | "cfgValue" | "inferenceTimesteps" | "referenceAudioName" | "interruptible">
+type VoiceHistoryConfig = Pick<VoiceHistoryItem, "presetId" | "presetName" | "voicePrompt" | "cfgValue" | "inferenceTimesteps" | "referenceAudioName" | "referenceAudioStored" | "interruptible">
 
 function isValidHttpUrl(url: string) {
   return /^https?:\/\/.+/i.test(url.trim())
@@ -348,7 +353,7 @@ export function VoiceWorkshopClient() {
     return null
   }
 
-  async function pollJob(jobId: string, requestTitle: string, requestText: string, requestMode: VoiceMode, requestApiBaseUrl: string, requestConfig: VoiceHistoryConfig) {
+  async function pollJob(jobId: string, requestTitle: string, requestText: string, requestMode: VoiceMode, requestApiBaseUrl: string, requestConfig: VoiceHistoryConfig, requestReferenceAudio: File | null) {
     try {
       const job = await getVoiceJob(requestApiBaseUrl, jobId)
       if (activeJobIdRef.current !== jobId) return
@@ -356,6 +361,15 @@ export function VoiceWorkshopClient() {
 
       if (job.status === "succeeded") {
         stopPolling()
+        let referenceAudioStored = false
+        if (requestMode === "clone" && requestReferenceAudio) {
+          try {
+            await saveHistoryReferenceAudio(job.job_id, requestReferenceAudio)
+            referenceAudioStored = true
+          } catch (storageError) {
+            console.warn("Unable to store reference audio for history reuse", storageError)
+          }
+        }
         const audioUrl = resolveVoiceAudioUrl(requestApiBaseUrl, job.audio_url, job.filename)
         const filename = job.filename || "voice-output.wav"
         setResultAudioUrl(audioUrl)
@@ -363,19 +377,22 @@ export function VoiceWorkshopClient() {
         setResultTitle(requestTitle)
         setResultError(null)
         activeJobIdRef.current = null
-        setHistory((current) => [
-          {
+        setHistory((current) => {
+          const nextHistory = [{
             id: job.job_id,
             title: requestTitle,
             text: requestText,
             mode: requestMode,
             ...requestConfig,
+            referenceAudioStored,
             audioUrl,
             filename,
             createdAt: new Date().toISOString(),
-          },
-          ...current.filter((item) => item.id !== job.job_id),
-        ].slice(0, maxHistoryItems))
+          }, ...current.filter((item) => item.id !== job.job_id)]
+          const removedItems = nextHistory.slice(maxHistoryItems)
+          removedItems.forEach((item) => void deleteHistoryReferenceAudio(item.id).catch(() => undefined))
+          return nextHistory.slice(0, maxHistoryItems)
+        })
       }
 
       if (job.status === "failed") {
@@ -419,6 +436,7 @@ export function VoiceWorkshopClient() {
       const requestText = trimmedText
       const requestMode = mode
       const requestApiBaseUrl = activeApiBaseUrl
+      const requestReferenceAudio = requestMode === "clone" ? referenceAudio : null
       const requestConfig: VoiceHistoryConfig = {
         presetId: requestMode === "design" ? selectedPreset?.id : undefined,
         presetName: requestMode === "design" ? selectedPreset?.name : undefined,
@@ -443,10 +461,10 @@ export function VoiceWorkshopClient() {
       })
       activeJobIdRef.current = response.job_id
       setResultStatus(response.status)
-      await pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestConfig)
+      await pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestConfig, requestReferenceAudio)
       if (activeJobIdRef.current === response.job_id) {
         pollTimerRef.current = window.setInterval(() => {
-          void pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestConfig)
+          void pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestConfig, requestReferenceAudio)
         }, 1000)
       }
     } catch (error) {
@@ -495,25 +513,40 @@ export function VoiceWorkshopClient() {
 
   function handleDeleteHistory(id: string) {
     setHistory((current) => current.filter((item) => item.id !== id))
+    void deleteHistoryReferenceAudio(id).catch(() => undefined)
   }
 
-  function handleReuseHistory(item: VoiceHistoryItem) {
+  async function handleReuseHistory(item: VoiceHistoryItem) {
+    let restoredReferenceAudio: File | null = null
+    if (item.mode === "clone") {
+      try {
+        restoredReferenceAudio = await getHistoryReferenceAudio(item.id)
+      } catch {
+        restoredReferenceAudio = null
+      }
+    }
+
     setMode(item.mode)
     setText(item.text)
     setCfgValue(item.cfgValue ?? 2)
     setInferenceTimesteps(item.inferenceTimesteps ?? 10)
     setInterruptible(item.interruptible ?? false)
     if (item.mode === "design") {
-      if (item.presetId && presets.some((preset) => preset.id === item.presetId)) setSelectedPresetId(item.presetId)
+      const restoredPreset = presets.find((preset) => preset.id === item.presetId) || presets.find((preset) => preset.name === item.presetName)
+      if (restoredPreset) setSelectedPresetId(restoredPreset.id)
       setVoicePrompt(item.voicePrompt || "")
       setValidationError(null)
     } else {
-      setReferenceAudio(null)
+      setReferenceAudio(restoredReferenceAudio)
       setCloneConsent(false)
-      setValidationError(null)
+      setValidationError(restoredReferenceAudio ? null : "这条旧记录没有保存参考音频，请重新上传后再生成。")
     }
     setFormContentVersion((current) => current + 1)
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    if (item.mode === "clone") {
+      return restoredReferenceAudio ? "文案、参数和参考音频已恢复，请重新确认使用权" : "文案和参数已恢复，参考音频需要重新上传"
+    }
+    return item.voicePrompt ? "文案、自定义音色和参数已恢复" : "文案、预设音色和参数已恢复"
   }
 
   return (
@@ -711,7 +744,7 @@ export function VoiceWorkshopClient() {
           </motion.div>
 
           <motion.aside variants={voicePageItem} className="flex min-w-0 flex-col gap-4 xl:max-h-full">
-            <AudioResultCard status={resultStatus} mode={resultMode} interruptible={resultInterruptible} audioUrl={resultAudioUrl} filename={resultFilename} title={resultTitle} error={resultError || undefined} startedAt={generationStartedAt} onCancel={isGenerating ? () => void handleCancelGeneration() : undefined} onReset={resultStatus === "idle" || isGenerating ? undefined : resetResult} onRetry={resultStatus === "failed" || resultStatus === "canceled" ? () => formRef.current?.requestSubmit() : undefined} />
+            <AudioResultCard status={resultStatus} mode={resultMode} interruptible={resultInterruptible} audioUrl={resultAudioUrl} filename={resultFilename} title={resultTitle} error={resultError || undefined} startedAt={generationStartedAt} onCancel={isGenerating && resultInterruptible ? () => void handleCancelGeneration() : undefined} onReset={resultStatus === "idle" || isGenerating ? undefined : resetResult} onRetry={resultStatus === "failed" || resultStatus === "canceled" ? () => formRef.current?.requestSubmit() : undefined} />
             <VoiceTipsCard />
             <VoiceHistoryPanel items={history} onDelete={handleDeleteHistory} onReuse={handleReuseHistory} />
           </motion.aside>
