@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+import threading
 from typing import Any
 from uuid import uuid4
 
+import numpy as np
 import soundfile as sf
 
 from app.schemas import JobRecord, VoicePreset
@@ -78,7 +80,7 @@ class TTSEngine:
         if hasattr(self.model, "eval"):
             self.model.eval()
 
-    def generate(self, job: JobRecord) -> tuple[str, Path]:
+    def generate(self, job: JobRecord, cancel_event: threading.Event) -> tuple[str, Path]:
         if self.model is None:
             raise RuntimeError("VoxCPM2 模型尚未加载")
 
@@ -87,30 +89,47 @@ class TTSEngine:
         output_path = self.output_dir / filename
         voice_prompt = "" if job.mode == "clone" else job.voice_prompt.strip() or _preset_prompt(job.preset_id)
 
-        wav = self._call_model(job=job, voice_prompt=voice_prompt)
+        try:
+            wav = self._call_model(job=job, voice_prompt=voice_prompt, cancel_event=cancel_event)
+        except GenerationCancelled:
+            if self.device == "cuda":
+                import torch
+
+                torch.cuda.empty_cache()
+            raise
         self._save_wav(wav, output_path)
         return filename, output_path
 
-    def _call_model(self, job: JobRecord, voice_prompt: str) -> Any:
+    def _call_model(self, job: JobRecord, voice_prompt: str, cancel_event: threading.Event) -> Any:
         text = job.text.strip()
+        kwargs: dict[str, Any] = {
+            "text": text,
+            "cfg_value": job.cfg_value,
+            "inference_timesteps": job.inference_timesteps,
+        }
 
         if job.mode == "clone":
             if not job.reference_audio_path:
                 raise RuntimeError("声音克隆模式缺少参考音频")
+            kwargs["reference_wav_path"] = job.reference_audio_path
+        else:
+            kwargs["text"] = f"({voice_prompt.strip()}){text}" if voice_prompt else text
 
-            return self.model.generate(
-                text=text,
-                reference_wav_path=job.reference_audio_path,
-                cfg_value=job.cfg_value,
-                inference_timesteps=job.inference_timesteps,
-            )
+        chunks: list[np.ndarray] = []
+        stream = self.model.generate_streaming(**kwargs)
+        try:
+            for chunk in stream:
+                if cancel_event.is_set():
+                    raise GenerationCancelled()
+                chunks.append(np.asarray(chunk).reshape(-1))
+        finally:
+            stream.close()
 
-        final_text = f"({voice_prompt.strip()}){text}" if voice_prompt else text
-        return self.model.generate(
-            text=final_text,
-            cfg_value=job.cfg_value,
-            inference_timesteps=job.inference_timesteps,
-        )
+        if cancel_event.is_set():
+            raise GenerationCancelled()
+        if not chunks:
+            raise RuntimeError("VoxCPM2 未返回音频数据")
+        return np.concatenate(chunks)
 
     def _save_wav(self, wav: Any, output_path: Path) -> None:
         if wav is None:
@@ -124,3 +143,7 @@ class TTSEngine:
             raise RuntimeError("VoxCPM2 模型缺少 tts_model.sample_rate，无法保存音频")
 
         sf.write(output_path, wav, int(sample_rate))
+
+
+class GenerationCancelled(Exception):
+    """Raised when the active local generation is canceled by the user."""

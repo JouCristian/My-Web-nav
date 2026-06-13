@@ -1,5 +1,5 @@
 export type VoiceMode = "design" | "clone"
-export type VoiceJobStatus = "queued" | "running" | "succeeded" | "failed"
+export type VoiceJobStatus = "queued" | "running" | "canceling" | "canceled" | "succeeded" | "failed"
 export type VoiceEngineMode = "local" | "custom"
 export type VoiceEngineStatus = "idle" | "checking" | "connected" | "disconnected" | "starting" | "failed"
 

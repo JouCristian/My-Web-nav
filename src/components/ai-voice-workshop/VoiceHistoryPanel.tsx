@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { ChevronRight, Clock3, Download, RotateCcw, SlidersHorizontal, Trash2, X } from "lucide-react"
+import { Check, ChevronRight, Clock3, Download, RotateCcw, SlidersHorizontal, Trash2, X } from "lucide-react"
 import { VoiceAudioPlayer } from "@/components/ai-voice-workshop/VoiceAudioPlayer"
 import {
   voiceFadeScaleVariants,
@@ -80,7 +80,7 @@ export function VoiceHistoryPanel({ items, onDelete, onReuse }: VoiceHistoryPane
       {items.length === 0 ? (
         <div className="rounded-xl border border-dashed border-white/10 bg-black/18 p-5 text-sm leading-relaxed text-zinc-400">生成成功后会自动保留最近记录，方便回听、复用和下载。</div>
       ) : (
-        <motion.div layout transition={voiceLayoutSpring} className="min-h-0 flex-1 space-y-2">
+        <motion.div layout transition={voiceLayoutSpring} className="voice-scroll max-h-[440px] min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1">
           <AnimatePresence initial={false} mode="sync">
             {visibleItems.map((item) => <HistoryRow key={item.id} scope="recent" item={item} deleting={deletingIds.includes(item.id)} onDelete={() => deleteWithAnimation(item.id)} onReuse={() => onReuse(item)} />)}
           </AnimatePresence>
@@ -107,6 +107,20 @@ export function VoiceHistoryPanel({ items, onDelete, onReuse }: VoiceHistoryPane
 }
 
 function HistoryRow({ item, scope, deleting, onDelete, onReuse }: { item: VoiceHistoryItem; scope: string; deleting: boolean; onDelete: () => void; onReuse: () => void }) {
+  const [reuseToast, setReuseToast] = useState(false)
+  const reuseTimer = useRef<number | null>(null)
+
+  useEffect(() => () => {
+    if (reuseTimer.current !== null) window.clearTimeout(reuseTimer.current)
+  }, [])
+
+  function handleReuse() {
+    onReuse()
+    setReuseToast(true)
+    if (reuseTimer.current !== null) window.clearTimeout(reuseTimer.current)
+    reuseTimer.current = window.setTimeout(() => setReuseToast(false), 1800)
+  }
+
   return (
     <motion.article
       layout
@@ -122,9 +136,24 @@ function HistoryRow({ item, scope, deleting, onDelete, onReuse }: { item: VoiceH
           <div className="flex items-center gap-2"><div className="truncate text-xs font-bold text-zinc-100">{item.title || item.presetName || (item.mode === "clone" ? "声音克隆" : "自定义音色")}</div><span className="shrink-0 rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-400">{item.mode === "clone" ? "克隆" : "设计"}</span></div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-500"><span>{formatTime(item.createdAt)}</span><span>·</span><span>CFG {item.cfgValue?.toFixed(1) ?? "2.0"}</span><span>·</span><span>{item.inferenceTimesteps ?? 10} Steps</span></div>
         </div>
-        <div className="flex shrink-0 items-center gap-1">
-          <HistoryAction label="使用此配置" onClick={onReuse}><RotateCcw className="h-3.5 w-3.5" /></HistoryAction>
+        <div className="relative flex shrink-0 items-center gap-1">
+          <HistoryAction label="使用此配置" onClick={handleReuse}><RotateCcw className="h-3.5 w-3.5" /></HistoryAction>
           <HistoryAction label="删除此记录" danger onClick={onDelete}><Trash2 className="h-3.5 w-3.5" /></HistoryAction>
+          <AnimatePresence>
+            {reuseToast ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.72, y: -4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: -2 }}
+                transition={{ type: "spring", stiffness: 560, damping: 24, mass: 0.62 }}
+                className="pointer-events-none absolute right-0 top-[calc(100%+6px)] z-20 flex w-max max-w-56 items-center gap-1.5 rounded-lg border border-cyan-100/20 bg-[#101827]/98 px-2.5 py-2 text-[10px] font-bold text-cyan-50 shadow-[0_6px_14px_rgba(0,0,0,0.3)]"
+                role="status"
+              >
+                <Check className="h-3.5 w-3.5 text-cyan-200" />
+                {item.mode === "clone" ? "配置已恢复，请重新上传音频" : "文本、音色和参数已恢复"}
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
         </div>
       </div>
 

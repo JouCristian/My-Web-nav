@@ -79,6 +79,13 @@ export async function getVoiceJob(baseUrl: string, jobId: string, signal?: Abort
   return readJson<VoiceJob>(response)
 }
 
+export async function cancelVoiceJob(baseUrl: string, jobId: string): Promise<VoiceJob> {
+  const response = await fetch(`${normalizeVoiceApiBaseUrl(baseUrl)}/tts/jobs/${jobId}/cancel`, {
+    method: "POST",
+  })
+  return readJson<VoiceJob>(response)
+}
+
 export function resolveVoiceAudioUrl(baseUrl: string, audioUrl?: string | null, filename?: string | null): string {
   const rawUrl = audioUrl || (filename ? `/tts/audio/${filename}` : "")
   if (!rawUrl) return ""

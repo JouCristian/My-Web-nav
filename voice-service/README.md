@@ -54,7 +54,8 @@ Then open:
 
 - WAV is recommended and should work without FFmpeg.
 - MP3, M4A, and AAC are accepted by the API, then normalized to 16 kHz mono WAV.
-- For non-WAV uploads, install FFmpeg and make sure it is available in `PATH`.
+- `imageio-ffmpeg` supplies the local FFmpeg executable, so users do not need to configure a separate system `PATH`.
+- The original upload is preserved for browser preview; VoxCPM2 only receives the normalized WAV path.
 
 ## API
 
@@ -93,9 +94,13 @@ Returns:
 
 ### `GET /tts/jobs/{job_id}`
 
-Returns `queued`, `running`, `succeeded`, or `failed`.
+Returns `queued`, `running`, `canceling`, `canceled`, `succeeded`, or `failed`.
 
 Successful jobs include `audio_url` and `filename`. Failed jobs include `error`.
+
+### `POST /tts/jobs/{job_id}/cancel`
+
+Cancels a queued job immediately. A running job stops at the next VoxCPM2 streaming audio chunk, releases the active generator, and leaves the service available for the next request.
 
 ### `GET /tts/audio/{filename}`
 

@@ -57,7 +57,7 @@ export function ReferenceAudioUploader({
     if (!["WAV", "MP3", "M4A", "AAC"].includes(extension)) return { tone: "warning" as const, summary: "该格式可能无法被声音引擎处理", details: `${extension} · ${size}，建议改用 WAV` }
     if (file.size > 50 * 1024 * 1024) return { tone: "warning" as const, summary: "文件较大，上传和转换可能需要更久", details: `${extension} · ${size}` }
     if (duration !== null && (duration < 5 || duration > 20)) return { tone: "warning" as const, summary: "建议使用 5 至 20 秒的参考音频", details: `${extension} · ${size} · ${formatDuration(duration)}` }
-    return { tone: "good" as const, summary: duration === null ? "正在读取音频信息" : "音频长度适合声音克隆", details: `${extension} · ${size}${duration === null ? "" : ` · ${formatDuration(duration)}`}` }
+    return { tone: "good" as const, summary: duration === null ? "正在读取音频信息" : "音频长度适合声音克隆", details: `${extension} · ${size}${duration === null ? "" : ` · ${formatDuration(duration)}`} · 原格式试听` }
   }, [duration, file])
 
   function handleDrop(event: DragEvent<HTMLLabelElement>) {
@@ -87,7 +87,7 @@ export function ReferenceAudioUploader({
           <UploadCloud className="h-5 w-5" />
         </span>
         <span className="mt-3 block text-sm font-bold text-white">{file ? "更换参考音频" : dragging ? "松开即可上传" : "拖拽或点击上传音频"}</span>
-        <span className="mt-1 block text-xs leading-relaxed text-zinc-400">支持 WAV / MP3 / M4A / AAC，推荐纯净人声 5 至 20 秒</span>
+        <span className="mt-1 block text-xs leading-relaxed text-zinc-400">支持 WAV / MP3 / M4A / AAC，自动转为 WAV；推荐 5 至 20 秒纯净人声</span>
         <input
           type="file"
           accept="audio/wav,audio/mpeg,audio/mp4,audio/aac,.wav,.mp3,.m4a,.aac"

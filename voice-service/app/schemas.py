@@ -3,7 +3,7 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 
-JobStatus = Literal["queued", "running", "succeeded", "failed"]
+JobStatus = Literal["queued", "running", "canceling", "canceled", "succeeded", "failed"]
 GenerationMode = Literal["design", "clone"]
 
 

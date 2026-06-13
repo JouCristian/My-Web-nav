@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
-import { Check, CheckCircle2, Clock3, Download, Loader2, Radio, RotateCcw, Sparkles, TriangleAlert, Wand2 } from "lucide-react"
+import { Ban, Check, CheckCircle2, CircleStop, Clock3, Download, Loader2, Radio, RotateCcw, Sparkles, TriangleAlert, Wand2 } from "lucide-react"
 import { VoiceAudioPlayer } from "@/components/ai-voice-workshop/VoiceAudioPlayer"
 import {
   voiceErrorTransition,
@@ -22,6 +22,7 @@ interface AudioResultCardProps {
   title?: string
   error?: string
   startedAt?: number | null
+  onCancel?: () => void
   onReset?: () => void
   onRetry?: () => void
 }
@@ -30,15 +31,17 @@ const statusText: Record<AudioResultCardProps["status"], string> = {
   idle: "等待生成",
   queued: "任务排队中",
   running: "正在生成",
+  canceling: "正在停止",
+  canceled: "已停止生成",
   succeeded: "生成完成",
   failed: "生成失败",
 }
 
 const waveform = [32, 54, 42, 72, 48, 84, 58, 38, 66, 46, 78, 52, 34, 62, 44, 70, 40, 56]
 
-export function AudioResultCard({ status, mode, audioUrl, filename, title, error, startedAt, onReset, onRetry }: AudioResultCardProps) {
+export function AudioResultCard({ status, mode, audioUrl, filename, title, error, startedAt, onCancel, onReset, onRetry }: AudioResultCardProps) {
   const reducedMotion = useReducedMotion()
-  const isLoading = status === "queued" || status === "running"
+  const isLoading = status === "queued" || status === "running" || status === "canceling"
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
 
   useEffect(() => {
@@ -92,13 +95,13 @@ export function AudioResultCard({ status, mode, audioUrl, filename, title, error
         {isLoading ? (
           <motion.div key="loading" variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} className="col-start-1 row-start-1 flex min-h-[250px] flex-col justify-center overflow-hidden rounded-xl border border-cyan-100/15 bg-cyan-100/[0.05] p-5">
             <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 text-sm font-bold text-cyan-50"><Loader2 className="h-4 w-4 animate-spin" />{status === "queued" ? "任务正在等待执行" : "VoxCPM2 正在合成声音"}</div>
+              <div className="flex items-center gap-3 text-sm font-bold text-cyan-50"><Loader2 className="h-4 w-4 animate-spin" />{status === "queued" ? "任务正在等待执行" : status === "canceling" ? "正在安全停止本次生成" : "VoxCPM2 正在合成声音"}</div>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/20 px-2.5 py-1 font-mono text-[10px] text-cyan-50/65"><Clock3 className="h-3 w-3" />{elapsedSeconds}s</span>
             </div>
             <p className="mt-2 text-xs leading-relaxed text-zinc-400">任务由本地引擎单线程执行，当前输入和参数已锁定到本次任务。</p>
             <div className="mt-4 grid grid-cols-3 gap-2">
               <StageItem label="等待执行" state={status === "queued" ? "active" : "done"} />
-              <StageItem label="声音合成" state={status === "running" ? "active" : "pending"} />
+              <StageItem label="声音合成" state={status === "running" || status === "canceling" ? "active" : "pending"} />
               <StageItem label="WAV 就绪" state="pending" />
             </div>
             <div className="mt-5 flex h-16 items-center justify-center gap-1 overflow-hidden" aria-hidden="true">
@@ -115,6 +118,32 @@ export function AudioResultCard({ status, mode, audioUrl, filename, title, error
             <div className="mt-4 h-1 overflow-hidden rounded-full bg-black/35">
               <motion.div className="h-full w-2/5 rounded-full bg-gradient-to-r from-cyan-200 to-violet-300" animate={reducedMotion ? undefined : { x: ["-110%", "280%"] }} transition={{ duration: 1.25, repeat: Infinity, ease: "easeInOut" }} />
             </div>
+            <AnimatePresence initial={false}>
+              {error ? <motion.p key={error} variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} role="alert" className="mt-3 text-center text-xs font-bold text-rose-200">{error}</motion.p> : null}
+            </AnimatePresence>
+            {onCancel ? (
+              <motion.button
+                type="button"
+                onClick={onCancel}
+                disabled={status === "canceling"}
+                whileHover={status === "canceling" ? undefined : voiceHover}
+                whileTap={status === "canceling" ? undefined : voiceTap}
+                transition={voiceFastSpring}
+                className="mt-4 inline-flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-rose-100/20 bg-rose-500/[0.07] px-4 text-xs font-bold text-rose-50/85 transition-colors hover:border-rose-100/35 hover:bg-rose-500/[0.12] disabled:cursor-wait disabled:opacity-55"
+              >
+                {status === "canceling" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CircleStop className="h-4 w-4" />}
+                {status === "canceling" ? "正在停止..." : "停止本次生成"}
+              </motion.button>
+            ) : null}
+          </motion.div>
+        ) : null}
+
+        {status === "canceled" ? (
+          <motion.div key="canceled" variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} className="col-start-1 row-start-1 flex min-h-[250px] flex-col items-center justify-center rounded-xl border border-white/10 bg-white/[0.035] p-5 text-center">
+            <span className="grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-black/25 text-zinc-300"><Ban className="h-5 w-5" /></span>
+            <div className="mt-4 text-sm font-bold text-white">本次生成已停止</div>
+            <p className="mt-2 max-w-sm text-xs leading-relaxed text-zinc-400">声音引擎保持在线，可以调整文本或参数后直接开始下一次生成。</p>
+            {onRetry ? <motion.button type="button" onClick={onRetry} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className="mt-4 inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full border border-cyan-100/20 bg-cyan-200/[0.07] px-4 text-xs font-bold text-cyan-50 transition-colors hover:bg-cyan-200/[0.11]"><Wand2 className="h-4 w-4" />重新生成</motion.button> : null}
           </motion.div>
         ) : null}
 

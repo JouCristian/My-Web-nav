@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, Response
 from app.audio_utils import normalize_reference_audio, save_upload_file
 from app.job_store import job_store
 from app.schemas import GenerateResponse, HealthResponse, JobRecord
-from app.tts_engine import TTSEngine, VOICE_PRESETS
+from app.tts_engine import GenerationCancelled, TTSEngine, VOICE_PRESETS
 
 load_dotenv()
 
@@ -122,15 +122,27 @@ def _worker_loop() -> None:
             time.sleep(0.2)
             continue
 
+        cancel_event = job_store.cancel_event(job.job_id)
+        if cancel_event.is_set():
+            job_store.update(job.job_id, status="canceled", error=None)
+            continue
+
         job_store.update(job.job_id, status="running", error=None)
         try:
-            filename, _ = engine.generate(job)
+            filename, _ = engine.generate(job, cancel_event)
+            if cancel_event.is_set():
+                (OUTPUT_DIR / filename).unlink(missing_ok=True)
+                job_store.update(job.job_id, status="canceled", error=None)
+                continue
             job_store.update(
                 job.job_id,
                 status="succeeded",
                 filename=filename,
                 audio_url=f"/tts/audio/{filename}",
             )
+        except GenerationCancelled:
+            logger.info("TTS job canceled: %s", job.job_id)
+            job_store.update(job.job_id, status="canceled", error=None)
         except Exception as error:  # noqa: BLE001 - API should return model errors as job failures.
             logger.exception("TTS job failed: %s", job.job_id)
             job_store.update(job.job_id, status="failed", error=str(error))
@@ -243,6 +255,14 @@ async def generate_tts(
 @app.get("/tts/jobs/{job_id}")
 def get_job(job_id: str) -> dict[str, object]:
     job = job_store.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    return job.model_dump()
+
+
+@app.post("/tts/jobs/{job_id}/cancel")
+def cancel_job(job_id: str) -> dict[str, object]:
+    job = job_store.cancel(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="任务不存在")
     return job.model_dump()

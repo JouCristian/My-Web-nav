@@ -31,6 +31,7 @@ import {
 import { AutoHeight } from "@/components/ai-voice-workshop/AutoHeight"
 import {
   defaultLocalVoiceApiBaseUrl,
+  cancelVoiceJob,
   generateVoice,
   getVoiceEngineInfo,
   getVoiceJob,
@@ -99,10 +100,10 @@ export function VoiceWorkshopClient() {
   const [history, setHistory] = useState<VoiceHistoryItem[]>([])
   const [resultMode, setResultMode] = useState<VoiceMode>("design")
   const [generationStartedAt, setGenerationStartedAt] = useState<number | null>(null)
-  const [reuseNotice, setReuseNotice] = useState<string | null>(null)
+  const [formContentVersion, setFormContentVersion] = useState(0)
 
   const pollTimerRef = useRef<number | null>(null)
-  const reuseTimerRef = useRef<number | null>(null)
+  const activeJobIdRef = useRef<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
 
   const selectedPreset = useMemo(
@@ -116,7 +117,7 @@ export function VoiceWorkshopClient() {
   }, [customApiUrl, engineMode, localApiUrl])
 
   const connected = engineStatus === "connected" && Boolean(health?.model_loaded)
-  const isGenerating = resultStatus === "queued" || resultStatus === "running"
+  const isGenerating = resultStatus === "queued" || resultStatus === "running" || resultStatus === "canceling"
   const trimmedText = text.trim()
   const isCloneMode = mode === "clone"
   const voicePromptForGeneration = isCloneMode ? "" : voicePrompt.trim() || selectedPreset?.prompt || ""
@@ -130,7 +131,7 @@ export function VoiceWorkshopClient() {
       ? validationError
       : undefined
   const generationBlockReason = isGenerating
-    ? "当前任务正在生成，请等待完成。"
+    ? resultStatus === "canceling" ? "正在停止本次生成，请稍候。" : "当前任务正在生成，可在结果区停止本次任务。"
     : !connected
       ? "请先连接并加载声音引擎。"
       : !trimmedText
@@ -180,7 +181,7 @@ export function VoiceWorkshopClient() {
       setEngineInfo(null)
       setPresets(defaultVoicePresets)
       setEngineStatus(status === "starting" ? "failed" : "disconnected")
-      setEngineError(error instanceof Error ? error.message : "无法连接 voice-service")
+      setEngineError(error instanceof Error ? error.message : "无法连接声音引擎")
       return false
     }
   }, [])
@@ -220,7 +221,6 @@ export function VoiceWorkshopClient() {
 
   useEffect(() => () => {
     stopPolling()
-    if (reuseTimerRef.current !== null) window.clearTimeout(reuseTimerRef.current)
   }, [stopPolling])
 
   useEffect(() => {
@@ -346,6 +346,7 @@ export function VoiceWorkshopClient() {
   async function pollJob(jobId: string, requestTitle: string, requestText: string, requestMode: VoiceMode, requestApiBaseUrl: string, requestConfig: VoiceHistoryConfig) {
     try {
       const job = await getVoiceJob(requestApiBaseUrl, jobId)
+      if (activeJobIdRef.current !== jobId) return
       setResultStatus(job.status)
 
       if (job.status === "succeeded") {
@@ -356,6 +357,7 @@ export function VoiceWorkshopClient() {
         setResultFilename(filename)
         setResultTitle(requestTitle)
         setResultError(null)
+        activeJobIdRef.current = null
         setHistory((current) => [
           {
             id: job.job_id,
@@ -373,10 +375,19 @@ export function VoiceWorkshopClient() {
 
       if (job.status === "failed") {
         stopPolling()
+        activeJobIdRef.current = null
         setResultError(job.error || "生成失败，请检查本地声音引擎后重试。")
       }
+
+      if (job.status === "canceled") {
+        stopPolling()
+        activeJobIdRef.current = null
+        setResultError(null)
+      }
     } catch (error) {
+      if (activeJobIdRef.current !== jobId) return
       stopPolling()
+      activeJobIdRef.current = null
       setResultStatus("failed")
       setResultError(error instanceof Error ? error.message : "获取生成任务状态失败，请检查引擎连接。")
     }
@@ -422,18 +433,23 @@ export function VoiceWorkshopClient() {
         cfgValue,
         inferenceTimesteps,
       })
+      activeJobIdRef.current = response.job_id
       setResultStatus(response.status)
       await pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestConfig)
-      pollTimerRef.current = window.setInterval(() => {
-        void pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestConfig)
-      }, 1000)
+      if (activeJobIdRef.current === response.job_id) {
+        pollTimerRef.current = window.setInterval(() => {
+          void pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestConfig)
+        }, 1000)
+      }
     } catch (error) {
+      activeJobIdRef.current = null
       setResultStatus("failed")
       setResultError(error instanceof Error ? error.message : "提交生成任务失败")
     }
   }
 
   function resetResult() {
+    if (isGenerating) return
     stopPolling()
     setResultStatus("idle")
     setResultError(null)
@@ -441,6 +457,27 @@ export function VoiceWorkshopClient() {
     setResultFilename("")
     setResultTitle("")
     setGenerationStartedAt(null)
+  }
+
+  async function handleCancelGeneration() {
+    const jobId = activeJobIdRef.current
+    if (!jobId || !isGenerating || resultStatus === "canceling") return
+
+    const previousStatus = resultStatus
+    setResultStatus("canceling")
+    setResultError(null)
+    try {
+      const job = await cancelVoiceJob(activeApiBaseUrl, jobId)
+      if (activeJobIdRef.current !== jobId) return
+      setResultStatus(job.status)
+      if (job.status === "canceled") {
+        stopPolling()
+        activeJobIdRef.current = null
+      }
+    } catch (error) {
+      setResultStatus(previousStatus === "queued" ? "queued" : "running")
+      setResultError(error instanceof Error ? `停止失败：${error.message}` : "停止失败，请稍后重试。")
+    }
   }
 
   function handleDeleteHistory(id: string) {
@@ -461,9 +498,7 @@ export function VoiceWorkshopClient() {
       setCloneConsent(false)
       setValidationError(null)
     }
-    setReuseNotice(item.mode === "clone" ? "已恢复文本和参数，请重新上传参考音频。" : "已恢复这条记录的文本、音色和生成参数。")
-    if (reuseTimerRef.current !== null) window.clearTimeout(reuseTimerRef.current)
-    reuseTimerRef.current = window.setTimeout(() => setReuseNotice(null), 2200)
+    setFormContentVersion((current) => current + 1)
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
@@ -532,11 +567,15 @@ export function VoiceWorkshopClient() {
             <section className="relative overflow-visible rounded-2xl border border-white/10 bg-[#090c18]/88 p-5 shadow-[0_8px_24px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-6">
               <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/60 to-transparent" />
               <div className="mb-5 flex items-center gap-2 text-sm font-bold text-white"><Wand2 className="h-4 w-4 text-cyan-100" />创作流程</div>
-              <AnimatePresence initial={false}>
-                {reuseNotice ? <motion.div key={reuseNotice} variants={voiceFadeScaleVariants} initial="hidden" animate="visible" exit="exit" transition={voiceSpring} className="mb-5 rounded-xl border border-cyan-100/18 bg-cyan-200/[0.065] px-4 py-3 text-xs font-bold text-cyan-50">{reuseNotice}</motion.div> : null}
-              </AnimatePresence>
-
-              <div className="relative space-y-5">
+              <AnimatePresence initial={false} mode="wait">
+              <motion.div
+                key={formContentVersion}
+                initial={{ opacity: 0, filter: "blur(3px)" }}
+                animate={{ opacity: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, filter: "blur(3px)" }}
+                transition={{ opacity: { duration: 0.15 }, filter: { duration: 0.15 } }}
+                className="relative space-y-5"
+              >
                 <div className="absolute bottom-5 left-[15px] top-4 hidden border-l border-dashed border-cyan-200/20 sm:block" aria-hidden="true" />
 
                 <FlowStep number="1" title="选择模式" description="选择音色设计，或使用参考音频克隆声音。">
@@ -651,13 +690,14 @@ export function VoiceWorkshopClient() {
                     </AnimatePresence>
                   </div>
                 </FlowStep>
-              </div>
+              </motion.div>
+              </AnimatePresence>
             </section>
           </form>
           </motion.div>
 
           <motion.aside variants={voicePageItem} className="flex min-w-0 flex-col gap-4 xl:max-h-full">
-            <AudioResultCard status={resultStatus} mode={resultMode} audioUrl={resultAudioUrl} filename={resultFilename} title={resultTitle} error={resultError || undefined} startedAt={generationStartedAt} onReset={resultStatus === "idle" ? undefined : resetResult} onRetry={resultStatus === "failed" ? () => formRef.current?.requestSubmit() : undefined} />
+            <AudioResultCard status={resultStatus} mode={resultMode} audioUrl={resultAudioUrl} filename={resultFilename} title={resultTitle} error={resultError || undefined} startedAt={generationStartedAt} onCancel={isGenerating ? () => void handleCancelGeneration() : undefined} onReset={resultStatus === "idle" || isGenerating ? undefined : resetResult} onRetry={resultStatus === "failed" || resultStatus === "canceled" ? () => formRef.current?.requestSubmit() : undefined} />
             <VoiceTipsCard />
             <VoiceHistoryPanel items={history} onDelete={handleDeleteHistory} onReuse={handleReuseHistory} />
           </motion.aside>
