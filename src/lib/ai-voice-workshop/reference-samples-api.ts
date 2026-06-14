@@ -1,4 +1,38 @@
+import { supabase } from "@/lib/supabase"
 import type { VoiceReferenceSample } from "@/lib/ai-voice-workshop/types"
+
+const voiceReferenceSampleBucket = "voice-reference-samples"
+
+export type VoiceReferenceSampleSavePayload = {
+  sampleId: string
+  name: string
+  description: string
+  tags: string[]
+  sortOrder: number
+  isActive: boolean
+  audioDurationSeconds: number | null
+  avatarUpload?: VoiceReferenceUploadedFile | null
+  audioUpload?: VoiceReferenceUploadedFile | null
+}
+
+type VoiceReferenceUploadKind = "avatar" | "audio"
+
+type VoiceReferenceUploadedFile = {
+  path: string
+  mimeType: string
+  size: number
+}
+
+type UploadIntent = {
+  kind: VoiceReferenceUploadKind
+  path: string
+  token: string
+}
+
+type UploadIntentResponse = {
+  sampleId: string
+  uploads: UploadIntent[]
+}
 
 async function readApiResponse<T>(response: Response): Promise<T> {
   const payload = await response.json().catch(() => null) as { error?: string } | T | null
@@ -19,15 +53,94 @@ export async function getAdminVoiceReferenceSamples() {
   return readApiResponse<VoiceReferenceSample[]>(response)
 }
 
-export async function createVoiceReferenceSample(formData: FormData) {
-  const response = await fetch("/api/voice-reference-samples", { method: "POST", body: formData })
+export async function uploadVoiceReferenceSampleFiles(
+  files: { avatar?: File | null; audio?: File | null },
+  existingSampleId?: string | null,
+) {
+  const requestedFiles = [
+    files.avatar ? { kind: "avatar" as const, file: files.avatar } : null,
+    files.audio ? { kind: "audio" as const, file: files.audio } : null,
+  ].filter((item): item is { kind: VoiceReferenceUploadKind; file: File } => Boolean(item))
+
+  if (!requestedFiles.length) {
+    if (!existingSampleId) throw new Error("新增精选声音时必须上传参考音频")
+    return { sampleId: existingSampleId, avatarUpload: null, audioUpload: null }
+  }
+
+  const response = await fetch("/api/voice-reference-samples/upload-intents", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sampleId: existingSampleId ?? null,
+      files: requestedFiles.map(({ kind, file }) => ({
+        kind,
+        name: file.name,
+        mimeType: file.type,
+        size: file.size,
+      })),
+    }),
+  })
+  const intent = await readApiResponse<UploadIntentResponse>(response)
+  const completedPaths: string[] = []
+
+  try {
+    const uploaded: Partial<Record<VoiceReferenceUploadKind, VoiceReferenceUploadedFile>> = {}
+    for (const requested of requestedFiles) {
+      const uploadIntent = intent.uploads.find((item) => item.kind === requested.kind)
+      if (!uploadIntent) throw new Error("上传任务信息不完整，请重新尝试")
+
+      const { error } = await supabase.storage
+        .from(voiceReferenceSampleBucket)
+        .uploadToSignedUrl(uploadIntent.path, uploadIntent.token, requested.file, {
+          contentType: requested.file.type || undefined,
+          upsert: false,
+        })
+      if (error) throw new Error(`${requested.kind === "avatar" ? "头像" : "参考音频"}上传失败：${error.message}`)
+
+      completedPaths.push(uploadIntent.path)
+      uploaded[requested.kind] = {
+        path: uploadIntent.path,
+        mimeType: requested.file.type,
+        size: requested.file.size,
+      }
+    }
+
+    return {
+      sampleId: intent.sampleId,
+      avatarUpload: uploaded.avatar ?? null,
+      audioUpload: uploaded.audio ?? null,
+    }
+  } catch (error) {
+    if (completedPaths.length) {
+      await cleanupVoiceReferenceSampleUploads(intent.sampleId, completedPaths).catch(() => undefined)
+    }
+    throw error
+  }
+}
+
+export async function cleanupVoiceReferenceSampleUploads(sampleId: string, paths: string[]) {
+  const response = await fetch("/api/voice-reference-samples/upload-intents", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sampleId, paths }),
+  })
+  return readApiResponse<{ success: boolean }>(response)
+}
+
+export async function createVoiceReferenceSample(payload: VoiceReferenceSampleSavePayload) {
+  const response = await fetch("/api/voice-reference-samples", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
   return readApiResponse<VoiceReferenceSample>(response)
 }
 
-export async function updateVoiceReferenceSample(id: string, formData: FormData) {
+export async function updateVoiceReferenceSample(id: string, payload: VoiceReferenceSampleSavePayload) {
   const response = await fetch(`/api/voice-reference-samples/${encodeURIComponent(id)}`, {
     method: "PATCH",
-    body: formData,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   })
   return readApiResponse<VoiceReferenceSample>(response)
 }

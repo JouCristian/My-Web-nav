@@ -14,7 +14,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
     await assertVoiceReferenceSampleAdmin()
     const { id } = await context.params
-    return NextResponse.json(await updateVoiceReferenceSample(id, await request.formData()))
+    return NextResponse.json(await updateVoiceReferenceSample(id, await request.json()))
   } catch (error) {
     return referenceSampleErrorResponse(error, "更新精选参考音频失败")
   }

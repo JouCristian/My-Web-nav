@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const email = await assertVoiceReferenceSampleAdmin()
-    const sample = await createVoiceReferenceSample(await request.formData(), email)
+    const sample = await createVoiceReferenceSample(await request.json(), email)
     return NextResponse.json(sample, { status: 201 })
   } catch (error) {
     return referenceSampleErrorResponse(error, "新增精选参考音频失败")
@@ -39,4 +39,3 @@ function referenceSampleErrorResponse(error: unknown, fallback: string) {
   }
   return NextResponse.json({ error: error instanceof Error ? error.message : fallback }, { status: 500 })
 }
-

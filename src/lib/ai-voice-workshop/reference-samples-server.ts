@@ -18,8 +18,10 @@ const audioMimeTypes = new Set([
   "audio/x-m4a",
   "audio/aac",
 ])
+const audioExtensions = new Set(["wav", "mp3", "m4a", "aac"])
 const maxAvatarBytes = 2 * 1024 * 1024
 const maxAudioBytes = 4 * 1024 * 1024
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 type VoiceReferenceSampleRow = {
   id: string
@@ -47,6 +49,27 @@ export type VoiceReferenceSampleInput = {
   sortOrder: number
   isActive: boolean
   audioDurationSeconds: number | null
+}
+
+export type VoiceReferenceUploadKind = "avatar" | "audio"
+
+export type VoiceReferenceUploadRequest = {
+  kind: VoiceReferenceUploadKind
+  name: string
+  mimeType: string
+  size: number
+}
+
+export type VoiceReferenceUploadedFile = {
+  path: string
+  mimeType: string
+  size: number
+}
+
+export type VoiceReferenceSamplePayload = VoiceReferenceSampleInput & {
+  sampleId: string
+  avatarUpload?: VoiceReferenceUploadedFile | null
+  audioUpload?: VoiceReferenceUploadedFile | null
 }
 
 export function mapVoiceReferenceSample(row: VoiceReferenceSampleRow): VoiceReferenceSample {
@@ -112,100 +135,71 @@ export async function listAllVoiceReferenceSamples() {
   return (data as VoiceReferenceSampleRow[]).map(mapVoiceReferenceSample)
 }
 
-export function parseVoiceReferenceSampleForm(formData: FormData): VoiceReferenceSampleInput {
-  const name = String(formData.get("name") ?? "").trim()
-  if (!name) throw new VoiceReferenceSampleHttpError(400, "名称不能为空")
-  if (name.length > 80) throw new VoiceReferenceSampleHttpError(400, "名称不能超过 80 个字符")
-
-  const description = String(formData.get("description") ?? "").trim()
-  const tags = String(formData.get("tags") ?? "")
-    .split(/[,，]/)
-    .map((tag) => tag.trim())
-    .filter(Boolean)
-    .slice(0, 12)
-  const parsedSortOrder = Number.parseInt(String(formData.get("sortOrder") ?? "0"), 10)
-  const durationValue = Number.parseFloat(String(formData.get("audioDurationSeconds") ?? ""))
-
-  return {
-    name,
-    description: description.slice(0, 500),
-    tags: [...new Set(tags)],
-    sortOrder: Number.isFinite(parsedSortOrder) ? parsedSortOrder : 0,
-    isActive: String(formData.get("isActive") ?? "true") === "true",
-    audioDurationSeconds: Number.isFinite(durationValue) && durationValue >= 0 ? durationValue : null,
+export async function createVoiceReferenceUploadIntents(
+  requestedSampleId: string | null,
+  files: VoiceReferenceUploadRequest[],
+) {
+  if (!files.length || files.length > 2) {
+    throw new VoiceReferenceSampleHttpError(400, "请选择需要上传的头像或参考音频")
   }
-}
 
-export function readOptionalFile(formData: FormData, key: string) {
-  const value = formData.get(key)
-  return value instanceof File && value.size > 0 ? value : null
-}
+  const sampleId = requestedSampleId || randomUUID()
+  assertSampleId(sampleId)
 
-export function validateAvatarFile(file: File | null) {
-  if (!file) return
-  if (!avatarMimeTypes.has(file.type)) throw new VoiceReferenceSampleHttpError(400, "头像仅支持 PNG、JPG 或 WEBP")
-  if (file.size > maxAvatarBytes) throw new VoiceReferenceSampleHttpError(400, "头像不能超过 2 MB")
-}
-
-export function validateAudioFile(file: File | null, required: boolean) {
-  if (!file) {
-    if (required) throw new VoiceReferenceSampleHttpError(400, "请上传参考音频")
-    return
+  if (requestedSampleId) {
+    const { data, error } = await getSupabaseAdminClient()
+      .from("voice_reference_samples")
+      .select("id")
+      .eq("id", sampleId)
+      .single()
+    if (error || !data) throw new VoiceReferenceSampleHttpError(404, "精选参考音频不存在")
   }
-  const extension = file.name.split(".").pop()?.toLowerCase()
-  const allowedExtension = extension && ["wav", "mp3", "m4a", "aac"].includes(extension)
-  if (!audioMimeTypes.has(file.type) && !allowedExtension) {
-    throw new VoiceReferenceSampleHttpError(400, "参考音频仅支持 WAV、MP3、M4A 或 AAC")
+
+  const seenKinds = new Set<VoiceReferenceUploadKind>()
+  const storage = getSupabaseAdminClient().storage.from(voiceReferenceSampleBucket)
+  const uploads = []
+
+  for (const file of files) {
+    validateUploadRequest(file)
+    if (seenKinds.has(file.kind)) throw new VoiceReferenceSampleHttpError(400, "同一类文件只能上传一个")
+    seenKinds.add(file.kind)
+
+    const folder = file.kind === "avatar" ? "avatars" : "audios"
+    const extension = safeFileExtension(file.name, file.kind === "avatar" ? "webp" : "wav")
+    const path = `${folder}/${sampleId}/${file.kind}-${randomUUID()}.${extension}`
+    const { data, error } = await storage.createSignedUploadUrl(path)
+    if (error || !data) throw new Error(`${file.kind === "avatar" ? "头像" : "音频"}上传地址创建失败：${error?.message ?? "未知错误"}`)
+    uploads.push({ kind: file.kind, path: data.path, token: data.token })
   }
-  if (file.size > maxAudioBytes) throw new VoiceReferenceSampleHttpError(400, "参考音频不能超过 4 MB")
+
+  return { sampleId, uploads }
 }
 
-function fileExtension(file: File, fallback: string) {
-  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "")
-  return extension || fallback
+export async function cleanupVoiceReferenceUploads(sampleId: string, paths: string[]) {
+  assertSampleId(sampleId)
+  const scopedPaths = paths.filter((path) => isPathForSample(path, sampleId))
+  if (scopedPaths.length !== paths.length) throw new VoiceReferenceSampleHttpError(400, "存在无效的存储路径")
+  const error = await removeStoragePaths(scopedPaths)
+  if (error) throw new Error(`临时文件清理失败：${error.message}`)
+  return { success: true }
 }
 
-async function uploadSampleFile(sampleId: string, kind: "avatars" | "audios", file: File) {
-  const fallback = kind === "avatars" ? "webp" : "wav"
-  const path = `${kind}/${sampleId}/${kind === "avatars" ? "avatar" : "audio"}-${randomUUID()}.${fileExtension(file, fallback)}`
-  const client = getSupabaseAdminClient()
-  const { error } = await client.storage.from(voiceReferenceSampleBucket).upload(path, file, {
-    contentType: file.type || undefined,
-    upsert: false,
-  })
-  if (error) throw new Error(`${kind === "avatars" ? "头像" : "音频"}上传失败：${error.message}`)
-  return {
-    path,
-    url: client.storage.from(voiceReferenceSampleBucket).getPublicUrl(path).data.publicUrl,
-  }
-}
+export async function createVoiceReferenceSample(payload: unknown, adminEmail: string) {
+  const input = parseVoiceReferenceSamplePayload(payload)
+  const avatarUpload = input.avatarUpload
+    ? await verifyUploadedFile(input.sampleId, "avatar", input.avatarUpload)
+    : null
+  const audioUpload = input.audioUpload
+    ? await verifyUploadedFile(input.sampleId, "audio", input.audioUpload)
+    : null
 
-async function removeStoragePaths(paths: Array<string | null | undefined>) {
-  const validPaths = paths.filter((path): path is string => Boolean(path))
-  if (!validPaths.length) return null
-  const { error } = await getSupabaseAdminClient().storage.from(voiceReferenceSampleBucket).remove(validPaths)
-  return error
-}
-
-export async function createVoiceReferenceSample(formData: FormData, adminEmail: string) {
-  const input = parseVoiceReferenceSampleForm(formData)
-  const avatar = readOptionalFile(formData, "avatar")
-  const audio = readOptionalFile(formData, "audio")
-  validateAvatarFile(avatar)
-  validateAudioFile(audio, true)
-
-  const id = randomUUID()
-  let avatarUpload: Awaited<ReturnType<typeof uploadSampleFile>> | null = null
-  let audioUpload: Awaited<ReturnType<typeof uploadSampleFile>> | null = null
+  if (!audioUpload) throw new VoiceReferenceSampleHttpError(400, "请上传参考音频")
 
   try {
-    if (avatar) avatarUpload = await uploadSampleFile(id, "avatars", avatar)
-    audioUpload = await uploadSampleFile(id, "audios", audio!)
-
     const { data, error } = await getSupabaseAdminClient()
       .from("voice_reference_samples")
       .insert({
-        id,
+        id: input.sampleId,
         name: input.name,
         description: input.description,
         tags: input.tags,
@@ -214,8 +208,8 @@ export async function createVoiceReferenceSample(formData: FormData, adminEmail:
         audio_path: audioUpload.path,
         audio_url: audioUpload.url,
         audio_duration_seconds: input.audioDurationSeconds,
-        audio_mime_type: audio!.type || null,
-        audio_size_bytes: audio!.size,
+        audio_mime_type: audioUpload.mimeType,
+        audio_size_bytes: audioUpload.size,
         sort_order: input.sortOrder,
         is_active: input.isActive,
         created_by_email: adminEmail,
@@ -226,17 +220,15 @@ export async function createVoiceReferenceSample(formData: FormData, adminEmail:
     if (error) throw new Error(`保存失败：${error.message}`)
     return mapVoiceReferenceSample(data as VoiceReferenceSampleRow)
   } catch (error) {
-    await removeStoragePaths([avatarUpload?.path, audioUpload?.path])
+    await removeStoragePaths([avatarUpload?.path, audioUpload.path])
     throw error
   }
 }
 
-export async function updateVoiceReferenceSample(id: string, formData: FormData) {
-  const input = parseVoiceReferenceSampleForm(formData)
-  const avatar = readOptionalFile(formData, "avatar")
-  const audio = readOptionalFile(formData, "audio")
-  validateAvatarFile(avatar)
-  validateAudioFile(audio, false)
+export async function updateVoiceReferenceSample(id: string, payload: unknown) {
+  assertSampleId(id)
+  const input = parseVoiceReferenceSamplePayload(payload)
+  if (input.sampleId !== id) throw new VoiceReferenceSampleHttpError(400, "样例标识不匹配")
 
   const client = getSupabaseAdminClient()
   const { data: existingData, error: existingError } = await client
@@ -247,12 +239,14 @@ export async function updateVoiceReferenceSample(id: string, formData: FormData)
   if (existingError || !existingData) throw new VoiceReferenceSampleHttpError(404, "精选参考音频不存在")
   const existing = existingData as VoiceReferenceSampleRow
 
-  let avatarUpload: Awaited<ReturnType<typeof uploadSampleFile>> | null = null
-  let audioUpload: Awaited<ReturnType<typeof uploadSampleFile>> | null = null
-  try {
-    if (avatar) avatarUpload = await uploadSampleFile(id, "avatars", avatar)
-    if (audio) audioUpload = await uploadSampleFile(id, "audios", audio)
+  const avatarUpload = input.avatarUpload
+    ? await verifyUploadedFile(id, "avatar", input.avatarUpload)
+    : null
+  const audioUpload = input.audioUpload
+    ? await verifyUploadedFile(id, "audio", input.audioUpload)
+    : null
 
+  try {
     const { data, error } = await client
       .from("voice_reference_samples")
       .update({
@@ -263,9 +257,9 @@ export async function updateVoiceReferenceSample(id: string, formData: FormData)
         avatar_url: avatarUpload?.url ?? existing.avatar_url,
         audio_path: audioUpload?.path ?? existing.audio_path,
         audio_url: audioUpload?.url ?? existing.audio_url,
-        audio_duration_seconds: audio ? input.audioDurationSeconds : existing.audio_duration_seconds,
-        audio_mime_type: audio ? audio.type || null : existing.audio_mime_type,
-        audio_size_bytes: audio ? audio.size : existing.audio_size_bytes,
+        audio_duration_seconds: audioUpload ? input.audioDurationSeconds : existing.audio_duration_seconds,
+        audio_mime_type: audioUpload ? audioUpload.mimeType : existing.audio_mime_type,
+        audio_size_bytes: audioUpload ? audioUpload.size : existing.audio_size_bytes,
         sort_order: input.sortOrder,
         is_active: input.isActive,
       })
@@ -299,6 +293,123 @@ export async function deleteVoiceReferenceSample(id: string) {
 
   const cleanupError = await removeStoragePaths([data.avatar_path, data.audio_path])
   return { storageCleanupWarning: cleanupError?.message ?? null }
+}
+
+function parseVoiceReferenceSamplePayload(payload: unknown): VoiceReferenceSamplePayload {
+  if (!payload || typeof payload !== "object") throw new VoiceReferenceSampleHttpError(400, "请求内容无效")
+  const body = payload as Record<string, unknown>
+  const name = String(body.name ?? "").trim()
+  if (!name) throw new VoiceReferenceSampleHttpError(400, "名称不能为空")
+  if (name.length > 80) throw new VoiceReferenceSampleHttpError(400, "名称不能超过 80 个字符")
+
+  const sampleId = String(body.sampleId ?? "")
+  assertSampleId(sampleId)
+  const description = String(body.description ?? "").trim().slice(0, 500)
+  const tags = Array.isArray(body.tags)
+    ? [...new Set(body.tags.map((tag) => String(tag).trim()).filter(Boolean))].slice(0, 12)
+    : []
+  const sortOrder = Number(body.sortOrder)
+  const duration = body.audioDurationSeconds === null || body.audioDurationSeconds === undefined
+    ? null
+    : Number(body.audioDurationSeconds)
+
+  return {
+    sampleId,
+    name,
+    description,
+    tags,
+    sortOrder: Number.isInteger(sortOrder) ? sortOrder : 0,
+    isActive: body.isActive !== false,
+    audioDurationSeconds: duration !== null && Number.isFinite(duration) && duration >= 0 ? duration : null,
+    avatarUpload: parseUploadedFile(body.avatarUpload),
+    audioUpload: parseUploadedFile(body.audioUpload),
+  }
+}
+
+function parseUploadedFile(value: unknown): VoiceReferenceUploadedFile | null {
+  if (value === null || value === undefined) return null
+  if (typeof value !== "object") throw new VoiceReferenceSampleHttpError(400, "上传文件信息无效")
+  const file = value as Record<string, unknown>
+  const path = String(file.path ?? "")
+  const mimeType = String(file.mimeType ?? "")
+  const size = Number(file.size)
+  if (!path || !Number.isFinite(size) || size <= 0) throw new VoiceReferenceSampleHttpError(400, "上传文件信息不完整")
+  return { path, mimeType, size }
+}
+
+function validateUploadRequest(file: VoiceReferenceUploadRequest) {
+  if (!file || (file.kind !== "avatar" && file.kind !== "audio")) {
+    throw new VoiceReferenceSampleHttpError(400, "上传文件类型无效")
+  }
+  if (!file.name || !Number.isFinite(file.size) || file.size <= 0) {
+    throw new VoiceReferenceSampleHttpError(400, "上传文件信息不完整")
+  }
+  validateFileMetadata(file.kind, file.name, file.mimeType, file.size)
+}
+
+function validateFileMetadata(kind: VoiceReferenceUploadKind, name: string, mimeType: string, size: number) {
+  if (kind === "avatar") {
+    if (!avatarMimeTypes.has(mimeType)) throw new VoiceReferenceSampleHttpError(400, "头像仅支持 PNG、JPG 或 WEBP")
+    if (size > maxAvatarBytes) throw new VoiceReferenceSampleHttpError(400, "头像不能超过 2 MB")
+    return
+  }
+
+  const extension = name.split(".").pop()?.toLowerCase()
+  if (!audioMimeTypes.has(mimeType) && !audioExtensions.has(extension ?? "")) {
+    throw new VoiceReferenceSampleHttpError(400, "参考音频仅支持 WAV、MP3、M4A 或 AAC")
+  }
+  if (size > maxAudioBytes) throw new VoiceReferenceSampleHttpError(400, "参考音频不能超过 4 MB")
+}
+
+async function verifyUploadedFile(
+  sampleId: string,
+  kind: VoiceReferenceUploadKind,
+  file: VoiceReferenceUploadedFile,
+) {
+  if (!isPathForSample(file.path, sampleId, kind)) {
+    throw new VoiceReferenceSampleHttpError(400, "上传文件路径无效")
+  }
+
+  validateFileMetadata(kind, file.path, file.mimeType, file.size)
+  const storage = getSupabaseAdminClient().storage.from(voiceReferenceSampleBucket)
+  const { data, error } = await storage.info(file.path)
+  if (error || !data) throw new VoiceReferenceSampleHttpError(400, "上传文件不存在或尚未完成上传")
+
+  const metadata = (data.metadata ?? {}) as Record<string, unknown>
+  const actualSize = Number(metadata.size ?? file.size)
+  const actualMimeType = String(metadata.mimetype ?? metadata.contentType ?? file.mimeType)
+  validateFileMetadata(kind, file.path, actualMimeType, actualSize)
+  if (actualSize !== file.size) throw new VoiceReferenceSampleHttpError(400, "上传文件大小校验失败")
+
+  return {
+    path: file.path,
+    url: storage.getPublicUrl(file.path).data.publicUrl,
+    mimeType: actualMimeType,
+    size: actualSize,
+  }
+}
+
+function safeFileExtension(name: string, fallback: string) {
+  const extension = name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "")
+  return extension || fallback
+}
+
+function assertSampleId(id: string) {
+  if (!uuidPattern.test(id)) throw new VoiceReferenceSampleHttpError(400, "样例标识无效")
+}
+
+function isPathForSample(path: string, sampleId: string, kind?: VoiceReferenceUploadKind) {
+  const prefixes = kind
+    ? [kind === "avatar" ? `avatars/${sampleId}/` : `audios/${sampleId}/`]
+    : [`avatars/${sampleId}/`, `audios/${sampleId}/`]
+  return prefixes.some((prefix) => path.startsWith(prefix)) && !path.includes("..")
+}
+
+async function removeStoragePaths(paths: Array<string | null | undefined>) {
+  const validPaths = paths.filter((path): path is string => Boolean(path))
+  if (!validPaths.length) return null
+  const { error } = await getSupabaseAdminClient().storage.from(voiceReferenceSampleBucket).remove(validPaths)
+  return error
 }
 
 export class VoiceReferenceSampleHttpError extends Error {

@@ -7,9 +7,11 @@ import { Check, CircleAlert, FileAudio, ImagePlus, Loader2, Plus, Save, Settings
 import { VoiceAudioPlayer } from "@/components/ai-voice-workshop/VoiceAudioPlayer"
 import { voiceFastSpring, voiceHover, voiceLayoutSpring, voiceSpring, voiceTap } from "@/components/ai-voice-workshop/motion"
 import {
+  cleanupVoiceReferenceSampleUploads,
   createVoiceReferenceSample,
   deleteVoiceReferenceSample,
   getAdminVoiceReferenceSamples,
+  uploadVoiceReferenceSampleFiles,
   updateVoiceReferenceSample,
 } from "@/lib/ai-voice-workshop/reference-samples-api"
 import type { VoiceReferenceSample } from "@/lib/ai-voice-workshop/types"
@@ -48,6 +50,7 @@ export function VoiceReferenceSampleManager({ open, onClose, onChanged }: VoiceR
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editor, setEditor] = useState<EditorState>(emptyEditor)
   const [saving, setSaving] = useState(false)
+  const [savingStage, setSavingStage] = useState<"uploading" | "saving" | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<VoiceReferenceSample | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -133,21 +136,37 @@ export function VoiceReferenceSampleManager({ open, onClose, onChanged }: VoiceR
     }
 
     setSaving(true)
+    setSavingStage(editor.avatar || editor.audio ? "uploading" : "saving")
     setError(null)
+    let pendingUploads: Awaited<ReturnType<typeof uploadVoiceReferenceSampleFiles>> | null = null
     try {
-      const formData = editorToFormData(editor)
+      pendingUploads = await uploadVoiceReferenceSampleFiles(
+        { avatar: editor.avatar, audio: editor.audio },
+        isCreating ? null : selectedId,
+      )
+      setSavingStage("saving")
+      const payload = editorToPayload(editor, pendingUploads)
       const saved = isCreating
-        ? await createVoiceReferenceSample(formData)
-        : await updateVoiceReferenceSample(selectedId!, formData)
+        ? await createVoiceReferenceSample(payload)
+        : await updateVoiceReferenceSample(selectedId!, payload)
+      pendingUploads = null
       await loadSamples(saved.id)
       onChanged()
       showToast("success", isCreating ? "精选参考音频已新增" : "修改已保存")
     } catch (saveError) {
+      if (pendingUploads) {
+        const paths = [pendingUploads.avatarUpload?.path, pendingUploads.audioUpload?.path]
+          .filter((path): path is string => Boolean(path))
+        if (paths.length) {
+          await cleanupVoiceReferenceSampleUploads(pendingUploads.sampleId, paths).catch(() => undefined)
+        }
+      }
       const message = saveError instanceof Error ? saveError.message : "保存失败，请稍后重试"
       setError(message)
       showToast("error", message)
     } finally {
       setSaving(false)
+      setSavingStage(null)
     }
   }
 
@@ -217,7 +236,7 @@ export function VoiceReferenceSampleManager({ open, onClose, onChanged }: VoiceR
 
                     <AnimatePresence>{error ? <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={voiceSpring} className="flex items-start gap-2 rounded-xl border border-rose-200/18 bg-rose-500/[0.07] p-3 text-xs font-bold text-rose-100"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />{error}</motion.div> : null}</AnimatePresence>
 
-                    <motion.button type="submit" disabled={saving} whileHover={saving ? undefined : voiceHover} whileTap={saving ? undefined : voiceTap} transition={voiceFastSpring} className="inline-flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-300 via-blue-300 to-violet-400 px-5 text-sm font-black text-[#07101d] transition-[filter,opacity] hover:brightness-110 disabled:cursor-wait disabled:opacity-60">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{saving ? "保存中..." : isCreating ? "新增精选声音" : "保存修改"}</motion.button>
+                    <motion.button type="submit" disabled={saving} whileHover={saving ? undefined : voiceHover} whileTap={saving ? undefined : voiceTap} transition={voiceFastSpring} className="inline-flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-300 via-blue-300 to-violet-400 px-5 text-sm font-black text-[#07101d] transition-[filter,opacity] hover:brightness-110 disabled:cursor-wait disabled:opacity-60">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{savingStage === "uploading" ? "正在上传文件..." : savingStage === "saving" ? "正在保存资料..." : isCreating ? "新增精选声音" : "保存修改"}</motion.button>
                   </motion.form>
                 </AnimatePresence>
               </main>
@@ -284,17 +303,21 @@ function validateEditor(editor: EditorState, isCreating: boolean) {
   return null
 }
 
-function editorToFormData(editor: EditorState) {
-  const formData = new FormData()
-  formData.set("name", editor.name.trim())
-  formData.set("description", editor.description.trim())
-  formData.set("tags", editor.tags)
-  formData.set("sortOrder", editor.sortOrder || "0")
-  formData.set("isActive", String(editor.isActive))
-  if (editor.audioDurationSeconds !== null) formData.set("audioDurationSeconds", String(editor.audioDurationSeconds))
-  if (editor.avatar) formData.set("avatar", editor.avatar)
-  if (editor.audio) formData.set("audio", editor.audio)
-  return formData
+function editorToPayload(
+  editor: EditorState,
+  uploads: Awaited<ReturnType<typeof uploadVoiceReferenceSampleFiles>>,
+) {
+  return {
+    sampleId: uploads.sampleId,
+    name: editor.name.trim(),
+    description: editor.description.trim(),
+    tags: editor.tags.split(/[,，]/).map((tag) => tag.trim()).filter(Boolean),
+    sortOrder: Number.parseInt(editor.sortOrder || "0", 10) || 0,
+    isActive: editor.isActive,
+    audioDurationSeconds: editor.audioDurationSeconds,
+    avatarUpload: uploads.avatarUpload,
+    audioUpload: uploads.audioUpload,
+  }
 }
 
 function inspectAudio(file: File | null, onReady: (duration: number | null) => void) {
