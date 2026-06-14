@@ -79,7 +79,7 @@ export function ReferenceAudioUploader({
   }
 
   return (
-    <div className="space-y-3">
+    <div className={showUpload ? "space-y-3" : "mt-3 space-y-3"}>
       {showUpload ? <label
         className={`group block cursor-pointer rounded-xl border border-dashed px-5 py-6 text-center transition-colors focus-within:ring-2 focus-within:ring-cyan-200/50 ${
           dragging

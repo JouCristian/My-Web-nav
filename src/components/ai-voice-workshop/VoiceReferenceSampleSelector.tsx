@@ -46,14 +46,11 @@ export function VoiceReferenceSampleSelector({
   }, [openPopover, openRequestToken])
   useEffect(() => {
     if (!open) return
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = "hidden"
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") closePopover()
     }
     window.addEventListener("keydown", handleKeyDown)
     return () => {
-      document.body.style.overflow = previousOverflow
       window.removeEventListener("keydown", handleKeyDown)
     }
   }, [closePopover, open])
