@@ -393,6 +393,23 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
     void refreshService(defaultLocalVoiceApiBaseUrl)
   }
 
+  function handleReferenceAudioChange(file: File | null) {
+    setReferenceAudio(file)
+    selectedReferenceSampleRef.current = null
+    setSelectedReferenceSample(null)
+    setReferenceAudioSource(file ? "upload" : null)
+    setCloneConsent(false)
+    if (file) setValidationError((current) => current?.includes("参考音频") ? null : current)
+  }
+
+  function handleCloneConsentChange(checked: boolean) {
+    setCloneConsent(checked)
+    if (checked) {
+      setShowCloneSafetyError(false)
+      setValidationError((current) => (current?.includes("使用权") ? null : current))
+    }
+  }
+
   function validateForm() {
     if (!connected) return "请先连接声音引擎，并等待模型加载完成。"
     if (!trimmedText) return "请输入要合成的文字。"
@@ -768,45 +785,56 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
                           </div>
                           <AnimatePresence initial={false} mode="wait">
                             {selectedReferenceSample ? (
-                              <SelectedVoiceReferenceSample
-                                key={selectedReferenceSample.id}
-                                sample={selectedReferenceSample}
-                                onChange={() => setReferenceSelectorOpenRequest((current) => current + 1)}
-                                onRemove={() => {
-                                  selectedReferenceSampleRef.current = null
-                                  setSelectedReferenceSample(null)
-                                  setReferenceAudioSource(null)
-                                  setCloneConsent(false)
-                                  setValidationError("请选择或上传参考音频。")
-                                }}
-                              />
-                            ) : null}
+                              <motion.div
+                                key={`selected-reference-${selectedReferenceSample.id}`}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                              >
+                                <SelectedVoiceReferenceSample
+                                  sample={selectedReferenceSample}
+                                  onChange={() => setReferenceSelectorOpenRequest((current) => current + 1)}
+                                  onRemove={() => {
+                                    selectedReferenceSampleRef.current = null
+                                    setSelectedReferenceSample(null)
+                                    setReferenceAudioSource(null)
+                                    setCloneConsent(false)
+                                    setValidationError("请选择或上传参考音频。")
+                                  }}
+                                />
+                                <ReferenceAudioUploader
+                                  file={referenceAudio}
+                                  consentChecked={cloneConsent}
+                                  error={cloneValidationError}
+                                  safetyError={showCloneSafetyError}
+                                  showUpload={false}
+                                  consentText="我确认仅将精选参考音频用于本工具允许的创作用途，不用于冒充、欺骗或违法用途。"
+                                  onFileChange={handleReferenceAudioChange}
+                                  onConsentChange={handleCloneConsentChange}
+                                />
+                              </motion.div>
+                            ) : (
+                              <motion.div
+                                key="uploaded-reference"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                              >
+                                <ReferenceAudioUploader
+                                  file={referenceAudio}
+                                  consentChecked={cloneConsent}
+                                  error={cloneValidationError}
+                                  safetyError={showCloneSafetyError}
+                                  showUpload
+                                  consentText="我确认已获得该声音使用授权，且不会用于冒充、诈骗、骚扰或其他违法违规用途。"
+                                  onFileChange={handleReferenceAudioChange}
+                                  onConsentChange={handleCloneConsentChange}
+                                />
+                              </motion.div>
+                            )}
                           </AnimatePresence>
-                          <ReferenceAudioUploader
-                            file={referenceAudio}
-                            consentChecked={cloneConsent}
-                            error={cloneValidationError}
-                            safetyError={showCloneSafetyError}
-                            showUpload={!selectedReferenceSample}
-                            consentText={selectedReferenceSample
-                              ? "我确认仅将精选参考音频用于本工具允许的创作用途，不用于冒充、欺骗或违法用途。"
-                              : "我确认已获得该声音使用授权，且不会用于冒充、诈骗、骚扰或其他违法违规用途。"}
-                            onFileChange={(file) => {
-                              setReferenceAudio(file)
-                              selectedReferenceSampleRef.current = null
-                              setSelectedReferenceSample(null)
-                              setReferenceAudioSource(file ? "upload" : null)
-                              setCloneConsent(false)
-                              if (file) setValidationError((current) => current?.includes("参考音频") ? null : current)
-                            }}
-                            onConsentChange={(checked) => {
-                              setCloneConsent(checked)
-                              if (checked) {
-                                setShowCloneSafetyError(false)
-                                setValidationError((current) => (current?.includes("使用权") ? null : current))
-                              }
-                            }}
-                          />
                         </>
                       )}
                     </motion.div>

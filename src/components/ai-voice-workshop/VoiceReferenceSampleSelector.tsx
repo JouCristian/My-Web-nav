@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { AnimatePresence, motion } from "framer-motion"
 import { Check, Clock3, Headphones, Library, Loader2, RefreshCw, Settings2, Sparkles, X } from "lucide-react"
@@ -39,8 +39,11 @@ export function VoiceReferenceSampleSelector({
   openRequestToken = 0,
 }: VoiceReferenceSampleSelectorProps) {
   const { open, openPopover, closePopover, togglePopover } = useExclusiveVoicePopover("reference-samples")
+  const previousOpenRequestToken = useRef(openRequestToken)
   useEffect(() => {
-    if (openRequestToken <= 0) return
+    const previousToken = previousOpenRequestToken.current
+    previousOpenRequestToken.current = openRequestToken
+    if (openRequestToken <= previousToken) return
     const frame = window.requestAnimationFrame(openPopover)
     return () => window.cancelAnimationFrame(frame)
   }, [openPopover, openRequestToken])
