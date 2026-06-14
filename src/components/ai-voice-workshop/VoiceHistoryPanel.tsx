@@ -142,7 +142,10 @@ function HistoryRow({ item, scope, deleting, onDelete, onReuse }: { item: VoiceH
     >
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2"><div className="truncate text-xs font-bold text-zinc-100">{item.title || item.presetName || (item.mode === "clone" ? "声音克隆" : "自定义音色")}</div><span className="shrink-0 rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-400">{item.mode === "clone" ? "克隆" : "设计"}</span></div>
+          <div className="flex items-center gap-2">
+            {item.referenceSource === "sample" && item.referenceSampleAvatarUrl ? <span className="h-5 w-5 shrink-0 rounded-md border border-white/10 bg-cover bg-center" style={{ backgroundImage: `url(${JSON.stringify(item.referenceSampleAvatarUrl).slice(1, -1)})` }} /> : null}
+            <div className="truncate text-xs font-bold text-zinc-100">{item.title || item.presetName || (item.mode === "clone" ? "声音克隆" : "自定义音色")}</div><span className="shrink-0 rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-400">{item.mode === "clone" ? "克隆" : "设计"}</span>
+          </div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-500"><span>{formatTime(item.createdAt)}</span><span>·</span><span>CFG {item.cfgValue?.toFixed(1) ?? "2.0"}</span><span>·</span><span>{item.inferenceTimesteps ?? 10} Steps</span></div>
         </div>
         <div className="relative flex shrink-0 items-center gap-1">
@@ -168,7 +171,7 @@ function HistoryRow({ item, scope, deleting, onDelete, onReuse }: { item: VoiceH
 
       <div className="mt-3"><VoiceAudioPlayer id={`history-${scope}-${item.id}`} src={item.audioUrl} compact /></div>
       <div className="mt-2 flex items-center justify-between gap-3">
-        <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-[10px] text-zinc-500"><SlidersHorizontal className="h-3 w-3 shrink-0" />{item.mode === "clone" ? item.referenceAudioStored ? `${item.referenceAudioName || "参考音频"} · 可恢复` : item.referenceAudioName || "需重新上传参考音频" : item.voicePrompt || item.presetName || "预设音色"}</span>
+        <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-[10px] text-zinc-500"><SlidersHorizontal className="h-3 w-3 shrink-0" />{item.mode === "clone" ? item.referenceSource === "sample" ? `精选 · ${item.referenceSampleName || "参考音频"}` : `${item.referenceAudioName || "参考音频"} · 复用时需重新上传` : item.voicePrompt || item.presetName || "预设音色"}</span>
         <motion.a href={item.audioUrl} download={item.filename} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-bold text-zinc-400 transition-colors hover:bg-white/[0.06] hover:text-cyan-50" aria-label="下载历史音频"><Download className="h-3.5 w-3.5" />下载</motion.a>
       </div>
     </motion.article>

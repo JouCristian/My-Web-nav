@@ -15,6 +15,11 @@ import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef
 import { AudioResultCard } from "@/components/ai-voice-workshop/AudioResultCard"
 import { BackButton } from "@/components/back-button"
 import { ReferenceAudioUploader } from "@/components/ai-voice-workshop/ReferenceAudioUploader"
+import { VoiceReferenceSampleManager } from "@/components/ai-voice-workshop/VoiceReferenceSampleManager"
+import {
+  SelectedVoiceReferenceSample,
+  VoiceReferenceSampleSelector,
+} from "@/components/ai-voice-workshop/VoiceReferenceSampleSelector"
 import { VoiceAdvancedOptions } from "@/components/ai-voice-workshop/VoiceAdvancedOptions"
 import { VoiceEngineSettings } from "@/components/ai-voice-workshop/VoiceEngineSettings"
 import { VoiceHistoryPanel } from "@/components/ai-voice-workshop/VoiceHistoryPanel"
@@ -42,11 +47,11 @@ import {
 } from "@/lib/ai-voice-workshop/api"
 import { defaultVoicePresets } from "@/lib/ai-voice-workshop/presets"
 import {
-  deleteHistoryReferenceAudio,
-  getHistoryReferenceAudio,
-  saveHistoryReferenceAudio,
-} from "@/lib/ai-voice-workshop/history-audio-store"
+  getVoiceReferenceSamples,
+  voiceReferenceSampleToFile,
+} from "@/lib/ai-voice-workshop/reference-samples-api"
 import type {
+  ReferenceAudioSource,
   VoiceEngineInfo,
   VoiceEngineMode,
   VoiceEngineStatus,
@@ -55,6 +60,7 @@ import type {
   VoiceJobStatus,
   VoiceMode,
   VoicePreset,
+  VoiceReferenceSample,
 } from "@/lib/ai-voice-workshop/types"
 
 const historyStorageKey = "ai-voice-workshop-history-v1"
@@ -63,7 +69,7 @@ const VOICE_ENGINE_MODE_KEY = "joujou_voice_engine_mode"
 const VOICE_CUSTOM_API_URL_KEY = "joujou_voice_custom_api_url"
 const VOICE_LOCAL_API_URL_KEY = "joujou_voice_local_api_url"
 
-type VoiceHistoryConfig = Pick<VoiceHistoryItem, "presetId" | "presetName" | "voicePrompt" | "cfgValue" | "inferenceTimesteps" | "referenceAudioName" | "referenceAudioStored" | "interruptible">
+type VoiceHistoryConfig = Pick<VoiceHistoryItem, "presetId" | "presetName" | "voicePrompt" | "cfgValue" | "inferenceTimesteps" | "referenceAudioName" | "referenceSource" | "referenceSampleId" | "referenceSampleName" | "referenceSampleAvatarUrl" | "referenceSampleAudioUrl" | "interruptible">
 
 function isValidHttpUrl(url: string) {
   return /^https?:\/\/.+/i.test(url.trim())
@@ -73,12 +79,19 @@ function sleep(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
 }
 
-export function VoiceWorkshopClient() {
+export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isReferenceSampleAdmin?: boolean }) {
   const [mode, setMode] = useState<VoiceMode>("design")
   const [text, setText] = useState("")
   const [voicePrompt, setVoicePrompt] = useState("")
   const [selectedPresetId, setSelectedPresetId] = useState(defaultVoicePresets[0]?.id ?? "")
   const [referenceAudio, setReferenceAudio] = useState<File | null>(null)
+  const [referenceAudioSource, setReferenceAudioSource] = useState<ReferenceAudioSource>(null)
+  const [selectedReferenceSample, setSelectedReferenceSample] = useState<VoiceReferenceSample | null>(null)
+  const [referenceSamples, setReferenceSamples] = useState<VoiceReferenceSample[]>([])
+  const [referenceSamplesLoading, setReferenceSamplesLoading] = useState(true)
+  const [referenceSamplesError, setReferenceSamplesError] = useState<string | null>(null)
+  const [referenceSampleManagerOpen, setReferenceSampleManagerOpen] = useState(false)
+  const [referenceSelectorOpenRequest, setReferenceSelectorOpenRequest] = useState(0)
   const [cloneConsent, setCloneConsent] = useState(false)
   const [showCloneSafetyError, setShowCloneSafetyError] = useState(false)
   const [cfgValue, setCfgValue] = useState(2)
@@ -112,11 +125,39 @@ export function VoiceWorkshopClient() {
   const pollTimerRef = useRef<number | null>(null)
   const activeJobIdRef = useRef<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
+  const selectedReferenceSampleRef = useRef<VoiceReferenceSample | null>(null)
 
   const selectedPreset = useMemo(
     () => presets.find((preset) => preset.id === selectedPresetId) ?? presets[0],
     [presets, selectedPresetId],
   )
+
+  const refreshReferenceSamples = useCallback(async () => {
+    setReferenceSamplesLoading(true)
+    setReferenceSamplesError(null)
+    try {
+      const nextSamples = await getVoiceReferenceSamples()
+      setReferenceSamples(nextSamples)
+      const currentSample = selectedReferenceSampleRef.current
+      if (currentSample) {
+        const refreshed = nextSamples.find((sample) => sample.id === currentSample.id)
+        if (refreshed) {
+          selectedReferenceSampleRef.current = refreshed
+          setSelectedReferenceSample(refreshed)
+        } else {
+          selectedReferenceSampleRef.current = null
+          setSelectedReferenceSample(null)
+          setReferenceAudioSource(null)
+          setCloneConsent(false)
+          setValidationError("当前精选参考音频已被删除或停用，请重新选择。")
+        }
+      }
+    } catch (error) {
+      setReferenceSamplesError(error instanceof Error ? error.message : "精选参考音频加载失败")
+    } finally {
+      setReferenceSamplesLoading(false)
+    }
+  }, [])
 
   const activeApiBaseUrl = useMemo(() => {
     if (engineMode === "custom" && customApiUrl.trim()) return normalizeVoiceApiBaseUrl(customApiUrl)
@@ -130,7 +171,9 @@ export function VoiceWorkshopClient() {
   const isCloneMode = mode === "clone"
   const voicePromptForGeneration = isCloneMode ? "" : voicePrompt.trim() || selectedPreset?.prompt || ""
   const displayTitle = isCloneMode
-    ? referenceAudio?.name
+    ? selectedReferenceSample?.name
+      ? `声音克隆 · ${selectedReferenceSample.name}`
+      : referenceAudio?.name
       ? `声音克隆 · ${referenceAudio.name}`
       : "声音克隆"
     : selectedPreset?.name || "自定义音色"
@@ -148,10 +191,12 @@ export function VoiceWorkshopClient() {
         ? "请输入要合成的文字。"
         : trimmedText.length > 500
           ? "文字超过 500 字，请先精简文案。"
-          : isCloneMode && !referenceAudio
-            ? "请上传参考音频。"
+          : isCloneMode && !referenceAudio && !selectedReferenceSample
+            ? "请上传参考音频，或从精选参考音频中选择一个声音。"
             : isCloneMode && !cloneConsent
-              ? "请确认拥有参考音频的使用权。"
+              ? selectedReferenceSample
+                ? "请确认精选参考音频仅用于本工具允许的创作用途。"
+                : "请确认已获得参考音频的声音使用授权。"
               : null
   const canGenerate = generationBlockReason === null
 
@@ -205,21 +250,32 @@ export function VoiceWorkshopClient() {
     const nextCustomUrl = storedCustomUrl ? normalizeVoiceApiBaseUrl(storedCustomUrl) : ""
     const initialApiBaseUrl = nextMode === "custom" && nextCustomUrl ? nextCustomUrl : nextLocalUrl
 
-    setEngineMode(nextMode)
-    setLocalApiUrl(nextLocalUrl)
-    setCustomApiUrl(nextCustomUrl)
-    setCustomDraftApiUrl(nextCustomUrl || defaultLocalVoiceApiBaseUrl)
-    void refreshService(initialApiBaseUrl)
+    const frame = window.requestAnimationFrame(() => {
+      setEngineMode(nextMode)
+      setLocalApiUrl(nextLocalUrl)
+      setCustomApiUrl(nextCustomUrl)
+      setCustomDraftApiUrl(nextCustomUrl || defaultLocalVoiceApiBaseUrl)
+      void refreshService(initialApiBaseUrl)
+    })
+    return () => window.cancelAnimationFrame(frame)
   }, [refreshService])
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(historyStorageKey)
-      if (raw) setHistory(JSON.parse(raw) as VoiceHistoryItem[])
-    } catch {
-      setHistory([])
-    }
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        const raw = window.localStorage.getItem(historyStorageKey)
+        if (raw) setHistory(JSON.parse(raw) as VoiceHistoryItem[])
+      } catch {
+        setHistory([])
+      }
+    })
+    return () => window.cancelAnimationFrame(frame)
   }, [])
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => void refreshReferenceSamples())
+    return () => window.cancelAnimationFrame(frame)
+  }, [refreshReferenceSamples])
 
   useEffect(() => {
     try {
@@ -232,13 +288,6 @@ export function VoiceWorkshopClient() {
   useEffect(() => () => {
     stopPolling()
   }, [stopPolling])
-
-  useEffect(() => {
-    if (!isCloneMode) {
-      setCloneConsent(false)
-      setShowCloneSafetyError(false)
-    }
-  }, [isCloneMode])
 
   useEffect(() => {
     function handleKeyboardShortcut(event: KeyboardEvent) {
@@ -348,12 +397,16 @@ export function VoiceWorkshopClient() {
     if (!connected) return "请先连接声音引擎，并等待模型加载完成。"
     if (!trimmedText) return "请输入要合成的文字。"
     if (trimmedText.length > 500) return "文字最多 500 字，请先精简文案。"
-    if (isCloneMode && !referenceAudio) return "声音克隆模式需要上传参考音频。"
-    if (isCloneMode && !cloneConsent) return "请先确认拥有参考音频使用权，并承诺不会用于冒充、欺骗或违法用途。"
+    if (isCloneMode && !referenceAudio && !selectedReferenceSample) return "声音克隆模式需要上传参考音频，或选择精选参考音频。"
+    if (isCloneMode && !cloneConsent) {
+      return selectedReferenceSample
+        ? "请确认仅将精选参考音频用于本工具允许的创作用途，不用于冒充、欺骗或违法用途。"
+        : "请确认已获得该声音使用授权，且不会用于冒充、诈骗、骚扰或其他违法违规用途。"
+    }
     return null
   }
 
-  async function pollJob(jobId: string, requestTitle: string, requestText: string, requestMode: VoiceMode, requestApiBaseUrl: string, requestConfig: VoiceHistoryConfig, requestReferenceAudio: File | null) {
+  async function pollJob(jobId: string, requestTitle: string, requestText: string, requestMode: VoiceMode, requestApiBaseUrl: string, requestConfig: VoiceHistoryConfig) {
     try {
       const job = await getVoiceJob(requestApiBaseUrl, jobId)
       if (activeJobIdRef.current !== jobId) return
@@ -361,15 +414,6 @@ export function VoiceWorkshopClient() {
 
       if (job.status === "succeeded") {
         stopPolling()
-        let referenceAudioStored = false
-        if (requestMode === "clone" && requestReferenceAudio) {
-          try {
-            await saveHistoryReferenceAudio(job.job_id, requestReferenceAudio)
-            referenceAudioStored = true
-          } catch (storageError) {
-            console.warn("Unable to store reference audio for history reuse", storageError)
-          }
-        }
         const audioUrl = resolveVoiceAudioUrl(requestApiBaseUrl, job.audio_url, job.filename)
         const filename = job.filename || "voice-output.wav"
         setResultAudioUrl(audioUrl)
@@ -384,13 +428,10 @@ export function VoiceWorkshopClient() {
             text: requestText,
             mode: requestMode,
             ...requestConfig,
-            referenceAudioStored,
             audioUrl,
             filename,
             createdAt: new Date().toISOString(),
           }, ...current.filter((item) => item.id !== job.job_id)]
-          const removedItems = nextHistory.slice(maxHistoryItems)
-          removedItems.forEach((item) => void deleteHistoryReferenceAudio(item.id).catch(() => undefined))
           return nextHistory.slice(0, maxHistoryItems)
         })
       }
@@ -436,7 +477,12 @@ export function VoiceWorkshopClient() {
       const requestText = trimmedText
       const requestMode = mode
       const requestApiBaseUrl = activeApiBaseUrl
-      const requestReferenceAudio = requestMode === "clone" ? referenceAudio : null
+      const requestSelectedSample = requestMode === "clone" ? selectedReferenceSample : null
+      const requestReferenceAudio = requestMode === "clone"
+        ? requestSelectedSample
+          ? await voiceReferenceSampleToFile(requestSelectedSample)
+          : referenceAudio
+        : null
       const requestConfig: VoiceHistoryConfig = {
         presetId: requestMode === "design" ? selectedPreset?.id : undefined,
         presetName: requestMode === "design" ? selectedPreset?.name : undefined,
@@ -444,7 +490,12 @@ export function VoiceWorkshopClient() {
         cfgValue,
         inferenceTimesteps,
         interruptible,
-        referenceAudioName: requestMode === "clone" ? referenceAudio?.name : undefined,
+        referenceAudioName: requestMode === "clone" ? requestReferenceAudio?.name : undefined,
+        referenceSource: requestMode === "clone" ? (requestSelectedSample ? "sample" : referenceAudioSource ?? "upload") : undefined,
+        referenceSampleId: requestSelectedSample?.id,
+        referenceSampleName: requestSelectedSample?.name,
+        referenceSampleAvatarUrl: requestSelectedSample?.avatarUrl,
+        referenceSampleAudioUrl: requestSelectedSample?.audioUrl,
       }
       setResultMode(requestMode)
       setResultInterruptible(interruptible)
@@ -453,7 +504,7 @@ export function VoiceWorkshopClient() {
         mode: requestMode,
         voicePrompt: voicePromptForGeneration,
         presetId: isCloneMode ? undefined : selectedPreset?.id,
-        referenceAudio,
+        referenceAudio: requestReferenceAudio,
         cloneSafetyAccepted: isCloneMode ? cloneConsent : undefined,
         cfgValue,
         inferenceTimesteps,
@@ -461,10 +512,10 @@ export function VoiceWorkshopClient() {
       })
       activeJobIdRef.current = response.job_id
       setResultStatus(response.status)
-      await pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestConfig, requestReferenceAudio)
+      await pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestConfig)
       if (activeJobIdRef.current === response.job_id) {
         pollTimerRef.current = window.setInterval(() => {
-          void pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestConfig, requestReferenceAudio)
+          void pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestConfig)
         }, 1000)
       }
     } catch (error) {
@@ -513,38 +564,51 @@ export function VoiceWorkshopClient() {
 
   function handleDeleteHistory(id: string) {
     setHistory((current) => current.filter((item) => item.id !== id))
-    void deleteHistoryReferenceAudio(id).catch(() => undefined)
   }
 
   async function handleReuseHistory(item: VoiceHistoryItem) {
-    let restoredReferenceAudio: File | null = null
-    if (item.mode === "clone") {
-      try {
-        restoredReferenceAudio = await getHistoryReferenceAudio(item.id)
-      } catch {
-        restoredReferenceAudio = null
-      }
-    }
-
     setMode(item.mode)
     setText(item.text)
     setCfgValue(item.cfgValue ?? 2)
     setInferenceTimesteps(item.inferenceTimesteps ?? 10)
     setInterruptible(item.interruptible ?? false)
     if (item.mode === "design") {
+      setReferenceAudio(null)
+      setReferenceAudioSource(null)
+      selectedReferenceSampleRef.current = null
+      setSelectedReferenceSample(null)
+      setCloneConsent(false)
+      setShowCloneSafetyError(false)
       const restoredPreset = presets.find((preset) => preset.id === item.presetId) || presets.find((preset) => preset.name === item.presetName)
       if (restoredPreset) setSelectedPresetId(restoredPreset.id)
       setVoicePrompt(item.voicePrompt || "")
       setValidationError(null)
     } else {
-      setReferenceAudio(restoredReferenceAudio)
+      const restoredSample = item.referenceSource === "sample" && item.referenceSampleId
+        ? referenceSamples.find((sample) => sample.id === item.referenceSampleId) ?? null
+        : null
+      setReferenceAudio(null)
+      setSelectedReferenceSample(restoredSample)
+      selectedReferenceSampleRef.current = restoredSample
+      setReferenceAudioSource(restoredSample ? "sample" : item.referenceSource === "upload" ? "upload" : null)
       setCloneConsent(false)
-      setValidationError(restoredReferenceAudio ? null : "这条旧记录没有保存参考音频，请重新上传后再生成。")
+      setValidationError(
+        item.referenceSource === "sample" && !restoredSample
+          ? "这条记录使用的精选参考音频已被删除或停用，请重新选择。"
+          : restoredSample
+            ? null
+            : "请重新上传这条记录使用的参考音频后再生成。",
+      )
     }
     setFormContentVersion((current) => current + 1)
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
     if (item.mode === "clone") {
-      return restoredReferenceAudio ? "文案、参数和参考音频已恢复，请重新确认使用权" : "文案和参数已恢复，参考音频需要重新上传"
+      if (item.referenceSource === "sample") {
+        return referenceSamples.some((sample) => sample.id === item.referenceSampleId)
+          ? "文案、参数和精选参考音频已恢复，请重新确认用途"
+          : "文案和参数已恢复，原精选参考音频已不可用"
+      }
+      return "文案和参数已恢复，参考音频需要重新上传"
     }
     return item.voicePrompt ? "文案、自定义音色和参数已恢复" : "文案、预设音色和参数已恢复"
   }
@@ -680,14 +744,59 @@ export function VoiceWorkshopClient() {
                         </>
                       ) : (
                         <>
-                          <div className="mb-3"><h2 className="text-sm font-bold text-white">参考音频</h2><p className="mt-1 text-xs leading-relaxed text-zinc-400">建议使用纯净、无背景噪声的 5 至 20 秒人声。</p></div>
+                          <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                            <div><h2 className="text-sm font-bold text-white">参考音频</h2><p className="mt-1 text-xs leading-relaxed text-zinc-400">上传自己的音频，或从精选声音中选择；建议 5 至 20 秒纯净人声。</p></div>
+                            <VoiceReferenceSampleSelector
+                              samples={referenceSamples}
+                              selectedSample={selectedReferenceSample}
+                              loading={referenceSamplesLoading}
+                              error={referenceSamplesError}
+                              isAdmin={isReferenceSampleAdmin}
+                              openRequestToken={referenceSelectorOpenRequest}
+                              onSelect={(sample) => {
+                                selectedReferenceSampleRef.current = sample
+                                setSelectedReferenceSample(sample)
+                                setReferenceAudio(null)
+                                setReferenceAudioSource("sample")
+                                setCloneConsent(false)
+                                setShowCloneSafetyError(false)
+                                setValidationError(null)
+                              }}
+                              onRefresh={() => void refreshReferenceSamples()}
+                              onManage={() => setReferenceSampleManagerOpen(true)}
+                            />
+                          </div>
+                          <AnimatePresence initial={false} mode="wait">
+                            {selectedReferenceSample ? (
+                              <SelectedVoiceReferenceSample
+                                key={selectedReferenceSample.id}
+                                sample={selectedReferenceSample}
+                                onChange={() => setReferenceSelectorOpenRequest((current) => current + 1)}
+                                onRemove={() => {
+                                  selectedReferenceSampleRef.current = null
+                                  setSelectedReferenceSample(null)
+                                  setReferenceAudioSource(null)
+                                  setCloneConsent(false)
+                                  setValidationError("请选择或上传参考音频。")
+                                }}
+                              />
+                            ) : null}
+                          </AnimatePresence>
                           <ReferenceAudioUploader
                             file={referenceAudio}
                             consentChecked={cloneConsent}
                             error={cloneValidationError}
                             safetyError={showCloneSafetyError}
+                            showUpload={!selectedReferenceSample}
+                            consentText={selectedReferenceSample
+                              ? "我确认仅将精选参考音频用于本工具允许的创作用途，不用于冒充、欺骗或违法用途。"
+                              : "我确认已获得该声音使用授权，且不会用于冒充、诈骗、骚扰或其他违法违规用途。"}
                             onFileChange={(file) => {
                               setReferenceAudio(file)
+                              selectedReferenceSampleRef.current = null
+                              setSelectedReferenceSample(null)
+                              setReferenceAudioSource(file ? "upload" : null)
+                              setCloneConsent(false)
                               if (file) setValidationError((current) => current?.includes("参考音频") ? null : current)
                             }}
                             onConsentChange={(checked) => {
@@ -723,7 +832,7 @@ export function VoiceWorkshopClient() {
                     if (!canGenerate && !isGenerating) {
                       const issue = validateForm()
                       setValidationError(issue)
-                      if (isCloneMode && referenceAudio && !cloneConsent) setShowCloneSafetyError(true)
+                      if (isCloneMode && (referenceAudio || selectedReferenceSample) && !cloneConsent) setShowCloneSafetyError(true)
                     }
                   }}>
                     <button type="submit" disabled={!canGenerate} className="inline-flex min-h-[52px] w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-300 via-blue-300 to-violet-400 px-6 py-3.5 text-sm font-black text-[#07101d] transition-[filter,opacity] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35 disabled:saturate-50" aria-keyshortcuts="Control+Enter Meta+Enter">
@@ -749,6 +858,11 @@ export function VoiceWorkshopClient() {
             <VoiceHistoryPanel items={history} onDelete={handleDeleteHistory} onReuse={handleReuseHistory} />
           </motion.aside>
         </div>
+        <VoiceReferenceSampleManager
+          open={referenceSampleManagerOpen}
+          onClose={() => setReferenceSampleManagerOpen(false)}
+          onChanged={() => void refreshReferenceSamples()}
+        />
       </motion.div>
     </MotionConfig>
   )

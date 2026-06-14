@@ -18,6 +18,8 @@ interface ReferenceAudioUploaderProps {
   consentChecked: boolean
   error?: string
   safetyError?: boolean
+  showUpload?: boolean
+  consentText?: string
   onFileChange: (file: File | null) => void
   onConsentChange: (checked: boolean) => void
 }
@@ -27,6 +29,8 @@ export function ReferenceAudioUploader({
   consentChecked,
   error,
   safetyError = false,
+  showUpload = true,
+  consentText = "我确认已获得该声音使用授权，且不会用于冒充、诈骗、骚扰或其他违法违规用途。",
   onFileChange,
   onConsentChange,
 }: ReferenceAudioUploaderProps) {
@@ -36,18 +40,25 @@ export function ReferenceAudioUploader({
 
   useEffect(() => {
     if (!file) {
-      setAudioUrl("")
-      setDuration(null)
-      return
+      const frame = window.requestAnimationFrame(() => {
+        setAudioUrl("")
+        setDuration(null)
+      })
+      return () => window.cancelAnimationFrame(frame)
     }
 
     const nextUrl = URL.createObjectURL(file)
     const probe = new Audio(nextUrl)
-    setAudioUrl(nextUrl)
-    setDuration(null)
+    const frame = window.requestAnimationFrame(() => {
+      setAudioUrl(nextUrl)
+      setDuration(null)
+    })
     probe.addEventListener("loadedmetadata", () => setDuration(Number.isFinite(probe.duration) ? probe.duration : null), { once: true })
     probe.load()
-    return () => URL.revokeObjectURL(nextUrl)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      URL.revokeObjectURL(nextUrl)
+    }
   }, [file])
 
   const fileInspection = useMemo(() => {
@@ -69,7 +80,7 @@ export function ReferenceAudioUploader({
 
   return (
     <div className="space-y-3">
-      <label
+      {showUpload ? <label
         className={`group block cursor-pointer rounded-xl border border-dashed px-5 py-6 text-center transition-colors focus-within:ring-2 focus-within:ring-cyan-200/50 ${
           dragging
             ? "border-cyan-200/65 bg-cyan-200/[0.09]"
@@ -94,10 +105,10 @@ export function ReferenceAudioUploader({
           className="sr-only"
           onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
         />
-      </label>
+      </label> : null}
 
       <AnimatePresence initial={false} mode="popLayout">
-        {file ? (
+        {showUpload && file ? (
           <motion.div
             key={file.name}
             layout
@@ -157,7 +168,7 @@ export function ReferenceAudioUploader({
             声音使用权确认
           </span>
           <span className="mt-1 block text-xs leading-relaxed text-zinc-400">
-            我确认拥有该参考音频的使用权，不会用于冒充、欺骗或违法用途。
+            {consentText}
           </span>
         </span>
       </motion.label>

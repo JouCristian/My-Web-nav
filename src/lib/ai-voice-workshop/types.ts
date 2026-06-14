@@ -2,12 +2,32 @@ export type VoiceMode = "design" | "clone"
 export type VoiceJobStatus = "queued" | "running" | "canceling" | "canceled" | "succeeded" | "failed"
 export type VoiceEngineMode = "local" | "custom"
 export type VoiceEngineStatus = "idle" | "checking" | "connected" | "disconnected" | "starting" | "failed"
+export type ReferenceAudioSource = "upload" | "sample" | null
 
 export interface VoicePreset {
   id: string
   name: string
   prompt: string
   description: string
+}
+
+export interface VoiceReferenceSample {
+  id: string
+  name: string
+  description: string
+  tags: string[]
+  avatarPath?: string | null
+  avatarUrl?: string | null
+  audioPath: string
+  audioUrl: string
+  audioDurationSeconds?: number | null
+  audioMimeType?: string | null
+  audioSizeBytes?: number | null
+  sortOrder: number
+  isActive: boolean
+  createdByEmail?: string | null
+  createdAt: string
+  updatedAt: string
 }
 
 export interface VoiceHealth {
@@ -68,7 +88,11 @@ export interface VoiceHistoryItem {
   cfgValue?: number
   inferenceTimesteps?: number
   referenceAudioName?: string
-  referenceAudioStored?: boolean
+  referenceSource?: Exclude<ReferenceAudioSource, null>
+  referenceSampleId?: string
+  referenceSampleName?: string
+  referenceSampleAvatarUrl?: string | null
+  referenceSampleAudioUrl?: string
   interruptible?: boolean
   audioUrl: string
   filename: string
