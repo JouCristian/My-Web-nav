@@ -23,6 +23,7 @@ import {
 import { VoiceAdvancedOptions } from "@/components/ai-voice-workshop/VoiceAdvancedOptions"
 import { VoiceEngineSettings } from "@/components/ai-voice-workshop/VoiceEngineSettings"
 import { VoiceHistoryPanel } from "@/components/ai-voice-workshop/VoiceHistoryPanel"
+import { VoiceWorkshopPresentationCard } from "@/components/ai-voice-workshop/VoiceWorkshopPresentationCard"
 import { VoicePresetSelector } from "@/components/ai-voice-workshop/VoicePresetSelector"
 import { VoiceTipsCard } from "@/components/ai-voice-workshop/VoiceTipsCard"
 import {
@@ -638,7 +639,7 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
         initial="hidden"
         animate="visible"
       >
-        <motion.header variants={voicePageItem} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.46fr)] lg:items-end">
+        <motion.header variants={voicePageItem} className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(270px,0.38fr)_minmax(360px,0.46fr)] xl:items-stretch">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
               <BackButton />
@@ -669,6 +670,8 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
               })}
             </div>
           </div>
+
+          <VoiceWorkshopPresentationCard />
 
           <VoiceEngineSettings
             engineMode={engineMode}
