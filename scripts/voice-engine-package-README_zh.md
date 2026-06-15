@@ -1,71 +1,95 @@
-# JouJou Voice Engine Windows 本地引擎
+# JouJou AI 声音创作工坊 Windows 本地引擎
 
-这是 AI 声音创作工坊的本地 GPU 引擎。
-它会在你的电脑上运行 VoxCPM2，使用本机 GPU 生成语音。
-参考音频和生成过程默认都在本地完成。
+本地引擎会在你的电脑上运行 VoxCPM2，文本、参考音频和生成结果默认留在本机。
 
-## 第一次使用
+## 首次使用
 
-1. 解压这个压缩包。
+1. 解压整个压缩包。
 2. 双击 `INSTALL.bat`。
-3. 等待安装完成，安装窗口会保留结果信息。
-4. 回到网页，点击“检测本地引擎”。
-5. 如果显示已连接，就可以生成语音。
-6. 以后再次使用时，直接在网页点击“启动本地引擎”。
+3. 安装程序会自动选择 Hugging Face 官方源或 `hf-mirror.com`，然后安装依赖并预下载 VoxCPM2。
+4. 安装完成后回到网页，点击“检测连接”。
+5. 以后可以从网页启动引擎，也可以双击 `START.bat`。
 
-也可以随时双击 `START.bat` 手动启动引擎。
+请勿直接在压缩包内运行脚本，必须先完整解压。
 
-## 需要的环境
+## 下载源选择
 
-- Windows 10 / Windows 11
-- Python 3.10 / 3.11 / 3.12，推荐 Python 3.11
+默认模式为 `auto`：
+
+- 同时测试 `https://huggingface.co` 和 `https://hf-mirror.com`。
+- 官方源可用且更快时使用官方源，不设置 `HF_ENDPOINT`。
+- 镜像更快或官方源超时时，当前安装和启动进程使用 `HF_ENDPOINT=https://hf-mirror.com`。
+- 选择结果保存在 `voice-service\.download-source.json`。
+- 不会修改 Windows 系统永久环境变量。
+
+Python 普通依赖优先使用清华 PyPI 镜像，失败后自动回退官方 PyPI。CUDA PyTorch 仍从 PyTorch 官方 CUDA 源安装。
+
+## 手动指定下载源
+
+在命令提示符中进入解压目录后，可以执行：
+
+```bat
+set JOUJOU_DOWNLOAD_SOURCE=official
+INSTALL.bat
+```
+
+强制使用镜像：
+
+```bat
+set JOUJOU_DOWNLOAD_SOURCE=hf-mirror
+INSTALL.bat
+```
+
+恢复自动选择：
+
+```bat
+set JOUJOU_DOWNLOAD_SOURCE=auto
+INSTALL.bat
+```
+
+同样可以在运行 `START.bat` 前设置该变量。变量只对当前终端窗口有效。
+
+## 环境要求
+
+- Windows 10 或 Windows 11
+- Python 3.10、3.11 或 3.12，推荐 Python 3.11
 - NVIDIA 显卡，推荐显存 8GB 或以上
 - 较新的 NVIDIA 驱动
-- 首次初始化需要联网下载依赖和模型
+- 首次安装需要联网
 
 ## 常见问题
 
-### 双击 INSTALL.bat 没反应怎么办？
+### 如何确认当前模型下载源？
 
-请右键选择“在终端中打开”，或打开 PowerShell 后进入该目录执行 `INSTALL.bat`。
+查看 `voice-service\.download-source.json`：
+
+- `"source": "official"` 表示 Hugging Face 官方源。
+- `"source": "hf-mirror"` 表示国内镜像。
+
+启动窗口也会输出：
+
+```text
+[JouJou Voice Engine] Hugging Face endpoint: official
+```
+
+或：
+
+```text
+[JouJou Voice Engine] Hugging Face endpoint: https://hf-mirror.com
+```
+
+### 模型预下载失败怎么办？
+
+安装程序会继续完成剩余步骤。之后运行 `START.bat` 时，VoxCPM2 会使用同一个下载源继续下载缓存。
 
 ### 提示找不到 Python 怎么办？
 
-请先安装 Python 3.11，并在安装时勾选 `Add Python to PATH`。
+安装 Python 3.11，并在安装界面勾选 `Add Python to PATH`，然后重新运行 `INSTALL.bat`。
 
-### 点击网页“启动本地引擎”没有反应怎么办？
+### 网页无法启动引擎怎么办？
 
-请重新双击 `INSTALL.bat`，它会注册 `joujou-voice://` 本地启动协议。
+重新运行 `INSTALL.bat` 注册 `joujou-voice://` 本地协议，或者直接双击 `START.bat`。
 
-### 第一次为什么很慢？
+### 是否会上传参考音频？
 
-第一次会下载 PyTorch、VoxCPM2 和相关依赖，可能需要较长时间，请保持网络稳定。
-
-### 线上网页连接失败，但本地引擎窗口显示 200 怎么办？
-
-如果线上网页无法连接本地引擎，但本地引擎窗口显示 `/health`、`/engine/info` 返回 200，通常是 CORS / 浏览器私有网络访问（Private Network Access）限制。
-
-本地引擎默认允许以下页面访问：
-
-- http://localhost:3000
-- http://127.0.0.1:3000
-- https://www.zoujunyispace.cn
-
-如果你部署到自己的域名，需要在 `voice-service\.env` 的 `VOICE_ALLOWED_ORIGINS` 中加入你的域名 Origin。
-例如页面地址是：
-
-```text
-https://www.zoujunyispace.cn/joujou-tools/ai-voice-workshop
-```
-
-则需要加入的 Origin 是：
-
-```text
-https://www.zoujunyispace.cn
-```
-
-注意 CORS 只看 Origin（协议 + 域名 + 端口），不看完整路径。修改后请重启本地引擎。
-
-### 是否会上传我的参考音频？
-
-本地 GPU 引擎模式下，参考音频默认只在你的电脑本地处理，不上传云端。
+本地 GPU 引擎模式下，参考音频默认只在本机处理，不上传到云端。

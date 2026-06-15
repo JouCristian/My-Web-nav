@@ -37,6 +37,7 @@ yarn-error.log*
 !.env.example
 .env.local
 .env.*.local
+/voice-service/.download-source.json
 
 # vercel
 .vercel
