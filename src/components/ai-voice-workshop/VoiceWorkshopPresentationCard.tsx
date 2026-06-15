@@ -24,7 +24,7 @@ export function VoiceWorkshopPresentationCard() {
         className="pointer-events-none absolute inset-0 opacity-35 transition-opacity duration-300 group-hover:opacity-55"
         style={{ backgroundImage: "radial-gradient(circle, rgba(103,232,249,.38) 1px, transparent 1.2px)", backgroundSize: "18px 18px" }}
       />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-cyan-100/55" />
+      <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/55 to-transparent" />
       {!reduceMotion ? (
         <motion.div
           aria-hidden="true"

@@ -317,7 +317,7 @@ export function VoiceEngineSettings({
   )
 }
 
-const telemetryLoad = [0.38, 0.72, 0.5, 0.9, 0.62, 0.8, 0.46]
+const telemetryNodes = [66, 142, 218]
 
 function EngineTelemetry({ status, reduceMotion }: { status: VoiceEngineStatus; reduceMotion: boolean }) {
   const connected = status === "connected"
@@ -325,7 +325,8 @@ function EngineTelemetry({ status, reduceMotion }: { status: VoiceEngineStatus; 
   const failed = status === "failed"
   const color = connected ? "#6ee7b7" : active ? "#67e8f9" : failed ? "#fda4af" : "#fcd34d"
   const stateLabel = connected ? "ONLINE" : active ? "SCANNING" : failed ? "FAULT" : "STANDBY"
-  const cycle = connected ? 1.35 : active ? 0.8 : failed ? 2.4 : 2.8
+  const cycle = connected ? 1.75 : active ? 1.15 : failed ? 2.6 : 2.85
+  const destination = failed ? 196 : 252
 
   return (
     <div className="relative mx-4 mb-3 mt-auto h-[72px] overflow-hidden border-t border-white/[0.08] pt-2.5" aria-hidden="true">
@@ -335,58 +336,85 @@ function EngineTelemetry({ status, reduceMotion }: { status: VoiceEngineStatus; 
       </div>
 
       <div className="relative mt-1.5 h-9">
-        <div className="absolute left-1 right-[84px] top-1/2 h-px bg-white/[0.09]" />
-        <motion.div
-          className="absolute left-1 right-[84px] top-1/2 h-px origin-left"
-          style={{ backgroundColor: color }}
-          animate={reduceMotion ? undefined : { scaleX: [0.08, 1, 0.16], opacity: [0.2, 0.75, 0.25] }}
-          transition={{ duration: cycle, repeat: Infinity, ease: [0.16, 1, 0.3, 1] }}
-        />
+        <div className="absolute inset-y-0 left-0 right-11">
+          <svg className="h-full w-full overflow-visible" viewBox="0 0 270 40" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="engine-energy-ribbon" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stopColor={color} stopOpacity="0" />
+                <stop offset="0.48" stopColor={color} stopOpacity="0.95" />
+                <stop offset="1" stopColor={color} stopOpacity="0" />
+              </linearGradient>
+              <filter id="engine-energy-glow" x="-200%" y="-200%" width="400%" height="400%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
 
-        {[12, 38, 66].map((position, index) => (
-          <motion.span
-            key={position}
-            className="absolute top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full border bg-[#090c18]"
-            style={{ left: `${position}%`, borderColor: color }}
-            animate={reduceMotion ? undefined : { scale: [0.72, 1.35, 0.72], opacity: [0.4, 1, 0.4] }}
-            transition={{ duration: cycle + index * 0.18, repeat: Infinity, delay: index * 0.16, ease: "easeInOut" }}
-          />
-        ))}
+            <line x1="10" y1="20" x2="258" y2="20" stroke="rgba(255,255,255,0.11)" strokeWidth="1" />
+            <motion.line
+              x1="10"
+              y1="20"
+              x2="258"
+              y2="20"
+              stroke="url(#engine-energy-ribbon)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeDasharray="58 190"
+              initial={false}
+              animate={reduceMotion ? { strokeDashoffset: 0, opacity: 0.45 } : { strokeDashoffset: [248, -58], opacity: [0, 0.9, 0.72, 0] }}
+              transition={{ duration: cycle, repeat: Infinity, ease: "linear", times: [0, 0.12, 0.82, 1] }}
+            />
 
-        <motion.span
-          className="absolute top-1/2 h-2 w-2 -translate-y-1/2 rounded-full"
-          style={{ backgroundColor: color, boxShadow: `0 0 12px ${color}` }}
-          animate={reduceMotion ? undefined : { left: ["1%", "70%"], opacity: [0, 1, 0] }}
-          transition={{ duration: cycle, repeat: Infinity, repeatDelay: connected ? 0.35 : 0.75, ease: [0.22, 1, 0.36, 1] }}
-        />
+            {telemetryNodes.map((position) => {
+              const progress = (position - 10) / (destination - 10)
+              const pulseAt = Math.max(0.12, Math.min(0.82, progress * 0.82))
+              const pulseStart = Math.max(0, pulseAt - 0.055)
+              const pulseEnd = Math.min(1, pulseAt + 0.07)
+
+              return (
+                <g key={position}>
+                  <circle cx={position} cy="20" r="3.2" fill="#090c18" stroke={color} strokeOpacity="0.48" strokeWidth="1" />
+                  <motion.circle
+                    cx={position}
+                    cy="20"
+                    fill={color}
+                    initial={false}
+                    animate={reduceMotion ? { r: 1.5, opacity: 0.55 } : { r: [1.4, 1.4, 3.3, 1.4, 1.4], opacity: [0.28, 0.28, 1, 0.28, 0.28] }}
+                    transition={{ duration: cycle, repeat: Infinity, ease: [0.22, 1, 0.36, 1], times: [0, pulseStart, pulseAt, pulseEnd, 1] }}
+                  />
+                </g>
+              )
+            })}
+
+            <motion.circle
+              cy="20"
+              fill={color}
+              filter="url(#engine-energy-glow)"
+              initial={false}
+              animate={reduceMotion ? { cx: destination, r: 2.6, opacity: 0.75 } : { cx: [10, destination], r: [2.3, 3.4, 3.4, 2.3], opacity: [0, 1, 1, 0] }}
+              transition={{ duration: cycle, repeat: Infinity, ease: [0.45, 0, 0.2, 1], times: [0, 0.12, 0.84, 1] }}
+            />
+          </svg>
+        </div>
 
         <motion.div
           className="absolute right-0 top-0 grid h-9 w-9 place-items-center border border-white/10 bg-white/[0.035]"
-          animate={reduceMotion ? undefined : { borderColor: [`${color}26`, `${color}8c`, `${color}26`] }}
-          transition={{ duration: cycle, repeat: Infinity, ease: "easeInOut" }}
+          initial={false}
+          animate={reduceMotion ? { borderColor: `${color}66` } : failed ? { borderColor: [`${color}24`, `${color}62`, `${color}24`] } : { scale: [1, 1, 1.045, 1], borderColor: [`${color}26`, `${color}26`, `${color}8c`, `${color}26`] }}
+          transition={{ duration: cycle, repeat: Infinity, ease: [0.22, 1, 0.36, 1], times: failed ? undefined : [0, 0.82, 0.9, 1] }}
         >
-          <Cpu className="h-4 w-4" style={{ color }} />
-          {!reduceMotion ? (
-            <motion.span
-              className="absolute inset-1 border"
-              style={{ borderColor: color }}
-              animate={{ opacity: [0.1, 0.65, 0.1], scale: [0.82, 1, 0.82] }}
-              transition={{ duration: cycle, repeat: Infinity, ease: "easeInOut" }}
-            />
-          ) : null}
+          <Cpu className="relative z-10 h-4 w-4" style={{ color }} />
+          <motion.span
+            className="absolute inset-1 border"
+            style={{ borderColor: color }}
+            initial={false}
+            animate={reduceMotion ? { opacity: 0.3 } : failed ? { opacity: [0.08, 0.28, 0.08] } : { opacity: [0.08, 0.08, 0.62, 0.08], scale: [0.88, 0.88, 1, 0.88] }}
+            transition={{ duration: cycle, repeat: Infinity, ease: [0.22, 1, 0.36, 1], times: failed ? undefined : [0, 0.82, 0.9, 1] }}
+          />
         </motion.div>
-
-        <div className="absolute bottom-0 right-[54px] flex h-4 items-end gap-1">
-          {telemetryLoad.map((load, index) => (
-            <motion.span
-              key={`${load}-${index}`}
-              className="w-0.5 origin-bottom"
-              style={{ height: `${Math.round(load * 16)}px`, backgroundColor: color }}
-              animate={reduceMotion ? undefined : { scaleY: [0.35, 1, 0.55], opacity: [0.35, 0.9, 0.45] }}
-              transition={{ duration: cycle + (index % 3) * 0.2, repeat: Infinity, repeatType: "mirror", delay: index * 0.07, ease: "easeInOut" }}
-            />
-          ))}
-        </div>
       </div>
     </div>
   )
