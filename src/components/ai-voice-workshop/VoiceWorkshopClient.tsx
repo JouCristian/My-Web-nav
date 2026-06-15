@@ -639,26 +639,26 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
         initial="hidden"
         animate="visible"
       >
-        <motion.header variants={voicePageItem} className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(270px,0.38fr)_minmax(360px,0.46fr)] xl:items-stretch">
-          <div className="min-w-0">
+        <motion.header variants={voicePageItem} className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_270px_320px] xl:items-end">
+          <div className="min-w-0 xl:min-h-[286px]">
             <div className="flex flex-wrap items-center gap-3">
               <BackButton />
               <span className="inline-flex items-center gap-2 rounded-full border border-cyan-200/18 bg-cyan-200/[0.07] px-3 py-1.5 font-mono text-[10px] text-cyan-100/85">
                 <Sparkles className="h-3.5 w-3.5" />AI Voice Workshop
               </span>
             </div>
-            <div className="mt-5 flex items-start gap-4">
-              <span className="hidden h-12 w-12 shrink-0 place-items-center rounded-xl border border-cyan-100/20 bg-cyan-200/[0.08] text-cyan-100 sm:grid">
-                <AudioWaveform className="h-6 w-6" />
+            <div className="mt-6 flex items-start gap-5">
+              <span className="hidden h-14 w-14 shrink-0 place-items-center rounded-xl border border-cyan-100/20 bg-cyan-200/[0.08] text-cyan-100 sm:grid">
+                <AudioWaveform className="h-7 w-7" />
               </span>
               <div className="min-w-0">
-                <h1 className="text-balance text-4xl font-black leading-tight tracking-[-0.03em] text-white sm:text-5xl">AI 声音创作工坊</h1>
-                <p className="mt-3 max-w-3xl text-pretty text-sm leading-6 text-zinc-300 sm:text-base">
+                <h1 className="text-balance text-5xl font-black leading-[1.02] tracking-[-0.035em] text-white sm:text-6xl xl:text-[64px]">AI 声音创作工坊</h1>
+                <p className="mt-4 max-w-3xl text-pretty text-base leading-7 text-zinc-200 sm:text-lg sm:leading-8">
                   输入文本，选择音色或上传参考音频，让本地 VoxCPM2 生成可播放、可下载的 WAV 语音。
                 </p>
               </div>
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-5 flex flex-wrap gap-2.5">
               {[
                 { icon: Mic2, label: "VoxCPM2 TTS" },
                 { icon: Headphones, label: "声音克隆" },
@@ -666,7 +666,7 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
                 { icon: Cpu, label: "本地 GPU 引擎" },
               ].map((item) => {
                 const Icon = item.icon
-                return <span key={item.label} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-zinc-300"><Icon className="h-3.5 w-3.5 text-cyan-100" />{item.label}</span>
+                return <span key={item.label} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-sm font-bold text-zinc-200"><Icon className="h-4 w-4 text-cyan-100" />{item.label}</span>
               })}
             </div>
           </div>

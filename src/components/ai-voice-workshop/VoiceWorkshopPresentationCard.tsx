@@ -18,7 +18,7 @@ export function VoiceWorkshopPresentationCard() {
       whileHover={reduceMotion ? undefined : { y: -3, scale: 1.012 }}
       whileTap={voiceTap}
       transition={voiceSpring}
-      className="group relative isolate flex min-h-[188px] w-full min-w-0 cursor-pointer overflow-hidden rounded-2xl border border-cyan-100/16 bg-[#090c18]/88 p-5 text-left shadow-[0_8px_24px_rgba(0,0,0,0.24)] outline-none backdrop-blur-xl transition-colors hover:border-cyan-100/36 focus-visible:ring-2 focus-visible:ring-cyan-200/55 xl:min-h-full"
+      className="group relative isolate flex min-h-[188px] w-full min-w-0 cursor-pointer overflow-hidden rounded-2xl border border-cyan-100/16 bg-[#090c18]/88 p-4 text-left shadow-[0_8px_24px_rgba(0,0,0,0.24)] outline-none backdrop-blur-xl transition-colors hover:border-cyan-100/36 focus-visible:ring-2 focus-visible:ring-cyan-200/55 xl:h-[224px]"
     >
       <div
         className="pointer-events-none absolute inset-0 opacity-35 transition-opacity duration-300 group-hover:opacity-55"
@@ -34,7 +34,7 @@ export function VoiceWorkshopPresentationCard() {
         />
       ) : null}
 
-      <div className="relative z-10 flex w-full min-w-0 flex-col justify-between gap-5">
+      <div className="relative z-10 flex w-full min-w-0 flex-col justify-between gap-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 font-mono text-[10px] text-cyan-100/70">

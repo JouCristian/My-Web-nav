@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, type ReactNode } from "react"
-import { AnimatePresence, motion } from "framer-motion"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import {
   Archive,
   Check,
@@ -92,6 +92,7 @@ export function VoiceEngineSettings({
   const rootRef = useRef<HTMLElement>(null)
   const copyTimerRef = useRef<number | null>(null)
   const busy = engineStatus === "checking" || engineStatus === "starting"
+  const reduceMotion = useReducedMotion()
 
   useEffect(() => {
     if (!settingsOpen) return
@@ -130,10 +131,11 @@ export function VoiceEngineSettings({
   return (
     <section
       ref={rootRef}
-      className={`relative overflow-visible rounded-2xl border border-white/10 bg-[#090c18]/88 shadow-[0_8px_24px_rgba(0,0,0,0.24)] backdrop-blur-xl ${settingsOpen ? "z-50" : "z-20"}`}
+      className={`relative flex overflow-visible rounded-2xl border border-white/10 bg-[#090c18]/88 shadow-[0_8px_24px_rgba(0,0,0,0.24)] backdrop-blur-xl xl:h-[224px] ${settingsOpen ? "z-50" : "z-20"}`}
     >
       <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/55 to-transparent" />
-      <div className="flex flex-col items-stretch gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex flex-col items-stretch gap-3 p-4 pb-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
             <span
@@ -168,6 +170,9 @@ export function VoiceEngineSettings({
             <ChevronDown className="no-spin-hover h-3.5 w-3.5" />
           </motion.span>
         </motion.button>
+      </div>
+
+      <EngineTelemetry status={engineStatus} reduceMotion={Boolean(reduceMotion)} />
       </div>
 
       <AnimatePresence>
@@ -309,6 +314,81 @@ export function VoiceEngineSettings({
         ) : null}
       </AnimatePresence>
     </section>
+  )
+}
+
+const telemetryLoad = [0.38, 0.72, 0.5, 0.9, 0.62, 0.8, 0.46]
+
+function EngineTelemetry({ status, reduceMotion }: { status: VoiceEngineStatus; reduceMotion: boolean }) {
+  const connected = status === "connected"
+  const active = status === "checking" || status === "starting"
+  const failed = status === "failed"
+  const color = connected ? "#6ee7b7" : active ? "#67e8f9" : failed ? "#fda4af" : "#fcd34d"
+  const stateLabel = connected ? "ONLINE" : active ? "SCANNING" : failed ? "FAULT" : "STANDBY"
+  const cycle = connected ? 1.35 : active ? 0.8 : failed ? 2.4 : 2.8
+
+  return (
+    <div className="relative mx-4 mb-3 mt-auto h-[72px] overflow-hidden border-t border-white/[0.08] pt-2.5" aria-hidden="true">
+      <div className="flex items-center justify-between font-mono text-[9px] tracking-[0.15em] text-zinc-500">
+        <span>GPU SYSTEM LINK</span>
+        <span style={{ color }}>{stateLabel}</span>
+      </div>
+
+      <div className="relative mt-1.5 h-9">
+        <div className="absolute left-1 right-[84px] top-1/2 h-px bg-white/[0.09]" />
+        <motion.div
+          className="absolute left-1 right-[84px] top-1/2 h-px origin-left"
+          style={{ backgroundColor: color }}
+          animate={reduceMotion ? undefined : { scaleX: [0.08, 1, 0.16], opacity: [0.2, 0.75, 0.25] }}
+          transition={{ duration: cycle, repeat: Infinity, ease: [0.16, 1, 0.3, 1] }}
+        />
+
+        {[12, 38, 66].map((position, index) => (
+          <motion.span
+            key={position}
+            className="absolute top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full border bg-[#090c18]"
+            style={{ left: `${position}%`, borderColor: color }}
+            animate={reduceMotion ? undefined : { scale: [0.72, 1.35, 0.72], opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: cycle + index * 0.18, repeat: Infinity, delay: index * 0.16, ease: "easeInOut" }}
+          />
+        ))}
+
+        <motion.span
+          className="absolute top-1/2 h-2 w-2 -translate-y-1/2 rounded-full"
+          style={{ backgroundColor: color, boxShadow: `0 0 12px ${color}` }}
+          animate={reduceMotion ? undefined : { left: ["1%", "70%"], opacity: [0, 1, 0] }}
+          transition={{ duration: cycle, repeat: Infinity, repeatDelay: connected ? 0.35 : 0.75, ease: [0.22, 1, 0.36, 1] }}
+        />
+
+        <motion.div
+          className="absolute right-0 top-0 grid h-9 w-9 place-items-center border border-white/10 bg-white/[0.035]"
+          animate={reduceMotion ? undefined : { borderColor: [`${color}26`, `${color}8c`, `${color}26`] }}
+          transition={{ duration: cycle, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <Cpu className="h-4 w-4" style={{ color }} />
+          {!reduceMotion ? (
+            <motion.span
+              className="absolute inset-1 border"
+              style={{ borderColor: color }}
+              animate={{ opacity: [0.1, 0.65, 0.1], scale: [0.82, 1, 0.82] }}
+              transition={{ duration: cycle, repeat: Infinity, ease: "easeInOut" }}
+            />
+          ) : null}
+        </motion.div>
+
+        <div className="absolute bottom-0 right-[54px] flex h-4 items-end gap-1">
+          {telemetryLoad.map((load, index) => (
+            <motion.span
+              key={`${load}-${index}`}
+              className="w-0.5 origin-bottom"
+              style={{ height: `${Math.round(load * 16)}px`, backgroundColor: color }}
+              animate={reduceMotion ? undefined : { scaleY: [0.35, 1, 0.55], opacity: [0.35, 0.9, 0.45] }}
+              transition={{ duration: cycle + (index % 3) * 0.2, repeat: Infinity, repeatType: "mirror", delay: index * 0.07, ease: "easeInOut" }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }
 
