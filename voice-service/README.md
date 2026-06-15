@@ -86,7 +86,7 @@ Fields:
 - `reference_audio`: required in `clone` mode.
 - `clone_safety_accepted`: required as `true` in `clone` mode.
 - `cfg_value`: optional, default `2.0`, range `1.0` to `3.0`.
-- `inference_timesteps`: optional, default `10`, range `4` to `30`.
+- `inference_timesteps`: optional, default `6`, range `4` to `30`.
 - `interruptible`: optional, default `false`. When `false`, the engine uses the faster `model.generate()` path. When `true`, it uses `model.generate_streaming()` and checks cancel requests between audio chunks.
 
 Returns:

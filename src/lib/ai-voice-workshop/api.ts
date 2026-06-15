@@ -63,9 +63,9 @@ export async function generateVoice(baseUrl: string, payload: VoiceGeneratePaylo
     body.set("clone_safety_accepted", String(Boolean(payload.cloneSafetyAccepted)))
     if (payload.referenceAudio) body.set("reference_audio", payload.referenceAudio)
   }
-  body.set("cfg_value", String(payload.cfgValue))
-  body.set("inference_timesteps", String(payload.inferenceTimesteps))
-  body.set("interruptible", String(Boolean(payload.interruptible)))
+  body.set("cfg_value", String(payload.cfgValue ?? 2))
+  body.set("inference_timesteps", String(payload.inferenceTimesteps ?? 6))
+  body.set("interruptible", String(payload.interruptible === true))
 
   const response = await fetch(`${normalizeVoiceApiBaseUrl(baseUrl)}/tts/generate`, {
     method: "POST",

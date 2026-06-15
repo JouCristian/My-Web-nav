@@ -96,7 +96,7 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
   const [cloneConsent, setCloneConsent] = useState(false)
   const [showCloneSafetyError, setShowCloneSafetyError] = useState(false)
   const [cfgValue, setCfgValue] = useState(2)
-  const [inferenceTimesteps, setInferenceTimesteps] = useState(10)
+  const [inferenceTimesteps, setInferenceTimesteps] = useState(6)
   const [interruptible, setInterruptible] = useState(false)
 
   const [engineMode, setEngineMode] = useState<VoiceEngineMode>("local")
@@ -588,7 +588,7 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
     setMode(item.mode)
     setText(item.text)
     setCfgValue(item.cfgValue ?? 2)
-    setInferenceTimesteps(item.inferenceTimesteps ?? 10)
+    setInferenceTimesteps(item.inferenceTimesteps ?? 6)
     setInterruptible(item.interruptible ?? false)
     if (item.mode === "design") {
       setReferenceAudio(null)

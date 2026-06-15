@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { ChevronDown, CircleStop, Gauge, SlidersHorizontal, X } from "lucide-react"
+import { ChevronDown, CircleStop, Gauge, Gem, SlidersHorizontal, Sparkles, Zap, X } from "lucide-react"
 import {
   voiceFastSpring,
   voicePopoverVariants,
@@ -20,6 +20,12 @@ interface VoiceAdvancedOptionsProps {
   onInterruptibleChange: (value: boolean) => void
 }
 
+const generationPresets = [
+  { id: "fast", label: "极速", description: "Steps 4 · CFG 1.7", cfgValue: 1.7, steps: 4, icon: Zap },
+  { id: "recommended", label: "推荐", description: "Steps 6 · CFG 2.0", cfgValue: 2.0, steps: 6, icon: Sparkles },
+  { id: "quality", label: "高质量", description: "Steps 10 · CFG 2.2", cfgValue: 2.2, steps: 10, icon: Gem },
+] as const
+
 export function VoiceAdvancedOptions({
   cfgValue,
   inferenceTimesteps,
@@ -30,6 +36,9 @@ export function VoiceAdvancedOptions({
 }: VoiceAdvancedOptionsProps) {
   const { open, closePopover, togglePopover } = useExclusiveVoicePopover("advanced-options")
   const rootRef = useRef<HTMLDivElement>(null)
+  const activePreset = generationPresets.find(
+    (preset) => preset.steps === inferenceTimesteps && Math.abs(preset.cfgValue - cfgValue) < 0.001,
+  )?.id
 
   useEffect(() => {
     if (!open) return
@@ -96,6 +105,45 @@ export function VoiceAdvancedOptions({
               >
                 <X className="h-4 w-4" />
               </motion.button>
+            </div>
+            <div className="mb-5">
+              <div className="mb-2.5 flex items-center justify-between gap-3">
+                <span className="text-xs font-bold text-zinc-200">生成档位</span>
+                <span className="text-[10px] text-zinc-500">选择后仍可手动微调</span>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {generationPresets.map((preset) => {
+                  const Icon = preset.icon
+                  const selected = activePreset === preset.id
+                  return (
+                    <motion.button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        onCfgValueChange(preset.cfgValue)
+                        onInferenceTimestepsChange(preset.steps)
+                      }}
+                      whileTap={voiceTap}
+                      transition={voiceFastSpring}
+                      className={`relative isolate min-h-[68px] cursor-pointer overflow-hidden rounded-xl border px-3 py-2.5 text-left transition-colors ${selected ? "border-cyan-100/35 text-white" : "border-white/[0.08] bg-black/20 text-zinc-300 hover:border-cyan-100/20 hover:bg-cyan-100/[0.035]"}`}
+                      aria-pressed={selected}
+                    >
+                      {selected ? (
+                        <motion.span
+                          layoutId="voice-generation-preset"
+                          className="absolute inset-0 -z-10 bg-cyan-200/[0.09]"
+                          transition={voiceSpring}
+                        />
+                      ) : null}
+                      <span className="flex items-center gap-2 text-xs font-bold">
+                        <Icon className={`h-3.5 w-3.5 ${selected ? "text-cyan-100" : "text-zinc-500"}`} />
+                        {preset.label}
+                      </span>
+                      <span className="mt-1.5 block font-mono text-[9px] text-zinc-500">{preset.description}</span>
+                    </motion.button>
+                  )
+                })}
+              </div>
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
               <ParameterSlider label="CFG Value" value={cfgValue.toFixed(1)} description="控制模型对音色提示或参考条件的遵循程度。">

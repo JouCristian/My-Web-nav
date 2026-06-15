@@ -63,22 +63,32 @@ class TTSEngine:
         self.output_dir = output_dir
         self.device = "cpu"
         self.model: Any = None
+        self._load_lock = threading.Lock()
 
     @property
     def model_loaded(self) -> bool:
         return self.model is not None
 
     def load(self) -> None:
-        import torch
-        from voxcpm import VoxCPM
+        if self.model_loaded:
+            return
 
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model = VoxCPM.from_pretrained("openbmb/VoxCPM2", load_denoiser=False)
+        with self._load_lock:
+            if self.model_loaded:
+                return
 
-        if hasattr(self.model, "to"):
-            self.model = self.model.to(self.device)
-        if hasattr(self.model, "eval"):
-            self.model.eval()
+            import torch
+            from voxcpm import VoxCPM
+
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+            model = VoxCPM.from_pretrained("openbmb/VoxCPM2", load_denoiser=False)
+
+            if hasattr(model, "to"):
+                model = model.to(self.device)
+            if hasattr(model, "eval"):
+                model.eval()
+
+            self.model = model
 
     def generate(self, job: JobRecord, cancel_event: threading.Event) -> tuple[str, Path]:
         if self.model is None:

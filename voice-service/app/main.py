@@ -134,15 +134,17 @@ def _worker_loop() -> None:
 
                 torch_version = torch.__version__
                 cuda_available = torch.cuda.is_available()
+                gpu_name = torch.cuda.get_device_name(0) if cuda_available else "none"
             except Exception:  # noqa: BLE001 - diagnostics must not block generation.
                 torch_version = "unavailable"
                 cuda_available = False
+                gpu_name = "unavailable"
 
             generation_backend = "generate_streaming" if job.interruptible else "generate"
             logger.info(
                 "TTS generation start job_id=%s mode=%s text_length=%s reference_audio_duration=%s "
                 "cfg=%s steps=%s interruptible=%s generation_backend=%s device=%s "
-                "torch_version=%s cuda_available=%s",
+                "torch_version=%s cuda_available=%s gpu_name=%s",
                 job.job_id,
                 job.mode,
                 len(job.text),
@@ -154,6 +156,7 @@ def _worker_loop() -> None:
                 engine.device,
                 torch_version,
                 cuda_available,
+                gpu_name,
             )
             filename, _ = engine.generate(job, cancel_event)
             if cancel_event.is_set():
@@ -237,7 +240,7 @@ async def generate_tts(
     reference_audio: UploadFile | None = File(None),
     clone_safety_accepted: bool = Form(False),
     cfg_value: float = Form(2.0),
-    inference_timesteps: int = Form(10),
+    inference_timesteps: int = Form(6),
     interruptible: bool = Form(False),
 ) -> GenerateResponse:
     normalized_text = text.strip()

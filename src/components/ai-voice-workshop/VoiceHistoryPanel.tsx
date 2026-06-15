@@ -146,7 +146,7 @@ function HistoryRow({ item, scope, deleting, onDelete, onReuse }: { item: VoiceH
             {item.referenceSource === "sample" && item.referenceSampleAvatarUrl ? <span className="h-5 w-5 shrink-0 rounded-md border border-white/10 bg-cover bg-center" style={{ backgroundImage: `url(${JSON.stringify(item.referenceSampleAvatarUrl).slice(1, -1)})` }} /> : null}
             <div className="truncate text-xs font-bold text-zinc-100">{item.title || item.presetName || (item.mode === "clone" ? "声音克隆" : "自定义音色")}</div><span className="shrink-0 rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-400">{item.mode === "clone" ? "克隆" : "设计"}</span>
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-500"><span>{formatTime(item.createdAt)}</span><span>·</span><span>CFG {item.cfgValue?.toFixed(1) ?? "2.0"}</span><span>·</span><span>{item.inferenceTimesteps ?? 10} Steps</span></div>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-500"><span>{formatTime(item.createdAt)}</span><span>·</span><span>CFG {item.cfgValue?.toFixed(1) ?? "2.0"}</span><span>·</span><span>{item.inferenceTimesteps ?? 6} Steps</span></div>
         </div>
         <div className="relative flex shrink-0 items-center gap-1">
           <HistoryAction label="使用此配置" onClick={() => void handleReuse()} disabled={reusePending}>{reusePending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}</HistoryAction>
