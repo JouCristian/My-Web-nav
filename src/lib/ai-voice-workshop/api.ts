@@ -97,3 +97,17 @@ export function resolveVoiceAudioUrl(baseUrl: string, audioUrl?: string | null, 
   const normalizedBaseUrl = normalizeVoiceApiBaseUrl(baseUrl)
   return `${normalizedBaseUrl}${rawUrl.startsWith("/") ? rawUrl : `/${rawUrl}`}`
 }
+
+export function resolveVoiceAudioPath(audioPath?: string | null, audioUrl?: string | null, filename?: string | null): string {
+  const rawPath = audioPath || audioUrl || (filename ? `/tts/audio/${filename}` : "")
+  if (!rawPath || rawPath.startsWith("blob:")) return filename ? `/tts/audio/${filename}` : ""
+  if (/^https?:\/\//i.test(rawPath)) {
+    try {
+      const url = new URL(rawPath)
+      return `${url.pathname}${url.search}`
+    } catch {
+      return filename ? `/tts/audio/${filename}` : ""
+    }
+  }
+  return rawPath.startsWith("/") ? rawPath : `/${rawPath}`
+}

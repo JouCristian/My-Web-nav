@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -28,6 +29,7 @@ class GenerateResponse(BaseModel):
 class JobRecord(BaseModel):
     job_id: str
     status: JobStatus
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     text: str = ""
     mode: GenerationMode = "design"
     voice_prompt: str = ""
@@ -38,5 +40,7 @@ class JobRecord(BaseModel):
     interruptible: bool = False
     reference_audio_duration: Optional[float] = None
     audio_url: Optional[str] = None
+    audio_path: Optional[str] = None
     filename: Optional[str] = None
+    duration: Optional[float] = None
     error: Optional[str] = None

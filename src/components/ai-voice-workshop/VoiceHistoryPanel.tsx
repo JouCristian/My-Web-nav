@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Check, ChevronRight, Clock3, Download, Loader2, RotateCcw, SlidersHorizontal, Trash2, X } from "lucide-react"
 import { VoiceAudioPlayer } from "@/components/ai-voice-workshop/VoiceAudioPlayer"
@@ -14,10 +14,13 @@ import {
   voiceTap,
 } from "@/components/ai-voice-workshop/motion"
 import { useExclusiveVoicePopover } from "@/components/ai-voice-workshop/useExclusiveVoicePopover"
+import { normalizeVoiceApiBaseUrl, resolveVoiceAudioUrl } from "@/lib/ai-voice-workshop/api"
 import type { VoiceHistoryItem } from "@/lib/ai-voice-workshop/types"
 
 interface VoiceHistoryPanelProps {
   items: VoiceHistoryItem[]
+  apiBaseUrl: string
+  engineConnected: boolean
   onDelete: (id: string) => void
   onReuse: (item: VoiceHistoryItem) => Promise<string>
 }
@@ -28,7 +31,15 @@ function formatTime(value: string) {
   return new Intl.DateTimeFormat("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(date)
 }
 
-export function VoiceHistoryPanel({ items, onDelete, onReuse }: VoiceHistoryPanelProps) {
+function getHistorySummary(item: VoiceHistoryItem) {
+  if (item.mode === "clone") {
+    if (item.referenceSource === "sample") return `精选 · ${item.referenceSampleName || "参考音频"}`
+    return `${item.referenceAudioName || "参考音频"} · 复用时需重新上传`
+  }
+  return item.customVoicePrompt || item.voicePrompt || item.presetName || "预设音色"
+}
+
+export function VoiceHistoryPanel({ items, apiBaseUrl, engineConnected, onDelete, onReuse }: VoiceHistoryPanelProps) {
   const { open: allOpen, closePopover, togglePopover } = useExclusiveVoicePopover("history")
   const [deletingIds, setDeletingIds] = useState<string[]>([])
   const deleteTimers = useRef<number[]>([])
@@ -68,7 +79,7 @@ export function VoiceHistoryPanel({ items, onDelete, onReuse }: VoiceHistoryPane
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 text-sm font-bold text-white"><Clock3 className="h-4 w-4 text-cyan-100" />最近生成</div>
-          <p className="mt-1 text-xs text-zinc-500">最近 {items.length}/8 条，仅保存在当前浏览器</p>
+          <p className="mt-1 text-xs text-zinc-500">最近 {items.length}/8 条，保存在当前浏览器</p>
         </div>
         {items.length > 3 ? (
           <motion.button type="button" onClick={togglePopover} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 text-[11px] font-bold text-zinc-300 transition-colors hover:border-cyan-100/25 hover:text-white" aria-expanded={allOpen}>
@@ -82,7 +93,7 @@ export function VoiceHistoryPanel({ items, onDelete, onReuse }: VoiceHistoryPane
       ) : (
         <motion.div layout transition={voiceLayoutSpring} className="voice-scroll max-h-[440px] min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1">
           <AnimatePresence initial={false} mode="sync">
-            {visibleItems.map((item) => <HistoryRow key={item.id} scope="recent" item={item} deleting={deletingIds.includes(item.id)} onDelete={() => deleteWithAnimation(item.id)} onReuse={() => onReuse(item)} />)}
+            {visibleItems.map((item) => <HistoryRow key={item.id} scope="recent" item={item} apiBaseUrl={apiBaseUrl} engineConnected={engineConnected} deleting={deletingIds.includes(item.id)} onDelete={() => deleteWithAnimation(item.id)} onReuse={() => onReuse(item)} />)}
           </AnimatePresence>
         </motion.div>
       )}
@@ -96,7 +107,7 @@ export function VoiceHistoryPanel({ items, onDelete, onReuse }: VoiceHistoryPane
             </div>
             <motion.div layout transition={voiceLayoutSpring} className="space-y-2">
               <AnimatePresence initial={false} mode="sync">
-                {items.map((item) => <HistoryRow key={item.id} scope="all" item={item} deleting={deletingIds.includes(item.id)} onDelete={() => deleteWithAnimation(item.id)} onReuse={() => onReuse(item)} />)}
+                {items.map((item) => <HistoryRow key={item.id} scope="all" item={item} apiBaseUrl={apiBaseUrl} engineConnected={engineConnected} deleting={deletingIds.includes(item.id)} onDelete={() => deleteWithAnimation(item.id)} onReuse={() => onReuse(item)} />)}
               </AnimatePresence>
             </motion.div>
           </motion.div>
@@ -106,11 +117,29 @@ export function VoiceHistoryPanel({ items, onDelete, onReuse }: VoiceHistoryPane
   )
 }
 
-function HistoryRow({ item, scope, deleting, onDelete, onReuse }: { item: VoiceHistoryItem; scope: string; deleting: boolean; onDelete: () => void; onReuse: () => Promise<string> }) {
+function HistoryRow({
+  item,
+  scope,
+  apiBaseUrl,
+  engineConnected,
+  deleting,
+  onDelete,
+  onReuse,
+}: {
+  item: VoiceHistoryItem
+  scope: string
+  apiBaseUrl: string
+  engineConnected: boolean
+  deleting: boolean
+  onDelete: () => void
+  onReuse: () => Promise<string>
+}) {
   const [reuseToast, setReuseToast] = useState(false)
   const [reuseMessage, setReuseMessage] = useState("")
   const [reusePending, setReusePending] = useState(false)
   const reuseTimer = useRef<number | null>(null)
+  const playbackBaseUrl = normalizeVoiceApiBaseUrl(apiBaseUrl || item.apiBaseUrl || "")
+  const historyAudioUrl = item.audioPath ? resolveVoiceAudioUrl(playbackBaseUrl, item.audioPath, item.filename) : ""
 
   useEffect(() => () => {
     if (reuseTimer.current !== null) window.clearTimeout(reuseTimer.current)
@@ -143,7 +172,7 @@ function HistoryRow({ item, scope, deleting, onDelete, onReuse }: { item: VoiceH
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            {item.referenceSource === "sample" && item.referenceSampleAvatarUrl ? <span className="h-5 w-5 shrink-0 rounded-md border border-white/10 bg-cover bg-center" style={{ backgroundImage: `url(${JSON.stringify(item.referenceSampleAvatarUrl).slice(1, -1)})` }} /> : null}
+            {item.referenceSource === "sample" && item.referenceSampleAvatarUrl ? <span className="h-5 w-5 shrink-0 rounded-md border border-white/10 bg-cover bg-center" style={{ backgroundImage: `url(${JSON.stringify(item.referenceSampleAvatarUrl)})` }} /> : null}
             <div className="truncate text-xs font-bold text-zinc-100">{item.title || item.presetName || (item.mode === "clone" ? "声音克隆" : "自定义音色")}</div><span className="shrink-0 rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-400">{item.mode === "clone" ? "克隆" : "设计"}</span>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-500"><span>{formatTime(item.createdAt)}</span><span>·</span><span>CFG {item.cfgValue?.toFixed(1) ?? "2.0"}</span><span>·</span><span>{item.inferenceTimesteps ?? 6} Steps</span></div>
@@ -169,15 +198,36 @@ function HistoryRow({ item, scope, deleting, onDelete, onReuse }: { item: VoiceH
         </div>
       </div>
 
-      <div className="mt-3"><VoiceAudioPlayer id={`history-${scope}-${item.id}`} src={item.audioUrl} compact /></div>
+      <div className="mt-3">
+        <VoiceAudioPlayer
+          id={`history-${scope}-${item.id}`}
+          src={historyAudioUrl}
+          compact
+          disabled={!engineConnected}
+          disabledMessage="本地引擎未连接，启动后可播放历史音频。"
+          unavailableMessage="音频文件已被清理或移动。"
+        />
+      </div>
       <div className="mt-2 flex items-center justify-between gap-3">
-        <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-[10px] text-zinc-500"><SlidersHorizontal className="h-3 w-3 shrink-0" />{item.mode === "clone" ? item.referenceSource === "sample" ? `精选 · ${item.referenceSampleName || "参考音频"}` : `${item.referenceAudioName || "参考音频"} · 复用时需重新上传` : item.voicePrompt || item.presetName || "预设音色"}</span>
-        <motion.a href={item.audioUrl} download={item.filename} whileHover={voiceHover} whileTap={voiceTap} transition={voiceFastSpring} className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-bold text-zinc-400 transition-colors hover:bg-white/[0.06] hover:text-cyan-50" aria-label="下载历史音频"><Download className="h-3.5 w-3.5" />下载</motion.a>
+        <span className="inline-flex min-w-0 items-center gap-1.5 truncate text-[10px] text-zinc-500"><SlidersHorizontal className="h-3 w-3 shrink-0" />{getHistorySummary(item)}</span>
+        <motion.a
+          href={historyAudioUrl}
+          download={item.filename}
+          aria-disabled={!engineConnected || !historyAudioUrl}
+          tabIndex={engineConnected && historyAudioUrl ? 0 : -1}
+          whileHover={engineConnected && historyAudioUrl ? voiceHover : undefined}
+          whileTap={engineConnected && historyAudioUrl ? voiceTap : undefined}
+          transition={voiceFastSpring}
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-bold transition-colors ${engineConnected && historyAudioUrl ? "cursor-pointer text-zinc-400 hover:bg-white/[0.06] hover:text-cyan-50" : "pointer-events-none cursor-not-allowed text-zinc-600"}`}
+          aria-label="下载历史音频"
+        >
+          <Download className="h-3.5 w-3.5" />下载
+        </motion.a>
       </div>
     </motion.article>
   )
 }
 
-function HistoryAction({ label, danger = false, disabled = false, onClick, children }: { label: string; danger?: boolean; disabled?: boolean; onClick: () => void; children: React.ReactNode }) {
+function HistoryAction({ label, danger = false, disabled = false, onClick, children }: { label: string; danger?: boolean; disabled?: boolean; onClick: () => void; children: ReactNode }) {
   return <motion.button type="button" onClick={onClick} disabled={disabled} whileTap={disabled ? undefined : voiceTap} transition={voiceFastSpring} className={`grid h-8 w-8 cursor-pointer place-items-center rounded-full border border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-wait disabled:opacity-60 ${danger ? "text-rose-100/60 hover:border-rose-200/20 hover:bg-rose-500/10 hover:text-rose-50 focus-visible:ring-rose-200/40" : "text-zinc-400 hover:border-cyan-100/15 hover:bg-cyan-100/[0.07] hover:text-cyan-50 focus-visible:ring-cyan-200/40"}`} aria-label={label} title={label}>{children}</motion.button>
 }

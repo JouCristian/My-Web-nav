@@ -158,16 +158,25 @@ def _worker_loop() -> None:
                 cuda_available,
                 gpu_name,
             )
-            filename, _ = engine.generate(job, cancel_event)
+            filename, output_path = engine.generate(job, cancel_event)
             if cancel_event.is_set():
                 (OUTPUT_DIR / filename).unlink(missing_ok=True)
                 job_store.update(job.job_id, status="canceled", error=None)
                 continue
+            audio_path = f"/tts/audio/{filename}"
+            try:
+                import soundfile as sf
+
+                duration = float(sf.info(output_path).duration)
+            except Exception:  # noqa: BLE001 - duration is optional metadata.
+                duration = None
             job_store.update(
                 job.job_id,
                 status="succeeded",
                 filename=filename,
-                audio_url=f"/tts/audio/{filename}",
+                audio_path=audio_path,
+                audio_url=audio_path,
+                duration=duration,
             )
         except GenerationCancelled:
             logger.info("TTS job canceled: %s", job.job_id)

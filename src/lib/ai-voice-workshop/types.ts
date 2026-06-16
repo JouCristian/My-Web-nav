@@ -68,12 +68,15 @@ export interface VoiceGenerateResponse {
 export interface VoiceJob {
   job_id: string
   status: VoiceJobStatus
+  created_at?: string
   text?: string
   mode?: VoiceMode
   voice_prompt?: string
   preset_id?: string | null
   audio_url?: string | null
+  audio_path?: string | null
   filename?: string | null
+  duration?: number | null
   error?: string | null
 }
 
@@ -82,19 +85,28 @@ export interface VoiceHistoryItem {
   title?: string
   text: string
   mode: VoiceMode
+  apiBaseUrl?: string
+  engineKind?: VoiceEngineMode
   presetId?: string
   presetName?: string
+  customVoicePrompt?: string
+  /** @deprecated Use customVoicePrompt. Kept for localStorage migration. */
   voicePrompt?: string
   cfgValue?: number
   inferenceTimesteps?: number
   referenceAudioName?: string
   referenceSource?: Exclude<ReferenceAudioSource, null>
+  selectedSampleId?: string
+  /** @deprecated Use selectedSampleId. Kept for localStorage migration. */
   referenceSampleId?: string
   referenceSampleName?: string
   referenceSampleAvatarUrl?: string | null
   referenceSampleAudioUrl?: string
   interruptible?: boolean
-  audioUrl: string
+  audioPath: string
+  /** @deprecated Runtime-only legacy field. Do not persist blob URLs. */
+  audioUrl?: string
   filename: string
+  duration?: number | null
   createdAt: string
 }

@@ -43,6 +43,7 @@ import {
   getVoiceJob,
   getVoicePresets,
   normalizeVoiceApiBaseUrl,
+  resolveVoiceAudioPath,
   resolveVoiceAudioUrl,
   voiceApiBaseUrl,
 } from "@/lib/ai-voice-workshop/api"
@@ -70,7 +71,7 @@ const VOICE_ENGINE_MODE_KEY = "joujou_voice_engine_mode"
 const VOICE_CUSTOM_API_URL_KEY = "joujou_voice_custom_api_url"
 const VOICE_LOCAL_API_URL_KEY = "joujou_voice_local_api_url"
 
-type VoiceHistoryConfig = Pick<VoiceHistoryItem, "presetId" | "presetName" | "voicePrompt" | "cfgValue" | "inferenceTimesteps" | "referenceAudioName" | "referenceSource" | "referenceSampleId" | "referenceSampleName" | "referenceSampleAvatarUrl" | "referenceSampleAudioUrl" | "interruptible">
+type VoiceHistoryConfig = Pick<VoiceHistoryItem, "presetId" | "presetName" | "customVoicePrompt" | "cfgValue" | "inferenceTimesteps" | "referenceAudioName" | "referenceSource" | "selectedSampleId" | "referenceSampleName" | "referenceSampleAvatarUrl" | "interruptible">
 
 function isValidHttpUrl(url: string) {
   return /^https?:\/\/.+/i.test(url.trim())
@@ -78,6 +79,66 @@ function isValidHttpUrl(url: string) {
 
 function sleep(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
+}
+
+function normalizeHistoryItem(rawItem: unknown): VoiceHistoryItem | null {
+  if (!rawItem || typeof rawItem !== "object") return null
+  const item = rawItem as Partial<VoiceHistoryItem>
+  if (!item.id || !item.text || !item.filename) return null
+  if (item.mode !== "design" && item.mode !== "clone") return null
+
+  const audioPath = resolveVoiceAudioPath(item.audioPath, item.audioUrl, item.filename)
+  if (!audioPath) return null
+
+  return {
+    id: String(item.id),
+    title: item.title,
+    text: String(item.text),
+    mode: item.mode,
+    apiBaseUrl: item.apiBaseUrl,
+    engineKind: item.engineKind,
+    presetId: item.presetId,
+    presetName: item.presetName,
+    customVoicePrompt: item.customVoicePrompt || item.voicePrompt,
+    cfgValue: item.cfgValue,
+    inferenceTimesteps: item.inferenceTimesteps,
+    referenceAudioName: item.referenceAudioName,
+    referenceSource: item.referenceSource ?? undefined,
+    selectedSampleId: item.selectedSampleId || item.referenceSampleId,
+    referenceSampleName: item.referenceSampleName,
+    referenceSampleAvatarUrl: item.referenceSampleAvatarUrl,
+    interruptible: item.interruptible,
+    audioPath,
+    filename: String(item.filename),
+    duration: item.duration,
+    createdAt: item.createdAt || new Date().toISOString(),
+  }
+}
+
+function serializeHistoryItems(items: VoiceHistoryItem[]) {
+  return items.map((item) => ({
+    id: item.id,
+    title: item.title,
+    text: item.text,
+    mode: item.mode,
+    apiBaseUrl: item.apiBaseUrl,
+    engineKind: item.engineKind,
+    presetId: item.presetId,
+    presetName: item.presetName,
+    customVoicePrompt: item.customVoicePrompt,
+    cfgValue: item.cfgValue,
+    inferenceTimesteps: item.inferenceTimesteps,
+    referenceAudioName: item.referenceAudioName,
+    referenceSource: item.referenceSource,
+    selectedSampleId: item.selectedSampleId,
+    referenceSampleName: item.referenceSampleName,
+    referenceSampleAvatarUrl: item.referenceSampleAvatarUrl,
+    interruptible: item.interruptible,
+    audioPath: item.audioPath,
+    filename: item.filename,
+    duration: item.duration,
+    createdAt: item.createdAt,
+  }))
 }
 
 export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isReferenceSampleAdmin?: boolean }) {
@@ -118,6 +179,7 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
   const [resultTitle, setResultTitle] = useState("")
   const [validationError, setValidationError] = useState<string | null>(null)
   const [history, setHistory] = useState<VoiceHistoryItem[]>([])
+  const [historyHydrated, setHistoryHydrated] = useState(false)
   const [resultMode, setResultMode] = useState<VoiceMode>("design")
   const [resultInterruptible, setResultInterruptible] = useState(false)
   const [generationStartedAt, setGenerationStartedAt] = useState<number | null>(null)
@@ -265,9 +327,17 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
     const frame = window.requestAnimationFrame(() => {
       try {
         const raw = window.localStorage.getItem(historyStorageKey)
-        if (raw) setHistory(JSON.parse(raw) as VoiceHistoryItem[])
+        if (raw) {
+          const parsed = JSON.parse(raw) as unknown
+          const nextHistory = Array.isArray(parsed)
+            ? parsed.map(normalizeHistoryItem).filter((item): item is VoiceHistoryItem => Boolean(item)).slice(0, maxHistoryItems)
+            : []
+          setHistory(nextHistory)
+        }
       } catch {
         setHistory([])
+      } finally {
+        setHistoryHydrated(true)
       }
     })
     return () => window.cancelAnimationFrame(frame)
@@ -279,12 +349,13 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
   }, [refreshReferenceSamples])
 
   useEffect(() => {
+    if (!historyHydrated) return
     try {
-      window.localStorage.setItem(historyStorageKey, JSON.stringify(history))
+      window.localStorage.setItem(historyStorageKey, JSON.stringify(serializeHistoryItems(history)))
     } catch {
       // Local history is a convenience feature, so storage failures should not block generation.
     }
-  }, [history])
+  }, [history, historyHydrated])
 
   useEffect(() => () => {
     stopPolling()
@@ -424,7 +495,7 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
     return null
   }
 
-  async function pollJob(jobId: string, requestTitle: string, requestText: string, requestMode: VoiceMode, requestApiBaseUrl: string, requestConfig: VoiceHistoryConfig) {
+  async function pollJob(jobId: string, requestTitle: string, requestText: string, requestMode: VoiceMode, requestApiBaseUrl: string, requestEngineKind: VoiceEngineMode, requestConfig: VoiceHistoryConfig) {
     try {
       const job = await getVoiceJob(requestApiBaseUrl, jobId)
       if (activeJobIdRef.current !== jobId) return
@@ -432,8 +503,9 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
 
       if (job.status === "succeeded") {
         stopPolling()
-        const audioUrl = resolveVoiceAudioUrl(requestApiBaseUrl, job.audio_url, job.filename)
         const filename = job.filename || "voice-output.wav"
+        const audioPath = resolveVoiceAudioPath(job.audio_path, job.audio_url, filename)
+        const audioUrl = resolveVoiceAudioUrl(requestApiBaseUrl, audioPath, filename)
         setResultAudioUrl(audioUrl)
         setResultFilename(filename)
         setResultTitle(requestTitle)
@@ -445,10 +517,13 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
             title: requestTitle,
             text: requestText,
             mode: requestMode,
+            apiBaseUrl: requestApiBaseUrl,
+            engineKind: requestEngineKind,
             ...requestConfig,
-            audioUrl,
+            audioPath,
             filename,
-            createdAt: new Date().toISOString(),
+            duration: job.duration,
+            createdAt: job.created_at || new Date().toISOString(),
           }, ...current.filter((item) => item.id !== job.job_id)]
           return nextHistory.slice(0, maxHistoryItems)
         })
@@ -495,6 +570,7 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
       const requestText = trimmedText
       const requestMode = mode
       const requestApiBaseUrl = activeApiBaseUrl
+      const requestEngineKind = engineMode
       const requestSelectedSample = requestMode === "clone" ? selectedReferenceSample : null
       const requestReferenceAudio = requestMode === "clone"
         ? requestSelectedSample
@@ -504,16 +580,15 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
       const requestConfig: VoiceHistoryConfig = {
         presetId: requestMode === "design" ? selectedPreset?.id : undefined,
         presetName: requestMode === "design" ? selectedPreset?.name : undefined,
-        voicePrompt: requestMode === "design" ? voicePrompt.trim() : undefined,
+        customVoicePrompt: requestMode === "design" ? voicePrompt.trim() : undefined,
         cfgValue,
         inferenceTimesteps,
         interruptible,
         referenceAudioName: requestMode === "clone" ? requestReferenceAudio?.name : undefined,
         referenceSource: requestMode === "clone" ? (requestSelectedSample ? "sample" : referenceAudioSource ?? "upload") : undefined,
-        referenceSampleId: requestSelectedSample?.id,
+        selectedSampleId: requestSelectedSample?.id,
         referenceSampleName: requestSelectedSample?.name,
         referenceSampleAvatarUrl: requestSelectedSample?.avatarUrl,
-        referenceSampleAudioUrl: requestSelectedSample?.audioUrl,
       }
       setResultMode(requestMode)
       setResultInterruptible(interruptible)
@@ -530,10 +605,10 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
       })
       activeJobIdRef.current = response.job_id
       setResultStatus(response.status)
-      await pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestConfig)
+      await pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestEngineKind, requestConfig)
       if (activeJobIdRef.current === response.job_id) {
         pollTimerRef.current = window.setInterval(() => {
-          void pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestConfig)
+          void pollJob(response.job_id, requestTitle, requestText, requestMode, requestApiBaseUrl, requestEngineKind, requestConfig)
         }, 1000)
       }
     } catch (error) {
@@ -599,11 +674,12 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
       setShowCloneSafetyError(false)
       const restoredPreset = presets.find((preset) => preset.id === item.presetId) || presets.find((preset) => preset.name === item.presetName)
       if (restoredPreset) setSelectedPresetId(restoredPreset.id)
-      setVoicePrompt(item.voicePrompt || "")
+      setVoicePrompt(item.customVoicePrompt || item.voicePrompt || "")
       setValidationError(null)
     } else {
-      const restoredSample = item.referenceSource === "sample" && item.referenceSampleId
-        ? referenceSamples.find((sample) => sample.id === item.referenceSampleId) ?? null
+      const selectedSampleId = item.selectedSampleId || item.referenceSampleId
+      const restoredSample = item.referenceSource === "sample" && selectedSampleId
+        ? referenceSamples.find((sample) => sample.id === selectedSampleId) ?? null
         : null
       setReferenceAudio(null)
       setSelectedReferenceSample(restoredSample)
@@ -622,13 +698,14 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
     if (item.mode === "clone") {
       if (item.referenceSource === "sample") {
-        return referenceSamples.some((sample) => sample.id === item.referenceSampleId)
+        const selectedSampleId = item.selectedSampleId || item.referenceSampleId
+        return referenceSamples.some((sample) => sample.id === selectedSampleId)
           ? "文案、参数和精选参考音频已恢复，请重新确认用途"
           : "文案和参数已恢复，原精选参考音频已不可用"
       }
       return "文案和参数已恢复，参考音频需要重新上传"
     }
-    return item.voicePrompt ? "文案、自定义音色和参数已恢复" : "文案、预设音色和参数已恢复"
+    return item.customVoicePrompt || item.voicePrompt ? "文案、自定义音色和参数已恢复" : "文案、预设音色和参数已恢复"
   }
 
   return (
@@ -886,7 +963,7 @@ export function VoiceWorkshopClient({ isReferenceSampleAdmin = false }: { isRefe
           <motion.aside variants={voicePageItem} className="flex min-w-0 flex-col gap-4 xl:max-h-full">
             <AudioResultCard status={resultStatus} mode={resultMode} interruptible={resultInterruptible} audioUrl={resultAudioUrl} filename={resultFilename} title={resultTitle} error={resultError || undefined} startedAt={generationStartedAt} onCancel={isGenerating && resultInterruptible ? () => void handleCancelGeneration() : undefined} onReset={resultStatus === "idle" || isGenerating ? undefined : resetResult} onRetry={resultStatus === "failed" || resultStatus === "canceled" ? () => formRef.current?.requestSubmit() : undefined} />
             <VoiceTipsCard />
-            <VoiceHistoryPanel items={history} onDelete={handleDeleteHistory} onReuse={handleReuseHistory} />
+            <VoiceHistoryPanel items={history} apiBaseUrl={activeApiBaseUrl} engineConnected={connected} onDelete={handleDeleteHistory} onReuse={handleReuseHistory} />
           </motion.aside>
         </div>
         <VoiceReferenceSampleManager
