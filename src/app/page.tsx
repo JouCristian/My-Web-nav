@@ -15,6 +15,7 @@ import { Footer } from "@/components/footer"
 import { YsyxIntroSection } from "@/components/ysyx-intro-section"
 import { AchievementGallerySection } from "@/components/achievement-gallery-section"
 import { JouJouToolsSection } from "@/components/joujou-tools-section"
+import { GameBoxEntryCard } from "@/components/game-box-entry-card"
 import { FAQSection } from "@/components/faq-section"
 import { FeedbackSection } from "@/components/feedback-section"
 import { getStats } from "@/app/actions"
@@ -35,14 +36,27 @@ interface Bookmark {
   createdAt: Date;
 }
 
+async function getHomeDataOrFallback<T>(promise: Promise<T>, fallback: T, label: string): Promise<T> {
+  try {
+    return await promise
+  } catch (error) {
+    console.error(`Home data fallback: ${label}`, error)
+    return fallback
+  }
+}
+
 export default async function Home() {
   // 并行获取所有数据，减少瀑布式请求延迟
   const [session, links, stats, faqQuestions, feedbacks] = await Promise.all([
-    auth(),
-    prisma.bookmark.findMany({ orderBy: { createdAt: 'desc' } }),
-    getStats(),
-    getFAQQuestions(),
-    getFeedbacks()
+    getHomeDataOrFallback(auth(), null, "session"),
+    getHomeDataOrFallback(
+      prisma.bookmark.findMany({ orderBy: { createdAt: 'desc' } }),
+      [] as Bookmark[],
+      "bookmarks"
+    ),
+    getHomeDataOrFallback(getStats(), { bookmarkCount: 0, crewCount: 0, todayVisits: 0 }, "stats"),
+    getHomeDataOrFallback(getFAQQuestions(), [], "faq questions"),
+    getHomeDataOrFallback(getFeedbacks(), [], "feedbacks")
   ])
 
   // @ts-expect-error next-auth session is extended with isCaptain in auth callbacks
@@ -50,7 +64,11 @@ export default async function Home() {
 
   // 用户信息查询（依赖 session，无法并行）
   const dbUser = session?.user?.id 
-    ? await prisma.user.findUnique({ where: { id: session.user.id } })
+    ? await getHomeDataOrFallback(
+        prisma.user.findUnique({ where: { id: session.user.id } }),
+        null,
+        "current user"
+      )
     : null
 
   const isCommander = isCaptain || (dbUser && (dbUser.role === "ADMIN" || dbUser.role === "OWNER"));
@@ -331,6 +349,10 @@ export default async function Home() {
       </section>
 
       {/* 底部页脚 */}
+      <section className="relative z-10 w-full max-w-6xl mx-auto overflow-hidden px-4 sm:px-6 pb-16 sm:pb-24">
+        <GameBoxEntryCard className="animate-float-up" />
+      </section>
+
       <Footer />
     </main>
   )

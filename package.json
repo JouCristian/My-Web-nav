@@ -7,7 +7,8 @@
     "build": "prisma generate && next build",
     "db:push": "prisma db push",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:2048": "node --no-warnings --experimental-strip-types tests/game2048-core.test.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

@@ -105,6 +105,52 @@ model User {
   notifications    Notification[]     // 通知列表
   pushSubscriptions PushSubscription[] // 推送订阅
   promptCardFavorites PromptCardFavorite[] // AI 提示词收藏
+  gameRuns          GameRun[]          // Game Box 对局记录
+}
+
+// ==========================================
+// 🎮 Game Box 通用游戏与对局记录
+// ==========================================
+model Game {
+  id             String    @id @default(uuid()) @db.Uuid
+  slug           String    @unique
+  name           String
+  displayName    String?
+  currentVersion String    @default("1.0.0")
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+
+  runs           GameRun[]
+}
+
+model GameRun {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String?
+  gameId       String    @db.Uuid
+  mode         String    @default("classic")
+  score        Int       @default(0)
+  maxTile      Int?
+  movesCount   Int       @default(0)
+  durationMs   Int       @default(0)
+  seed         String?
+  moveSequence Json?
+  finalBoard   Json?
+  metadata     Json?
+  gameVersion  String
+  verified     Boolean   @default(false)
+  suspicious   Boolean   @default(false)
+  startedAt    DateTime?
+  finishedAt   DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+
+  user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  game         Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId, mode, score(sort: Desc)])
+  @@index([userId, gameId, createdAt(sort: Desc)])
+  @@index([finishedAt(sort: Desc)])
+  @@index([verified])
+  @@index([suspicious])
 }
 
 // ==========================================
