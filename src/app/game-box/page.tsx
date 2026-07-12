@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { auth } from "@/auth"
+import { GameBoxLaunchLink } from "@/components/game-box/game-box-launch-link"
 import { GameBoxProfileCard, type GameBoxProfile, type GameBoxStatRow } from "@/components/game-box/game-box-profile-card"
 import { GameBoxThemeToggle } from "@/components/game-box/game-box-theme-toggle"
 import { safeAvatarUrl, safeDisplayName } from "@/features/game-box/2048/lib/format"
@@ -120,6 +121,11 @@ export default async function GameBoxPage() {
                 linear-gradient(rgba(14,14,14,0.045) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(14,14,14,0.045) 1px, transparent 1px);
               background-size: 32px 32px;
+            }
+
+            :root:has(.game-box-page),
+            body:has(.game-box-page) {
+              scrollbar-gutter: stable;
             }
 
             .game-box-page a,
@@ -448,8 +454,9 @@ export default async function GameBoxPage() {
           </header>
 
           <section id="game-library" className="game-library-board">
-            <Link
+            <GameBoxLaunchLink
               href="/game-box/2048"
+              ariaLabel="打开 2048"
               className="game-box-play-card group bg-[#f4f1ea] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ff3b30]"
             >
               <span className="relative min-h-[260px] overflow-hidden border-b border-[#0e0e0e] p-7 sm:p-9">
@@ -477,7 +484,7 @@ export default async function GameBoxPage() {
                 <span className="max-w-[42ch] text-[#77736b]">Classic 4x4. Keyboard, WASD, mobile swipe. Server replay verified. Plays: {overview.playsLabel}</span>
                 <span className="text-[#ff3b30] transition-transform duration-200 group-hover:translate-x-1">START &rarr;</span>
               </span>
-            </Link>
+            </GameBoxLaunchLink>
 
             <div className="game-box-fibonacci-note">
               <div className="game-library-marker" aria-hidden="true">

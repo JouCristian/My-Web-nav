@@ -33,10 +33,10 @@ export function GameLeaderboardRow({ entry, isCurrentUser = false, onSelect }: G
           </span>
         )}
       </span>
-      <span className="min-w-0 truncate font-mono text-xs font-black uppercase tracking-[0.1em] text-[#0e0e0e]">
+      <span className="game-leaderboard-row-name min-w-0 truncate font-mono text-xs font-black uppercase tracking-[0.1em] text-[#0e0e0e]">
         {label}
       </span>
-      <span className="font-[family-name:var(--font-space)] text-2xl font-black leading-none text-[#0e0e0e]">
+      <span className="game-leaderboard-row-score font-[family-name:var(--font-space)] text-2xl font-black leading-none text-[#0e0e0e]">
         {formatNumber(entry.score)}
       </span>
     </button>

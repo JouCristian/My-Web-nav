@@ -2,7 +2,7 @@ import type { Board2048, Direction, Game2048Snapshot, Move2048Result, SpawnedTil
 
 export const BOARD_SIZE = 4
 export const BOARD_CELLS = BOARD_SIZE * BOARD_SIZE
-export const GAME_2048_VERSION = "1.0.0"
+export const GAME_2048_VERSION = "1.1.0"
 
 export type Rng = () => number
 
@@ -91,12 +91,98 @@ export function addRandomTile(board: Board2048, rng: Rng = Math.random): { board
   return { board: nextBoard, tile: { index: targetIndex, value } }
 }
 
+export function isDailyChallengeSeed(seed: string) {
+  return /^2048:daily:\d{4}-\d{2}-\d{2}:v\d+$/.test(seed)
+}
+
+function mirrorBoard(board: Board2048): Board2048 {
+  return [
+    board[3], board[2], board[1], board[0],
+    board[7], board[6], board[5], board[4],
+    board[11], board[10], board[9], board[8],
+    board[15], board[14], board[13], board[12],
+  ]
+}
+
+function rotateBoardClockwise(board: Board2048): Board2048 {
+  return [
+    board[12], board[8], board[4], board[0],
+    board[13], board[9], board[5], board[1],
+    board[14], board[10], board[6], board[2],
+    board[15], board[11], board[7], board[3],
+  ]
+}
+
+const dailyChallengeTemplates: Board2048[] = [
+  [
+    0, 4, 0, 2,
+    8, 32, 16, 0,
+    4, 64, 128, 8,
+    0, 16, 0, 4,
+  ],
+  [
+    2, 0, 8, 0,
+    4, 16, 64, 8,
+    0, 32, 128, 16,
+    4, 0, 2, 0,
+  ],
+  [
+    0, 8, 2, 0,
+    4, 64, 32, 8,
+    2, 128, 16, 0,
+    0, 4, 16, 4,
+  ],
+  [
+    4, 0, 16, 2,
+    0, 32, 128, 8,
+    4, 64, 16, 0,
+    0, 2, 8, 0,
+  ],
+  [
+    0, 2, 8, 0,
+    16, 64, 32, 4,
+    8, 128, 16, 0,
+    0, 4, 2, 4,
+  ],
+  [
+    2, 0, 4, 0,
+    8, 32, 128, 16,
+    0, 64, 32, 8,
+    4, 0, 2, 0,
+  ],
+]
+
+export function createDailyChallengeBoard(seed: string): Board2048 {
+  const rng = createSeededRng(`${seed}:board`)
+  let board = cloneBoard(dailyChallengeTemplates[Math.floor(rng() * dailyChallengeTemplates.length)])
+  const rotations = Math.floor(rng() * BOARD_SIZE)
+
+  for (let index = 0; index < rotations; index += 1) {
+    board = rotateBoardClockwise(board)
+  }
+
+  if (rng() < 0.5) board = mirrorBoard(board)
+  return board
+}
+
 export function createInitialGame(seed = createGameSeed()): Game2048Snapshot & { seed: string } {
   const rng = createSeededRng(seed)
   return createInitialGameWithRng(seed, rng)
 }
 
 export function createInitialGameWithRng(seed: string, rng: Rng): Game2048Snapshot & { seed: string } {
+  if (isDailyChallengeSeed(seed)) {
+    const board = createDailyChallengeBoard(seed)
+    return {
+      seed,
+      board,
+      score: 0,
+      maxTile: getMaxTile(board),
+      movesCount: 0,
+      status: "playing",
+    }
+  }
+
   const first = addRandomTile(createEmptyBoard(), rng).board
   const second = addRandomTile(first, rng).board
   return {
@@ -113,6 +199,7 @@ export function mergeLine(line: number[]) {
   const compact = line.filter((value) => value !== 0)
   const merged: number[] = []
   const mergedValues: number[] = []
+  const mergedOffsets: number[] = []
   let scoreGain = 0
 
   for (let index = 0; index < compact.length; index += 1) {
@@ -120,8 +207,10 @@ export function mergeLine(line: number[]) {
     const next = compact[index + 1]
     if (current === next) {
       const mergedValue = current * 2
+      const targetOffset = merged.length
       merged.push(mergedValue)
       mergedValues.push(mergedValue)
+      mergedOffsets.push(targetOffset)
       scoreGain += mergedValue
       index += 1
     } else {
@@ -130,26 +219,27 @@ export function mergeLine(line: number[]) {
   }
 
   while (merged.length < BOARD_SIZE) merged.push(0)
-  return { line: merged, scoreGain, mergedValues }
+  return { line: merged, scoreGain, mergedValues, mergedOffsets }
+}
+
+function getBoardIndex(direction: Direction, lineIndex: number, offset: number) {
+  if (direction === "left") return lineIndex * BOARD_SIZE + offset
+  if (direction === "right") return lineIndex * BOARD_SIZE + (BOARD_SIZE - 1 - offset)
+  if (direction === "up") return offset * BOARD_SIZE + lineIndex
+  return (BOARD_SIZE - 1 - offset) * BOARD_SIZE + lineIndex
 }
 
 function getLine(board: Board2048, direction: Direction, lineIndex: number) {
   const line: number[] = []
   for (let offset = 0; offset < BOARD_SIZE; offset += 1) {
-    if (direction === "left") line.push(board[lineIndex * BOARD_SIZE + offset])
-    if (direction === "right") line.push(board[lineIndex * BOARD_SIZE + (BOARD_SIZE - 1 - offset)])
-    if (direction === "up") line.push(board[offset * BOARD_SIZE + lineIndex])
-    if (direction === "down") line.push(board[(BOARD_SIZE - 1 - offset) * BOARD_SIZE + lineIndex])
+    line.push(board[getBoardIndex(direction, lineIndex, offset)])
   }
   return line
 }
 
 function setLine(board: Board2048, direction: Direction, lineIndex: number, line: number[]) {
   for (let offset = 0; offset < BOARD_SIZE; offset += 1) {
-    if (direction === "left") board[lineIndex * BOARD_SIZE + offset] = line[offset]
-    if (direction === "right") board[lineIndex * BOARD_SIZE + (BOARD_SIZE - 1 - offset)] = line[offset]
-    if (direction === "up") board[offset * BOARD_SIZE + lineIndex] = line[offset]
-    if (direction === "down") board[(BOARD_SIZE - 1 - offset) * BOARD_SIZE + lineIndex] = line[offset]
+    board[getBoardIndex(direction, lineIndex, offset)] = line[offset]
   }
 }
 
@@ -158,25 +248,27 @@ export function moveBoard(board: Board2048, direction: Direction, rng?: Rng): Mo
   const movedBoard = createEmptyBoard()
   let scoreGain = 0
   const mergedValues: number[] = []
+  const mergedIndexes: number[] = []
 
   for (let lineIndex = 0; lineIndex < BOARD_SIZE; lineIndex += 1) {
     const merged = mergeLine(getLine(board, direction, lineIndex))
     scoreGain += merged.scoreGain
     mergedValues.push(...merged.mergedValues)
+    mergedIndexes.push(...merged.mergedOffsets.map((offset) => getBoardIndex(direction, lineIndex, offset)))
     setLine(movedBoard, direction, lineIndex, merged.line)
   }
 
   const moved = !boardsEqual(board, movedBoard)
   if (!moved) {
-    return { board: cloneBoard(board), moved: false, scoreGain: 0, mergedValues: [], addedTile: null }
+    return { board: cloneBoard(board), moved: false, scoreGain: 0, mergedValues: [], mergedIndexes: [], addedTile: null }
   }
 
   if (!rng) {
-    return { board: movedBoard, moved: true, scoreGain, mergedValues, addedTile: null }
+    return { board: movedBoard, moved: true, scoreGain, mergedValues, mergedIndexes, addedTile: null }
   }
 
   const withTile = addRandomTile(movedBoard, rng)
-  return { board: withTile.board, moved: true, scoreGain, mergedValues, addedTile: withTile.tile }
+  return { board: withTile.board, moved: true, scoreGain, mergedValues, mergedIndexes, addedTile: withTile.tile }
 }
 
 export function canMove(board: Board2048) {

@@ -106,6 +106,7 @@ model User {
   pushSubscriptions PushSubscription[] // 推送订阅
   promptCardFavorites PromptCardFavorite[] // AI 提示词收藏
   gameRuns          GameRun[]          // Game Box 对局记录
+  gameSaves         GameSave[]         // Game Box 进行中存档
 }
 
 // ==========================================
@@ -121,6 +122,7 @@ model Game {
   createdAt      DateTime  @default(now())
 
   runs           GameRun[]
+  saves          GameSave[]
 }
 
 model GameRun {
@@ -145,12 +147,32 @@ model GameRun {
 
   user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   game         Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  saves        GameSave[]
 
   @@index([gameId, mode, score(sort: Desc)])
   @@index([userId, gameId, createdAt(sort: Desc)])
   @@index([finishedAt(sort: Desc)])
   @@index([verified])
   @@index([suspicious])
+}
+
+model GameSave {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String
+  gameId      String   @db.Uuid
+  mode        String   @default("classic")
+  runId       String?  @db.Uuid
+  state       Json
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  run         GameRun? @relation(fields: [runId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, gameId, mode])
+  @@index([gameId, updatedAt(sort: Desc)])
+  @@index([runId])
 }
 
 // ==========================================

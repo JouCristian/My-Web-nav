@@ -1,20 +1,24 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { createGameSeed, GAME_2048_VERSION } from "@/features/game-box/2048/lib/game2048-core"
+import { getDailyChallengeSeed, isGame2048Mode } from "@/features/game-box/2048/lib/modes"
 import { ensure2048Game } from "@/features/game-box/2048/lib/server"
 import { prisma } from "@/lib/db"
 
 export const runtime = "nodejs"
 
-export async function POST() {
-  const seed = createGameSeed()
+export async function POST(request: NextRequest) {
+  const body = await request.json().catch(() => null)
+  const mode = isGame2048Mode(body?.mode) ? body.mode : "classic"
+  const seed = mode === "daily" ? getDailyChallengeSeed() : createGameSeed()
   const startedAt = new Date()
   const session = await auth().catch(() => null)
 
-  if (!session?.user?.id) {
+  if (mode === "zen" || !session?.user?.id) {
     return NextResponse.json({
       runId: null,
       seed,
+      mode,
       gameVersion: GAME_2048_VERSION,
       startedAt: startedAt.toISOString(),
       canSave: false,
@@ -27,7 +31,7 @@ export async function POST() {
       data: {
         userId: session.user.id,
         gameId: game.id,
-        mode: "classic",
+        mode,
         seed,
         gameVersion: GAME_2048_VERSION,
         startedAt,
@@ -40,6 +44,7 @@ export async function POST() {
     return NextResponse.json({
       runId: run.id,
       seed,
+      mode,
       gameVersion: GAME_2048_VERSION,
       startedAt: startedAt.toISOString(),
       canSave: true,
@@ -49,6 +54,7 @@ export async function POST() {
     return NextResponse.json({
       runId: null,
       seed,
+      mode,
       gameVersion: GAME_2048_VERSION,
       startedAt: startedAt.toISOString(),
       canSave: false,

@@ -1,6 +1,8 @@
 export type Direction = "up" | "down" | "left" | "right"
+export type Game2048Mode = "classic" | "sprint" | "zen" | "daily"
+export type Competitive2048Mode = Exclude<Game2048Mode, "zen">
 
-export type Game2048Status = "idle" | "playing" | "won" | "game_over"
+export type Game2048Status = "idle" | "playing" | "paused" | "won" | "game_over"
 
 export type Board2048 = number[]
 
@@ -14,6 +16,7 @@ export interface Move2048Result {
   moved: boolean
   scoreGain: number
   mergedValues: number[]
+  mergedIndexes: number[]
   addedTile: SpawnedTile | null
 }
 
@@ -45,6 +48,12 @@ export interface LeaderboardEntry {
   movesCount: number
   durationMs: number
   finishedAt: string
+  finalBoard?: Board2048 | null
+  verified?: boolean
+  suspicious?: boolean
+  undoCount?: number
+  usedUndo?: boolean
+  mode?: Game2048Mode
 }
 
 export interface Game2048RankSummary {

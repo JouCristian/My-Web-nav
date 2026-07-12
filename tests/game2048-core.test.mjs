@@ -1,11 +1,13 @@
 import assert from "node:assert/strict"
 import {
   canMove,
+  createInitialGameWithRng,
   createSeededRng,
   isGameOver,
   moveBoard,
   replayGame,
 } from "../src/features/game-box/2048/lib/game2048-core.ts"
+import { getDailyChallengeDate, getDailyChallengeSeed, isCompetitive2048Mode } from "../src/features/game-box/2048/lib/modes.ts"
 
 const withoutSpawn = (board, direction) => moveBoard(board, direction).board
 
@@ -29,5 +31,24 @@ assert.equal(withoutSpawn([0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "rig
 const replayA = replayGame("same-seed", ["left", "up", "right", "down", "left"])
 const replayB = replayGame("same-seed", ["left", "up", "right", "down", "left"])
 assert.deepEqual(replayA, replayB)
+
+const challengeDate = new Date("2026-07-12T03:20:00.000Z")
+assert.equal(getDailyChallengeDate(challengeDate), "2026-07-12")
+assert.equal(getDailyChallengeSeed(challengeDate), getDailyChallengeSeed(challengeDate))
+assert.equal(isCompetitive2048Mode("daily"), true)
+assert.equal(isCompetitive2048Mode("zen"), false)
+
+const dailySeed = getDailyChallengeSeed(challengeDate)
+const dailyInitialA = createInitialGameWithRng(dailySeed, createSeededRng(dailySeed))
+const dailyInitialB = createInitialGameWithRng(dailySeed, createSeededRng(dailySeed))
+const nextDailySeed = getDailyChallengeSeed(new Date("2026-07-13T03:20:00.000Z"))
+const nextDailyInitial = createInitialGameWithRng(nextDailySeed, createSeededRng(nextDailySeed))
+assert.deepEqual(dailyInitialA.board, dailyInitialB.board)
+assert.notDeepEqual(dailyInitialA.board, nextDailyInitial.board)
+assert.equal(dailyInitialA.board.filter(Boolean).length >= 10, true)
+assert.equal(dailyInitialA.board.filter(Boolean).length <= 12, true)
+assert.equal(dailyInitialA.maxTile <= 128, true)
+assert.equal(canMove(dailyInitialA.board), true)
+assert.deepEqual(replayGame(dailySeed, []).board, dailyInitialA.board)
 
 console.log("2048 core tests passed")

@@ -8,10 +8,12 @@ interface Game2048BoardProps {
   board: Board2048
   status: string
   score: number
-  mergedValues: number[]
+  mergedIndexes: number[]
   lastAddedIndex: number | null
+  lastMoveDirection?: Direction | null
   revealKey: number
   isRevealing: boolean
+  isRewinding?: boolean
   onMove: (direction: Direction) => void
 }
 
@@ -22,7 +24,18 @@ function boardLabel(board: Board2048, score: number, status: string) {
   return `2048 board, status ${status}, score ${score}. Rows: ${rows.join("; ")}`
 }
 
-export function Game2048Board({ board, status, score, mergedValues, lastAddedIndex, revealKey, isRevealing, onMove }: Game2048BoardProps) {
+export function Game2048Board({
+  board,
+  status,
+  score,
+  mergedIndexes,
+  lastAddedIndex,
+  lastMoveDirection = null,
+  revealKey,
+  isRevealing,
+  isRewinding = false,
+  onMove,
+}: Game2048BoardProps) {
   const startPointRef = useRef<{ x: number; y: number } | null>(null)
 
   return (
@@ -34,7 +47,7 @@ export function Game2048Board({ board, status, score, mergedValues, lastAddedInd
         aria-label={boardLabel(board, score, status)}
         className={`game-2048-board mx-auto grid aspect-square w-full max-w-[min(72vh,560px)] grid-cols-4 grid-rows-4 gap-2 border border-[#0e0e0e] bg-[#f4f1ea] p-2 outline-none focus-visible:ring-2 focus-visible:ring-[#ff3b30] sm:gap-3 sm:p-3 ${
           isRevealing ? "is-revealing" : ""
-        }`}
+        } ${isRewinding ? "is-rewinding" : ""}`}
         onTouchStart={(event) => {
           const touch = event.touches[0]
           startPointRef.current = { x: touch.clientX, y: touch.clientY }
@@ -65,7 +78,8 @@ export function Game2048Board({ board, status, score, mergedValues, lastAddedInd
             index={index}
             value={value}
             isNew={lastAddedIndex === index}
-            isMerged={value > 0 && mergedValues.includes(value)}
+            isMerged={value > 0 && mergedIndexes.includes(index)}
+            mergeDirection={lastMoveDirection}
           />
         ))}
       </div>

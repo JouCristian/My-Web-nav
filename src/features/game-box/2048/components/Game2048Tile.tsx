@@ -1,34 +1,56 @@
 import type { CSSProperties } from "react"
+import type { Direction } from "../types"
 
 interface Game2048TileProps {
   index: number
   value: number
   isNew?: boolean
   isMerged?: boolean
+  mergeDirection?: Direction | null
 }
 
 const tileClassByValue: Record<number, string> = {
-  2: "bg-[#ffffff] text-[#202020]",
-  4: "bg-[#f4f1ea] text-[#202020]",
-  8: "bg-[#e8e4dc] text-[#202020]",
-  16: "bg-[#f8d8cf] text-[#202020]",
-  32: "bg-[#ffb7aa] text-[#202020]",
-  64: "bg-[#ff8d7d] text-[#202020]",
-  128: "bg-[#ff6254] text-[#0e0e0e]",
-  256: "bg-[#ff3b30] text-[#0e0e0e]",
-  512: "bg-[#c92d27] text-[#f4f1ea]",
-  1024: "bg-[#731a17] text-[#f4f1ea]",
-  2048: "bg-[#0e0e0e] text-[#ff3b30]",
+  2: "bg-[#fffdf8] text-[#1f1f1d]",
+  4: "bg-[#f4f1ea] text-[#1f1f1d]",
+  8: "bg-[#e9e5dc] text-[#1f1f1d]",
+  16: "bg-[#d8d3c8] text-[#1f1f1d]",
+  32: "bg-[#ffb2a4] text-[#160f0d]",
+  64: "bg-[#ff7d6e] text-[#160f0d]",
+  128: "bg-[#d9312b] text-[#fff7f0]",
+  256: "bg-[#9f1f1b] text-[#fff7f0]",
+  512: "bg-[#171717] text-[#f4f1ea]",
+  1024: "bg-[#050505] text-[#f4f1ea]",
+  2048: "bg-[#d7ff00] text-[#0e0e0e]",
+  4096: "bg-[#0e0e0e] text-[#d7ff00]",
+  8192: "bg-[#ff3b30] text-[#0e0e0e]",
 }
 
-export function Game2048Tile({ index, value, isNew = false, isMerged = false }: Game2048TileProps) {
-  const style = { "--tile-index": index } as CSSProperties
+const mergeVectorByDirection: Record<Direction, { x: string; y: string; biteX: string; biteY: string }> = {
+  left: { x: "9px", y: "0px", biteX: "-2px", biteY: "0px" },
+  right: { x: "-9px", y: "0px", biteX: "2px", biteY: "0px" },
+  up: { x: "0px", y: "9px", biteX: "0px", biteY: "-2px" },
+  down: { x: "0px", y: "-9px", biteX: "0px", biteY: "2px" },
+}
+
+function mergeStyle(index: number, direction?: Direction | null) {
+  const vector = direction ? mergeVectorByDirection[direction] : { x: "0px", y: "0px", biteX: "0px", biteY: "0px" }
+  return {
+    "--tile-index": index,
+    "--merge-x": vector.x,
+    "--merge-y": vector.y,
+    "--merge-bite-x": vector.biteX,
+    "--merge-bite-y": vector.biteY,
+  } as CSSProperties
+}
+
+export function Game2048Tile({ index, value, isNew = false, isMerged = false, mergeDirection = null }: Game2048TileProps) {
+  const style = mergeStyle(index, mergeDirection)
 
   if (value === 0) {
     return <div className="game-2048-tile-empty border border-[#0e0e0e]/20 bg-[#f4f1ea]/70" style={style} aria-hidden="true" />
   }
 
-  const valueClass = tileClassByValue[value] || (value > 2048 ? "bg-[#0e0e0e] text-[#ff3b30]" : "bg-[#f4f1ea] text-[#0e0e0e]")
+  const valueClass = tileClassByValue[value] || (value > 2048 ? "bg-[#0e0e0e] text-[#d7ff00]" : "bg-[#f4f1ea] text-[#0e0e0e]")
   const sizeClass = value >= 1024 ? "text-[clamp(1.25rem,5.5vw,3.25rem)]" : "text-[clamp(1.65rem,7vw,4rem)]"
 
   return (

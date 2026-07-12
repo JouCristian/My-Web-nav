@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { GAME_2048_VERSION } from "@/features/game-box/2048/lib/game2048-core"
+import { isCompetitive2048Mode } from "@/features/game-box/2048/lib/modes"
 import { get2048UserRank, sanitizeMoveSequence, verify2048Run } from "@/features/game-box/2048/lib/server"
 import { prisma } from "@/lib/db"
 
@@ -17,6 +18,7 @@ export async function POST(request: NextRequest) {
   const durationMs = Number.isFinite(body?.durationMs) ? Math.max(0, Math.floor(body.durationMs)) : 0
   const gameVersion = typeof body?.gameVersion === "string" ? body.gameVersion : GAME_2048_VERSION
   const moveSequence = sanitizeMoveSequence(body?.moveSequence)
+  const undoCount = Number.isFinite(body?.undoCount) ? Math.max(0, Math.floor(Number(body.undoCount))) : 0
 
   if (!runId) {
     return NextResponse.json({ saved: false, verified: false, suspicious: true, message: "本局无法进入排行榜：缺少对局编号。" }, { status: 400 })
@@ -32,7 +34,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ saved: false, verified: false, suspicious: true, message: "本局无法进入排行榜：对局信息无效。" }, { status: 403 })
     }
 
-    const verification = verify2048Run(run.seed, moveSequence, durationMs, gameVersion)
+    if (!isCompetitive2048Mode(run.mode)) {
+      return NextResponse.json({ saved: false, verified: false, suspicious: true, message: "Zen mode does not enter the leaderboard." }, { status: 400 })
+    }
+
+    const verification = verify2048Run(run.seed, moveSequence, durationMs, gameVersion, run.mode)
     const finishedAt = new Date()
     const updated = await prisma.gameRun.update({
       where: { id: run.id },
@@ -50,16 +56,20 @@ export async function POST(request: NextRequest) {
         metadata: {
           clientScore: body?.clientScore ?? null,
           clientFinalBoard: body?.clientFinalBoard ?? null,
+          undoCount,
+          usedUndo: undoCount > 0,
           status: verification.replay.status,
           verification: verification.verified ? "server-replay" : "failed",
         },
       },
     })
 
+    await prisma.gameSave.deleteMany({ where: { userId: session.user.id, gameId: run.gameId, mode: run.mode } })
+
     const rankSummary = verification.verified
       ? {
-          weekly: await get2048UserRank("weekly", session.user.id),
-          allTime: await get2048UserRank("all_time", session.user.id),
+          weekly: await get2048UserRank("weekly", session.user.id, run.mode),
+          allTime: await get2048UserRank("all_time", session.user.id, run.mode),
         }
       : { weekly: null, allTime: null }
 
@@ -67,7 +77,7 @@ export async function POST(request: NextRequest) {
       saved: verification.verified,
       verified: verification.verified,
       suspicious: verification.suspicious,
-      message: verification.reason,
+      message: verification.reason || "成绩已通过服务器重放验证。",
       rankSummary,
       result: {
         score: updated.score,
