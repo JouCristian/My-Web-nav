@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { GAME_2048_VERSION } from "@/features/game-box/2048/lib/game2048-core"
-import { isCompetitive2048Mode } from "@/features/game-box/2048/lib/modes"
-import { get2048UserRank, sanitizeMoveSequence, verify2048Run } from "@/features/game-box/2048/lib/server"
+import { get2048UserRank, parseStored2048RunMode, sanitizeMoveSequence, verify2048Run } from "@/features/game-box/2048/lib/server"
 import { prisma } from "@/lib/db"
 
 export const runtime = "nodejs"
@@ -34,11 +33,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ saved: false, verified: false, suspicious: true, message: "本局无法进入排行榜：对局信息无效。" }, { status: 403 })
     }
 
-    if (!isCompetitive2048Mode(run.mode)) {
+    const runMode = parseStored2048RunMode(run.mode)
+    if (!runMode) {
       return NextResponse.json({ saved: false, verified: false, suspicious: true, message: "Zen mode does not enter the leaderboard." }, { status: 400 })
     }
 
-    const verification = verify2048Run(run.seed, moveSequence, durationMs, gameVersion, run.mode)
+    const verification = verify2048Run(run.seed, moveSequence, durationMs, gameVersion, runMode.mode, runMode.boardSize)
     const finishedAt = new Date()
     const updated = await prisma.gameRun.update({
       where: { id: run.id },
@@ -59,17 +59,19 @@ export async function POST(request: NextRequest) {
           undoCount,
           usedUndo: undoCount > 0,
           status: verification.replay.status,
+          mode: runMode.mode,
+          boardSize: runMode.boardSize,
           verification: verification.verified ? "server-replay" : "failed",
         },
       },
     })
 
-    await prisma.gameSave.deleteMany({ where: { userId: session.user.id, gameId: run.gameId, mode: run.mode } })
+    await prisma.gameSave.deleteMany({ where: { userId: session.user.id, gameId: run.gameId, mode: runMode.dbMode } })
 
     const rankSummary = verification.verified
       ? {
-          weekly: await get2048UserRank("weekly", session.user.id, run.mode),
-          allTime: await get2048UserRank("all_time", session.user.id, run.mode),
+          weekly: await get2048UserRank("weekly", session.user.id, runMode.mode, runMode.boardSize),
+          allTime: await get2048UserRank("all_time", session.user.id, runMode.mode, runMode.boardSize),
         }
       : { weekly: null, allTime: null }
 

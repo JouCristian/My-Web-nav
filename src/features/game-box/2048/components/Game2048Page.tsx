@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react"
 import { GameBoxThemeToggle } from "@/components/game-box/game-box-theme-toggle"
 import { formatDuration, formatNumber } from "../lib/format"
-import { game2048ModeCopy } from "../lib/modes"
+import { game2048ModeCopy, getBoard2048SizeLabel } from "../lib/modes"
 import { use2048Game } from "../hooks/use2048Game"
-import type { Competitive2048Mode, Game2048Mode } from "../types"
+import type { Board2048, Board2048Size, Competitive2048Mode, Game2048Mode } from "../types"
 import { Game2048Board } from "./Game2048Board"
 import { Game2048Controls } from "./Game2048Controls"
 import { Game2048ResultModal } from "./Game2048ResultModal"
@@ -22,24 +22,16 @@ interface Game2048PageProps {
 const stageTransitionMs = 360
 const boardRevealMs = 680
 
-const ambientCells = [
-  { value: "2", tone: "is-soft" },
-  { value: "", tone: "is-empty" },
-  { value: "4", tone: "is-soft" },
-  { value: "", tone: "is-empty" },
-  { value: "", tone: "is-empty" },
-  { value: "8", tone: "is-mid" },
-  { value: "", tone: "is-empty" },
-  { value: "16", tone: "is-mid" },
-  { value: "32", tone: "is-hot" },
-  { value: "", tone: "is-empty" },
-  { value: "64", tone: "is-hot" },
-  { value: "", tone: "is-empty" },
-  { value: "", tone: "is-empty" },
-  { value: "128", tone: "is-heavy" },
-  { value: "", tone: "is-empty" },
-  { value: "2048", tone: "is-final" },
-]
+const ambientValueCycle = ["2", "", "4", "", "", "8", "", "16", "32", "", "64", "", "", "128", "", "2048", "", "256", "", "512", "", "", "1024", ""]
+
+function buildAmbientCells(size: Board2048Size) {
+  return Array.from({ length: size * size }, (_, index) => {
+    const value = ambientValueCycle[index % ambientValueCycle.length]
+    const numeric = Number(value || 0)
+    const tone = !value ? "is-empty" : numeric >= 1024 ? "is-final" : numeric >= 128 ? "is-heavy" : numeric >= 32 ? "is-hot" : numeric >= 8 ? "is-mid" : "is-soft"
+    return { value, tone }
+  })
+}
 
 const celebrationPieces = [
   { left: "12%", bottom: "18%", tx: "-7vw", ty: "-42vh", rotate: "34deg", color: "#ff3b30", delay: "0ms", shape: "is-strip" },
@@ -69,7 +61,8 @@ function isPlainNavigation(event: MouseEvent<HTMLAnchorElement>) {
 export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
   const router = useRouter()
   const [selectedMode, setSelectedMode] = useState<Game2048Mode>("classic")
-  const game = use2048Game(isLoggedIn, selectedMode)
+  const [selectedBoardSize, setSelectedBoardSize] = useState<Board2048Size>(4)
+  const game = use2048Game(isLoggedIn, selectedMode, selectedBoardSize)
   const [stageTransition, setStageTransition] = useState<"starting" | "resuming" | "ending" | null>(null)
   const [routeTransition, setRouteTransition] = useState(false)
   const [boardRevealKey, setBoardRevealKey] = useState(0)
@@ -134,6 +127,12 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
     setSelectedMode(mode)
   }
 
+  function handleBoardSizeChange(boardSize: Board2048Size) {
+    if (game.status !== "idle" || stageTransition) return
+    setSelectedBoardSize(boardSize)
+    setBoardRevealKey((value) => value + 1)
+  }
+
   async function handleEndRun() {
     if (stageTransition) return
     setStageTransition("ending")
@@ -161,6 +160,11 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
       : `Account mode: ${playerName}，局中状态会自动保存到账号。`
     : "Guest mode: 本地可玩，局中状态只保存在当前浏览器。"
   const leaderboardMode: Competitive2048Mode = selectedMode === "zen" ? "classic" : selectedMode
+  const ambientCells = buildAmbientCells(selectedBoardSize)
+  const displayBoard: Board2048 =
+    game.board.length === selectedBoardSize * selectedBoardSize
+      ? game.board
+      : Array.from({ length: selectedBoardSize * selectedBoardSize }, () => 0)
 
   return (
     <main className="game-2048-page min-h-screen overflow-x-hidden bg-[#f4f1ea] text-[#0e0e0e]">
@@ -175,6 +179,10 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
               --gb-red: #ff3b30;
               --gb-acid: #d7ff00;
               --gb-ease: cubic-bezier(0.16, 1, 0.3, 1);
+              width: 100vw;
+              max-width: 100vw;
+              margin: 0;
+              flex: none;
               height: 100vh;
               overflow: hidden;
               background-image:
@@ -188,7 +196,7 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
             body:has(.game-2048-page) {
               height: 100%;
               overflow: hidden;
-              scrollbar-gutter: stable;
+              scrollbar-gutter: auto;
             }
 
             .game-2048-page a,
@@ -197,7 +205,8 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
             }
 
             .game-2048-shell {
-              width: min(100%, 1520px);
+              width: min(100vw, 1520px);
+              max-width: 1520px;
               margin: 0 auto;
               border-left: 1px solid var(--gb-ink);
               border-right: 1px solid var(--gb-ink);
@@ -207,6 +216,10 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
               min-height: 0;
               overflow: hidden;
               background: rgba(244, 241, 234, 0.88);
+            }
+
+            .game-2048-header {
+              padding-right: max(96px, 2rem);
             }
 
             .game-2048-layout {
@@ -511,14 +524,22 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
               color: var(--gb-paper);
             }
 
+            .game-2048-start-field::before {
+              content: "";
+              position: absolute;
+              inset: -1px;
+              z-index: 2;
+              pointer-events: none;
+              background:
+                radial-gradient(ellipse at center, rgba(244, 241, 234, 0.78) 0%, rgba(244, 241, 234, 0.58) 23%, rgba(244, 241, 234, 0.22) 46%, rgba(244, 241, 234, 0) 72%);
+            }
+
             .game-2048-ambient {
               position: absolute;
               inset: 7%;
               display: grid;
-              grid-template-columns: repeat(4, minmax(0, 1fr));
-              grid-template-rows: repeat(4, minmax(0, 1fr));
               gap: 8px;
-              opacity: 0.42;
+              opacity: 0.22;
               pointer-events: none;
             }
 
@@ -534,7 +555,10 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
               font-size: clamp(0.75rem, 2.2vw, 2rem);
               font-weight: 900;
               line-height: 1;
-              animation: game-2048-ambient-cell 3.8s var(--gb-ease) infinite;
+              transform-origin: top center;
+              animation:
+                game-2048-ambient-board-in 520ms var(--gb-ease) both,
+                game-2048-ambient-cell 3.8s var(--gb-ease) infinite;
               animation-delay: var(--ambient-delay);
             }
 
@@ -557,30 +581,6 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
             .game-2048-ambient-cell.is-final {
               background: rgba(14, 14, 14, 0.07);
               color: rgba(14, 14, 14, 0.52);
-            }
-
-            .game-2048-ambient-line {
-              position: absolute;
-              background: rgba(14, 14, 14, 0.16);
-              transform-origin: left center;
-              animation: game-2048-ambient-line 4.4s var(--gb-ease) infinite;
-              pointer-events: none;
-            }
-
-            .game-2048-ambient-line.is-horizontal {
-              left: 12%;
-              right: 12%;
-              top: 50%;
-              height: 1px;
-            }
-
-            .game-2048-ambient-line.is-vertical {
-              top: 12%;
-              bottom: 12%;
-              left: 50%;
-              width: 1px;
-              transform-origin: center top;
-              animation-delay: -1.6s;
             }
 
             .game-2048-transition-panel {
@@ -808,8 +808,9 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
               color: rgba(244, 241, 234, 0.58);
             }
 
-            :root[data-game-box-theme="dark"] .game-2048-ambient-line {
-              background: rgba(215, 255, 0, 0.2);
+            :root[data-game-box-theme="dark"] .game-2048-start-field::before {
+              background:
+                radial-gradient(ellipse at center, rgba(14, 14, 14, 0.86) 0%, rgba(14, 14, 14, 0.68) 24%, rgba(14, 14, 14, 0.3) 48%, rgba(14, 14, 14, 0) 74%);
             }
 
             :root[data-game-box-theme="dark"] .game-2048-win-field {
@@ -958,14 +959,15 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
             }
 
             @keyframes game-2048-ambient-cell {
-              0%, 100% { opacity: 0.42; transform: scale(1); }
-              42% { opacity: 0.72; transform: scale(0.985); }
-              64% { opacity: 0.5; transform: scale(1.01); }
+              0%, 100% { opacity: 0.42; }
+              42% { opacity: 0.72; }
+              64% { opacity: 0.5; }
             }
 
-            @keyframes game-2048-ambient-line {
-              0%, 100% { opacity: 0.16; transform: scaleX(0.34); }
-              52% { opacity: 0.48; transform: scaleX(1); }
+            @keyframes game-2048-ambient-board-in {
+              0% { opacity: 0; clip-path: inset(0 0 100% 0); transform: translateY(-10px) scale(1.08); }
+              62% { opacity: 1; clip-path: inset(0 0 0 0); transform: translateY(2px) scale(0.982); }
+              100% { opacity: 1; clip-path: inset(0 0 0 0); transform: translateY(0) scale(1); }
             }
 
             @keyframes game-2048-loading-in {
@@ -1006,15 +1008,20 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
             @media (max-width: 1180px) {
               .game-2048-page,
               .game-2048-shell {
+                width: 100vw;
+                max-width: 100vw;
                 height: auto;
                 min-height: 100vh;
+                margin: 0;
                 overflow: visible;
               }
 
               :root:has(.game-2048-page),
               body:has(.game-2048-page) {
                 height: auto;
-                overflow: auto;
+                overflow-x: hidden;
+                overflow-y: auto;
+                scrollbar-gutter: auto;
               }
 
               .game-2048-layout {
@@ -1053,6 +1060,10 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
                 border-right: 0;
               }
 
+              .game-2048-header {
+                padding-right: 84px;
+              }
+
               .game-2048-stage {
                 padding: 12px;
               }
@@ -1072,7 +1083,6 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
               .game-2048-board.is-revealing .game-2048-tile-empty,
               .game-2048-start-copy > *,
               .game-2048-ambient-cell,
-              .game-2048-ambient-line,
               .game-2048-transition-panel,
               .game-2048-route-loader,
               .game-2048-transition-bar::after,
@@ -1092,14 +1102,14 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
       />
 
       <div className="game-2048-shell">
-        <header className="grid gap-4 border-b border-[#0e0e0e] p-5 sm:grid-cols-[1fr_auto] sm:p-6 lg:p-8">
+        <header className="game-2048-header grid gap-4 border-b border-[#0e0e0e] p-5 sm:grid-cols-[1fr_auto] sm:p-6 lg:p-8">
           <div>
             <p className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-[#77736b]">02 / 2048</p>
             <h1 className="mt-3 font-[family-name:var(--font-space)] text-5xl font-black uppercase leading-none sm:text-7xl">2048</h1>
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <p className="game-2048-current-mode-label font-mono font-bold uppercase">{game2048ModeCopy[selectedMode].label}</p>
               <span className="h-px w-10 bg-[#0e0e0e]/40" />
-              <p className="text-sm font-semibold tracking-[0.12em] text-[#77736b]">{game2048ModeCopy[selectedMode].zh}</p>
+              <p className="text-sm font-semibold tracking-[0.12em] text-[#77736b]">{game2048ModeCopy[selectedMode].zh} / {getBoard2048SizeLabel(selectedBoardSize)}</p>
             </div>
           </div>
           <div className="flex flex-col items-start justify-between gap-4 sm:items-end">
@@ -1124,8 +1134,10 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
             status={game.status}
             isLoggedIn={isLoggedIn}
             mode={selectedMode}
+            boardSize={selectedBoardSize}
             canChangeMode={game.status === "idle" && !stageTransition}
             onModeChange={handleModeChange}
+            onBoardSizeChange={handleBoardSizeChange}
           />
 
           <section className="game-2048-stage relative min-w-0 border-b border-[#0e0e0e] sm:p-6 lg:border-b-0 lg:border-x">
@@ -1155,7 +1167,8 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
               {undoToastKey > 0 ? <div key={undoToastKey} className="game-2048-undo-toast">UNDO -1</div> : null}
 
               <Game2048Board
-                board={game.board}
+                board={displayBoard}
+                boardSize={selectedBoardSize}
                 status={game.status}
                 score={game.score}
                 mergedIndexes={game.mergedIndexes}
@@ -1169,20 +1182,26 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
 
               {game.status === "idle" ? (
                 <div className="game-2048-start-field absolute inset-0 z-10 flex items-center justify-center overflow-hidden border border-[#0e0e0e]">
-                  <div className="game-2048-ambient" aria-hidden="true">
+                  <div
+                    key={`ambient-${selectedBoardSize}`}
+                    className="game-2048-ambient"
+                    aria-hidden="true"
+                    style={{
+                      gridTemplateColumns: `repeat(${selectedBoardSize}, minmax(0, 1fr))`,
+                      gridTemplateRows: `repeat(${selectedBoardSize}, minmax(0, 1fr))`,
+                    }}
+                  >
                     {ambientCells.map((cell, index) => (
                       <span
                         key={`${index}-${cell.value || "empty"}`}
                         className={`game-2048-ambient-cell ${cell.tone}`}
-                        style={{ "--ambient-index": index } as CSSProperties}
+                        style={{ "--ambient-index": Math.floor(index / selectedBoardSize) } as CSSProperties}
                       >
                         {cell.value ? <b>{cell.value}</b> : null}
                       </span>
                     ))}
                   </div>
-                  <span className="game-2048-ambient-line is-horizontal" aria-hidden="true" />
-                  <span className="game-2048-ambient-line is-vertical" aria-hidden="true" />
-                  <div key={`start-copy-${selectedMode}`} className="game-2048-start-copy relative z-10 max-w-md text-center">
+                  <div key={`start-copy-${selectedMode}-${selectedBoardSize}`} className="game-2048-start-copy relative z-10 max-w-md text-center">
                     <p className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-[#77736b]">
                       {game.hasSavedGame ? "Saved run found / 发现未完成局" : "Ready start / 准备开始"}
                     </p>
@@ -1190,7 +1209,7 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
                     <div className="mx-auto mt-5 max-w-[320px] border-y border-[#0e0e0e]/30 py-4">
                       <p className="font-mono text-xs font-bold uppercase tracking-[0.18em] text-[#77736b]">Mode / 模式</p>
                       <p className="mt-2 font-[family-name:var(--font-space)] text-2xl font-black uppercase leading-none">{game2048ModeCopy[selectedMode].label}</p>
-                      <p className="mt-2 text-sm font-bold tracking-[0.08em] text-[#77736b]">{game2048ModeCopy[selectedMode].zh}</p>
+                      <p className="mt-2 text-sm font-bold tracking-[0.08em] text-[#77736b]">{game2048ModeCopy[selectedMode].zh} / {getBoard2048SizeLabel(selectedBoardSize)}</p>
                     </div>
                     <p className="mt-4 text-sm font-semibold leading-relaxed tracking-[0.06em] text-[#77736b]">
                       {game.hasSavedGame
@@ -1357,6 +1376,7 @@ export function Game2048Page({ isLoggedIn, playerName }: Game2048PageProps) {
           <GameLeaderboardPanel
             key={leaderboardMode}
             mode={leaderboardMode}
+            boardSize={selectedBoardSize}
           />
         </div>
       </div>

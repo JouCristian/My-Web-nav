@@ -1,8 +1,10 @@
-import type { Board2048, Direction, Game2048Snapshot, Move2048Result, SpawnedTile } from "../types"
+import type { Board2048, Board2048Size, Direction, Game2048Snapshot, Move2048Result, SpawnedTile } from "../types"
 
-export const BOARD_SIZE = 4
+export const DEFAULT_BOARD_2048_SIZE: Board2048Size = 4
+export const BOARD_SIZE = DEFAULT_BOARD_2048_SIZE
 export const BOARD_CELLS = BOARD_SIZE * BOARD_SIZE
-export const GAME_2048_VERSION = "1.1.0"
+export const GAME_2048_VERSION = "1.2.0"
+export const BOARD_2048_SIZES: Board2048Size[] = [4, 5, 6, 7]
 
 export type Rng = () => number
 
@@ -29,12 +31,26 @@ export function createGameSeed() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
 }
 
-export function createEmptyBoard(): Board2048 {
-  return Array.from({ length: BOARD_CELLS }, () => 0)
+export function isBoard2048Size(value: unknown): value is Board2048Size {
+  return typeof value === "number" && BOARD_2048_SIZES.includes(value as Board2048Size)
 }
 
-export function assertBoard(board: Board2048) {
-  if (!Array.isArray(board) || board.length !== BOARD_CELLS) {
+export function getBoardSizeFromLength(length: number): Board2048Size | null {
+  const size = Math.sqrt(length)
+  return Number.isInteger(size) && isBoard2048Size(size) ? (size as Board2048Size) : null
+}
+
+export function getBoardSize(board: Board2048, fallback: Board2048Size = DEFAULT_BOARD_2048_SIZE): Board2048Size {
+  return getBoardSizeFromLength(board.length) || fallback
+}
+
+export function createEmptyBoard(size: Board2048Size = DEFAULT_BOARD_2048_SIZE): Board2048 {
+  return Array.from({ length: size * size }, () => 0)
+}
+
+export function assertBoard(board: Board2048, size?: Board2048Size) {
+  const expectedSize = size || getBoardSizeFromLength(Array.isArray(board) ? board.length : 0)
+  if (!Array.isArray(board) || !expectedSize || board.length !== expectedSize * expectedSize) {
     throw new Error("Invalid 2048 board shape")
   }
   for (const value of board) {
@@ -92,25 +108,27 @@ export function addRandomTile(board: Board2048, rng: Rng = Math.random): { board
 }
 
 export function isDailyChallengeSeed(seed: string) {
-  return /^2048:daily:\d{4}-\d{2}-\d{2}:v\d+$/.test(seed)
+  return /^2048:daily:\d{4}-\d{2}-\d{2}:([4567])x\1:v\d+$/.test(seed)
 }
 
-function mirrorBoard(board: Board2048): Board2048 {
-  return [
-    board[3], board[2], board[1], board[0],
-    board[7], board[6], board[5], board[4],
-    board[11], board[10], board[9], board[8],
-    board[15], board[14], board[13], board[12],
-  ]
+function mirrorBoard(board: Board2048, size = getBoardSize(board)): Board2048 {
+  const next = createEmptyBoard(size)
+  for (let row = 0; row < size; row += 1) {
+    for (let col = 0; col < size; col += 1) {
+      next[row * size + col] = board[row * size + (size - 1 - col)]
+    }
+  }
+  return next
 }
 
-function rotateBoardClockwise(board: Board2048): Board2048 {
-  return [
-    board[12], board[8], board[4], board[0],
-    board[13], board[9], board[5], board[1],
-    board[14], board[10], board[6], board[2],
-    board[15], board[11], board[7], board[3],
-  ]
+function rotateBoardClockwise(board: Board2048, size = getBoardSize(board)): Board2048 {
+  const next = createEmptyBoard(size)
+  for (let row = 0; row < size; row += 1) {
+    for (let col = 0; col < size; col += 1) {
+      next[row * size + col] = board[(size - 1 - col) * size + row]
+    }
+  }
+  return next
 }
 
 const dailyChallengeTemplates: Board2048[] = [
@@ -152,16 +170,46 @@ const dailyChallengeTemplates: Board2048[] = [
   ],
 ]
 
-export function createDailyChallengeBoard(seed: string): Board2048 {
-  const rng = createSeededRng(`${seed}:board`)
-  let board = cloneBoard(dailyChallengeTemplates[Math.floor(rng() * dailyChallengeTemplates.length)])
-  const rotations = Math.floor(rng() * BOARD_SIZE)
+function createExpandedDailyChallengeBoard(seed: string, size: Board2048Size): Board2048 {
+  const rng = createSeededRng(`${seed}:expanded:${size}`)
+  const board = createEmptyBoard(size)
+  const centerOffset = Math.floor((size - 4) / 2)
+  const template = dailyChallengeTemplates[Math.floor(rng() * dailyChallengeTemplates.length)]
 
-  for (let index = 0; index < rotations; index += 1) {
-    board = rotateBoardClockwise(board)
+  for (let row = 0; row < 4; row += 1) {
+    for (let col = 0; col < 4; col += 1) {
+      board[(row + centerOffset) * size + col + centerOffset] = template[row * 4 + col]
+    }
   }
 
-  if (rng() < 0.5) board = mirrorBoard(board)
+  const ringTargets = size === 5 ? 5 : size === 6 ? 8 : 12
+  const candidates: number[] = []
+  for (let index = 0; index < board.length; index += 1) {
+    if (board[index] !== 0) continue
+    const row = Math.floor(index / size)
+    const col = index % size
+    if (row === 0 || col === 0 || row === size - 1 || col === size - 1) candidates.push(index)
+  }
+
+  for (let count = 0; count < ringTargets && candidates.length > 0; count += 1) {
+    const candidateIndex = Math.floor(rng() * candidates.length)
+    const [targetIndex] = candidates.splice(candidateIndex, 1)
+    board[targetIndex] = rng() < 0.72 ? 2 : rng() < 0.88 ? 4 : 8
+  }
+
+  return board
+}
+
+export function createDailyChallengeBoard(seed: string, size: Board2048Size = DEFAULT_BOARD_2048_SIZE): Board2048 {
+  const rng = createSeededRng(`${seed}:board`)
+  let board = size === 4 ? cloneBoard(dailyChallengeTemplates[Math.floor(rng() * dailyChallengeTemplates.length)]) : createExpandedDailyChallengeBoard(seed, size)
+  const rotations = Math.floor(rng() * size)
+
+  for (let index = 0; index < rotations; index += 1) {
+    board = rotateBoardClockwise(board, size)
+  }
+
+  if (rng() < 0.5) board = mirrorBoard(board, size)
   return board
 }
 
@@ -170,9 +218,9 @@ export function createInitialGame(seed = createGameSeed()): Game2048Snapshot & {
   return createInitialGameWithRng(seed, rng)
 }
 
-export function createInitialGameWithRng(seed: string, rng: Rng): Game2048Snapshot & { seed: string } {
+export function createInitialGameWithRng(seed: string, rng: Rng, size: Board2048Size = DEFAULT_BOARD_2048_SIZE): Game2048Snapshot & { seed: string } {
   if (isDailyChallengeSeed(seed)) {
-    const board = createDailyChallengeBoard(seed)
+    const board = createDailyChallengeBoard(seed, size)
     return {
       seed,
       board,
@@ -183,7 +231,7 @@ export function createInitialGameWithRng(seed: string, rng: Rng): Game2048Snapsh
     }
   }
 
-  const first = addRandomTile(createEmptyBoard(), rng).board
+  const first = addRandomTile(createEmptyBoard(size), rng).board
   const second = addRandomTile(first, rng).board
   return {
     seed,
@@ -195,7 +243,7 @@ export function createInitialGameWithRng(seed: string, rng: Rng): Game2048Snapsh
   }
 }
 
-export function mergeLine(line: number[]) {
+export function mergeLine(line: number[], size = line.length) {
   const compact = line.filter((value) => value !== 0)
   const merged: number[] = []
   const mergedValues: number[] = []
@@ -218,44 +266,44 @@ export function mergeLine(line: number[]) {
     }
   }
 
-  while (merged.length < BOARD_SIZE) merged.push(0)
+  while (merged.length < size) merged.push(0)
   return { line: merged, scoreGain, mergedValues, mergedOffsets }
 }
 
-function getBoardIndex(direction: Direction, lineIndex: number, offset: number) {
-  if (direction === "left") return lineIndex * BOARD_SIZE + offset
-  if (direction === "right") return lineIndex * BOARD_SIZE + (BOARD_SIZE - 1 - offset)
-  if (direction === "up") return offset * BOARD_SIZE + lineIndex
-  return (BOARD_SIZE - 1 - offset) * BOARD_SIZE + lineIndex
+function getBoardIndex(direction: Direction, lineIndex: number, offset: number, size: Board2048Size) {
+  if (direction === "left") return lineIndex * size + offset
+  if (direction === "right") return lineIndex * size + (size - 1 - offset)
+  if (direction === "up") return offset * size + lineIndex
+  return (size - 1 - offset) * size + lineIndex
 }
 
-function getLine(board: Board2048, direction: Direction, lineIndex: number) {
+function getLine(board: Board2048, direction: Direction, lineIndex: number, size: Board2048Size) {
   const line: number[] = []
-  for (let offset = 0; offset < BOARD_SIZE; offset += 1) {
-    line.push(board[getBoardIndex(direction, lineIndex, offset)])
+  for (let offset = 0; offset < size; offset += 1) {
+    line.push(board[getBoardIndex(direction, lineIndex, offset, size)])
   }
   return line
 }
 
-function setLine(board: Board2048, direction: Direction, lineIndex: number, line: number[]) {
-  for (let offset = 0; offset < BOARD_SIZE; offset += 1) {
-    board[getBoardIndex(direction, lineIndex, offset)] = line[offset]
+function setLine(board: Board2048, direction: Direction, lineIndex: number, line: number[], size: Board2048Size) {
+  for (let offset = 0; offset < size; offset += 1) {
+    board[getBoardIndex(direction, lineIndex, offset, size)] = line[offset]
   }
 }
 
-export function moveBoard(board: Board2048, direction: Direction, rng?: Rng): Move2048Result {
+export function moveBoard(board: Board2048, direction: Direction, rng?: Rng, size = getBoardSize(board)): Move2048Result {
   assertBoard(board)
-  const movedBoard = createEmptyBoard()
+  const movedBoard = createEmptyBoard(size)
   let scoreGain = 0
   const mergedValues: number[] = []
   const mergedIndexes: number[] = []
 
-  for (let lineIndex = 0; lineIndex < BOARD_SIZE; lineIndex += 1) {
-    const merged = mergeLine(getLine(board, direction, lineIndex))
+  for (let lineIndex = 0; lineIndex < size; lineIndex += 1) {
+    const merged = mergeLine(getLine(board, direction, lineIndex, size), size)
     scoreGain += merged.scoreGain
     mergedValues.push(...merged.mergedValues)
-    mergedIndexes.push(...merged.mergedOffsets.map((offset) => getBoardIndex(direction, lineIndex, offset)))
-    setLine(movedBoard, direction, lineIndex, merged.line)
+    mergedIndexes.push(...merged.mergedOffsets.map((offset) => getBoardIndex(direction, lineIndex, offset, size)))
+    setLine(movedBoard, direction, lineIndex, merged.line, size)
   }
 
   const moved = !boardsEqual(board, movedBoard)
@@ -273,13 +321,14 @@ export function moveBoard(board: Board2048, direction: Direction, rng?: Rng): Mo
 
 export function canMove(board: Board2048) {
   assertBoard(board)
+  const size = getBoardSize(board)
   if (getEmptyIndexes(board).length > 0) return true
 
-  for (let row = 0; row < BOARD_SIZE; row += 1) {
-    for (let col = 0; col < BOARD_SIZE; col += 1) {
-      const value = board[row * BOARD_SIZE + col]
-      if (col < BOARD_SIZE - 1 && value === board[row * BOARD_SIZE + col + 1]) return true
-      if (row < BOARD_SIZE - 1 && value === board[(row + 1) * BOARD_SIZE + col]) return true
+  for (let row = 0; row < size; row += 1) {
+    for (let col = 0; col < size; col += 1) {
+      const value = board[row * size + col]
+      if (col < size - 1 && value === board[row * size + col + 1]) return true
+      if (row < size - 1 && value === board[(row + 1) * size + col]) return true
     }
   }
   return false
@@ -295,15 +344,15 @@ export function getStatus(board: Board2048, hasWon: boolean) {
   return "playing"
 }
 
-export function replayGame(seed: string, moveSequence: Direction[]) {
+export function replayGame(seed: string, moveSequence: Direction[], size: Board2048Size = DEFAULT_BOARD_2048_SIZE) {
   const rng = createSeededRng(seed)
-  let board = createInitialGameWithRng(seed, rng).board
+  let board = createInitialGameWithRng(seed, rng, size).board
   let score = 0
   let movesCount = 0
   let hasWon = getMaxTile(board) >= 2048
 
   for (const direction of moveSequence) {
-    const result = moveBoard(board, direction, rng)
+    const result = moveBoard(board, direction, rng, size)
     if (!result.moved) continue
     board = result.board
     score += result.scoreGain

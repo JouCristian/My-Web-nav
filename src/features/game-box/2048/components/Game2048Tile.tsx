@@ -1,9 +1,10 @@
 import type { CSSProperties } from "react"
-import type { Direction } from "../types"
+import type { Board2048Size, Direction } from "../types"
 
 interface Game2048TileProps {
   index: number
   value: number
+  boardSize: Board2048Size
   isNew?: boolean
   isMerged?: boolean
   mergeDirection?: Direction | null
@@ -43,7 +44,7 @@ function mergeStyle(index: number, direction?: Direction | null) {
   } as CSSProperties
 }
 
-export function Game2048Tile({ index, value, isNew = false, isMerged = false, mergeDirection = null }: Game2048TileProps) {
+export function Game2048Tile({ index, value, boardSize, isNew = false, isMerged = false, mergeDirection = null }: Game2048TileProps) {
   const style = mergeStyle(index, mergeDirection)
 
   if (value === 0) {
@@ -51,7 +52,22 @@ export function Game2048Tile({ index, value, isNew = false, isMerged = false, me
   }
 
   const valueClass = tileClassByValue[value] || (value > 2048 ? "bg-[#0e0e0e] text-[#d7ff00]" : "bg-[#f4f1ea] text-[#0e0e0e]")
-  const sizeClass = value >= 1024 ? "text-[clamp(1.25rem,5.5vw,3.25rem)]" : "text-[clamp(1.65rem,7vw,4rem)]"
+  const sizeClass =
+    boardSize >= 7
+      ? value >= 1024
+        ? "text-[clamp(0.58rem,2.3vw,1.45rem)]"
+        : "text-[clamp(0.72rem,2.8vw,1.7rem)]"
+      : boardSize === 6
+        ? value >= 1024
+          ? "text-[clamp(0.7rem,2.8vw,1.7rem)]"
+          : "text-[clamp(0.9rem,3.4vw,2rem)]"
+        : boardSize === 5
+          ? value >= 1024
+            ? "text-[clamp(0.95rem,3.8vw,2.3rem)]"
+            : "text-[clamp(1.15rem,4.6vw,2.65rem)]"
+          : value >= 1024
+            ? "text-[clamp(1.25rem,5.5vw,3.25rem)]"
+            : "text-[clamp(1.65rem,7vw,4rem)]"
 
   return (
     <div

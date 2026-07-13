@@ -3,8 +3,8 @@
 import { useState } from "react"
 import { useGameLeaderboard } from "../hooks/useGameLeaderboard"
 import { formatDuration, formatNumber } from "../lib/format"
-import { game2048ModeCopy } from "../lib/modes"
-import type { Board2048, Competitive2048Mode, LeaderboardEntry, LeaderboardPeriod } from "../types"
+import { game2048ModeCopy, getBoard2048SizeLabel } from "../lib/modes"
+import type { Board2048, Board2048Size, Competitive2048Mode, LeaderboardEntry, LeaderboardPeriod } from "../types"
 import { GameLeaderboardRow } from "./GameLeaderboardRow"
 
 const periods: Array<{ id: LeaderboardPeriod; label: string; zh: string }> = [
@@ -14,12 +14,13 @@ const periods: Array<{ id: LeaderboardPeriod; label: string; zh: string }> = [
 
 interface GameLeaderboardPanelProps {
   mode: Competitive2048Mode
+  boardSize: Board2048Size
 }
 
-export function GameLeaderboardPanel({ mode }: GameLeaderboardPanelProps) {
+export function GameLeaderboardPanel({ mode, boardSize }: GameLeaderboardPanelProps) {
   const [period, setPeriod] = useState<LeaderboardPeriod>("weekly")
   const [selectedEntry, setSelectedEntry] = useState<LeaderboardEntry | null>(null)
-  const { entries, myRank, isLoading, error, reload } = useGameLeaderboard(period, mode)
+  const { entries, myRank, isLoading, error, reload } = useGameLeaderboard(period, mode, boardSize)
   const activeMode = game2048ModeCopy[mode]
 
   return (
@@ -207,7 +208,7 @@ export function GameLeaderboardPanel({ mode }: GameLeaderboardPanelProps) {
         <p className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-[#77736b]">Leaderboard / 排行榜</p>
         <h2 className="mt-3 font-[family-name:var(--font-space)] text-3xl font-black uppercase leading-none">2048</h2>
         <p className="mt-3 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[#ff3b30]">
-          {activeMode.label} board / {activeMode.zh}
+          {activeMode.label} {getBoard2048SizeLabel(boardSize)} / {activeMode.zh}
         </p>
       </div>
 
@@ -235,7 +236,7 @@ export function GameLeaderboardPanel({ mode }: GameLeaderboardPanelProps) {
         </div>
       )}
 
-      <div key={mode} className="game-leaderboard-content min-h-[320px] py-3">
+      <div key={`${mode}-${boardSize}`} className="game-leaderboard-content min-h-[320px] py-3">
         {isLoading ? (
           <div className="p-5 font-mono text-xs font-bold uppercase tracking-[0.14em] text-[#77736b]">Loading board / 正在加载</div>
         ) : error ? (
@@ -253,7 +254,7 @@ export function GameLeaderboardPanel({ mode }: GameLeaderboardPanelProps) {
         ) : entries.length > 0 ? (
           <>
             {entries.map((entry) => (
-              <GameLeaderboardRow key={`${mode}-${period}-${entry.rank}-${entry.userId}`} entry={entry} onSelect={setSelectedEntry} />
+              <GameLeaderboardRow key={`${mode}-${boardSize}-${period}-${entry.rank}-${entry.userId}`} entry={entry} onSelect={setSelectedEntry} />
             ))}
             {myRank ? (
               <div className="mt-3 border-t border-[#0e0e0e] pt-3">
@@ -341,7 +342,7 @@ function LeaderboardDetailModal({ entry, onClose }: { entry: LeaderboardEntry; o
             <DetailMetric label="Undo count / 回退次数" value={entry.undoCount || 0} />
             <DetailMetric label="Finished / 完成时间" value={new Date(entry.finishedAt).toLocaleString()} />
             <DetailMetric label="Verification / 验证状态" value={entry.verified ? "VERIFIED" : "PENDING"} />
-            <DetailMetric label="Mode / 模式" value={(entry.mode || "classic").toUpperCase()} />
+            <DetailMetric label="Mode / 模式" value={`${(entry.mode || "classic").toUpperCase()} ${entry.boardSize || 4}x${entry.boardSize || 4}`} />
           </div>
         </div>
       </div>
@@ -350,9 +351,11 @@ function LeaderboardDetailModal({ entry, onClose }: { entry: LeaderboardEntry; o
 }
 
 function MiniBoard({ board }: { board?: Board2048 | null }) {
-  const cells = board && board.length === 16 ? board : Array.from({ length: 16 }, () => 0)
+  const size = board ? Math.sqrt(board.length) : 4
+  const safeSize = Number.isInteger(size) && size >= 4 && size <= 7 ? size : 4
+  const cells = board && board.length === safeSize * safeSize ? board : Array.from({ length: safeSize * safeSize }, () => 0)
   return (
-    <div className="leaderboard-mini-board" aria-label="Final 2048 board">
+    <div className="leaderboard-mini-board" aria-label="Final 2048 board" style={{ gridTemplateColumns: `repeat(${safeSize}, minmax(0, 1fr))` }}>
       {cells.map((value, index) => (
         <div key={`${index}-${value}`} className="leaderboard-mini-cell">
           {value > 0 ? value : ""}

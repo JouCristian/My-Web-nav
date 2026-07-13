@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { createGameSeed, GAME_2048_VERSION } from "@/features/game-box/2048/lib/game2048-core"
-import { getDailyChallengeSeed, isGame2048Mode } from "@/features/game-box/2048/lib/modes"
+import { encode2048RunMode, getDailyChallengeSeed, isGame2048Mode, normalizeBoard2048Size } from "@/features/game-box/2048/lib/modes"
 import { ensure2048Game } from "@/features/game-box/2048/lib/server"
 import { prisma } from "@/lib/db"
 
@@ -10,7 +10,9 @@ export const runtime = "nodejs"
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null)
   const mode = isGame2048Mode(body?.mode) ? body.mode : "classic"
-  const seed = mode === "daily" ? getDailyChallengeSeed() : createGameSeed()
+  const boardSize = normalizeBoard2048Size(body?.boardSize)
+  const dbMode = encode2048RunMode(mode, boardSize)
+  const seed = mode === "daily" ? getDailyChallengeSeed(new Date(), boardSize) : createGameSeed()
   const startedAt = new Date()
   const session = await auth().catch(() => null)
 
@@ -19,6 +21,7 @@ export async function POST(request: NextRequest) {
       runId: null,
       seed,
       mode,
+      boardSize,
       gameVersion: GAME_2048_VERSION,
       startedAt: startedAt.toISOString(),
       canSave: false,
@@ -31,12 +34,12 @@ export async function POST(request: NextRequest) {
       data: {
         userId: session.user.id,
         gameId: game.id,
-        mode,
+        mode: dbMode,
         seed,
         gameVersion: GAME_2048_VERSION,
         startedAt,
         finishedAt: startedAt,
-        metadata: { status: "started" },
+        metadata: { status: "started", mode, boardSize },
       },
       select: { id: true },
     })
@@ -45,6 +48,7 @@ export async function POST(request: NextRequest) {
       runId: run.id,
       seed,
       mode,
+      boardSize,
       gameVersion: GAME_2048_VERSION,
       startedAt: startedAt.toISOString(),
       canSave: true,
@@ -55,6 +59,7 @@ export async function POST(request: NextRequest) {
       runId: null,
       seed,
       mode,
+      boardSize,
       gameVersion: GAME_2048_VERSION,
       startedAt: startedAt.toISOString(),
       canSave: false,

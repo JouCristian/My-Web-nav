@@ -2,9 +2,9 @@ import "server-only"
 
 import { prisma } from "@/lib/db"
 import { GAME_2048_VERSION, replayGame } from "./game2048-core"
-import { getDailyChallengeSeed } from "./modes"
+import { encode2048RunMode, getDailyChallengeSeed, parseCompetitive2048RunMode } from "./modes"
 import { safeAvatarUrl, safeDisplayName } from "./format"
-import type { Board2048, Competitive2048Mode, Direction, LeaderboardEntry, LeaderboardPeriod } from "../types"
+import type { Board2048, Board2048Size, Competitive2048Mode, Direction, LeaderboardEntry, LeaderboardPeriod } from "../types"
 
 export async function ensure2048Game() {
   return prisma.game.upsert({
@@ -30,14 +30,14 @@ export function sanitizeMoveSequence(value: unknown): Direction[] {
   return value.filter((item): item is Direction => item === "up" || item === "down" || item === "left" || item === "right")
 }
 
-export function verify2048Run(seed: string, moveSequence: Direction[], durationMs: number, gameVersion: string, mode: Competitive2048Mode) {
-  const replay = replayGame(seed, moveSequence)
+export function verify2048Run(seed: string, moveSequence: Direction[], durationMs: number, gameVersion: string, mode: Competitive2048Mode, boardSize: Board2048Size) {
+  const replay = replayGame(seed, moveSequence, boardSize)
   const suspicious =
     gameVersion !== GAME_2048_VERSION ||
     durationMs < 500 ||
     durationMs > 1000 * 60 * 60 * 6 ||
     moveSequence.length > 10000 ||
-    (mode === "daily" && seed !== getDailyChallengeSeed()) ||
+    (mode === "daily" && seed !== getDailyChallengeSeed(new Date(), boardSize)) ||
     (mode === "sprint" && replay.maxTile < 2048)
 
   return {
@@ -53,17 +53,18 @@ export function getLeaderboardStart(period: LeaderboardPeriod) {
   return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 }
 
-async function get2048RankedEntries(period: LeaderboardPeriod, mode: Competitive2048Mode) {
+async function get2048RankedEntries(period: LeaderboardPeriod, mode: Competitive2048Mode, boardSize: Board2048Size) {
   const game = await ensure2048Game()
   const start = mode === "daily" ? undefined : getLeaderboardStart(period)
+  const dbMode = encode2048RunMode(mode, boardSize)
   const runs = await prisma.gameRun.findMany({
     where: {
       gameId: game.id,
-      mode,
+      mode: dbMode,
       verified: true,
       suspicious: false,
       userId: { not: null },
-      ...(mode === "daily" ? { seed: getDailyChallengeSeed() } : {}),
+      ...(mode === "daily" ? { seed: getDailyChallengeSeed(new Date(), boardSize) } : {}),
       ...(start ? { finishedAt: { gte: start } } : {}),
     },
     include: {
@@ -112,19 +113,24 @@ async function get2048RankedEntries(period: LeaderboardPeriod, mode: Competitive
       undoCount,
       usedUndo: undoCount > 0,
       mode,
+      boardSize,
     }
   })
 }
 
-export async function get2048Leaderboard(period: LeaderboardPeriod, mode: Competitive2048Mode, currentUserId?: string | null) {
-  const ranked = await get2048RankedEntries(period, mode)
+export async function get2048Leaderboard(period: LeaderboardPeriod, mode: Competitive2048Mode, boardSize: Board2048Size, currentUserId?: string | null) {
+  const ranked = await get2048RankedEntries(period, mode, boardSize)
   const top = ranked.slice(0, 10)
   const myRank = currentUserId ? ranked.find((entry) => entry.userId === currentUserId && entry.rank > 10) || null : null
 
   return { entries: top, myRank }
 }
 
-export async function get2048UserRank(period: LeaderboardPeriod, userId: string, mode: Competitive2048Mode) {
-  const ranked = await get2048RankedEntries(period, mode)
+export async function get2048UserRank(period: LeaderboardPeriod, userId: string, mode: Competitive2048Mode, boardSize: Board2048Size) {
+  const ranked = await get2048RankedEntries(period, mode, boardSize)
   return ranked.find((entry) => entry.userId === userId)?.rank ?? null
+}
+
+export function parseStored2048RunMode(value: unknown) {
+  return parseCompetitive2048RunMode(value)
 }

@@ -28,6 +28,16 @@ assert.deepEqual(withoutSpawn([2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 
 assert.equal(withoutSpawn([0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2], "down")[15], 4)
 assert.equal(withoutSpawn([0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "right")[3], 4)
 
+const board5 = [
+  2, 2, 2, 2, 2,
+  0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0,
+]
+assert.deepEqual(withoutSpawn(board5, "left").slice(0, 5), [4, 4, 2, 0, 0])
+assert.deepEqual(withoutSpawn(board5, "right").slice(0, 5), [0, 0, 2, 4, 4])
+
 const replayA = replayGame("same-seed", ["left", "up", "right", "down", "left"])
 const replayB = replayGame("same-seed", ["left", "up", "right", "down", "left"])
 assert.deepEqual(replayA, replayB)
@@ -50,5 +60,12 @@ assert.equal(dailyInitialA.board.filter(Boolean).length <= 12, true)
 assert.equal(dailyInitialA.maxTile <= 128, true)
 assert.equal(canMove(dailyInitialA.board), true)
 assert.deepEqual(replayGame(dailySeed, []).board, dailyInitialA.board)
+
+const dailySeed7 = getDailyChallengeSeed(challengeDate, 7)
+const dailyInitial7 = createInitialGameWithRng(dailySeed7, createSeededRng(dailySeed7), 7)
+assert.equal(dailyInitial7.board.length, 49)
+assert.equal(dailyInitial7.board.filter(Boolean).length >= 20, true)
+assert.equal(canMove(dailyInitial7.board), true)
+assert.deepEqual(replayGame(dailySeed7, [], 7).board, dailyInitial7.board)
 
 console.log("2048 core tests passed")

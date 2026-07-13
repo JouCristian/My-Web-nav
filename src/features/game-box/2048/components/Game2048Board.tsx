@@ -1,11 +1,12 @@
 "use client"
 
-import { useRef } from "react"
-import type { Board2048, Direction } from "../types"
+import { useRef, type CSSProperties } from "react"
+import type { Board2048, Board2048Size, Direction } from "../types"
 import { Game2048Tile } from "./Game2048Tile"
 
 interface Game2048BoardProps {
   board: Board2048
+  boardSize: Board2048Size
   status: string
   score: number
   mergedIndexes: number[]
@@ -19,13 +20,14 @@ interface Game2048BoardProps {
 
 const swipeThreshold = 34
 
-function boardLabel(board: Board2048, score: number, status: string) {
-  const rows = [0, 1, 2, 3].map((row) => board.slice(row * 4, row * 4 + 4).join(" "))
+function boardLabel(board: Board2048, boardSize: Board2048Size, score: number, status: string) {
+  const rows = Array.from({ length: boardSize }, (_, row) => board.slice(row * boardSize, row * boardSize + boardSize).join(" "))
   return `2048 board, status ${status}, score ${score}. Rows: ${rows.join("; ")}`
 }
 
 export function Game2048Board({
   board,
+  boardSize,
   status,
   score,
   mergedIndexes,
@@ -44,10 +46,15 @@ export function Game2048Board({
         key={revealKey}
         tabIndex={0}
         role="application"
-        aria-label={boardLabel(board, score, status)}
-        className={`game-2048-board mx-auto grid aspect-square w-full max-w-[min(72vh,560px)] grid-cols-4 grid-rows-4 gap-2 border border-[#0e0e0e] bg-[#f4f1ea] p-2 outline-none focus-visible:ring-2 focus-visible:ring-[#ff3b30] sm:gap-3 sm:p-3 ${
+        aria-label={boardLabel(board, boardSize, score, status)}
+        className={`game-2048-board mx-auto grid aspect-square w-full max-w-[min(72vh,560px)] gap-1.5 border border-[#0e0e0e] bg-[#f4f1ea] p-1.5 outline-none focus-visible:ring-2 focus-visible:ring-[#ff3b30] sm:gap-2 sm:p-2 ${
           isRevealing ? "is-revealing" : ""
         } ${isRewinding ? "is-rewinding" : ""}`}
+        style={{
+          gridTemplateColumns: `repeat(${boardSize}, minmax(0, 1fr))`,
+          gridTemplateRows: `repeat(${boardSize}, minmax(0, 1fr))`,
+          "--board-size": boardSize,
+        } as CSSProperties}
         onTouchStart={(event) => {
           const touch = event.touches[0]
           startPointRef.current = { x: touch.clientX, y: touch.clientY }
@@ -77,6 +84,7 @@ export function Game2048Board({
             key={`${index}-${value}`}
             index={index}
             value={value}
+            boardSize={boardSize}
             isNew={lastAddedIndex === index}
             isMerged={value > 0 && mergedIndexes.includes(index)}
             mergeDirection={lastMoveDirection}

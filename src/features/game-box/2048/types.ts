@@ -1,6 +1,7 @@
 export type Direction = "up" | "down" | "left" | "right"
 export type Game2048Mode = "classic" | "sprint" | "zen" | "daily"
 export type Competitive2048Mode = Exclude<Game2048Mode, "zen">
+export type Board2048Size = 4 | 5 | 6 | 7
 
 export type Game2048Status = "idle" | "playing" | "paused" | "won" | "game_over"
 
@@ -54,6 +55,7 @@ export interface LeaderboardEntry {
   undoCount?: number
   usedUndo?: boolean
   mode?: Game2048Mode
+  boardSize?: Board2048Size
 }
 
 export interface Game2048RankSummary {

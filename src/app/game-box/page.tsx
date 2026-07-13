@@ -48,7 +48,7 @@ async function getGameBoxData(userId?: string): Promise<{ stats: GameBoxStatRow[
         orderBy: [{ score: "desc" }, { movesCount: "asc" }, { durationMs: "asc" }],
       }),
       prisma.gameRun.count({ where }),
-      get2048UserRank("weekly", userId).catch(() => null),
+      get2048UserRank("weekly", userId, "classic", 4).catch(() => null),
     ])
 
     if (!bestRun) return { stats: [], overview: emptyOverview }

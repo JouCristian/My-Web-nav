@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { Prisma } from "@prisma/client"
 import { auth } from "@/auth"
 import { assertBoard, GAME_2048_VERSION } from "@/features/game-box/2048/lib/game2048-core"
-import { isCompetitive2048Mode } from "@/features/game-box/2048/lib/modes"
+import { encode2048RunMode, isCompetitive2048Mode, normalizeBoard2048Size } from "@/features/game-box/2048/lib/modes"
 import { ensure2048Game, sanitizeMoveSequence } from "@/features/game-box/2048/lib/server"
 import { prisma } from "@/lib/db"
 
@@ -13,7 +13,7 @@ function sanitizeState(value: unknown) {
   const state = value as Record<string, unknown>
 
   try {
-    assertBoard(state.board as number[])
+    assertBoard(state.board as number[], normalizeBoard2048Size(state.boardSize))
   } catch {
     return null
   }
@@ -29,12 +29,14 @@ function sanitizeState(value: unknown) {
   const seed = typeof state.seed === "string" ? state.seed : ""
   const runId = typeof state.runId === "string" ? state.runId : null
   const mode = isCompetitive2048Mode(state.mode) ? state.mode : "classic"
+  const boardSize = normalizeBoard2048Size(state.boardSize)
 
   if (!seed) return null
 
   return {
     seed,
     mode,
+    boardSize,
     runId,
     canSave: true,
     board,
@@ -56,12 +58,15 @@ export async function GET(request: NextRequest) {
   const session = await auth().catch(() => null)
   if (!session?.user?.id) return NextResponse.json({ save: null })
   const requestedMode = request.nextUrl.searchParams.get("mode")
+  const requestedBoardSize = request.nextUrl.searchParams.get("boardSize")
   const mode = isCompetitive2048Mode(requestedMode) ? requestedMode : "classic"
+  const boardSize = normalizeBoard2048Size(requestedBoardSize)
+  const dbMode = encode2048RunMode(mode, boardSize)
 
   try {
     const game = await ensure2048Game()
     const save = await prisma.gameSave.findUnique({
-      where: { userId_gameId_mode: { userId: session.user.id, gameId: game.id, mode } },
+      where: { userId_gameId_mode: { userId: session.user.id, gameId: game.id, mode: dbMode } },
       select: { state: true, updatedAt: true, runId: true },
     })
 
@@ -83,12 +88,13 @@ export async function PUT(request: NextRequest) {
   try {
     const game = await ensure2048Game()
     const jsonState = state as Prisma.InputJsonValue
+    const dbMode = encode2048RunMode(state.mode, state.boardSize)
     await prisma.gameSave.upsert({
-      where: { userId_gameId_mode: { userId: session.user.id, gameId: game.id, mode: state.mode } },
+      where: { userId_gameId_mode: { userId: session.user.id, gameId: game.id, mode: dbMode } },
       create: {
         userId: session.user.id,
         gameId: game.id,
-        mode: state.mode,
+        mode: dbMode,
         runId: state.runId,
         state: jsonState,
       },
@@ -109,11 +115,14 @@ export async function DELETE(request: NextRequest) {
   const session = await auth().catch(() => null)
   if (!session?.user?.id) return NextResponse.json({ deleted: false }, { status: 401 })
   const requestedMode = request.nextUrl.searchParams.get("mode")
+  const requestedBoardSize = request.nextUrl.searchParams.get("boardSize")
   const mode = isCompetitive2048Mode(requestedMode) ? requestedMode : "classic"
+  const boardSize = normalizeBoard2048Size(requestedBoardSize)
+  const dbMode = encode2048RunMode(mode, boardSize)
 
   try {
     const game = await ensure2048Game()
-    await prisma.gameSave.deleteMany({ where: { userId: session.user.id, gameId: game.id, mode } })
+    await prisma.gameSave.deleteMany({ where: { userId: session.user.id, gameId: game.id, mode: dbMode } })
     return NextResponse.json({ deleted: true })
   } catch (error) {
     console.error("[game-box/2048/save] delete failed", error)

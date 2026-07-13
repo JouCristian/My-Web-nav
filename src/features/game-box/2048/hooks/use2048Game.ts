@@ -9,18 +9,20 @@ import {
   createSeededRng,
   directionFromKey,
   GAME_2048_VERSION,
+  getBoardSize,
   getMaxTile,
   moveBoard,
   replayGame,
   type Rng,
 } from "../lib/game2048-core"
-import { getDailyChallengeSeed, isGame2048Mode } from "../lib/modes"
-import type { Board2048, Direction, Game2048Mode, Game2048RankSummary, Game2048Status } from "../types"
+import { getDailyChallengeSeed, isGame2048Mode, normalizeBoard2048Size } from "../lib/modes"
+import type { Board2048, Board2048Size, Direction, Game2048Mode, Game2048RankSummary, Game2048Status } from "../types"
 
 type SaveState = "idle" | "saving" | "saved" | "error"
 
 export interface Game2048SavedState {
   mode: Game2048Mode
+  boardSize: Board2048Size
   seed: string
   runId: string | null
   canSave: boolean
@@ -38,8 +40,8 @@ export interface Game2048SavedState {
   savedAt?: string
 }
 
-const localBestKey = (mode: Game2048Mode) => `game-box:2048:${mode}:local-best:v1`
-const localSaveKey = (mode: Game2048Mode) => `game-box:2048:${mode}:active-save:v1`
+const localBestKey = (mode: Game2048Mode, boardSize: Board2048Size) => `game-box:2048:${mode}:${boardSize}x${boardSize}:local-best:v1`
+const localSaveKey = (mode: Game2048Mode, boardSize: Board2048Size) => `game-box:2048:${mode}:${boardSize}x${boardSize}:active-save:v1`
 const legacyLocalBestKey = "game-box:2048:local-best:v1"
 const legacyLocalSaveKey = "game-box:2048:active-save:v1"
 const inputLockMs = 150
@@ -54,8 +56,8 @@ function isDirection(value: unknown): value is Direction {
   return value === "up" || value === "down" || value === "left" || value === "right"
 }
 
-function sanitizeBoard(value: unknown): Board2048 | null {
-  if (!Array.isArray(value) || value.length !== 16) return null
+function sanitizeBoard(value: unknown, boardSize: Board2048Size): Board2048 | null {
+  if (!Array.isArray(value) || value.length !== boardSize * boardSize) return null
   const board = value.map((item) => Number(item))
   if (board.some((item) => !Number.isInteger(item) || item < 0)) return null
   return board
@@ -64,7 +66,8 @@ function sanitizeBoard(value: unknown): Board2048 | null {
 function sanitizeSavedState(value: unknown, fallbackMode: Game2048Mode): Game2048SavedState | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null
   const source = value as Record<string, unknown>
-  const board = sanitizeBoard(source.board)
+  const boardSize = normalizeBoard2048Size(source.boardSize)
+  const board = sanitizeBoard(source.board, boardSize)
   const seed = typeof source.seed === "string" ? source.seed : ""
   if (!seed || !board) return null
 
@@ -73,6 +76,7 @@ function sanitizeSavedState(value: unknown, fallbackMode: Game2048Mode): Game204
 
   return {
     mode: isGame2048Mode(source.mode) ? source.mode : fallbackMode,
+    boardSize,
     seed,
     runId: typeof source.runId === "string" ? source.runId : null,
     canSave: Boolean(source.canSave),
@@ -91,22 +95,22 @@ function sanitizeSavedState(value: unknown, fallbackMode: Game2048Mode): Game204
   }
 }
 
-function readLocalBest(mode: Game2048Mode) {
+function readLocalBest(mode: Game2048Mode, boardSize: Board2048Size) {
   if (!isBrowser()) return 0
-  const stored = window.localStorage.getItem(localBestKey(mode)) || (mode === "classic" ? window.localStorage.getItem(legacyLocalBestKey) : null)
+  const stored = window.localStorage.getItem(localBestKey(mode, boardSize)) || (mode === "classic" && boardSize === 4 ? window.localStorage.getItem(legacyLocalBestKey) : null)
   const value = Number(stored || 0)
   return Number.isFinite(value) ? value : 0
 }
 
-function writeLocalBest(mode: Game2048Mode, value: number) {
+function writeLocalBest(mode: Game2048Mode, boardSize: Board2048Size, value: number) {
   if (!isBrowser()) return
-  window.localStorage.setItem(localBestKey(mode), String(Math.max(0, value)))
+  window.localStorage.setItem(localBestKey(mode, boardSize), String(Math.max(0, value)))
 }
 
-function readLocalSave(mode: Game2048Mode) {
+function readLocalSave(mode: Game2048Mode, boardSize: Board2048Size) {
   if (!isBrowser()) return null
   try {
-    const stored = window.localStorage.getItem(localSaveKey(mode)) || (mode === "classic" ? window.localStorage.getItem(legacyLocalSaveKey) : null)
+    const stored = window.localStorage.getItem(localSaveKey(mode, boardSize)) || (mode === "classic" && boardSize === 4 ? window.localStorage.getItem(legacyLocalSaveKey) : null)
     return sanitizeSavedState(JSON.parse(stored || "null"), mode)
   } catch {
     return null
@@ -115,21 +119,21 @@ function readLocalSave(mode: Game2048Mode) {
 
 function writeLocalSave(state: Game2048SavedState) {
   if (!isBrowser()) return
-  window.localStorage.setItem(localSaveKey(state.mode), JSON.stringify({ ...state, savedAt: new Date().toISOString() }))
+  window.localStorage.setItem(localSaveKey(state.mode, state.boardSize), JSON.stringify({ ...state, savedAt: new Date().toISOString() }))
 }
 
-function clearLocalSave(mode: Game2048Mode) {
+function clearLocalSave(mode: Game2048Mode, boardSize: Board2048Size) {
   if (!isBrowser()) return
-  window.localStorage.removeItem(localSaveKey(mode))
-  if (mode === "classic") window.localStorage.removeItem(legacyLocalSaveKey)
+  window.localStorage.removeItem(localSaveKey(mode, boardSize))
+  if (mode === "classic" && boardSize === 4) window.localStorage.removeItem(legacyLocalSaveKey)
 }
 
-function rebuildRngAfterSequence(seed: string, moveSequence: Direction[]) {
+function rebuildRngAfterSequence(seed: string, moveSequence: Direction[], boardSize: Board2048Size) {
   const rng = createSeededRng(seed)
-  let board = createInitialGameWithRng(seed, rng).board
+  let board = createInitialGameWithRng(seed, rng, boardSize).board
 
   for (const direction of moveSequence) {
-    const result = moveBoard(board, direction, rng)
+    const result = moveBoard(board, direction, rng, boardSize)
     if (result.moved) board = result.board
   }
 
@@ -141,11 +145,11 @@ function statusForBoard(board: Board2048, hasReached2048: boolean): Game2048Stat
   return hasReached2048 ? "won" : "playing"
 }
 
-export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
+export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode, boardSize: Board2048Size) {
   const [seed, setSeed] = useState("")
   const [runId, setRunId] = useState<string | null>(null)
   const [canSave, setCanSave] = useState(false)
-  const [board, setBoard] = useState<Board2048>(() => createEmptyBoard())
+  const [board, setBoard] = useState<Board2048>(() => createEmptyBoard(boardSize))
   const [score, setScore] = useState(0)
   const [localBest, setLocalBest] = useState(0)
   const [movesCount, setMovesCount] = useState(0)
@@ -176,7 +180,7 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
 
   const maxTile = useMemo(() => getMaxTile(board), [board])
   const bestScore = Math.max(localBest, score)
-  const canUndo = (status === "playing" || status === "won") && undoRemaining > 0 && moveSequence.length > 0 && !isInputLocked
+  const canUndo = (status === "playing" || status === "won") && undoRemaining > 0 && moveSequence.length > 0
 
   const getLiveDuration = useCallback(() => {
     if (startedAtRef.current && (status === "playing" || status === "won")) {
@@ -188,6 +192,7 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
   const buildSaveState = useCallback(
     (nextStatus: Extract<Game2048Status, "playing" | "paused" | "won"> = status === "won" ? "won" : status === "paused" ? "paused" : "playing") => ({
       mode,
+      boardSize,
       seed,
       runId,
       canSave,
@@ -204,19 +209,19 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
       gameVersion: GAME_2048_VERSION,
       savedAt: new Date().toISOString(),
     }),
-    [board, canSave, getLiveDuration, hasAcknowledged2048, hasReached2048, mode, moveSequence, movesCount, runId, score, seed, status, undoCount, undoRemaining]
+    [board, boardSize, canSave, getLiveDuration, hasAcknowledged2048, hasReached2048, mode, moveSequence, movesCount, runId, score, seed, status, undoCount, undoRemaining]
   )
 
   const clearServerSave = useCallback(async () => {
     if (!isLoggedIn || mode === "zen") return
-    await fetch(`/api/game-box/2048/save?mode=${mode}`, { method: "DELETE" }).catch(() => null)
-  }, [isLoggedIn, mode])
+    await fetch(`/api/game-box/2048/save?mode=${mode}&boardSize=${boardSize}`, { method: "DELETE" }).catch(() => null)
+  }, [boardSize, isLoggedIn, mode])
 
   const clearSavedGame = useCallback(async () => {
     setSavedGame(null)
-    clearLocalSave(mode)
+    clearLocalSave(mode, boardSize)
     await clearServerSave()
-  }, [clearServerSave, mode])
+  }, [boardSize, clearServerSave, mode])
 
   const persistSave = useCallback(
     async (state: Game2048SavedState) => {
@@ -263,9 +268,9 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
   )
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => setLocalBest(readLocalBest(mode)))
+    const frame = window.requestAnimationFrame(() => setLocalBest(readLocalBest(mode, boardSize)))
     return () => window.cancelAnimationFrame(frame)
-  }, [mode])
+  }, [boardSize, mode])
 
   useEffect(() => {
     let cancelled = false
@@ -274,19 +279,19 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
       setIsSaveLoading(true)
       if (isLoggedIn && mode !== "zen") {
         try {
-          const response = await fetch(`/api/game-box/2048/save?mode=${mode}`)
+          const response = await fetch(`/api/game-box/2048/save?mode=${mode}&boardSize=${boardSize}`)
           const payload = (await response.json()) as { save?: { state?: unknown } | null }
           const serverSave = sanitizeSavedState(payload.save?.state, mode)
           if (!cancelled) setSavedGame(serverSave)
         } catch {
-          if (!cancelled) setSavedGame(readLocalSave(mode))
+          if (!cancelled) setSavedGame(readLocalSave(mode, boardSize))
         } finally {
           if (!cancelled) setIsSaveLoading(false)
         }
         return
       }
 
-      setSavedGame(readLocalSave(mode))
+      setSavedGame(readLocalSave(mode, boardSize))
       setIsSaveLoading(false)
     }
 
@@ -294,7 +299,7 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
     return () => {
       cancelled = true
     }
-  }, [isLoggedIn, mode])
+  }, [boardSize, isLoggedIn, mode])
 
   useEffect(() => {
     if (status !== "playing" && status !== "won") return
@@ -327,8 +332,8 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
 
     const nextBest = Math.max(localBest, score)
     setLocalBest(nextBest)
-    writeLocalBest(mode, nextBest)
-    clearLocalSave(mode)
+    writeLocalBest(mode, boardSize, nextBest)
+    clearLocalSave(mode, boardSize)
     setSavedGame(null)
 
     if (!isLoggedIn || !canSave || !runId) {
@@ -370,7 +375,7 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
     }
 
     void submitRun()
-  }, [board, canSave, clearServerSave, getLiveDuration, isLoggedIn, localBest, mode, moveSequence, runId, score, status, undoCount])
+  }, [board, boardSize, canSave, clearServerSave, getLiveDuration, isLoggedIn, localBest, mode, moveSequence, runId, score, status, undoCount])
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -402,7 +407,7 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
   })
 
   const hydrateRun = useCallback((state: Game2048SavedState, asPaused = true) => {
-    rngRef.current = rebuildRngAfterSequence(state.seed, state.moveSequence)
+    rngRef.current = rebuildRngAfterSequence(state.seed, state.moveSequence, state.boardSize)
     startedAtRef.current = null
     finishSubmittedRef.current = false
     setSeed(state.seed)
@@ -450,7 +455,7 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
     setHasReached2048(false)
     setHasAcknowledged2048(false)
     setWinPromptOpen(false)
-    clearLocalSave(mode)
+    clearLocalSave(mode, boardSize)
     setSavedGame(null)
 
     let nextSeed = ""
@@ -465,22 +470,22 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
         const response = await fetch("/api/game-box/2048/start", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mode }),
+        body: JSON.stringify({ mode, boardSize }),
         })
         const payload = (await response.json()) as { seed?: string; runId?: string | null; canSave?: boolean; warning?: string }
-        nextSeed = payload.seed || (mode === "daily" ? getDailyChallengeSeed() : createGameSeed())
+        nextSeed = payload.seed || (mode === "daily" ? getDailyChallengeSeed(new Date(), boardSize) : createGameSeed())
         nextRunId = payload.runId || null
         nextCanSave = Boolean(payload.canSave)
         if (payload.warning) setSaveMessage(payload.warning)
       } catch {
-        nextSeed = mode === "daily" ? getDailyChallengeSeed() : createGameSeed()
+        nextSeed = mode === "daily" ? getDailyChallengeSeed(new Date(), boardSize) : createGameSeed()
         setSaveMessage("服务器暂不可用，本局以本地模式开始。")
       }
     }
 
     await clearServerSave()
     const rng = createSeededRng(nextSeed)
-    const initial = createInitialGameWithRng(nextSeed, rng)
+    const initial = createInitialGameWithRng(nextSeed, rng, boardSize)
     rngRef.current = rng
     startedAtRef.current = Date.now()
     setSeed(nextSeed)
@@ -493,7 +498,7 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
     setMoveSequence([])
     setStatus("playing")
     lockTimeoutRef.current = window.setTimeout(() => setIsInputLocked(false), 240)
-  }, [clearServerSave, mode])
+  }, [boardSize, clearServerSave, mode])
 
   const pauseGame = useCallback(() => {
     if (status !== "playing" && status !== "won") return
@@ -522,7 +527,7 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
     if (lockTimeoutRef.current) window.clearTimeout(lockTimeoutRef.current)
     startedAtRef.current = null
     finishSubmittedRef.current = false
-    setBoard(createEmptyBoard())
+    setBoard(createEmptyBoard(boardSize))
     setScore(0)
     setMovesCount(0)
     setStatus("idle")
@@ -539,12 +544,12 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
     setWinPromptOpen(false)
     setSaveMessage("")
     setSaveState("idle")
-  }, [])
+  }, [boardSize])
 
   const makeMove = useCallback(
     (direction: Direction) => {
       if (isInputLocked || (status !== "playing" && status !== "won")) return
-      const result = moveBoard(board, direction, rngRef.current)
+      const result = moveBoard(board, direction, rngRef.current, boardSize)
       if (!result.moved) return
 
       setIsInputLocked(true)
@@ -585,14 +590,14 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
 
       setStatus(nextStatus)
     },
-    [board, getLiveDuration, hasReached2048, isInputLocked, mode, moveSequence, movesCount, score, status]
+    [board, boardSize, getLiveDuration, hasReached2048, isInputLocked, mode, moveSequence, movesCount, score, status]
   )
 
   const undoLastMove = useCallback(() => {
-    if (!canUndo) return false
+    if (!canUndo || isInputLocked) return false
     const nextSequence = moveSequence.slice(0, -1)
-    const replay = replayGame(seed, nextSequence)
-    rngRef.current = rebuildRngAfterSequence(seed, nextSequence)
+    const replay = replayGame(seed, nextSequence, boardSize)
+    rngRef.current = rebuildRngAfterSequence(seed, nextSequence, boardSize)
     const liveDuration = getLiveDuration()
     const nextHasReached = hasReached2048 || replay.maxTile >= 2048
 
@@ -611,7 +616,7 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
     setStatus(statusForBoard(replay.board, nextHasReached))
     setSaveMessage("Undo applied / 已回退一步")
     return true
-  }, [canUndo, getLiveDuration, hasReached2048, moveSequence, seed])
+  }, [boardSize, canUndo, getLiveDuration, hasReached2048, isInputLocked, moveSequence, seed])
 
   useEffect(() => {
     return () => {
@@ -625,6 +630,7 @@ export function use2048Game(isLoggedIn: boolean, mode: Game2048Mode) {
     runId,
     canSave,
     board,
+    boardSize: getBoardSize(board, boardSize),
     score,
     bestScore,
     localBest,
